@@ -1,4 +1,7 @@
-import type { Config } from "tailwindcss"
+import type { Config } from "tailwindcss";
+import svgToDataUri from "mini-svg-data-uri";
+import animatePlugin from "tailwindcss-animate";
+import plugin from "tailwindcss/plugin";
 
 const config = {
   darkMode: ["class"],
@@ -27,14 +30,38 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+		    "shine": {
+            from: { backgroundPosition: '200% 0' },
+            to: { backgroundPosition: '-200% 0' },
+        },
+        "text-shine" : {"0%, 100%": {"background-position":"200% center",},"50%":{"background-position":"0% center"}}
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+		    "shine": "shine 8s ease-in-out infinite",
+        'text-shine': 'text-shine 3s linear infinite',
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
-} satisfies Config
+  plugins: [
+    animatePlugin,
+    plugin(function ({ matchUtilities, theme }) {
+      matchUtilities(
+        {
+          'bg-dot-thick': (value) => {
+            const colorValue = typeof value === 'function' ? value({}) : value;
+            return {
+              backgroundImage: `url("${svgToDataUri(
+                `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16"><path fill="${colorValue}" d="M0 0h4v4H0V0zm6 6h4v4H6V6zm6-6h4v4h-4V0zm6 6h4v4h-4V6zm0 6h4v4h-4v-4zm-6 0h4v4h-4v-4zm-6 0h4v4H6v-4zM0 6h4v4H0V6zm0 6h4v4H0v-4z"/></svg>`
+              )}")`,
+            };
+          },
+        },
+        { values: theme('colors') }
+      );
+    }),
+  ],
+} satisfies Config;
 
-export default config
+export default config;

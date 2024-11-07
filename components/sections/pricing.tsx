@@ -26,6 +26,7 @@ export default function Pricing() {
         </div>
 
         <Card className="relative border-2">
+          
           <div className="absolute top-0 right-0 mr-6 -mt-4">
             <span className="inline-flex items-center rounded-full bg-blue-50 px-4 py-1 text-sm font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
               Limited Spots
