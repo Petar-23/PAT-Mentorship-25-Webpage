@@ -3,13 +3,14 @@
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Users, Clock, Trophy } from "lucide-react"
-import { MouseGradient } from "@/components/ui/mouse-gradient"
 import { GlowingCard } from "@/components/ui/glowing-card"
 import { Vortex } from "@/components/ui/vortex"
+import { useCustomerCount } from '@/hooks/useCustomerCount'
 
 export default function FinalCTA() {
+    const { count, isLoading, error } = useCustomerCount()
   return (
-    <MouseGradient>
+
       <section className="relative py-24 overflow-hidden">
         {/* Vortex Background */}
         <div className="absolute inset-0 bg-slate-950">
@@ -91,17 +92,26 @@ export default function FinalCTA() {
             </Button>
 
             <p className="mt-6 text-gray-400">
-              No payment required to join the waitlist
+              No payment unitl program starts. Cancel waitlist entry anytime.
             </p>
 
-            <div className="mt-12 backdrop-blur-md bg-white/5 rounded-lg inline-block px-6 py-3 border border-white/10">
-              <p className="text-white text-sm">
-                👥 <span className="text-blue-400 font-medium">47 traders</span> already on the waitlist
-              </p>
-            </div>
-          </motion.div>
+            {!error && (
+                <div className="mt-12 backdrop-blur-md bg-white/5 rounded-lg inline-block px-6 py-3 border border-white/10">
+                    <p className="text-white text-sm">
+                    {isLoading ? (
+                        <span className="animate-pulse">Loading waitlist count...</span>
+                    ) : (
+                        <>
+                        👥 <span className="text-blue-400 font-medium">
+                            {count?.toLocaleString()}
+                        </span> {count === 1 ? 'trader' : 'traders'} already on the waitlist
+                        </>
+                    )}
+                    </p>
+                </div>
+                )}
+            </motion.div>
         </div>
       </section>
-    </MouseGradient>
   )
 }

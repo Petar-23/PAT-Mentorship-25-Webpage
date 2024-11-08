@@ -2,6 +2,7 @@
 import { PlayCircle, Users, Calendar, Clock, Trophy, CreditCard } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
+
 const features = [
   {
     icon: <PlayCircle className="h-6 w-6" />,
@@ -37,7 +38,7 @@ const features = [
 
 export default function WhyDifferent() {
   return (
-    <section className="py-24 bg-gray-50">
+    <section id="why-different" className="py-24 bg-gray-50">
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">

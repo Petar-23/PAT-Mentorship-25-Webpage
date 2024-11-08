@@ -6,6 +6,7 @@ import Testimonials from '@/components/sections/testimonials'
 import PricingComparison from '@/components/sections/pricing-comparison'
 import FAQ from '@/components/sections/faq'
 import FinalCTA from '@/components/sections/final-cta'
+import MentorSection from '@/components/sections/mentor'
 
 export default function HomePage() {
   return (
@@ -13,6 +14,7 @@ export default function HomePage() {
       <Hero />
       <WhyDifferent />
       <PricingComparison />
+      <MentorSection />
       <ProgramStructure />
       <CTASection />
       <Testimonials />

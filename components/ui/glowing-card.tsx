@@ -26,18 +26,30 @@ export function GlowingCard({ children, className = '' }: GlowingCardProps) {
     <motion.div
       ref={cardRef}
       onMouseMove={handleMouseMove}
-      className={`relative overflow-hidden rounded-xl backdrop-blur-sm ${className}`}
+      className={`relative group ${className}`}
       whileHover={{ scale: 1.02 }}
       transition={{ duration: 0.2 }}
     >
-      <div
-        className="absolute inset-0 opacity-50"
-        style={{
-          background: `radial-gradient(200px circle at ${glowPosition.x}px ${glowPosition.y}px, rgba(255,255,255,0.1), transparent 40%)`,
-        }}
-      />
-      <div className="absolute inset-[1px] rounded-xl bg-gradient-to-t from-white/[0.05] to-transparent" />
-      <div className="relative">{children}</div>
+      {/* Animated border gradient */}
+      <div className="absolute -inset-[1px] bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 rounded-xl opacity-75 group-hover:opacity-100 blur animate-gradient-xy"></div>
+      
+      {/* Inner glow and content container */}
+      <div className="relative rounded-xl overflow-hidden">
+        {/* Inner gradient glow effect */}
+        <div
+          className="absolute inset-0 opacity-50 transition-opacity duration-200 group-hover:opacity-75"
+          style={{
+            background: `radial-gradient(200px circle at ${glowPosition.x}px ${glowPosition.y}px, rgba(255,255,255,0.1), transparent 40%)`,
+          }}
+        />
+        
+        {/* Background with blur */}
+        <div className="relative bg-slate-900/90 backdrop-blur-sm p-[1px] rounded-xl">
+          <div className="relative bg-slate-900/90 rounded-xl">
+            {children}
+          </div>
+        </div>
+      </div>
     </motion.div>
   )
 }
