@@ -1,4 +1,3 @@
-// src/app/components/sections/hero.tsx
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -7,41 +6,77 @@ import { ArrowRight, PlayCircle, Users } from "lucide-react"
 import Link from "next/link"
 import { MatrixRain } from "../ui/matrix-rain"
 import Image from "next/image"
+import { useMediaQuery } from "@/hooks/use-media-query"
+import { motion } from "framer-motion"
 
 export default function Hero() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
+  const isMobile = useMediaQuery("(max-width: 768px)")
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect()
-        setMousePosition({
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top + window.scrollY
-        })
+    if (!isMobile) {
+      const handleMouseMove = (e: MouseEvent) => {
+        if (containerRef.current) {
+          const rect = containerRef.current.getBoundingClientRect()
+          setMousePosition({
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top + window.scrollY
+          })
+        }
       }
-    }
 
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [])
+      window.addEventListener('mousemove', handleMouseMove)
+      return () => window.removeEventListener('mousemove', handleMouseMove)
+    }
+  }, [isMobile])
 
   return (
     <section 
       ref={containerRef}
-      className="relative py-20 px md:px-6 lg:py-32 in-h-[80vh] overflow-hidden bg-gradient-to-b from-white to-gray-50"
+      className="relative py-20 px md:px-6 lg:py-32 min-h-[80vh] overflow-hidden bg-gradient-to-b from-white to-gray-50"
     >
        {/* Matrix Background Layer */}
-       <div 
-        className="absolute inset-0"
-        style={{
-          mask: `radial-gradient(circle 300px at ${mousePosition.x}px ${mousePosition.y}px, white, transparent)`,
-          WebkitMask: `radial-gradient(circle 300px at ${mousePosition.x}px ${mousePosition.y}px, white, transparent)`,
-        }}
-      >
-        <MatrixRain color="rgba(128, 128, 128, 0.3)" />
-      </div>
+       {isMobile ? (
+        // Mobile version with moving gradient
+        <div className="absolute inset-0">
+          <div className="absolute inset-0">
+            <MatrixRain color="rgba(128, 128, 128, 0.3)" />
+          </div>
+          {/* Animated gradient overlay */}
+          <motion.div 
+            className="absolute inset-0"
+            initial={{ backgroundPosition: '0% 0%' }}
+            animate={{ 
+              backgroundPosition: ['0% 0%', '100% 100%', '0% 100%', '100% 0%', '0% 0%'],
+            }}
+            transition={{ 
+              duration: 20,
+              ease: "linear",
+              repeat: Infinity,
+            }}
+            style={{
+              background: `radial-gradient(
+                circle 150vw at 50% 50%,
+                transparent 10%,
+                rgba(255, 255, 255, 0.85) 30%,
+                rgba(255, 255, 255, 0.95) 100%
+              )`,
+            }}
+          />
+        </div>
+       ) : (
+        // Desktop version with mouse follow
+        <div 
+          className="absolute inset-0"
+          style={{
+            mask: `radial-gradient(circle 300px at ${mousePosition.x}px ${mousePosition.y}px, white, transparent)`,
+            WebkitMask: `radial-gradient(circle 300px at ${mousePosition.x}px ${mousePosition.y}px, white, transparent)`,
+          }}
+        >
+          <MatrixRain color="rgba(128, 128, 128, 0.3)" />
+        </div>
+       )}
 
       {/* Content */}
       <div className="container mx-auto px-4 relative z-10 h-full">
@@ -60,7 +95,7 @@ export default function Hero() {
               </h1>
               
               <p className="text-lg md:text-xl text-gray-600 leading-relaxed">
-              Vergiss vorgefertigte Kurse mit veralteten Beispielen. Lerne das Traden an der harten rechten Kante der Charts, an Live Marktdaten mit direkter Anleitung in Echtzeit.
+                Vergiss vorgefertigte Kurse mit veralteten Beispielen. Lerne das Traden an der harten rechten Kante der Charts, an Live Marktdaten mit direkter Anleitung in Echtzeit.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4">
@@ -99,10 +134,10 @@ export default function Hero() {
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl opacity-10 blur-2xl" />
               <div className="relative bg-white p-8 rounded-xl shadow-xl">
                 <div className="space-y-6">
-                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden">
                       <Image
-                        src="/images/ict-logo.jpg" // Make sure to add your ICT logo
+                        src="/images/ict-logo.jpg"
                         alt="ICT Logo"
                         width={48}
                         height={48}
@@ -152,7 +187,6 @@ export default function Hero() {
               </div>
             </div>
           </div>
-        
       </div>
     </section>
   )

@@ -35,7 +35,7 @@ export default function MentorSection() {
               </div>
 
               {/* Stats Card */}
-              <GradientCard className="absolute -bottom-6 -right-6 max-w-[240px]" initialGradientPosition="bottom-center" showGradientWithoutHover={true}>
+              <GradientCard className="absolute -bottom-6 -right-6 max-w-[240px]" >
                 <div className="space-y-4 p-6">
                   <div className="flex items-center gap-4">
                     <Users className="h-5 w-5 text-blue-400" />
