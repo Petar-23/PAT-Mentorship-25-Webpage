@@ -24,7 +24,7 @@ export function CountdownProgress({ startDate }: CountdownProgressProps) {
 
       // Calculate time left
       const days = Math.ceil((end - now) / (1000 * 60 * 60 * 24))
-      setTimeLeft(`${days} days until program starts`)
+      setTimeLeft(`Noch ${days} Tage`)
     }
 
     calculateProgress()

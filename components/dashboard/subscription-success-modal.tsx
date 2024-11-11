@@ -61,15 +61,15 @@ export function SubscriptionSuccessModal({ isOpen, onClose }: SuccessModalProps)
             <CheckCircle className="h-6 w-6 text-green-600" />
           </div>
           <DialogTitle className="text-center text-xl">
-            Welcome to Mentorship 2025!
+            Willkommen bei der Mentorship 2025!
           </DialogTitle>
         </DialogHeader>
         <div className="text-center space-y-4">
           <p className="text-gray-600">
-            Your spot has been secured for the program starting March 1st, 2025.
+            Dein Platz ist gesichert. Die Mentorship startet am 01. März 2025
           </p>
           <Button onClick={onClose} className="w-full">
-            View Dashboard
+            Zum Dashboard
           </Button>
         </div>
       </DialogContent>

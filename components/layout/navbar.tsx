@@ -138,13 +138,13 @@ export function Navbar() {
                   : 'border-gray-200 bg-white text-gray-700'}
               `}>
                 <div className="text-sm flex items-center gap-2">
-                  <span>Verfügbare Plätze:</span>
+                  <span>Offene Plätze:</span>
                   <span className={`font-medium ${isLow ? 'text-red-600' : 'text-green-600'}`}>
-                    {remainingSpots}/100
+                    {remainingSpots}
                   </span>
                   {isLow && (
                     <span className="text-xs text-red-600 animate-pulse">
-                      Limited!
+                      Limitiert!
                     </span>
                   )}
                 </div>

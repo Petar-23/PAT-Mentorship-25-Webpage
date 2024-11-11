@@ -57,7 +57,7 @@ export function CheckoutButton() {
           Processing...
         </>
       ) : (
-        'Join Mentorship Program'
+        'Platz reservieren ->'
       )}
     </Button>
   )

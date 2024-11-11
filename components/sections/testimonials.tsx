@@ -38,7 +38,7 @@ const testimonials = [
     role: "Future Trader",
     results: {
       label: "Payouts",
-      value: "+10.000 USD",
+      value: "+9.000 USD",
       description: "Nach 6 Monaten"
     },
     gradientColor: "rgba(59, 130, 246, 0.1)"

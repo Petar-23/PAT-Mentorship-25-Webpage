@@ -51,12 +51,12 @@ export function ManageSubscriptionButton() {
       {loading ? (
         <>
           <LoadingSpinner className="mr-2 h-4 w-4" />
-          Loading...
+          Läd...
         </>
       ) : (
         <>
           <CreditCard className="mr-2 h-4 w-4" />
-          Manage Subscription
+          Abonnement Verwalten
         </>
       )}
     </Button>

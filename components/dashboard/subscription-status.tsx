@@ -61,7 +61,7 @@ export function SubscriptionStatus({
     }
   }
 
-  const formattedDate = new Date(startDate).toLocaleDateString('en-US', {
+  const formattedDate = new Date(startDate).toLocaleDateString('de-DE', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -72,8 +72,8 @@ export function SubscriptionStatus({
     if (isCanceled || status === 'canceled' || cancelAt) {
       return {
         icon: <XCircle className="h-5 w-5 text-red-500" />,
-        text: 'Subscription Canceled',
-        description: 'Your spot is no longer reserved',
+        text: 'Mitgliedschaft gekündigt',
+        description: 'Dein Platz wird nicht mehr freigehalten.',
         showAlert: true,
         showCountdown: false,
         variant: 'canceled'
@@ -84,9 +84,9 @@ export function SubscriptionStatus({
     if (status === 'active' || status === 'trialing') {
       return {
         icon: <Armchair className="h-5 w-5 text-emerald-500" />,
-        text: '🎉 Seat Reserved!',
-        description: 'Your spot in the mentorship program is secured',
-        subDescription: `The program begins on ${formattedDate}`,
+        text: '🎉 Platz Gesichert!',
+        description: 'Dein Platz in der Mentorship wird freigehalten.',
+        subDescription: `Die Mentorship startet am ${formattedDate}`,
         showCountdown: true,
         showAlert: false,
         variant: 'success'
@@ -97,8 +97,8 @@ export function SubscriptionStatus({
     if (isPending || status === 'incomplete') {
       return {
         icon: <Clock className="h-5 w-5 text-yellow-500" />,
-        text: 'Subscription Processing',
-        description: 'Your subscription is being processed',
+        text: 'Abo wird verarbeitet',
+        description: 'Deine Mitgliedschaft wird bearbeitet',
         showAlert: false,
         showCountdown: false,
         variant: 'processing'
@@ -109,7 +109,7 @@ export function SubscriptionStatus({
     return {
       icon: <AlertTriangle className="h-5 w-5 text-gray-500" />,
       text: `Status: ${status}`,
-      description: 'Please contact support',
+      description: 'Bitte kontaktiere den Support',
       showAlert: false,
       showCountdown: false,
       variant: 'unknown'
@@ -148,7 +148,7 @@ export function SubscriptionStatus({
           </div>
           {statusDisplay.showCountdown && (
             <div className="pt-2">
-              <p className="text-sm text-emerald-600 mb-2">Time until program start:</p>
+              <p className="text-sm text-emerald-600 mb-2">Zeit bis zum Start der Mentorship 2025:</p>
               <CountdownProgress startDate={startDate} />
             </div>
           )}
@@ -187,10 +187,10 @@ export function SubscriptionStatus({
             <div className="flex items-start">
               <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 mr-2" />
               <div>
-                <h4 className="text-sm font-medium text-red-800">Limited Spots Available</h4>
+                <h4 className="text-sm font-medium text-red-800">Limitierte Plätze Verfügbar</h4>
                 <p className="text-sm text-red-700 mt-1">
-                  Due to high demand, there is a risk your spot will be taken by another student. 
-                  Reactivate your subscription now to secure your position in the program.
+                  Aufgrund der hohen Nachfrage besteht das Risiko, dass dein Platz von einem anderen Teilnehmer eingenommen wird.. 
+                  Reaktiviere jetzt dein Abonnement, um dir deinen Platz im Programm zu sichern.
                 </p>
                 <Button 
                   onClick={handleReactivate}
@@ -201,7 +201,7 @@ export function SubscriptionStatus({
                   {isLoading ? (
                     <>
                       <LoadingSpinner className="mr-2 h-4 w-4" />
-                      Processing...
+                      Wird bearbeitet...
                     </>
                   ) : (
                     'Reactivate Subscription'

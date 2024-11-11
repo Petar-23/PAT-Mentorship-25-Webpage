@@ -1,15 +1,14 @@
-// src/app/dashboard/page.tsx
 'use client'
+
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-//import { Button } from '@/components/ui/button'
-import { AlertCircle, CreditCard } from 'lucide-react'
+import { CalendarCheck, LockIcon, CircleCheckBig, CreditCard, Users, Shield } from 'lucide-react'
 import { CheckoutButton } from '@/components/ui/checkout-button'
 import { Button } from '@/components/ui/button'
 import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'
 import { SubscriptionStatus } from '@/components/dashboard/subscription-status'
-//import { BlurredContent } from '@/components/dashboard/blurred-content'
 import { SubscriptionSuccessModal } from '@/components/dashboard/subscription-success-modal'
+import { motion } from 'framer-motion'
 
 interface SubscriptionDetails {
   status: string;
@@ -29,50 +28,147 @@ interface DashboardProps {
   }
 }
 
+const fadeInUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5 }
+}
+
 export default function DashboardPage({ initialData }: DashboardProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const showSuccess = searchParams.get('success') === 'true'
-
+  
   const startDate = new Date('2025-03-01')
   const programStarted = new Date() >= startDate
-  
-  // Check if user has never had a subscription
   const hasSubscriptionHistory = initialData.subscriptionDetails !== null
 
-
-  // Show the subscription required message only for completely new users
+  // Show the streamlined conversion page for new users
   if (!hasSubscriptionHistory) {
     return (
-      <div className="container mx-auto py-10 px-4">
-        <h1 className="text-3xl font-bold mb-8">
-          Welcome, {initialData.user.firstName || 'Member'}!
-        </h1>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-yellow-500" />
-              Subscription Required
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 mb-6">
-              To access the mentorship program content and community, you need to purchase a subscription. 
-              The program starts March 1st, 2025, but you can secure your spot now.
-            </p>
-            <CheckoutButton />
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gray-50 py-12">
+        <motion.div 
+          className="container mx-auto px-4 max-w-4xl"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
+        >
+          {/* Welcome Section */}
+          <div className="text-center mb-12">
+            <motion.div {...fadeInUp}>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                Willkommen, {initialData.user.firstName || 'zukünftiger Trader'}!
+              </h1>
+              <p className="text-lg text-gray-600">
+                Du bist dabei, meiner exklusiven ICT Mentorship 2025 beizutreten.
+              </p>
+            </motion.div>
+          </div>
+
+          {/* Main Card */}
+          <Card className="mb-8 shadow-sm border-2">
+            <CardContent className="p-8">
+              {/* Payment Highlight Box */}
+              <div className="bg-green-50 border border-green-300 rounded-lg p-4 mb-8">
+                <div className="flex items-center gap-3 text-green-700">
+                  <CalendarCheck className="h-5 w-5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium">Keine Zahlung bis März 2025</p>
+                    <p className="text-sm text-green-600 mt-1">
+                      Jetzt reservieren, Zahlung erst ab 1. März 2025
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Price Tag */}
+              <div className="text-center mb-8">
+                <div className="flex items-baseline justify-center">
+                  <span className="text-5xl font-bold text-gray-900">€150</span>
+                  <span className="text-xl text-gray-500 ml-2">/Monat</span>
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  Erste Zahlung am 1. März 2025
+                </p>
+              </div>
+
+              {/* Benefits List */}
+              <div className="grid sm:grid-cols-2 gap-4 mb-8">
+                {[
+                  "Live Trading/Coaching Sessions 2-3x wöchentlich",
+                  "Zugang zur privaten Discord-Community",
+                  "Umfassendes Lernmaterial",
+                  "Interaktive Frage & Antwort Sessions",
+                  "Dauerhafter Zugang nach Abschluss",
+                  "Monatlich kündbar"
+                ].map((benefit, index) => (
+                  <motion.div
+                    key={index}
+                    className="flex items-start gap-3 bg-gray-50 p-3 rounded-lg border border-gray-200"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <div className="flex-shrink-0 mt-0.5">
+                      <CircleCheckBig className="h-5 w-5 text-green-400" />
+                    </div>
+                    <span className="text-gray-700 text-sm">{benefit}</span>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* CTA Section */}
+              <div className="space-y-4">
+                <CheckoutButton />
+                <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                  <LockIcon className="h-4 w-4" />
+                  <span>Sichere Zahlung über Stripe</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Value Props */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-blue-600" />
+                  Interaktives Live-Lernen
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 text-sm">
+                  Lerne durch Live-Sessions mit Echtzeit-Marktanalysen, direktem Feedback 
+                  und interaktiven Frage & Antwort Runden. Perfekt für Anfänger und erfahrene Trader.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-blue-600" />
+                  Risikofreie Entscheidung
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 text-sm">
+                  Faire Bedingungen - kündige jederzeit, wenn du nicht vollständig zufrieden bist. 
+                  Erhalte dauerhaften Zugang nach Abschluss der Mentorship (12 Monate).
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </motion.div>
       </div>
     )
   }
 
-  // Check if user can access content
+  // Existing dashboard for subscribed users
   const canAccessContent = initialData.hasSubscription && 
     !initialData.subscriptionDetails?.isCanceled &&
     programStarted
-
 
   return (
     <>
@@ -87,10 +183,9 @@ export default function DashboardPage({ initialData }: DashboardProps) {
 
       <div className="container mx-auto py-10 px-4">
         <h1 className="text-3xl font-bold mb-8">
-          Welcome, {initialData.user.firstName || 'Member'}!
+          Willkommen, {initialData.user.firstName || 'Mitglied'}!
         </h1>
 
-        {/* Subscription Status with Countdown */}
         {initialData.subscriptionDetails && (
           <div className="mb-8">
             <SubscriptionStatus
@@ -99,7 +194,6 @@ export default function DashboardPage({ initialData }: DashboardProps) {
               isPending={initialData.subscriptionDetails.isPending}
               isCanceled={initialData.subscriptionDetails.isCanceled}
               cancelAt={initialData.subscriptionDetails.cancelAt}
-              //onResubscribe={handleResubscribe}
             />
           </div>
         )}
@@ -119,12 +213,12 @@ export default function DashboardPage({ initialData }: DashboardProps) {
                 Discord Community
               </CardTitle>
               <CardDescription>
-                Connect with mentors and fellow mentees
+                Verbinde dich mit Mentoren und anderen Teilnehmern
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                Join our exclusive Discord community for live sessions, discussions, and networking.
+                Tritt unserer exklusiven Discord-Community bei für Live-Sessions, Diskussionen und Networking.
               </p>
               {canAccessContent && programStarted ? (
                 <a 
@@ -133,14 +227,14 @@ export default function DashboardPage({ initialData }: DashboardProps) {
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center w-full px-4 py-2 bg-[#5865F2] text-white rounded-md hover:bg-[#4752C4] transition-colors gap-2"
                 >
-                  Join Discord Server
+                  Discord Server beitreten
                 </a>
               ) : (
                 <Button 
                   className="w-full bg-[#5865F2] hover:bg-[#5865F2] cursor-not-allowed opacity-60"
                   disabled
                 >
-                  Available March 1st, 2025
+                  Verfügbar ab 1. März 2025
                 </Button>
               )}
             </CardContent>
@@ -149,14 +243,14 @@ export default function DashboardPage({ initialData }: DashboardProps) {
           {/* Whop Access */}
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
-              <CardTitle>Course Content</CardTitle>
+              <CardTitle>Kursinhalte</CardTitle>
               <CardDescription>
-                Access your learning materials
+                Zugriff auf deine Lernmaterialien
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                Access your video lessons, resources, and track your progress through the program.
+                Greife auf deine Videolektionen, Ressourcen zu und verfolge deinen Fortschritt im Programm.
               </p>
               {canAccessContent && programStarted ? (
                 <a 
@@ -165,14 +259,14 @@ export default function DashboardPage({ initialData }: DashboardProps) {
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center w-full px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors gap-2"
                 >
-                  Go to Course Platform
+                  Zur Kursplattform
                 </a>
               ) : (
                 <Button 
                   className="w-full bg-black hover:bg-black cursor-not-allowed opacity-60"
                   disabled
                 >
-                  Available March 1st, 2025
+                  Verfügbar ab 1. März 2025
                 </Button>
               )}
             </CardContent>
@@ -183,22 +277,22 @@ export default function DashboardPage({ initialData }: DashboardProps) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
-                Membership Management
+                Abonnement Verwalten
               </CardTitle>
               <CardDescription>
-                Manage your subscription and billing details
+                Verwalte dein Abonnement und deine Zahlungsdetails
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="text-sm text-gray-600">
                 {initialData.subscriptionDetails?.isCanceled ? (
                   <p className="text-red-600">
-                    Your subscription has been canceled. Resubscribe to secure your spot for the program starting March 1st, 2025.
+                    Dein Abonnement wurde gekündigt. Erneuere jetzt dein Abonnement, um deinen Platz für das Programm ab 1. März 2025 zu sichern.
                   </p>
                 ) : (
                   <>
-                    <p>Your subscription is scheduled to start on March 1st, 2025.</p>
-                    <p>You can manage your payment method and subscription settings below.</p>
+                    <p>Dein Abonnement startet am 1. März 2025.</p>
+                    <p>Du kannst deine Zahlungsmethode und Abonnement-Einstellungen unten verwalten.</p>
                   </>
                 )}
               </div>
