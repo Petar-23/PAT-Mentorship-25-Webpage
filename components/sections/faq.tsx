@@ -1,4 +1,3 @@
-// src/components/sections/faq.tsx
 "use client"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -6,44 +5,64 @@ import { ChevronDown } from "lucide-react"
 
 const faqs = [
   {
-    question: "Why does the program start in March 2025?",
-    answer: "The March 2025 start date allows us to properly prepare and ensure all mentees start together, creating a strong community from day one. This also gives you time to secure your spot and prepare for the program.",
-    category: "Program Schedule"
+    question: "Warum startet das Programm im März 2025?",
+    answer: "Der Start im März 2025 ermöglicht es mir, alle Teilnehmer einzusammeln und sicherzustellen, dass alle gemeinsam beginnen, um von Tag eins an eine starke Community aufzubauen. Dies gibt dir auch die Zeit, deinen Platz zu sichern und dich auf das Programm vorzubereiten.",
+    category: "Programmablauf"
   },
   {
-    question: "How does the monthly subscription work?",
-    answer: "The program costs €150 per month, and you can cancel anytime if you're not satisfied. This flexible model ensures we maintain high-quality mentorship while allowing you to evaluate the program's value monthly.",
-    category: "Pricing"
+    question: "Wie funktioniert das monatliche Abonnement?",
+    answer: "Das Programm kostet 150€ pro Monat und du kannst jederzeit kündigen, wenn du nicht zufrieden bist. Dieses flexible Modell gewährleistet hochwertige Betreuung und ermöglicht es dir gleichzeitig, den Wert des Programms monatlich zu evaluieren.",
+    category: "Preisgestaltung"
   },
   {
-    question: "What happens if I cancel my subscription?",
-    answer: "You maintain access until the end of your paid period. If you decide to rejoin, note that spots are limited and may not be available. Completing the full year grants lifetime access to all materials.",
-    category: "Membership"
+    question: "Was passiert, wenn ich mein Abonnement kündige?",
+    answer: "Du behältst den Zugang bis zum Ende deiner bezahlten Periode. Falls du später wieder einsteigen möchtest, beachte, dass die Plätze begrenzt sind und möglicherweise nicht mehr verfügbar sind. Der Abschluss des gesamten Jahres gewährt dir dauerhaften Zugriff auf alle Materialien.",
+    category: "Mitgliedschaft"
   },
   {
-    question: "What trading experience do I need?",
-    answer: "While we welcome traders of all levels, basic understanding of market fundamentals is beneficial. Our program adapts to your experience level, starting with core concepts and progressing to advanced strategies.",
-    category: "Requirements"
+    question: "Welche Trading-Erfahrung benötige ich?",
+    answer: "Ich kann mit Tradern aus allen Erfahrungsstufen arbeiten, wobei Grundkenntnisse der Marktprinzipien von Vorteil sind. Das Programm ist straff aber es beginnt mit Grundkonzepten und bringt dich zu deinem Smart Money Modell.",
+    category: "Voraussetzungen"
   },
   {
-    question: "How much time should I commit weekly?",
-    answer: "We recommend 5-10 hours weekly: 2-3 hours for live sessions, 2-3 hours for practice, and additional time for community interaction. All sessions are recorded for flexible viewing.",
-    category: "Commitment"
+    question: "Wie viel Zeit sollte ich wöchentlich einplanen?",
+    answer: "Ich empfehle 5-10 Stunden pro Woche: 2-3 Stunden für Live-Sessions, 2-3 Stunden für Übungen und zusätzliche Zeit für Community-Interaktion. Alle Sessions werden aufgezeichnet und können flexibel angesehen werden.",
+    category: "Zeitaufwand"
   },
   {
-    question: "Can I access previous session recordings?",
-    answer: "Yes, all live sessions are recorded and available in our platform. This ensures you never miss crucial content, even if you can't attend live sessions due to time zone differences.",
-    category: "Content Access"
+    question: "Kann ich auf frühere Session-Aufzeichnungen zugreifen?",
+    answer: "Ja, alle Live-Sessions werden aufgezeichnet und sind auf unserer Plattform verfügbar. Dies stellt sicher, dass du keine wichtigen Inhalte verpasst, auch wenn du aufgrund von Zeitunterschieden nicht an Live-Sessions teilnehmen kannst.",
+    category: "Zugriff auf Inhalte"
   },
   {
-    question: "What makes this different from pre-recorded courses?",
-    answer: "We focus on live market analysis and real-time trading decisions. Unlike static courses, you'll learn how to adapt to current market conditions and develop dynamic trading skills.",
-    category: "Program Features"
+    question: "Was unterscheidet dies von aufgezeichneten Kursen?",
+    answer: "Wir konzentrieren uns auf Live-Marktanalysen und Echtzeit-Handelsentscheidungen. Anders als bei statischen Kursen lernst du, dich an aktuelle Marktbedingungen anzupassen und entwickelst dynamische Trading-Fähigkeiten.",
+    category: "Programmmerkmale"
   },
   {
-    question: "Is there a refund policy?",
-    answer: "Since we operate on a monthly subscription model, there's no long-term commitment. You can cancel anytime if you feel the program isn't meeting your expectations.",
-    category: "Pricing"
+    question: "Gibt es eine Rückerstattungspolitik?",
+    answer: "Da wir mit einem monatlichen Abonnement-Modell arbeiten, gibt es keine langfristige Bindung. Du kannst jederzeit kündigen, wenn du das Gefühl hast, dass das Programm nicht deinen Erwartungen entspricht.",
+    category: "Preisgestaltung"
+  },
+  {
+    question: "Ist mein Erfolg garantiert?",
+    answer: "Nein, wie viel du aus diesem Program herausholen kannst hängt an dir. Ich bringe dir das Fischen bei, du musst es auch lernen wollen und die Arbeit reinstecken.",
+    category: "Zeitaufwand"
+  },
+  {
+    question: "Bekomme ich Einsteigs- und Aussteigssignale für meine Trades?",
+    answer: "Nein, die Live Tradings dienen nicht dem Copy-Trading. Du sollt unabhängig von mir handeln können.",
+    category: "Programmmerkmale"
+  },
+  {
+    question: "Welche Finanzinstrumente werden gehandelt?",
+    answer: "Wir handeln primär Index-Futures (ES, NQ). Im Verlauf der Mentorship werden wir auch einen Blick auf Währungs-Futures und Rohstoffe werfen.",
+    category: "Programmmerkmale"
+  },
+  {
+    question: "Funktionierne Smart Money Konzepte auch in Crypto und anderen Märkten?",
+    answer: "ja, Smart Money Konzepte sind universell anwendbar.",
+    category: "Programmmerkmale"
   }
 ]
 
@@ -103,10 +122,10 @@ export default function FAQ() {
         <div className="text-center mb-16">
           <p className="text-blue-400 font-semibold mb-4">FAQ</p>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Common Questions
+            Häufig gestellte Fragen
           </h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Everything you need to know about the mentorship program
+            Alles, was du über das Mentoring-Programm wissen musst
           </p>
         </div>
 
@@ -123,14 +142,7 @@ export default function FAQ() {
           ))}
         </div>
 
-        <div className="mt-12 text-center">
-          <p className="text-gray-400">
-            Still have questions?{' '}
-            <a href="#contact" className="text-blue-400 hover:text-blue-300">
-              Contact us
-            </a>
-          </p>
-        </div>
+        
       </div>
     </section>
   )

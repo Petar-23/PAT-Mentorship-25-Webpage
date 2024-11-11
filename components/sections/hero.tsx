@@ -8,11 +8,16 @@ import { MatrixRain } from "../ui/matrix-rain"
 import Image from "next/image"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { motion } from "framer-motion"
+import { SignInButton, useUser } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
 
 export default function Hero() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
   const isMobile = useMediaQuery("(max-width: 768px)")
+  const [isNavigating, setIsNavigating] = useState(false)
+  const { isSignedIn } = useUser()
+  const router = useRouter()
 
   useEffect(() => {
     if (!isMobile) {
@@ -30,6 +35,52 @@ export default function Hero() {
       return () => window.removeEventListener('mousemove', handleMouseMove)
     }
   }, [isMobile])
+
+  const handleGetStarted = () => {
+    if (isSignedIn) {
+      setIsNavigating(true)
+      router.push('/dashboard')
+      setTimeout(() => setIsNavigating(false), 500)
+    }
+  }
+
+  // Custom SignInButton wrapper component
+  const SignInWrapper = ({ children }: { children: React.ReactNode }) => (
+    <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+      <div>
+        {children}
+      </div>
+    </SignInButton>
+  )
+
+  // Get Started button component
+  const GetStartedButton = () => {
+    if (isSignedIn) {
+      return (
+        <Button 
+          size="lg" 
+          onClick={handleGetStarted}
+          disabled={isNavigating}
+          className="flex items-center gap-2"
+        >
+          Sichere dir deinen Platz
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      )
+    }
+
+    return (
+      <SignInWrapper>
+        <Button 
+          size="lg"
+          className="flex items-center gap-2"
+        >
+          Sichere dir deinen Platz
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </SignInWrapper>
+    )
+  }
 
   return (
     <section 
@@ -99,12 +150,7 @@ export default function Hero() {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" asChild>
-                  <Link href="#waitlist" className="flex items-center gap-2">
-                    Sichere dir deinen Platz
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
+                <GetStartedButton />
                 
                 <Button size="lg" variant="outline" asChild>
                   <Link href="#why-different">

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef} from 'react'
+import React, { useState, useRef, forwardRef } from 'react'
 import { cn } from '@/lib/utils'
 
 interface GradientPosition {
@@ -8,7 +8,7 @@ interface GradientPosition {
   y: number
 }
 
-interface GradientCardProps {
+interface GradientCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode
   className?: string
   gradientColor?: string
@@ -31,65 +31,80 @@ const getInitialPosition = (position: GradientCardProps['initialGradientPosition
   return positions[position || 'center']
 }
 
-export function GradientCard({ 
+export const GradientCard = forwardRef<HTMLDivElement, GradientCardProps>(({
   children, 
   className,
   gradientColor = "rgba(56, 189, 248, 0.2)",
   initialGradientPosition = 'center',
-  showGradientWithoutHover = false
-}: GradientCardProps) {
-  const cardRef = useRef<HTMLDivElement>(null)
+  showGradientWithoutHover = false,
+  onMouseMove: externalMouseMove,
+  onMouseEnter: externalMouseEnter,
+  onMouseLeave: externalMouseLeave,
+  ...props
+}, ref) => {
+  const innerRef = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState<GradientPosition>({ x: 0, y: 0 })
   const [isHovering, setIsHovering] = useState(false)
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return
+    const element = (ref as React.RefObject<HTMLDivElement>)?.current || innerRef.current
+    if (!element) return
 
-    const rect = cardRef.current.getBoundingClientRect()
+    const rect = element.getBoundingClientRect()
     setPosition({
       x: e.clientX - rect.left,
       y: e.clientY - rect.top
     })
+
+    externalMouseMove?.(e)
   }
 
-  const handleMouseEnter = () => {
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
     setIsHovering(true)
-    if (!cardRef.current) return
+    const element = (ref as React.RefObject<HTMLDivElement>)?.current || innerRef.current
+    if (!element) return
     
     if (!isHovering && !showGradientWithoutHover) {
-      const rect = cardRef.current.getBoundingClientRect()
+      const rect = element.getBoundingClientRect()
       setPosition(getInitialPosition(initialGradientPosition, rect.width, rect.height))
     }
+
+    externalMouseEnter?.(e)
   }
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
     setIsHovering(false)
-    if (!cardRef.current) return
+    const element = (ref as React.RefObject<HTMLDivElement>)?.current || innerRef.current
+    if (!element) return
 
     if (showGradientWithoutHover) {
-      const rect = cardRef.current.getBoundingClientRect()
+      const rect = element.getBoundingClientRect()
       setPosition(getInitialPosition(initialGradientPosition, rect.width, rect.height))
     }
+
+    externalMouseLeave?.(e)
   }
 
   React.useEffect(() => {
-    if (cardRef.current && showGradientWithoutHover) {
-      const rect = cardRef.current.getBoundingClientRect()
+    const element = (ref as React.RefObject<HTMLDivElement>)?.current || innerRef.current
+    if (element && showGradientWithoutHover) {
+      const rect = element.getBoundingClientRect()
       setPosition(getInitialPosition(initialGradientPosition, rect.width, rect.height))
     }
-  }, [initialGradientPosition, showGradientWithoutHover])
+  }, [initialGradientPosition, showGradientWithoutHover, ref])
 
   return (
     <div
-      ref={cardRef}
+      ref={ref || innerRef}
       className={cn(
-        "relative overflow-hidden rounded-xl bg-slate-900 p-8 border border-slate-800 transition-all duration-200",
+        "relative overflow-hidden rounded-xl bg-slate-900 border border-slate-800 transition-all duration-200",
         isHovering && "border-slate-700 shadow-lg shadow-slate-900/50",
         className
       )}
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      {...props}
     >
       {/* Gradient */}
       <div 
@@ -115,4 +130,6 @@ export function GradientCard({
       </div>
     </div>
   )
-}
+})
+
+GradientCard.displayName = 'GradientCard'

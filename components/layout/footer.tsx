@@ -3,7 +3,12 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { Youtube, Twitter, Cookie } from "lucide-react"
+import { 
+  SiYoutube, 
+  SiX, 
+  SiDiscord 
+} from '@icons-pack/react-simple-icons'
+import { Cookie } from "lucide-react"
 import { useCookieSettings } from "@/lib/cookie-settings"
 
 export function Footer() {
@@ -35,15 +40,21 @@ export function Footer() {
   const socialLinks = [
     {
       name: "YouTube",
-      href: "https://youtube.com/@yourhandle",
-      icon: Youtube,
+      href: "https://www.youtube.com/@PeakFlowTrading",
+      icon: SiYoutube,
       color: "text-red-500 hover:text-red-600"
     },
     {
-      name: "Twitter",
-      href: "https://twitter.com/yourhandle",
-      icon: Twitter,
+      name: "X | Twitter",
+      href: "https://x.com/Petar_ICT",
+      icon: SiX,
       color: "text-blue-400 hover:text-blue-500"
+    },
+    {
+      name: "Discord",
+      href: "https://discord.gg/DaxqECQKQM", 
+      icon: SiDiscord,
+      color: "text-indigo-400 hover:text-indigo-500"
     }
   ]
 
@@ -51,10 +62,6 @@ export function Footer() {
     {
       label: "Email",
       value: "kontakt@example.com"
-    },
-    {
-      label: "Telefon",
-      value: "+49 123 456789"
     }
   ]
 
@@ -76,13 +83,13 @@ export function Footer() {
                 className="rounded-lg"
               />
               <h3 className="font-semibold text-white group-hover:text-blue-400 transition-colors">
-                PAT Mentorship
+                PRICE ACTION TRADER
               </h3>
             </Link>
             <p className="text-sm text-gray-400 mb-4">
-              Professional Trading Mentorship
+              Smart Money Trading Mentorships
               <br />
-              Eingetragener Kaufmann
+              In Deutsch
             </p>
             {contactInfo.map((item, index) => (
               <p key={index} className="text-sm text-gray-400">
@@ -134,7 +141,7 @@ export function Footer() {
             {/* Social Links */}
             <div>
               <h3 className="font-semibold text-white mb-4">
-                Folge uns
+                Folge mir
               </h3>
               <div className="space-y-4">
                 {socialLinks.map((social) => {
@@ -186,7 +193,7 @@ export function Footer() {
         {/* Copyright */}
         <div className="border-t border-slate-800/50 mt-12 pt-8">
           <p className="text-sm text-gray-400 text-center">
-            © {new Date().getFullYear()} PAT Mentorship. Alle Rechte vorbehalten.
+            © {new Date().getFullYear()} PRICE ACTION TRADER. Alle Rechte vorbehalten.
           </p>
         </div>
       </div>

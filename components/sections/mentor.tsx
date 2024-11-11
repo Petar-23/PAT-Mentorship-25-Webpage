@@ -1,136 +1,202 @@
-// src/components/sections/mentor.tsx
-"use client"
+'use client'
+
 import Image from 'next/image'
 import { motion } from "framer-motion"
 import { Play, Users, BookOpen, LineChart } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { GradientCard } from "@/components/ui/gradient-card"
+import { CardWithMatrix } from "@/components/ui/card-with-matrix"
+
+// Define types
+interface StatCard {
+  icon: React.ReactNode
+  value: string
+  subtitle: string
+  iconColor: string
+  rainColor: string
+  gradientColor: string
+}
+
+interface FeatureCard extends Omit<StatCard, 'value' | 'subtitle'> {
+  title: string
+  description: string
+}
 
 export default function MentorSection() {
+  const statsCards: StatCard[] = [
+    {
+      icon: <Users className="h-full w-full" />,
+      value: "100+",
+      subtitle: "Erfolgreiche Mentees",
+      iconColor: "text-blue-400",
+      rainColor: "#60A5FA",
+      gradientColor: "rgba(96, 165, 250, 0.2)"
+    },
+    {
+      icon: <LineChart className="h-full w-full" />,
+      value: "2+",
+      subtitle: "Jahre Trading",
+      iconColor: "text-green-400",
+      rainColor: "#34D399",
+      gradientColor: "rgba(52, 211, 153, 0.2)"
+    }
+  ]
+
+  const featureCards: FeatureCard[] = [
+    {
+      icon: <BookOpen className="h-full w-full" />,
+      title: "Smart Money Konzepte",
+      description: "Strukturierte Vermittlung der ICT Konzepte auf Deutsch",
+      iconColor: "text-blue-400",
+      rainColor: "#60A5FA",
+      gradientColor: "rgba(96, 165, 250, 0.2)"
+    },
+    {
+      icon: <Users className="h-full w-full" />,
+      title: "Risiko Management",
+      description: "Strategien dein Kapital zu schützen",
+      iconColor: "text-purple-400",
+      rainColor: "#A78BFA",
+      gradientColor: "rgba(167, 139, 250, 0.2)"
+    }
+  ]
+
   return (
-    <section className="py-24 bg-slate-950 relative overflow-hidden">
-      {/* Background gradient */}
+    <section className="py-16 sm:py-24 bg-slate-950 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950 to-slate-950/20" />
       
       <div className="container mx-auto px-4 max-w-6xl relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left Column - Image and Stats */}
-          <div className="space-y-8">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              className="relative"
-            >
-              {/* Main Image */}
-              <div className="relative aspect-[3/4] rounded-2xl overflow-hidden">
-                <Image
-                  src="/images/mentor-image-2.png"
-                  alt="Your Name - Trading Mentor"
-                  fill
-                  className="object-cover"
-                  priority
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
-              </div>
-
-              {/* Stats Card */}
-              <GradientCard className="absolute -bottom-6 -right-6 max-w-[240px]" >
-                <div className="space-y-4 p-6">
-                  <div className="flex items-center gap-4">
-                    <Users className="h-5 w-5 text-blue-400" />
-                    <div>
-                      <p className="text-2xl font-bold text-white">500+</p>
-                      <p className="text-sm text-gray-400">Students Mentored</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <LineChart className="h-5 w-5 text-green-400" />
-                    <div>
-                      <p className="text-2xl font-bold text-white">12+</p>
-                      <p className="text-sm text-gray-400">Years Trading</p>
-                    </div>
-                  </div>
-                </div>
-              </GradientCard>
-            </motion.div>
-          </div>
-
-          {/* Right Column - Text Content */}
-          <div className="space-y-8">
-            <div>
-              <h4 className="text-blue-400 font-semibold mb-4">MEET YOUR MENTOR</h4>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-                Your Name
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+          {/* Left Column */}
+          <div className="space-y-6">
+            <div className="mb-8">
+              <h4 className="text-blue-400 font-semibold mb-4">DEIN MENTOR</h4>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-6">
+                Petar
               </h2>
-              <p className="text-lg text-gray-300 leading-relaxed mb-6">
-                With over 12 years of trading experience, I have developed a deep understanding 
-                of price action and market structure. My journey from retail trader to 
-                professional has given me unique insights into the challenges traders face 
-                and how to overcome them.
+              <p className="text-base sm:text-lg text-gray-300 leading-relaxed mb-4">
+                Seit 2 Jahren befasse ich mich intensiv mit dem Trading nach ICT&apos;s Smart Money Konzepten. 
+                Ich habe weit über 1000 Stunden Videomaterial durchgarbeitet. Dazu zählen 
+                ICT&apos;s Private Mentorship, ICT Mentorships 2022, 2023 und 2024.
               </p>
-              <p className="text-lg text-gray-300 leading-relaxed">
-                My teaching approach focuses on clean price action analysis without 
-                relying on complex indicators. I believe in teaching traders to read 
-                the market directly, developing skills that last a lifetime.
+              {/* Additional text shown on mobile */}
+              <p className="text-base sm:text-lg text-gray-300 leading-relaxed mt-4 lg:hidden">
+                Ich werbe nicht mit Lifestyle und Luxus, sondern mit Trades (schaue dir gerne mein YouTube Kanal an).
+                Mein Ziel ist es dir eine nachhaltige 
+                Fähigkeit zu vermitteln und dir zu helfen ein 
+                stabiles monatliches Einkommen aufzubauen und von dort aus kontinuierlich 
+                zu wachsen.
               </p>
             </div>
 
+            {/* Mobile: Image and Stats first */}
+            <div className="block lg:hidden">
+              <MentorImageAndStats statsCards={statsCards} />
+            </div>
+
             {/* Video Preview */}
-            <GradientCard className="overflow-hidden">
-              <div className="relative">
+            <CardWithMatrix
+              icon={<Play className="h-full w-full" />}
+              title="Trading Range Analyse"
+              iconColor="text-red-400"
+              rainColor="#60A5FA"
+              gradientColor="rgba(96, 165, 250, 0.2)"
+              className="overflow-hidden"
+            >
+              <div className="relative p-8">
                 <div className="aspect-video relative bg-slate-900">
                   <Image
                     src="/images/example-thumbnail-1.png"
-                    alt="Mentorship Preview"
+                    alt="Trading Range Analyse"
                     fill
                     className="object-cover"
+                    priority
                   />
-                  {/* YouTube Play Button */}
+                  <div className="absolute inset-0 bg-black/40" />
                   <Button
                     onClick={() => {
-                      window.open('https://youtu.be/l4_yKCnskLY?si=xyqUudDEmyye0udQ', '_blank')
+                      window.open('https://youtu.be/l4_yKCnskLY?si=rxeRswbKaOLkEjdK', '_blank')
                     }}
-                    className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center group border-2 border-white/20"
+                    className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center group border-2 border-white/20"
                   >
-                    <Play className="h-8 w-8 text-white group-hover:scale-110 transition-transform" />
+                    <Play className="h-7 w-7 text-white group-hover:scale-110 transition-transform" />
                   </Button>
                 </div>
-                <div className="p-4">
-                  <h4 className="font-medium text-white">Sample Mentorship Lecture</h4>
-                  <p className="text-sm text-gray-400">
-                    Watch how we analyze live market conditions and identify trading opportunities
-                  </p>
+                <div className="pt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold text-white text-lg">
+                      Beispiel Lektion aus der PAT Mentorship 2024
+                    </h4>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 mt-4 text-sm">
+                    <span className="px-2 py-1 bg-slate-800 rounded-md text-blue-400">
+                      Fair Value Gap
+                    </span>
+                    <span className="px-2 py-1 bg-slate-800 rounded-md text-blue-400">
+                      Overnight Hours
+                    </span>
+                    <span className="px-2 py-1 bg-slate-800 rounded-md text-blue-400">
+                      Quad Grading
+                    </span>
+                  </div>
                 </div>
               </div>
-            </GradientCard>
+            </CardWithMatrix>
 
-            {/* Teaching Philosophy */}
-            <div className="grid sm:grid-cols-2 gap-6">
-              <GradientCard className="h-full" gradientColor="rgba(59, 130, 246, 0.2)">
-                <div className="p-6">
-                  <BookOpen className="h-6 w-6 text-blue-400 mb-4" />
-                  <h3 className="font-semibold text-white mb-2">Teaching Approach</h3>
-                  <p className="text-sm text-gray-300">
-                    Focus on clean charts and pure price action. No indicator dependency 
-                    or complex systems.
-                  </p>
-                </div>
-              </GradientCard>
-              
-              <GradientCard className="h-full" gradientColor="rgba(147, 51, 234, 0.2)">
-                <div className="p-6">
-                  <Users className="h-6 w-6 text-purple-400 mb-4" />
-                  <h3 className="font-semibold text-white mb-2">Personal Attention</h3>
-                  <p className="text-sm text-gray-300">
-                    Limited to 100 students to ensure quality mentorship and individual attention.
-                  </p>
-                </div>
-              </GradientCard>
+            {/* Feature Cards */}
+            <div className="grid grid-cols-2 gap-4">
+              {featureCards.map((card, index) => (
+                <CardWithMatrix key={index} {...card} />
+              ))}
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className="hidden lg:block">
+            <MentorImageAndStats statsCards={statsCards} />
+            
+            <div className="mt-8">
+              <p className="text-base sm:text-lg text-gray-300 leading-relaxed mt-2">
+                Ich werbe nicht mit Lifestyle und Luxus, sondern mit Trades (schaue dir gerne mein YouTube Kanal an).
+                Mein Ziel ist es dir eine nachhaltige 
+                Fähigkeit zu vermitteln und dir zu helfen ein 
+                stabiles monatliches Einkommen aufzubauen und von dort aus kontinuierlich 
+                zu wachsen.
+              </p>
             </div>
           </div>
         </div>
       </div>
     </section>
+  )
+}
+
+// Extracted component for image and stats
+function MentorImageAndStats({ statsCards }: { statsCards: StatCard[] }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      className="relative"
+    >
+      {/* Main Image */}
+      <div className="relative aspect-[4/3] lg:aspect-[3/4] rounded-2xl overflow-hidden">
+        <Image
+          src="/images/mentor-image-2.png"
+          alt="Trading Mentor"
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 gap-4 mt-4 lg:absolute lg:-bottom-6 lg:-right-6 lg:max-w-[340px]">
+        {statsCards.map((card, index) => (
+          <CardWithMatrix key={index} {...card} />
+        ))}
+      </div>
+    </motion.div>
   )
 }

@@ -63,7 +63,7 @@ const comparisonData: { categories: Category[] } = {
         {
           name: "Startkosten",
           us: "€150/Monat",
-          others: "€5000+ vorab",
+          others: "€3500+ vorab",
           highlight: true,
           description: "Niedrige monatliche Zahlungen vs. hohe Vorabinvestition"
         },
@@ -138,10 +138,10 @@ export default function PricingComparison() {
         <div className="text-center mb-16">
           <p className="text-blue-600 font-semibold mb-4">VERGLEICH</p>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Warum Unsere Mentorship?
+            Warum meine Mentorship?
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-            Unser Ansatz im Vergleich zu traditionellen Trading-Kursen
+            Mein Ansatz im Vergleich zu traditionellen Trading-Kursen
           </p>
         </div>
 
@@ -167,7 +167,7 @@ export default function PricingComparison() {
                 <p className="font-semibold text-gray-900">Features</p>
               </div>
               <div className="col-span-4 text-center">
-                <p className="font-semibold text-blue-600">Unsere Mentorship</p>
+                <p className="font-semibold text-blue-600">Meine Mentorship</p>
               </div>
               <div className="col-span-4 text-center">
                 <p className="font-semibold text-gray-600">Andere Kurse</p>

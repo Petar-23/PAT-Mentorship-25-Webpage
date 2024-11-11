@@ -10,48 +10,48 @@ import { useMediaQuery } from "@/hooks/use-media-query"
 
 const testimonials = [
   {
-    quote: "The live trading sessions were a game-changer. Learning to analyze price action in real-time accelerated my growth tremendously.",
-    author: "Michael R.",
-    role: "Full-time Trader",
+    quote: "Dank Petar und der Mentorship, habe ich meinen dritten Payout Requested. Kann nur sagen das sich die Mentorship lohnt!",
+    author: "Tommy H.",
+    role: "Future Trader",
     results: {
-      label: "Monthly Return",
+      label: "Win-Rate",
       value: "+18%",
-      description: "Average after 6 months"
+      description: "Durchschnitt nach 6 Monaten"
     },
     gradientColor: "rgba(59, 130, 246, 0.1)"
   },
   {
-    quote: "The live trading sessions were a game-changer. Learning to analyze price action in real-time accelerated my growth tremendously.",
-    author: "Michael R.",
-    role: "Full-time Trader",
+    quote: "Ich danke @Petar und der ganzen Community. Wir formen  uns gemeinsam zu ICT Tradern und die Ergebnisse lassen sich sehen und es folgen bald viele andere.",
+    author: "Sergej M.",
+    role: "Future Trader",
     results: {
-      label: "Monthly Return",
-      value: "+18%",
-      description: "Average after 6 months"
-    },
-    gradientColor: "rgba(59, 130, 246, 0.1)"
-  },
-  // 
-  {
-    quote: "The live trading sessions were a game-changer. Learning to analyze price action in real-time accelerated my growth tremendously.",
-    author: "Michael R.",
-    role: "Full-time Trader",
-    results: {
-      label: "Monthly Return",
-      value: "+18%",
-      description: "Average after 6 months"
+      label: "Win-Rate",
+      value: "+25%",
+      description: "Durchschnitt nach 6 Monaten"
     },
     gradientColor: "rgba(59, 130, 246, 0.1)"
   },
   // 
   {
-    quote: "The live trading sessions were a game-changer. Learning to analyze price action in real-time accelerated my growth tremendously.",
-    author: "Michael R.",
-    role: "Full-time Trader",
+    quote: "Ich habe in fünf Tagen knappe 10K Dollar ertradet mit diesen drei Fundet Konten. Ein ganz besonderer Dank geht natürlich raus an @Petar. Danke Bro für die Zeit welche Du investierst für uns.",
+    author: "Michael G.",
+    role: "Future Trader",
     results: {
-      label: "Monthly Return",
-      value: "+18%",
-      description: "Average after 6 months"
+      label: "Payouts",
+      value: "+10.000 USD",
+      description: "Nach 6 Monaten"
+    },
+    gradientColor: "rgba(59, 130, 246, 0.1)"
+  },
+  // 
+  {
+    quote: "Was für eine Woche!! 7 Tage in Folge jeden Tag +1000$ in copy auf 4 PA-Konten. Ich denke ich habe es endlich geschafft.",
+    author: "Nikolaus K.",
+    role: "Future Trader",
+    results: {
+      label: "Payout",
+      value: "+20.000 USD",
+      description: "Nach 6 Monaten"
     },
     gradientColor: "rgba(59, 130, 246, 0.1)"
   },
@@ -131,20 +131,20 @@ export default function Testimonials() {
         <div className="grid md:grid-cols-3 gap-4 mb-12">
             <StatCard
               icon={<TrendingUp className="h-6 w-6" />}
-              value="89%"
-              label="Success Rate"
+              value="25%"
+              label="Erfolgsquote (nach 6 Monaten)"
               color="blue"
             />
             <StatCard
               icon={<ChartBar className="h-6 w-6" />}
-              value="€2.8M+"
-              label="Combined Profits"
+              value="36.000 USD"
+              label="Kombinierte Payouts (nach 6 Monaten)"
               color="purple"
             />
             <StatCard
               icon={<Quote className="h-6 w-6" />}
-              value="250+"
-              label="Active Traders"
+              value="90+"
+              label="Aktive Trader"
               color="green"
             />
           </div>
@@ -216,7 +216,7 @@ export default function Testimonials() {
         )}
 
         <p className="text-sm text-gray-500 text-center mt-8">
-          *Results may vary. Trading carries risk. Past performance does not guarantee future results.
+          *Ergebnisse können variieren. Trading ist mit Risiken verbunden. Vergangene Leistungen garantieren keine zukünftigen Ergebnisse.
         </p>
       </div>
     </section>
