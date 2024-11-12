@@ -27,12 +27,12 @@ export function Footer() {
     },
     {
       title: "AGB",
-      href: "/agb",
+      href: "/AGB",
       description: "Allgemeine Geschäftsbedingungen"
     },
     {
       title: "Widerrufsbelehrung",
-      href: "/widerruf",
+      href: "/Widerruf",
       description: "Informationen zum Widerrufsrecht"
     }
   ]
@@ -141,7 +141,7 @@ export function Footer() {
             {/* Social Links */}
             <div>
               <h3 className="font-semibold text-white mb-4">
-                Folge mir
+                Folge mir auf:
               </h3>
               <div className="space-y-4">
                 {socialLinks.map((social) => {
