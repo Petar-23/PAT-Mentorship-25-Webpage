@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, ReactNode } from "react"; // Added ReactNode
 import { createNoise3D } from "simplex-noise";
 import { motion } from "framer-motion";
 
 interface VortexProps {
-  children?: any;
+  children?: ReactNode; // Changed from any to ReactNode
   className?: string;
   containerClassName?: string;
   particleCount?: number;
@@ -40,11 +40,10 @@ export const Vortex = (props: VortexProps) => {
   let tick = 0;
   const noise3D = createNoise3D();
   let particleProps = new Float32Array(particlePropsLength);
-  let center: [number, number] = [0, 0];
-
-  const HALF_PI: number = 0.5 * Math.PI;
+  const center: [number, number] = [0, 0]; // Changed to const
+  
   const TAU: number = 2 * Math.PI;
-  const TO_RAD: number = Math.PI / 180;
+  
   const rand = (n: number): number => n * Math.random();
   const randRange = (n: number): number => n - rand(2 * n);
   const fadeInOut = (t: number, m: number): number => {
