@@ -10,14 +10,6 @@ import { SubscriptionStatus } from '@/components/dashboard/subscription-status'
 import { SubscriptionSuccessModal } from '@/components/dashboard/subscription-success-modal'
 import { motion } from 'framer-motion'
 
-interface SubscriptionDetails {
-  status: string;
-  startDate: string;
-  isPending: boolean;
-  isCanceled: boolean;
-  cancelAt: string | null;
-}
-
 interface DashboardClientProps {
   initialData: {
     hasSubscription: boolean;
