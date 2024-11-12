@@ -6,6 +6,7 @@ import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import {ClerkProvider} from '@clerk/nextjs'
 import { CookieBanner } from '@/components/ui/cookie-banner'
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -33,6 +34,7 @@ export default function RootLayout({
           </div>
           <Toaster />
           <CookieBanner />
+          <SpeedInsights />
         </body>
       </html>
     </ClerkProvider>
