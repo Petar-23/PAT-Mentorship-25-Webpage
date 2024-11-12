@@ -1,6 +1,8 @@
+// src/app/api/webhooks/stripe/route.ts
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
+import { handleStripeEvent } from '@/lib/stripe-webhook-handler'
 import type Stripe from 'stripe'
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
@@ -8,7 +10,7 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
 export async function POST(req: Request) {
   try {
     const body = await req.text()
-    const headersList = headers()
+    const headersList = await headers()
     const signature = headersList.get('stripe-signature')
 
     if (!signature) {
@@ -31,35 +33,8 @@ export async function POST(req: Request) {
       )
     }
 
-    console.log(`Received webhook event: ${event.type}`)
-
-    switch (event.type) {
-      case 'customer.subscription.created':
-        const subscriptionCreated = event.data.object as Stripe.Subscription
-        console.log('New subscription created:', subscriptionCreated.id)
-        // Handle new subscription
-        break
-
-      case 'customer.subscription.updated':
-        const subscriptionUpdated = event.data.object as Stripe.Subscription
-        console.log('Subscription updated:', subscriptionUpdated.id)
-        // Handle subscription update
-        break
-
-      case 'customer.subscription.deleted':
-        const subscriptionDeleted = event.data.object as Stripe.Subscription
-        console.log('Subscription cancelled:', subscriptionDeleted.id)
-        // Handle subscription cancellation
-        break
-
-      case 'checkout.session.completed':
-        const checkoutSession = event.data.object as Stripe.Checkout.Session
-        console.log('Checkout completed:', checkoutSession.id)
-        // Handle successful checkout
-        break
-
-      // Add other webhook events as needed
-    }
+    // Handle the event
+    await handleStripeEvent(event)
 
     return new NextResponse(JSON.stringify({ received: true }), {
       status: 200,
@@ -76,9 +51,5 @@ export async function POST(req: Request) {
   }
 }
 
-// This ensures the API route can accept the raw body
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-}
+export const runtime = 'edge'
+export const dynamic = 'force-dynamic'
