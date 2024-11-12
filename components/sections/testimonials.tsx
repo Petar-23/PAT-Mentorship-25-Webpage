@@ -5,8 +5,10 @@ import { motion } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import { GradientCard } from "@/components/ui/gradient-card"
 import { InfiniteScroll } from "@/components/ui/infinite-scroll"
-import { Quote, TrendingUp, ChartBar } from "lucide-react"
+import { Quote, TrendingUp, Receipt, ChartCandlestick } from "lucide-react"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { TestimonialModal } from "../ui/testimonial-modal"
+import { TestimonialCard } from "../ui/testimonial-card"
 
 const testimonials = [
   {
@@ -18,7 +20,7 @@ const testimonials = [
       value: "+18%",
       description: "Durchschnitt nach 6 Monaten"
     },
-    gradientColor: "rgba(59, 130, 246, 0.1)"
+    gradientColor: "rgba(59, 130, 246, 0)"
   },
   {
     quote: "Ich danke @Petar und der ganzen Community. Wir formen  uns gemeinsam zu ICT Tradern und die Ergebnisse lassen sich sehen und es folgen bald viele andere.",
@@ -29,7 +31,7 @@ const testimonials = [
       value: "+25%",
       description: "Durchschnitt nach 6 Monaten"
     },
-    gradientColor: "rgba(59, 130, 246, 0.1)"
+    gradientColor: "rgba(59, 130, 246, 0)"
   },
   // 
   {
@@ -41,7 +43,7 @@ const testimonials = [
       value: "+9.000 USD",
       description: "Nach 6 Monaten"
     },
-    gradientColor: "rgba(59, 130, 246, 0.1)"
+    gradientColor: "rgba(59, 130, 246, 0)"
   },
   // 
   {
@@ -53,50 +55,37 @@ const testimonials = [
       value: "+20.000 USD",
       description: "Nach 6 Monaten"
     },
-    gradientColor: "rgba(59, 130, 246, 0.1)"
+    gradientColor: "rgba(59, 130, 246, 0)"
+  },
+  {
+    quote: "Seit mich ein Freund (danke S.!) zu @Petar gebracht hat, habe ich unheimlich viel über die Price Action gelernt und mich auch persönlich weiterentwickelt: kein Gezocke und kein Hin- und Her mit x-tausend unterschiedlichen Setups und Indikatoren, sondern geduldiges Warten auf wirklich gute Setups mit Hand und Fuß. Und das zahlt sich aus, seitdem hat es sich ins Positive entwickelt und meine Screentime angenehm entschleunigt. Ich habe mich seit vielen Jahren erfolglos mit dem Thema Daytrading beschäftigt und bin nie wirklich weitergekommen - mal gut, mal schlecht, aber im Gesamten negativ mit viel Unsicherheit, ob das alles überhaupt dauerhaft funktionieren kann. Aber nun bin ich absolut sicher, dass es dauerhaft funktionieren wird - auch wenn es Zeit braucht - humble beginnings. @Petar vermittelt die Inhalte mit einer Engelsgeduld auf eine sehr angenehme Weise und auch die Community hinter @Petar ist ein absoluter Mehrwert. Ich bin sehr dankbar, dass ich hier dabei sein darf!",
+    author: "Bernhard K.",
+    role: "Future Trader Beginner",
+    results: {
+      label: "Funded Account",
+      value: "+30%",
+      description: "Challenge Phase"
+    },
+    gradientColor: "rgba(59, 130, 246, 0)"
+  },
+  {
+    quote: "Ich kenne niemanden der ICT so deutlich erklären und nahebringen kann wie es Petar tut viele beanspruchen diesen Titel für sich aber er gehört eindeutig Petar! seit ich in der Mentorship bin hat sich alles sehr ins Positive entwickelt auch die Community ist sehr hilfsbereit und immer für eine Antwort da. durch diesen Kurs habe ich es geschafft Nicht nur meine Challange für mein Funded Konto zu bestehen sondern dieses ziel auch nach 5 Monaten beim ersten anlauf zu erreichen! keine Burning Accounts, Petar bringt einem erstmal alle Grundlagen Step by Step bei denn nichts ist wichtiger als ein Sicheres und Stabiles Fundament. ",
+    author: "ChikoDredd",
+    role: "Future Trader",
+    results: {
+      label: "Funded Account",
+      value: "+1",
+      description: "Nach 5 Monaten Funded"
+    },
+    gradientColor: "rgba(59, 130, 246, 0)"
   },
   // 
   // ... other testimonials
 ]
 
-const TestimonialCard = ({ testimonial, isMobile }: { 
-  testimonial: typeof testimonials[0]
-  isMobile: boolean 
-}) => (
-  <GradientCard
-    gradientColor={testimonial.gradientColor}
-    className={`bg-white border-gray-200 ${
-      isMobile ? 'w-[calc(100vw-32px)]' : 'w-[400px] mx-3'
-    }`}
-  >
-    <div className="p-6">
-      <Quote className="h-8 w-8 text-blue-500 mb-4 flex-shrink-0" />
-      <div className="text-gray-900 mb-6 break-words">
-        <p className="line-clamp-4 whitespace-normal">{testimonial.quote}</p>
-      </div>
-      
-      <div className="border-t border-gray-100 pt-4 mt-auto">
-        <p className="font-semibold text-gray-900">{testimonial.author}</p>
-        <p className="text-sm text-gray-500 mb-4">{testimonial.role}</p>
-        
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-sm text-gray-600">{testimonial.results.label}</p>
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <p className="text-2xl font-bold text-green-600">
-              {testimonial.results.value}
-            </p>
-            <p className="text-sm text-gray-500">
-              {testimonial.results.description}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </GradientCard>
-)
-
 export default function Testimonials() {
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [selectedTestimonial, setSelectedTestimonial] = useState<typeof testimonials[0] | null>(null)
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [touchStart, setTouchStart] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -136,13 +125,13 @@ export default function Testimonials() {
               color="blue"
             />
             <StatCard
-              icon={<ChartBar className="h-6 w-6" />}
-              value="36.000 USD"
+              icon={<Receipt className="h-6 w-6" />}
+              value="46.000+ USD"
               label="Kombinierte Payouts (nach 6 Monaten)"
               color="purple"
             />
             <StatCard
-              icon={<Quote className="h-6 w-6" />}
+              icon={<ChartCandlestick className="h-6 w-6" />}
               value="90+"
               label="Aktive Trader"
               color="green"
@@ -168,7 +157,11 @@ export default function Testimonials() {
                     key={index} 
                     className="min-w-full flex-shrink-0 flex justify-center"
                   >
-                    <TestimonialCard testimonial={testimonial} isMobile={true} />
+                    <TestimonialCard 
+                      testimonial={testimonial} 
+                      isMobile={true}
+                      onClick={() => setSelectedTestimonial(testimonial)}
+                    />
                   </div>
                 ))}
               </motion.div>
@@ -197,7 +190,11 @@ export default function Testimonials() {
               <InfiniteScroll speed={30} className="py-4">
                 {firstHalf.map((testimonial, index) => (
                   <div key={index} className="flex-shrink-0">
-                    <TestimonialCard testimonial={testimonial} isMobile={false} />
+                    <TestimonialCard 
+                      testimonial={testimonial} 
+                      isMobile={false}
+                      onClick={() => setSelectedTestimonial(testimonial)}
+                    />
                   </div>
                 ))}
               </InfiniteScroll>
@@ -207,12 +204,25 @@ export default function Testimonials() {
               <InfiniteScroll direction="right" speed={35} className="py-4">
                 {secondHalf.map((testimonial, index) => (
                   <div key={index} className="flex-shrink-0">
-                    <TestimonialCard testimonial={testimonial} isMobile={false} />
+                    <TestimonialCard 
+                      testimonial={testimonial} 
+                      isMobile={false}
+                      onClick={() => setSelectedTestimonial(testimonial)}
+                    />
                   </div>
                 ))}
               </InfiniteScroll>
             </div>
           </div>
+        )}
+
+        {/* Modal */}
+        {selectedTestimonial && (
+          <TestimonialModal
+            isOpen={!!selectedTestimonial}
+            onClose={() => setSelectedTestimonial(null)}
+            testimonial={selectedTestimonial}
+          />
         )}
 
         <p className="text-sm text-gray-500 text-center mt-8">
@@ -228,20 +238,32 @@ const StatCard = ({ icon, value, label, color }: {
   label: string
   color: 'blue' | 'purple' | 'green'
 }) => {
-  const colorClasses = {
+  const bgClasses = {
+    blue: "bg-blue-500",
+    purple: "bg-purple-500",
+    green: "bg-green-500"
+  }
+
+  const gradientClasses = {
     blue: "from-blue-50 to-blue-100/50",
     purple: "from-purple-50 to-purple-100/50",
     green: "from-green-50 to-green-100/50"
   }
 
+  const textClasses = {
+    blue: "text-blue-600",
+    purple: "text-purple-600",
+    green: "text-green-600"
+  }
+
   return (
-    <Card className={`p-4 bg-gradient-to-br ${colorClasses[color]}`}>
+    <Card className={`p-4 bg-gradient-to-br ${gradientClasses[color]}`}>
       <div className="flex items-center gap-4">
-        <div className={`bg-${color}-500 rounded-lg p-3 text-white`}>
+        <div className={`${bgClasses[color]} rounded-lg p-3 text-white`}>
           {icon}
         </div>
         <div>
-          <p className={`text-xl font-bold text-${color}-600`}>{value}</p>
+          <p className={`text-xl font-bold ${textClasses[color]}`}>{value}</p>
           <p className="text-sm text-gray-600">{label}</p>
         </div>
       </div>

@@ -25,7 +25,7 @@ export default function MentorSection() {
   const statsCards: StatCard[] = [
     {
       icon: <Users className="h-full w-full" />,
-      value: "100+",
+      value: "90+",
       subtitle: "Erfolgreiche Mentees",
       iconColor: "text-blue-400",
       rainColor: "#60A5FA",

@@ -98,7 +98,7 @@ export const GradientCard = forwardRef<HTMLDivElement, GradientCardProps>(({
       ref={ref || innerRef}
       className={cn(
         "relative overflow-hidden rounded-xl bg-slate-900 border border-slate-800 transition-all duration-200",
-        isHovering && "border-slate-700 shadow-lg shadow-slate-900/50",
+        isHovering && "border-slate-700 shadow-md shadow-slate-900/50",
         className
       )}
       onMouseMove={handleMouseMove}
