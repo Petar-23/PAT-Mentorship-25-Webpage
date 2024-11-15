@@ -3,24 +3,13 @@
 import { useRef, useState } from "react"
 import { motion } from "framer-motion"
 import { Card } from "@/components/ui/card"
-import { InfiniteScroll } from "@/components/ui/infinite-scroll"
+import InfiniteScroll from "@/components/ui/infinite-scroll"
 import { TrendingUp, Receipt, ChartCandlestick } from "lucide-react"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { TestimonialModal } from "../ui/testimonial-modal"
 import { TestimonialCard } from "../ui/testimonial-card"
 
 const testimonials = [
-  {
-    quote: "Dank Petar und der Mentorship, habe ich meinen dritten Payout Requested. Kann nur sagen das sich die Mentorship lohnt!",
-    author: "Tommy H.",
-    role: "Future Trader",
-    results: {
-      label: "Win-Rate",
-      value: "+18%",
-      description: "Durchschnitt nach 6 Monaten"
-    },
-    gradientColor: "rgba(59, 130, 246, 0)"
-  },
   {
     quote: "Ich danke @Petar und der ganzen Community. Wir formen  uns gemeinsam zu ICT Tradern und die Ergebnisse lassen sich sehen und es folgen bald viele andere.",
     author: "Sergej M.",
@@ -63,7 +52,7 @@ const testimonials = [
     results: {
       label: "Funded Account",
       value: "+30%",
-      description: "Challenge Phase"
+      description: "Challenge Passes"
     },
     gradientColor: "rgba(59, 130, 246, 0)"
   },
@@ -75,6 +64,83 @@ const testimonials = [
       label: "Funded Account",
       value: "+1",
       description: "Nach 5 Monaten Funded"
+    },
+    gradientColor: "rgba(59, 130, 246, 0)"
+  },
+  {
+    quote: "Es ist Wahnsinn, was ich hier in einem halben Jahr gelernt habe und lernen durfte und immernoch lernen darf. Hatte schon Vorerfahrung und ich wusste die ganze Zeit, mir fehlen wichtige Puzzlestücke Wissen und ich hatte keinen blassen Schimmer woher ich die nehmen sollte, denn mir war klar mir fehlt kein stupides Standard Wissen. Und dann kam dieser Weg hier. Zufällig. Die ganzen Märkte... auch alles Zufall, definitiv. Nicht. Wenn ich hier etwas gelernt hab, dann dass GAR NICHTS Zufall ist und das macht mein Mindset und die Gedanken beim Traden alle berechenbar. Alles ist damit lernbar. Mit Petar als Mentor an der Seite, der unfassbar gut erklären kann, umso einfacher. Bislang immer Forextante, nun auch im Future verstehend unterwegs.",
+    author: "Vanessa P.",
+    role: "Traderin",
+    results: {
+      label: "Marktverständnis",
+      value: "Verbessert",
+      description: "(nach 6 Monaten)"
+    },
+    gradientColor: "rgba(59, 130, 246, 0)"
+  },
+  {
+    quote: "Ich bin einer der ersten Schüler von Petar. Ich war von Anfang an fest überzeugt, dass er uns durch ICT Konzepten in Deutsch beibringen kann. Ich habe jahrelang nach Handelmodellen gesucht, die wirklich Sinn machen und ich habe ein Modell dank Petar gefunden, womit ich arbeiten und langfristig profitabel bleiben kann. 3 Funded Konten innerhalb dieses Mentorship. Payouts folgen bald. Danke Petar, dass du mir und die anderen beibringst, wie man mental/psychisch an den Märkten geht. ",
+    author: "Egon A.",
+    role: "Future Trader",
+    results: {
+      label: "Funded Account",
+      value: "+3",
+      description: "Nach 6 Monaten"
+    },
+    gradientColor: "rgba(59, 130, 246, 0)"
+  },
+  {
+    quote: "Mein Fazit: Absolute Empfehlung. Meine bisherigen Erfahrungen beim Trading waren immer von dem Gefühl geprägt, dass es etwas geben muss, was die Bewegung des Marktes erklärt. Warum? Meine eigene Trading-Statistik zeigte mir, dass ich den überwiegenden Teil meiner Trades in die richtige Richtung ausgelöst hatte, jedoch war mein Timing nicht richtig und ich wurde immer wieder ausgestoppt. Wer kennt es nicht? Die ganzen Informationen zu Unterstützung und Widerstand, Kerzenformationen, Trendkanälen, gleitenden Durchschnitten bis hin zum Volumen gaben mir keine Antwort auf die Frage, wie ich die Dynamik des Marktes verstehen und interpretieren soll, also wie ich den Markt zu lesen habe.Durch Zufall bin ich in der Mentorship bei Petar gelandet. Ab hier wurde alles anders. Mit den Konzepten von ICT bin ich erstmals in der Lage, ein Marktverständnis zu entwickeln, was mir erlaubt einen Blick hinter die Kulissen des Marktes zu werfen. Die Konzepte von ICT sind zwar komplex und bedürfen viel Übung, ABER...... mit Petar als Mentor war ich in der Lage, das Wissen Schritt für Schritt aufzubauen und in der Praxis anzuwenden. Petar besitzt die Fähigkeit, komplexe Inhalte verständlich zu vermitteln und dabei immer wieder den Bezug zur aktuellen Marktsituation herzustellen. Er hilft nicht nur dabei, die Theorie zu verstehen, sondern auch, wie man diese effektiv in echten Trades anwenden kann. Die Community rund um die Mentorship ist ebenfalls unglaublich wertvoll. Der Austausch mit anderen Mentees, die ähnliche Herausforderungen durchlaufen haben, fördert das eigene Lernen enorm. Man fühlt sich nie allein und bekommt immer wieder neue Impulse, die das eigene Denken erweitern.",
+    author: "Oliver B.",
+    role: "Future Trader",
+    results: {
+      label: "Marktverständnis",
+      value: "Verbessert",
+      description: "(nach 6 Monaten)"
+    },
+    gradientColor: "rgba(59, 130, 246, 0)"
+  },
+  {
+    quote: "Ich habe das Thema Trading fast an den Nagel gehängt. Durch Petar habe ich endlich verstanden warum der „Markt“ macht was er macht und es nicht am VWAP oder der Deviation liegt. Das Marktverständnis was einem in der Mentorship gelehrt wird ist unbezahlbar. Ich kann es jedem nur weiterempfehlen.",
+    author: "Thomas B.",
+    role: "Future Trader",
+    results: {
+      label: "Marktverständnis",
+      value: "Verbessert",
+      description: "(nach 6 Monaten)"
+    },
+    gradientColor: "rgba(59, 130, 246, 0)"
+  },
+  {
+    quote: "Mein Fazit: Der beste ICT Mentor im deutschsprachigen Raum! Ich habe im Juni 2022 mit dem Trading angefangen. Anfangs habe ich mich nach dem Volumen orientiert und sogar zwei Fremdkapital Konten gefundet. Diese allerdings auch recht schnell wieder geschrottet, da ich nie so wirklich begriffen habe, warum der Mark tut was er tut. Über Umwege bin ich dann Ende 2023 auf Petar gestoßen und war von der ersten Minute an begeistert. Petar erklärt die ICT Strategien wie kein anderer. Er übersetzt nicht nur ICTs Lehren aus dem Englischen ins Deutsche, sondern er erklärt sie uns so lange, bis jeder es verstanden hat. Mit einer Ruhe und Geduld für die ich Ihn bewundere! Ich habe in diesem Jahr ein Fremdkapital Konto gefundet und stehe nun kurz vor meiner ersten Auszahlung. Ein weiteres Konto ist gerade in der Quali. Nicht ein einziges Konto habe ich geschrottet, seitdem ich Petar zuhöre. In den 1 ½ Jahren vorher waren es 29! Endlich geht der Plan auf!",
+    author: "Tino S.",
+    role: "Future Trader",
+    results: {
+      label: "Funded Account",
+      value: "+1",
+      description: "Nach 6 Monaten"
+    },
+    gradientColor: "rgba(59, 130, 246, 0)"
+  },
+  {
+    quote: "Ich habe mich schon vor dieser Mentorship mit ICT beschäftigt. Wer sich die Mentorship von ICT reingezogen hat, weiß das die Mentorship sehr unstrukturiert aufgebaut ist. Dank Petars Mentorship habe ich Struktur in mein Trading bekommen. Nach 6 Monaten konnte ich meine erste Auszahlung beantragen, bis jetzt ist es meine dritte Auszahlung. Dazu ist der Preis unschlagbar.",
+    author: "Tommy H.",
+    role: "Future Trader",
+    results: {
+      label: "Payout",
+      value: "+3",
+      description: "Nach 6 Monaten"
+    },
+    gradientColor: "rgba(59, 130, 246, 0)"
+  },
+  {
+    quote: "Fazit: Absolute Empfehlung! Seitdem ich im Mentorship bin, habe ich endlich begonnen, den Markt wirklich zu verstehen. Darüber hinaus habe ich erkannt, dass man keine Indikatoren wie Volumen oder andere technische Tools braucht, um erfolgreich zu traden. Petar erklärt die Konzepte auf eine sehr verständliche Weise, sodass wirklich jeder nachvollziehen kann, wie der Markt funktioniert und wie man ihn richtig liest. Zuvor habe ich bereits andere Ausbildungen bei verschiedenen Tradern gemacht, aber das war alles nicht wirklich zielführend, bis ich durch einen Bekannten auf Petar gestoßen bin. Der Preis für das Mentorship ist wirklich unschlagbar, wenn man bedenkt, wie viel wertvolles Wissen und praktische Anwendung man hier vermittelt bekommt.",
+    author: "Andreas W.",
+    role: "Future Trader",
+    results: {
+      label: "Martverständnis",
+      value: "Verbessert",
+      description: "(nach 6 Monaten)"
     },
     gradientColor: "rgba(59, 130, 246, 0)"
   },
@@ -186,7 +252,7 @@ export default function Testimonials() {
             <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-white to-transparent z-10" />
             
             <div className="pb-8">
-              <InfiniteScroll speed={30} className="py-4">
+              <InfiniteScroll speed={0.5} className="py-4" pauseOnHover>
                 {firstHalf.map((testimonial, index) => (
                   <div key={index} className="flex-shrink-0">
                     <TestimonialCard 
@@ -200,7 +266,7 @@ export default function Testimonials() {
             </div>
 
             <div className="pb-4">
-              <InfiniteScroll direction="right" speed={35} className="py-4">
+              <InfiniteScroll direction="right" speed={0.7} className="py-4 pauseOnHover">
                 {secondHalf.map((testimonial, index) => (
                   <div key={index} className="flex-shrink-0">
                     <TestimonialCard 

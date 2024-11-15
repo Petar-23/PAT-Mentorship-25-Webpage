@@ -141,8 +141,9 @@ export default function Hero() {
               </div>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900">
-                Lerne Smart Money Konzepte in einer Live 
-                <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent"> Mentorship</span>
+                Lerne Smart Money Konzepte in einer {' '}
+                <br />
+                <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent"> Live Mentorship</span>
               </h1>
               
               <p className="text-lg md:text-xl text-gray-600 leading-relaxed">
