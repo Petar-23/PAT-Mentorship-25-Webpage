@@ -5,12 +5,10 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight, Users, Clock, Trophy } from "lucide-react"
 import { GlowingCard } from "@/components/ui/glowing-card"
 import { Vortex } from "@/components/ui/vortex"
-import { useCustomerCount } from '@/hooks/useCustomerCount'
 import { useUser, SignInButton } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 
 export default function FinalCTA() {
-    const { count, isLoading, error } = useCustomerCount()
     const { isSignedIn } = useUser()
     const router = useRouter()
 
@@ -81,8 +79,8 @@ export default function FinalCTA() {
                             Beginnt im März 2025
                         </h2>
                         <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-                            Werde einer von 100 ambitionierten Tradern in einem transformativen Jahr 
-                            mit Live-Marktanalysen, Echtzeit-Trading und signifikantem Wachstum.
+                            Werde einer von 100 ambitionierten Tradern und erlebe ein transformatives Jahr 
+                            mit Live-Marktanalysen, Echtzeit-Trading und messbarem Wachstum.
                         </p>
                     </motion.div>
                 </div>
@@ -97,7 +95,7 @@ export default function FinalCTA() {
                         {
                             icon: <Clock className="h-8 w-8 text-purple-400 mb-4" />,
                             title: "Frühzeitig Sichern",
-                            description: "Die Vergabe der Mentorhsip-Plätze erfolgt nach dem Prinzip: Wer zuerst kommt, mahlt zuerst."
+                            description: "Die Vergabe der Mentorship-Plätze erfolgt nach dem Prinzip: Wer zuerst kommt, mahlt zuerst."
                         },
                         {
                             icon: <Trophy className="h-8 w-8 text-green-400 mb-4" />,
@@ -128,24 +126,14 @@ export default function FinalCTA() {
                     <CTAButton />
                     
                     <p className="mt-6 text-gray-400">
-                        Keine Zahlung bis zum Programmstart. Wartelisteneintrag jederzeit kündbar.
+                        Keine Zahlung bis zum Programmstart.
                     </p>
 
-                    {!error && (
-                        <div className="mt-12 backdrop-blur-md bg-white/5 rounded-lg inline-block px-6 py-3 border border-white/10">
-                            <p className="text-white text-sm">
-                                {isLoading ? (
-                                    <span className="animate-pulse">Lade Warteliste...</span>
-                                ) : (
-                                    <>
-                                    👥 <span className="text-blue-400 font-medium">
-                                        {count?.toLocaleString()}
-                                    </span> {count === 1 ? 'Trader ist' : 'Trader sind'} bereits auf der Warteliste
-                                    </>
-                                )}
-                            </p>
-                        </div>
-                    )}
+                    <div className="mt-12 backdrop-blur-md bg-white/5 rounded-lg inline-block px-6 py-3 border border-white/10">
+                        <p className="text-white text-sm">
+                            ⚡ Nur die ersten 100 Anmeldungen werden akzeptiert
+                        </p>
+                    </div>
                 </motion.div>
             </div>
         </section>

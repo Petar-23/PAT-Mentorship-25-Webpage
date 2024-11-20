@@ -61,7 +61,7 @@ export function Footer() {
   const contactInfo = [
     {
       label: "Email",
-      value: "kontakt@example.com"
+      value: "kontakt@price-action-trader.de"
     }
   ]
 
@@ -87,9 +87,9 @@ export function Footer() {
               </h3>
             </Link>
             <p className="text-sm text-gray-400 mb-4">
-              Smart Money Trading Mentorships
+              Lerne Trading nach ICT Konzepten
               <br />
-              In Deutsch
+              Live und auf Deutsch
             </p>
             {contactInfo.map((item, index) => (
               <p key={index} className="text-sm text-gray-400">

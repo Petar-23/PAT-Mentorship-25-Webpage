@@ -1,28 +1,24 @@
+// src/components/layout/navbar.tsx
 'use client'
 
 import { useUser } from '@clerk/nextjs'
 import { UserButton, SignInButton } from '@clerk/nextjs'
+import { useAuth } from '@clerk/nextjs'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
-import { useCustomerCount } from '@/hooks/useCustomerCount'
 import { Button } from '@/components/ui/button'
-import { Menu, X, Home, Gauge } from 'lucide-react'
+import { Menu, X, Home, Gauge, Settings } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export function Navbar() {
-  const { isSignedIn } = useUser()
-  const { count } = useCustomerCount()
+  const { isSignedIn} = useUser()
   const [isOpen, setIsOpen] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const isDashboard = pathname === '/dashboard'
-  
-  // Calculate remaining spots and urgency
-  const remainingSpots = 100 - (count || 0)
-  const isLow = remainingSpots <= 20
 
   // Prevent body scroll when menu is open
   useEffect(() => {
@@ -47,14 +43,16 @@ export function Navbar() {
   const handleNavigation = (path: string) => {
     setIsNavigating(true)
     router.push(path)
-    // Close menu and reset navigation state after a delay
     setTimeout(() => {
       setIsNavigating(false)
       setIsOpen(false)
-    }, 500) // Adjust timing as needed
+    }, 500)
   }
 
-  // Custom SignInButton wrapper to handle menu closing
+  const { has } = useAuth()
+  if (!has) return null
+  const isAdmin = has({ permission: 'org:admin:access' })
+
   const SignInWrapper = ({ children }: { children: React.ReactNode }) => (
     <SignInButton mode="modal" forceRedirectUrl="/dashboard">
       <div onClick={closeMenu}>
@@ -63,7 +61,6 @@ export function Navbar() {
     </SignInButton>
   )
 
-  // Navigation button based on current route
   const NavigationButton = () => {
     if (!isSignedIn) {
       return (
@@ -130,30 +127,20 @@ export function Navbar() {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-4">
-              {/* Available Spots Counter */}
-              <div className={`
-                px-4 py-1.5 rounded-full border transition-colors
-                ${isLow 
-                  ? 'border-red-200 bg-red-50 text-red-700' 
-                  : 'border-gray-200 bg-white text-gray-700'}
-              `}>
-                <div className="text-sm flex items-center gap-2">
-                  <span>Offene Plätze:</span>
-                  <span className={`font-medium ${isLow ? 'text-red-600' : 'text-green-600'}`}>
-                    {remainingSpots}
-                  </span>
-                  {isLow && (
-                    <span className="text-xs text-red-600 animate-pulse">
-                      Limitiert!
-                    </span>
-                  )}
-                </div>
-              </div>
-
               {/* Desktop Auth Buttons */}
               {isSignedIn ? (
                 <div className="flex items-center gap-3">
                   <NavigationButton />
+                  {isAdmin && (
+                    <Button
+                      variant="outline"
+                      onClick={() => handleNavigation('/admin')}
+                      className="flex items-center gap-2"
+                    >
+                      <Settings className="h-4 w-4" />
+                      <span>Admin</span>
+                    </Button>
+                  )}
                   <UserButton 
                     afterSignOutUrl="/"
                     appearance={{
@@ -207,33 +194,21 @@ export function Navbar() {
                 className="md:hidden absolute top-16 left-0 right-0 bg-white border-t border-gray-100 shadow-lg z-50 overflow-hidden"
               >
                 <div className="container px-4 py-4">
-                  {/* Mobile menu content with flex layout */}
-                  <div className="flex items-center justify-between gap-4">
-                    {/* Mobile Spots Counter */}
-                    <div className={`
-                      flex-1 px-4 py-2 rounded-lg border transition-colors
-                      ${isLow 
-                        ? 'border-red-200 bg-red-50 text-red-700' 
-                        : 'border-gray-200 bg-white text-gray-700'}
-                    `}>
-                      <div className="text-sm flex items-center justify-between">
-                        <span className="hidden sm:inline">Verfügbare Plätze:</span>
-                        <span className="sm:hidden">Plätze:</span>
-                        <span className={`font-medium ${isLow ? 'text-red-600' : 'text-green-600'}`}>
-                          {remainingSpots}/100
-                          {isLow && (
-                            <span className="text-xs text-red-600 animate-pulse ml-2">
-                              Limited!
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Mobile Auth Buttons */}
+                  {/* Mobile Auth Buttons */}
+                  <div className="flex justify-end">
                     {isSignedIn ? (
                       <div className="flex items-center gap-3">
                         <NavigationButton />
+                        {isAdmin && (
+                          <Button
+                            variant="outline"
+                            onClick={() => handleNavigation('/admin')}
+                            className="flex items-center gap-2"
+                          >
+                            <Settings className="h-4 w-4" />
+                            <span>Admin</span>
+                          </Button>
+                        )}
                         <UserButton 
                           afterSignOutUrl="/"
                           appearance={{

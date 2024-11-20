@@ -141,13 +141,14 @@ export default function Hero() {
               </div>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900">
-                Lerne Smart Money Konzepte in einer {' '}
+                Lerne Trading nach 
                 <br />
+                ICT Konzepten in einer {' '}
                 <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent"> Live Mentorship</span>
               </h1>
               
               <p className="text-lg md:text-xl text-gray-600 leading-relaxed">
-                Vergiss vorgefertigte Kurse mit veralteten Beispielen. Lerne das Traden an der harten rechten Kante der Charts, an Live Marktdaten mit direkter Anleitung in Echtzeit.
+              Statt mit passend ausgewählten Beispielen aus aufgezeichneten Kursen, bringe ich dir das Trading direkt an der Live-Price-Action bei. Du lernst anhand aktueller Marktbewegungen und erhältst Erklärungen in Echtzeit.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4">
@@ -163,7 +164,7 @@ export default function Hero() {
               <div className="flex items-center gap-8 pt-4">
                 <div>
                   <p className="text-3xl font-bold text-gray-900">€150</p>
-                  <p className="text-sm text-gray-600">Monatliche Gebühr</p>
+                  <p className="text-sm text-gray-600">Monatlich Kündbar</p>
                 </div>
                 <div>
                   <p className="text-3xl font-bold text-gray-900">2-3x</p>
@@ -192,7 +193,7 @@ export default function Hero() {
                       />
                     </div>
                     <div>
-                      <h3 className="font-semibold">ICT Konzepte in Deutsch</h3>
+                      <h3 className="font-semibold">ICT Konzepte auf Deutsch</h3>
                       <p className="text-sm text-gray-600">Zusammengefasst, Strukturiert & Erklärt</p>
                     </div>
                   </div>
