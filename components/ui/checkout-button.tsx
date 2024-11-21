@@ -57,7 +57,7 @@ export function CheckoutButton() {
           Processing...
         </>
       ) : (
-        'Platz reservieren ->'
+        'Platz jetzt sichern ->'
       )}
     </Button>
   )

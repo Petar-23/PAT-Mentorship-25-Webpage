@@ -3,7 +3,6 @@
 
 import { useUser } from '@clerk/nextjs'
 import { UserButton, SignInButton } from '@clerk/nextjs'
-import { useAuth } from '@clerk/nextjs'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import Image from 'next/image'
@@ -13,13 +12,18 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export function Navbar() {
-  const { isSignedIn} = useUser()
+  const { user, isSignedIn} = useUser()
+  
   const [isOpen, setIsOpen] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const isDashboard = pathname === '/dashboard'
 
+  const isAdmin = user?.organizationMemberships?.some(
+    membership => membership.role === 'org:admin'
+  )
+  
   // Prevent body scroll when menu is open
   useEffect(() => {
     if (isOpen) {
@@ -31,6 +35,7 @@ export function Navbar() {
       document.body.style.overflow = 'unset'
     }
   }, [isOpen])
+
 
   const toggleMenu = () => {
     setIsOpen(!isOpen)
@@ -49,9 +54,7 @@ export function Navbar() {
     }, 500)
   }
 
-  const { has } = useAuth()
-  if (!has) return null
-  const isAdmin = has({ permission: 'org:admin:access' })
+
 
   const SignInWrapper = ({ children }: { children: React.ReactNode }) => (
     <SignInButton mode="modal" forceRedirectUrl="/dashboard">
@@ -134,7 +137,7 @@ export function Navbar() {
                   {isAdmin && (
                     <Button
                       variant="outline"
-                      onClick={() => handleNavigation('/admin')}
+                      onClick={() => handleNavigation('/owner')}
                       className="flex items-center gap-2"
                     >
                       <Settings className="h-4 w-4" />

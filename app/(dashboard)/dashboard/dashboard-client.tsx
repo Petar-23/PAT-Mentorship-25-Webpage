@@ -73,7 +73,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                   <div>
                     <p className="font-medium">Keine Zahlung bis März 2025</p>
                     <p className="text-sm text-green-600 mt-1">
-                      Jetzt reservieren, Zahlung erst ab 1. März 2025
+                      Jetzt sichern, Zahlung erst ab 1. März 2025
                     </p>
                   </div>
                 </div>

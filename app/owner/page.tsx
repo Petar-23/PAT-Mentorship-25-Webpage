@@ -30,6 +30,7 @@ interface DashboardData {
 }
 
 export default function AdminDashboard() {
+  console.log('AdminDashboard component mounted') // Debug log
   const { user, isSignedIn, isLoaded } = useUser()
   const router = useRouter()
   const [dashboardData, setDashboardData] = useState<DashboardData>({
@@ -191,6 +192,7 @@ export default function AdminDashboard() {
   }
 
   if (!isAdmin) {
+    console.log('no admin')
     return null
   }
 
