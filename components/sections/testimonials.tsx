@@ -144,6 +144,17 @@ const testimonials = [
     },
     gradientColor: "rgba(59, 130, 246, 0)"
   },
+  {
+    quote: "Durch Petar hat sich meine „Tradingwelt“ komplett verändert. Dafür bin ich unfassbar dankbar. Petar hat das Talent, richtig toll erklären zu können und ist immer super geduldig und hilfsbereit. Ich habe mich vorher 2,5 Jahre durch Trading Akademien gequält, ohne eine wirkliche Form von Erfolg wahrnehmen zu können. Zunächst durch Petars Discordchannel und dann durch die Mentorship 2024 habe ich bis jetzt schon so viel gelernt, was in der Praxis an den Charts funktioniert. Plötzlich ist nichts mehr nur Zufall in der Price Action, sondern ich weiß das erste Mal, auf was ich warte bzw. was ich sehen möchte, um ein Setup einzugehen. Trading erscheint dann auch plötzlich nicht mehr wie ein Glücksspiel. Danke Petar für Alles, ohne dich, würde ich noch an einer ganz anderen Stelle stehen und vermutlich immer wieder verzweifeln.",
+    author: "Claudia P.",
+    role: "Future Trader",
+    results: {
+      label: "Martverständnis",
+      value: "Verbessert",
+      description: "(nach 6 Monaten)"
+    },
+    gradientColor: "rgba(59, 130, 246, 0)"
+  },
   // 
   // ... other testimonials
 ]
@@ -185,8 +196,8 @@ export default function Testimonials() {
         <div className="grid md:grid-cols-3 gap-4 mb-12">
             <StatCard
               icon={<TrendingUp className="h-6 w-6" />}
-              value="25%"
-              label="Erfolgsquote (nach 6 Monaten)"
+              value="25+"
+              label="Gefundete FK-Konten"
               color="blue"
             />
             <StatCard
@@ -292,6 +303,8 @@ export default function Testimonials() {
 
         <p className="text-sm text-gray-500 text-center mt-8">
           *Ergebnisse können variieren. Trading ist mit Risiken verbunden. Vergangene Leistungen garantieren keine zukünftigen Ergebnisse.
+          <br/>
+          Statistiken beruhen auf geteilten Feedbacks in der Mentorship 2024.
         </p>
       </div>
     </section>

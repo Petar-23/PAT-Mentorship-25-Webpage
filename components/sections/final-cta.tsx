@@ -21,7 +21,7 @@ export default function FinalCTA() {
     const CTAButton = () => {
         const buttonContent = (
             <>
-                <span>Jetzt der Warteliste beitreten</span>
+                <span>Platz in der Mentorhsip 2025 sichern</span>
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </>
         )
