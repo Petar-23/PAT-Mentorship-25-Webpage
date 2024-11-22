@@ -30,7 +30,6 @@ interface DashboardData {
 }
 
 export default function AdminDashboard() {
-  console.log('AdminDashboard component mounted') // Debug log
   const { user, isSignedIn, isLoaded } = useUser()
   const router = useRouter()
   const [dashboardData, setDashboardData] = useState<DashboardData>({
@@ -80,7 +79,7 @@ export default function AdminDashboard() {
   const fetchCustomers = useCallback(async () => {
     try {
       setError(null)
-      const response = await fetch('/api/admin/customers')
+      const response = await fetch('/api/owner/customers')
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
