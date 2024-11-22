@@ -23,7 +23,7 @@ export function Navbar() {
   const isAdmin = user?.organizationMemberships?.some(
     membership => membership.role === 'org:admin'
   )
-  
+
   // Prevent body scroll when menu is open
   useEffect(() => {
     if (isOpen) {
