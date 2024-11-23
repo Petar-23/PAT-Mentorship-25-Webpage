@@ -109,17 +109,17 @@ function TradingPerformance() {
         {/* Stats */}
         <div className="flex items-center justify-between mt-4 px-2">
           <div className="flex items-center space-x-2">
-            <span className="text-gray-400 text-sm">Win Rate:</span>
+            <span className="text-gray-400 text-xs md:text-sm">Win Rate:</span>
             <span className="text-white font-medium">{stats.winRate}%</span>
           </div>
           <div className="h-4 w-px bg-gray-700" />
           <div className="flex items-center space-x-2">
-            <span className="text-gray-400 text-sm">Profit Factor:</span>
+            <span className="text-gray-400 text-xs md:text-sm">Profit Factor:</span>
             <span className="text-white font-medium">{stats.profitFactor}</span>
           </div>
           <div className="h-4 w-px bg-gray-700" />
           <div className="flex items-center space-x-2">
-            <span className="text-gray-400 text-sm">Avg Win/Loss:</span>
+            <span className="text-gray-400 text-xs md:text-sm">Avg Win/Loss:</span>
             <span className="text-white font-medium">{stats.avgWinLossRatio}</span>
           </div>
         </div>
@@ -228,7 +228,7 @@ export default function MentorSection() {
                 <CardWithMatrix
                   icon={<LineChart className="h-full w-full" />}
                   value={`${stats.winRate}%`}
-                  subtitle="Win-Rate"
+                  subtitle="Win-Rate (40-Tage)"
                   iconColor="text-green-400"
                   rainColor="#34D399"
                   gradientColor="rgba(52, 211, 153, 0.2)"

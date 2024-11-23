@@ -21,7 +21,7 @@ export default function FinalCTA() {
     const CTAButton = () => {
         const buttonContent = (
             <>
-                <span>Platz in der Mentorhsip 2025 sichern</span>
+                <span>Platz jetzt sichern</span>
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </>
         )
