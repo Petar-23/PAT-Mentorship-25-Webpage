@@ -85,7 +85,7 @@ export default function Hero() {
   return (
     <section 
       ref={containerRef}
-      className="relative py-20 px md:px-6 lg:py-32 min-h-[80vh] overflow-hidden bg-gradient-to-b from-white to-gray-50"
+      className="relative py-12 sm:py-24 md:py-20 lg:py-32 min-h-[85vh] lg:min-h-[65vh] overflow-hidden bg-gradient-to-b from-white to-gray-50"
     >
        {/* Matrix Background Layer */}
        {isMobile ? (
@@ -131,7 +131,7 @@ export default function Hero() {
 
       {/* Content */}
       <div className="container mx-auto px-4 relative z-10 h-full">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start lg:items-center mt-0 lg:mt-8">
             {/* Left Column - Text Content */}
             <div className="space-y-8">
               <div className="inline-block">
@@ -140,18 +140,18 @@ export default function Hero() {
                 </span>
               </div>
               
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 lg:leading-[1.1]">
                 Lerne Trading nach 
-                <br />
+                <br className="hidden sm:block" />
                 ICT Konzepten in einer {' '}
                 <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent"> Live Mentorship</span>
               </h1>
               
-              <p className="text-lg md:text-xl text-gray-600 leading-relaxed">
+              <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-xl">
               Statt mit passend ausgewählten Beispielen aus aufgezeichneten Kursen, bringe ich dir das Trading direkt an der Live-Price-Action bei. Du lernst anhand aktueller Marktbewegungen und erhältst Erklärungen in Echtzeit.
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 pt-2">
                 <GetStartedButton />
                 
                 <Button size="lg" variant="outline" asChild>
@@ -161,29 +161,29 @@ export default function Hero() {
                 </Button>
               </div>
 
-              <div className="flex items-center gap-8 pt-4">
+              <div className="flex flex-wrap items-start gap-8 pt-4 lg:pt-6">
                 <div>
-                  <p className="text-3xl font-bold text-gray-900">€150</p>
+                  <p className="text-2xl lg:text-3xl font-bold text-gray-900">€150</p>
                   <p className="text-sm text-gray-600">Monatlich Kündbar</p>
                 </div>
                 <div>
-                  <p className="text-3xl font-bold text-gray-900">2-3x</p>
+                  <p className="text-2xl lg:text-3xl font-bold text-gray-900">2-3x</p>
                   <p className="text-sm text-gray-600">Lektionen / Woche</p>
                 </div>
                 <div>
-                  <p className="text-3xl font-bold text-gray-900">100</p>
+                  <p className="text-2xl lg:text-3xl font-bold text-gray-900">100</p>
                   <p className="text-sm text-gray-600">Limitierte Plätze</p>
                 </div>
               </div>
             </div>
 
             {/* Right Column - Visual Element */}
-            <div className="relative lg:h-[600px] flex items-center justify-center">
+            <div className="relative flex items-center justify-center lg:-mt-8">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl opacity-10 blur-2xl" />
-              <div className="relative bg-white p-8 rounded-xl shadow-xl">
-                <div className="space-y-6">
+              <div className="relative bg-white p-5 sm:p-6 lg:p-7 rounded-xl shadow-xl w-full max-w-lg mx-auto">
+                <div className="space-y-4 lg:space-y-5">
                   <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden">
+                    <div className="h-10 w-10 lg:h-12 lg:w-12 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden">
                       <Image
                         src="/images/ict-logo.jpg"
                         alt="ICT Logo"

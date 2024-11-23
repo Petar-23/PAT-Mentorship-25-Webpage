@@ -91,7 +91,7 @@ function FeatureCard({ feature }: { feature: typeof features[0] }) {
 
 export default function WhyDifferent() {
   return (
-    <section className="py-16 sm:py-24 bg-gray-50">
+    <section id="why-different" className="py-16 sm:py-24 bg-gray-50">
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="text-center mb-12 sm:mb-16">
           <h2 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-4">
