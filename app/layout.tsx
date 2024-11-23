@@ -13,8 +13,13 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'PAT Mentorship 2025',
-  description: 'Trete meiner ICT Mentorship 2025 bei, und lerne profitabel zu handeln.',
-  keywords: ['mentorship', 'trading', 'day trading', 'professional development'],
+  description: 'Lerne Trading nach ICT Konzepten, Live und auf Deutsch',
+  keywords: ['mentorship', 'trading', 'day trading', 'professional development', 'ICT'],
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  }
 }
 
 export default function RootLayout({
