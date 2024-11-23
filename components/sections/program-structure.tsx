@@ -53,8 +53,8 @@ const programPhases: ProgramPhase[] = [
     features: [
       "Trading Psychologie",
       "Bias aus höheren Timeframes",
-      "Persönliche Strategieentwicklung (realistische Ziele)",
-      "FK Funding & Payouts"
+      "Persönliche Strategieentwicklung",
+      "1:1 Sessions"
     ],
     duration: "Monat 10-12"
   }

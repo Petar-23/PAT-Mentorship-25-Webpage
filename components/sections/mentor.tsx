@@ -34,16 +34,16 @@ function TradingPerformance() {
     >
       <div className="p-6">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-start mb-6">
           <p className="text-gray-400 text-sm">Meine aktuelle Statistik</p>
-          <div>
-            <span className="text-green-400 text-xl font-semibold">+{totalReturn}%</span>
-            <span className="text-gray-400 text-sm ml-2">40 Tage Rendite</span>
+          <div className="flex flex-col items-end">
+            <span className="text-green-400 text-2xl font-semibold">+{totalReturn}%</span>
+            <span className="text-gray-400 text-xs">40 Tage Rendite</span>
           </div>
         </div>
 
         {/* Chart */}
-        <div style={{ width: '100%', height: '200px', position: 'relative' }}>
+        <div className="w-full h-[200px] sm:h-[200px] relative">
           <ResponsiveContainer>
             <AreaChart 
               data={processedTradingData}
@@ -68,7 +68,7 @@ function TradingPerformance() {
                 tick={{ fontSize: 10 }}
                 tickLine={{ stroke: '#1E293B' }}
                 axisLine={{ stroke: '#1E293B' }}
-                interval={2} // Show every third tick
+                interval={'preserveStartEnd'}
               />
               <YAxis 
                 stroke="#475569"
@@ -77,6 +77,7 @@ function TradingPerformance() {
                 tickLine={{ stroke: '#1E293B' }}
                 axisLine={{ stroke: '#1E293B' }}
                 width={45}
+                tickCount={5}
               />
               <Tooltip 
                 contentStyle={{
@@ -107,18 +108,18 @@ function TradingPerformance() {
         </div>
 
         {/* Stats */}
-        <div className="flex items-center justify-between mt-4 px-2">
-          <div className="flex items-center space-x-2">
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:justify-between mt-4 px-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
             <span className="text-gray-400 text-xs md:text-sm">Win Rate:</span>
             <span className="text-white font-medium">{stats.winRate}%</span>
           </div>
-          <div className="h-4 w-px bg-gray-700" />
-          <div className="flex items-center space-x-2">
+          <div className="hidden sm:block h-4 w-px bg-gray-700" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
             <span className="text-gray-400 text-xs md:text-sm">Profit Factor:</span>
             <span className="text-white font-medium">{stats.profitFactor}</span>
           </div>
-          <div className="h-4 w-px bg-gray-700" />
-          <div className="flex items-center space-x-2">
+          <div className="hidden sm:block h-4 w-px bg-gray-700" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
             <span className="text-gray-400 text-xs md:text-sm">Avg Win/Loss:</span>
             <span className="text-white font-medium">{stats.avgWinLossRatio}</span>
           </div>

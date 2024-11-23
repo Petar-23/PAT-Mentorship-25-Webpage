@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import {ClerkProvider} from '@clerk/nextjs'
+import { deDE } from '@clerk/localizations'
 import { CookieBanner } from '@/components/ui/cookie-banner'
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/react'
@@ -28,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider afterSignOutUrl={"/"} localization={deDE} signInFallbackRedirectUrl="/dashboard" signUpFallbackRedirectUrl="/dashboard">
       <html lang="en" className="h-full scroll-smooth">
         <body className={`${inter.className} h-full`}>
           <div className="min-h-full flex flex-col">

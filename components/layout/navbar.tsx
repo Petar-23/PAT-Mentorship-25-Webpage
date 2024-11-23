@@ -115,7 +115,7 @@ export function Navbar() {
                   />
                 </div>
               ) : (
-                <SignInButton mode="modal">
+                <SignInButton mode="modal" forceRedirectUrl={"/dashboard"}>
                   <Button>
                     Anmelden →
                   </Button>
@@ -158,7 +158,7 @@ export function Navbar() {
                   />
                 </>
               ) : (
-                <SignInButton mode="modal">
+                <SignInButton mode="modal" forceRedirectUrl={"/dashboard"}>
                   <Button size="sm">
                     Anmelden →
                   </Button>

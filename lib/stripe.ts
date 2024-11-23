@@ -60,6 +60,7 @@ export async function createCustomerPortalSession(userId: string) {
     const session = await stripe.billingPortal.sessions.create({
       customer: customers.data[0].id,
       return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+      locale: 'de',
     })
 
     if (!session.url) {
@@ -110,6 +111,7 @@ export async function createCheckoutSession(userId: string, userEmail: string) {
       mode: 'subscription',
       allow_promotion_codes: true,
       billing_address_collection: 'required',
+      locale:'de',
       line_items: [
         {
           price: process.env.STRIPE_PRICE_ID,

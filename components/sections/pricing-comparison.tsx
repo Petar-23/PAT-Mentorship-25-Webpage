@@ -36,7 +36,7 @@ function MobileFeatureCard({ feature }: MobileFeatureCardProps) {
       
       {/* Our Mentorship */}
       <div className="bg-white rounded-lg p-3 border border-blue-100">
-        <p className="text-sm font-medium text-blue-600 mb-2">Unsere Mentorship:</p>
+        <p className="text-sm font-medium text-blue-600 mb-2">Live Mentorship:</p>
         <span className="inline-flex items-center gap-2 text-gray-900">
           <Check className="h-4 w-4 text-blue-500 flex-shrink-0" />
           <span>{feature.us}</span>
@@ -138,10 +138,10 @@ export default function PricingComparison() {
         <div className="text-center mb-16">
           <p className="text-blue-600 font-semibold mb-4">VERGLEICH</p>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Warum meine Mentorship?
+            Warum eine Live Mentorship?
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-            Mein Ansatz im Vergleich zu traditionellen Trading-Kursen
+            Unser Ansatz im Vergleich zu traditionellen Trading-Kursen
           </p>
         </div>
 
@@ -167,7 +167,7 @@ export default function PricingComparison() {
                 <p className="font-semibold text-gray-900">Features</p>
               </div>
               <div className="col-span-4 text-center">
-                <p className="font-semibold text-blue-600">Meine Mentorship</p>
+                <p className="font-semibold text-blue-600">Live Mentorship</p>
               </div>
               <div className="col-span-4 text-center">
                 <p className="font-semibold text-gray-600">Andere Kurse</p>

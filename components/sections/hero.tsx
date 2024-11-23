@@ -61,7 +61,7 @@ export default function Hero() {
           size="lg" 
           onClick={handleGetStarted}
           disabled={isNavigating}
-          className="flex items-center gap-2"
+          className="w-full flex items-center gap-2 justify-center"
         >
           Sichere dir deinen Platz
           <ArrowRight className="h-4 w-4" />
@@ -73,7 +73,7 @@ export default function Hero() {
       <SignInWrapper>
         <Button 
           size="lg"
-          className="flex items-center gap-2"
+          className="w-full flex items-center gap-2 justify-center"
         >
           Sichere dir deinen Platz
           <ArrowRight className="h-4 w-4" />
@@ -141,7 +141,7 @@ export default function Hero() {
               </div>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 lg:leading-[1.1]">
-                Lerne Trading nach 
+                Lerne Trading nach {' '}
                 <br className="hidden sm:block" />
                 ICT Konzepten in einer {' '}
                 <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent"> Live Mentorship</span>
@@ -151,17 +151,21 @@ export default function Hero() {
               Statt mit passend ausgewählten Beispielen aus aufgezeichneten Kursen, bringe ich dir das Trading direkt an der Live-Price-Action bei. Du lernst anhand aktueller Marktbewegungen und erhältst Erklärungen in Echtzeit.
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                <GetStartedButton />
+              <div className="flex flex-col sm:flex-row gap-4 pt-2 w-full">
+                <div className="w-full sm:w-auto">
+                  <GetStartedButton />
+                </div>
                 
-                <Button size="lg" variant="outline" asChild>
-                  <Link href="#why-different">
-                    Mentorship Details
-                  </Link>
-                </Button>
+                <div className="w-full sm:w-auto">
+                  <Button size="lg" variant="outline" asChild className="w-full">
+                    <Link href="#why-different">
+                      Mentorship Details
+                    </Link>
+                  </Button>
+                </div>
               </div>
 
-              <div className="flex flex-wrap items-start gap-8 pt-4 lg:pt-6">
+              <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-4 lg:pt-6">
                 <div>
                   <p className="text-2xl lg:text-3xl font-bold text-gray-900">€150</p>
                   <p className="text-sm text-gray-600">Monatlich Kündbar</p>
