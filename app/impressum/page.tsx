@@ -11,29 +11,28 @@ export default function ImpressumPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Angaben gemäß § 5 TMG</h2>
             <div className="space-y-2">
-              <p>Vorname Nachname</p>
-              <p>PAT Mentorship</p>
-              <p>Straße Nr.</p>
-              <p>PLZ Stadt</p>
+              <p>Petar Maric</p>
+              <p>Price Action Trader</p>
+              <p>Erlenweg 16</p>
+              <p>21423 Winsen</p>
             </div>
           </section>
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Kontakt</h2>
             <div className="space-y-2">
-              <p>Telefon: +49 123 456789</p>
-              <p>E-Mail: kontakt@example.com</p>
+              <p>E-Mail: kontakt@price-action-trader.de</p>
             </div>
           </section>
 
-          <section className="mb-8">
+          {/* <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Handelsregister</h2>
             <div className="space-y-2">
               <p>Handelsregister: HRA XXXXX</p>
               <p>Registergericht: Amtsgericht München</p>
               <p>USt-IdNr: DE123456789</p>
             </div>
-          </section>
+          </section> */}
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Streitbeilegung</h2>

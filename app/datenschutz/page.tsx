@@ -46,12 +46,11 @@ export default function DatenschutzPage() {
             <h3 className="text-lg font-medium mb-2">Hinweis zur verantwortlichen Stelle</h3>
             <div className="text-gray-600 space-y-1">
               <p>Die verantwortliche Stelle für die Datenverarbeitung auf dieser Website ist:</p>
-              <p>Vorname Nachname</p>
-              <p>PAT Mentorship</p>
-              <p>Straße Nr.</p>
-              <p>PLZ Stadt</p>
-              <p>Telefon: +49 123 456789</p>
-              <p>E-Mail: kontakt@example.com</p>
+              <p>Petar Maric</p>
+              <p>Price Action Trader</p>
+              <p>Erlenweg 16</p>
+              <p>21423 Winsen</p>
+              <p>E-Mail: kontakt@price-action-trader.de</p>
             </div>
           </section>
 
@@ -74,6 +73,24 @@ export default function DatenschutzPage() {
               Diese Seite nutzt zur einheitlichen Darstellung von Schriftarten so genannte Web Fonts. Die Google
               Fonts sind lokal installiert. Eine Verbindung zu Servern von Google findet dabei nicht statt.
             </p>
+
+            <h3 className="text-lg font-medium mb-2">Verwendung von Clerk</h3>
+            <p className="text-gray-600 mb-4">
+              Wir verwenden den Dienst &quot;Clerk&quot;, um die Verwaltung von Benutzerkonten und die Authentifizierung auf unserer Website zu ermöglichen. 
+              Clerk erhebt und verarbeitet personenbezogene Daten wie Namen, E-Mail-Adressen und Authentifizierungsinformationen. Die Verarbeitung erfolgt auf Grundlage von 
+              <strong>Art. 6 Abs. 1 lit. b DSGVO</strong> (Erfüllung eines Vertrags) oder <strong>Art. 6 Abs. 1 lit. f DSGVO</strong> (berechtigtes Interesse an einer sicheren und 
+              effizienten Benutzerverwaltung).
+            </p>
+
+            <h3 className="text-lg font-medium mb-2">Verwendung von Stripe</h3>
+            <p className="text-gray-600 mb-4">
+            Für die Abwicklung von Zahlungen verwenden wir den Dienst &quot;Stripe&quot;. Stripe verarbeitet Zahlungsdaten wie Kreditkarteninformationen, 
+            Transaktionsbeträge und andere Zahlungsdetails. Die Verarbeitung erfolgt auf Grundlage von <strong>Art. 6 Abs. 1 lit. b DSGVO</strong> (Erfüllung eines Vertrags).
+            </p>
+            <p className="text-gray-600 mb-4">Stripe wird von der Stripe Inc. betrieben. Weitere Informationen zum Datenschutz bei Stripe finden Sie in der 
+            <a className="text-blue-500" href="https://stripe.com/privacy" target="_blank"> Datenschutzerklärung von Stripe</a>.</p>
+            <p className="text-gray-600 mb-4">Stripe kann Daten außerhalb der EU verarbeiten, insbesondere in den USA. Stripe gewährleistet in diesen Fällen den Schutz der Daten durch 
+            Standardvertragsklauseln (SCCs) gemäß Art. 46 DSGVO.</p>
           </section>
         </div>
       </Card>

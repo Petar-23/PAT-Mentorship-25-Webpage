@@ -20,11 +20,10 @@ export default function WiderrufPage() {
             </p>
             
             <div className="text-gray-600 mb-4 pl-4">
-              <p>PAT Mentorship</p>
-              <p>Straße Nr.</p>
-              <p>PLZ Stadt</p>
-              <p>E-Mail: kontakt@example.com</p>
-              <p>Telefon: +49 123 456789</p>
+              <p>Price Action Trader</p>
+              <p>Erlenweg 16</p>
+              <p>21423 Winsen</p>
+              <p>E-Mail: kontakt@price-action-trader.de</p>
             </div>
 
             <p className="text-gray-600 mb-4">
@@ -76,10 +75,11 @@ export default function WiderrufPage() {
               <div className="space-y-4 text-gray-600">
                 <p>An:</p>
                 <div className="pl-4">
-                  <p>PAT Mentorship</p>
-                  <p>Straße Nr.</p>
-                  <p>PLZ Stadt</p>
-                  <p>E-Mail: kontakt@example.com</p>
+                  <p>Petar Maric</p>
+                  <p>Price Action Trader</p>
+                  <p>Erlenweg 16</p>
+                  <p>21423 Winsen</p>
+                  <p>E-Mail: kontakt@price-action-trader.de</p>
                 </div>
                 
                 <p>

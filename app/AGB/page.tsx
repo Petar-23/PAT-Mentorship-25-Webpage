@@ -12,7 +12,7 @@ export default function AGBPage() {
             <h2 className="text-xl font-semibold mb-4">§1 Geltungsbereich</h2>
             <p className="text-gray-600 mb-4">
               Diese Allgemeinen Geschäftsbedingungen gelten für alle gegenwärtigen und zukünftigen
-              Geschäftsbeziehungen zwischen PAT Mentorship (im Folgenden &quot;Anbieter&quot;) und dem Kunden (im
+              Geschäftsbeziehungen zwischen Price Action Trader (im Folgenden &quot;Anbieter&quot;) und dem Kunden (im
               Folgenden &quot;Teilnehmer&quot;).
             </p>
           </section>
