@@ -24,7 +24,7 @@ const features = [
   {
     icon: <ChartSpline className="h-5 w-5 sm:h-6 sm:w-6" />,
     title: "Abgeflachte Lernkurve",
-    description: "Anstatt 700+ ICT YouTube Videos, Smart Money Konzepte strukturiert und an aktueller Price Action lernen",
+    description: "Anstatt 700+ ICT YouTube Videos, Smart Money Konzepte strukturiert und an aktueller Price Action lernen.",
   },
   {
     icon: <Trophy className="h-5 w-5 sm:h-6 sm:w-6" />,

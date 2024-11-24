@@ -57,7 +57,7 @@ export default function CTASection() {
                 <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10">
                   <p className="font-medium">🎯 Limitiert auf 100 Plätze</p>
                   <p className="text-sm opacity-90">
-                    Wir halten das Programm exklusiv, um qualitativ hochwertiges Mentoring zu gewährleisten
+                    Wir halten das Programm exklusiv, um qualitativ hochwertiges Mentoring zu gewährleisten.
                   </p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10">
