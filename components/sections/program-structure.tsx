@@ -40,7 +40,7 @@ const programPhases: ProgramPhase[] = [
     phase: "Phase 3: Live Trading",
     description: "Wende dein Wissen unter realen Marktbedingungen an",
     features: [
-      "Live Trading Sessions mit minimalen Hebel",
+      "Live Trading Sessions mit minimalem Hebel",
       "Trade Review Workshops",
       "Fortgeschrittenes Risikomanagement",
       "Finde dein Model"

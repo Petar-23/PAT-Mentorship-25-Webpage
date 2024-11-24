@@ -250,7 +250,7 @@ export default function MentorSection() {
                 </p>
                 <p className="text-base sm:text-lg text-gray-300 leading-relaxed">
                   Ich werbe nicht mit Lifestyle und Luxus, sondern mit echten Trades 
-                  - schaue dir gerne meinen YouTube Kanal an. Mein Ziel ist es dir 
+                  - schaue dir gerne meinen YouTube Kanal an. Mein Ziel ist es, dir 
                   eine nachhaltige Fähigkeit zu vermitteln, mit der du ein stabiles monatliches Einkommen erzielen kannst.
                 </p>
               </div>

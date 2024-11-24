@@ -50,8 +50,8 @@ const faqs = [
     category: "Zeitaufwand"
   },
   {
-    question: "Bekomme ich Einsteigs- und Aussteigssignale für meine Trades?",
-    answer: "Nein, die Live Tradings dienen nicht dem Copy-Trading. Du sollt unabhängig von mir handeln können.",
+    question: "Bekomme ich Einstiegs- und Ausstiegssignale für meine Trades?",
+    answer: "Nein, die Live Tradings dienen nicht dem Copy-Trading. Du sollst unabhängig von mir handeln können.",
     category: "Programmmerkmale"
   },
   {

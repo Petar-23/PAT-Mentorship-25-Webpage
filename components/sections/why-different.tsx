@@ -98,7 +98,7 @@ export default function WhyDifferent() {
             Nicht einfach ein weiterer Trading-Kurs
           </h2>
           <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
-            ICT&apos;s Smart Money Konzepte, auf Deutsch, in einem Mentoring-Programm an live Price Action
+            ICT&apos;s Smart Money Konzepte, auf Deutsch, in einem Mentoring-Programm an Live-Price-Action
           </p>
         </div>
 
