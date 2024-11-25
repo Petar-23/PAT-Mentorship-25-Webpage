@@ -241,7 +241,7 @@ export default function MentorSection() {
                 <p className="text-base sm:text-lg text-gray-300 leading-relaxed mb-4">
                   Ich habe mich intensiv mit dem Trading nach 
                   ICT&apos;s Smart Money Konzepten beschäftigt und über 1000 
-                  Stunden Videomaterial durchgarbeitet. Dazu gehören 
+                  Stunden Videomaterial durchgearbeitet. Dazu gehören 
                   ICT&apos;s Private Mentorship sowie die Mentorships der Jahre 2022, 2023, 2024 - und vieles mehr.
                 </p>
                 <p className="text-base sm:text-lg text-gray-300 leading-relaxed mb-4">
@@ -250,7 +250,7 @@ export default function MentorSection() {
                 </p>
                 <p className="text-base sm:text-lg text-gray-300 leading-relaxed">
                   Ich werbe nicht mit Lifestyle und Luxus, sondern mit echten Trades 
-                  - schaue dir gerne meinen YouTube Kanal an. Mein Ziel ist es dir 
+                  - schaue dir gerne meinen YouTube Kanal an. Mein Ziel ist es, dir 
                   eine nachhaltige Fähigkeit zu vermitteln, mit der du ein stabiles monatliches Einkommen erzielen kannst.
                 </p>
               </div>
