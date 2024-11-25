@@ -21,7 +21,12 @@ const faqs = [
   },
   {
     question: "Welche Trading-Erfahrung benötige ich?",
-    answer: "Ich kann mit Tradern aus allen Erfahrungsstufen arbeiten, wobei Grundkenntnisse der Marktprinzipien von Vorteil sind. Das Programm ist straff aber es beginnt mit Grundkonzepten und bringt dich zu deinem Smart Money Modell.",
+    answer: "Ich kann mit Tradern aus allen Erfahrungsstufen arbeiten, wobei Grundkenntnisse der Marktprinzipien von Vorteil sind. Das Programm ist straf, aber es beginnt mit Grundkonzepten und bringt dich zu deinem Smart Money Modell.",
+    category: "Voraussetzungen"
+  },
+  {
+    question: "Welche Software benötige ich?",
+    answer: "Ich arbeite mit TradingView und empfehle diese Software für die Mentorship. Grundsätzlich lassen sich die Konzepte aber auch mit jeder anderen Chart-Software erlernen, die über die nötigen Funktionen (Kerzen-Chart & Zeichentools) verfügt.",
     category: "Voraussetzungen"
   },
   {
@@ -46,7 +51,7 @@ const faqs = [
   },
   {
     question: "Ist mein Erfolg garantiert?",
-    answer: "Nein, wie viel du aus diesem Program herausholen kannst hängt an dir. Ich bringe dir das Fischen bei, du musst es auch lernen wollen und die Arbeit reinstecken.",
+    answer: "Nein, wie viel du aus diesem Programm herausholen kannst hängt an dir. Ich bringe dir das Fischen bei, du musst es auch lernen wollen und die Arbeit reinstecken.",
     category: "Zeitaufwand"
   },
   {
@@ -57,12 +62,12 @@ const faqs = [
   {
     question: "Welche Finanzinstrumente werden gehandelt?",
     answer: "Wir handeln primär Index-Futures (ES, NQ). Im Verlauf der Mentorship werden wir auch einen Blick auf Währungs-Futures und Rohstoffe werfen.",
-    category: "Programmmerkmale"
+    category: "Finanzinstrumente"
   },
   {
-    question: "Funktionierne Smart Money Konzepte auch in Crypto und anderen Märkten?",
-    answer: "ja, Smart Money Konzepte sind universell anwendbar.",
-    category: "Programmmerkmale"
+    question: "Funktionierne Smart Money Konzepte auch in Krypto und anderen Märkten?",
+    answer: "Ja, Smart Money Konzepte sind universell anwendbar.",
+    category: "Krypto"
   }
 ]
 

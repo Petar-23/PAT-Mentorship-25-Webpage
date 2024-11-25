@@ -241,7 +241,7 @@ export default function MentorSection() {
                 <p className="text-base sm:text-lg text-gray-300 leading-relaxed mb-4">
                   Ich habe mich intensiv mit dem Trading nach 
                   ICT&apos;s Smart Money Konzepten beschäftigt und über 1000 
-                  Stunden Videomaterial durchgarbeitet. Dazu gehören 
+                  Stunden Videomaterial durchgearbeitet. Dazu gehören 
                   ICT&apos;s Private Mentorship sowie die Mentorships der Jahre 2022, 2023, 2024 - und vieles mehr.
                 </p>
                 <p className="text-base sm:text-lg text-gray-300 leading-relaxed mb-4">

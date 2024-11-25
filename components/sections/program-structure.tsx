@@ -112,7 +112,7 @@ const supportFeatures = [
   {
     icon: <BrainCircuit className="h-full w-full" />,
     title: "Zugang zu Absolventen",
-    description: "Vernetze dich mit Absolventen vorheriger PAT Mentorships, die dir ein paar Schritte vorraus sind.",
+    description: "Vernetze dich mit Absolventen vorheriger PAT Mentorships, die dir ein paar Schritte voraus sind.",
     iconColor: "text-green-400",
     rainColor: "#34D399",
     gradientColor: "rgba(52, 211, 153, 0.2)"
