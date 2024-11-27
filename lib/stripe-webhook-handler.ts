@@ -1,54 +1,53 @@
-// src/lib/stripe-webhook-handler.ts
 import type Stripe from 'stripe'
+import { ensureCustomerTaxInfo } from './updateCustomers'
+
+interface StripeError extends Error {
+  type: string;
+  code?: string;
+  param?: string;
+}
 
 export async function handleStripeEvent(event: Stripe.Event) {
+  console.log('Received Stripe event:', event.type)
   try {
     switch (event.type) {
-      case 'customer.subscription.created':
-        await handleSubscriptionCreated(event.data.object as Stripe.Subscription)
+      case 'customer.created': {
+        const customer = event.data.object as Stripe.Customer
+        await ensureCustomerTaxInfo(customer.id)
         break
+      }
 
-      case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription)
+      case 'customer.subscription.created': {
+        const subscription = event.data.object as Stripe.Subscription
+        if (subscription.customer) {
+          const customerId = typeof subscription.customer === 'string' 
+            ? subscription.customer 
+            : subscription.customer.id
+          await ensureCustomerTaxInfo(customerId)
+        }
         break
+      }
 
-      case 'customer.subscription.deleted':
-        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription)
-        break
-
-      case 'checkout.session.completed':
-        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session)
+      case 'invoice.created':
+      case 'invoice.finalized':
+        console.log(`Invoice event ${event.type} received - tax info should be included automatically`)
         break
 
       default:
         console.log(`Unhandled event type: ${event.type}`)
     }
   } catch (error) {
-    console.error('Error handling Stripe event:', error)
+    if (error instanceof Error) {
+      const stripeError = error as StripeError
+      console.error('Error handling Stripe event:', {
+        message: stripeError.message,
+        type: stripeError.type,
+        code: stripeError.code
+      })
+    }
     throw error
   }
 }
 
-async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
-  console.log('New subscription created:', subscription.id)
-  // Add your subscription creation logic here
-  // e.g., update database, send welcome email, etc.
-}
-
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  console.log('Subscription updated:', subscription.id)
-  // Add your subscription update logic here
-  // e.g., update database with new status, send notification, etc.
-}
-
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  console.log('Subscription cancelled:', subscription.id)
-  // Add your subscription deletion logic here
-  // e.g., update database, send cancellation email, etc.
-}
-
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  console.log('Checkout completed:', session.id)
-  // Add your checkout completion logic here
-  // e.g., create user record, send welcome email, etc.
-}
+export const runtime = 'edge'
+export const dynamic = 'force-dynamic'
