@@ -4,13 +4,22 @@ import { redirect } from 'next/navigation'
 import { hasActiveSubscription, getSubscriptionDetails } from '@/lib/stripe'
 import DashboardClient from './dashboard-client'
 
-// We define the page props interface to properly type the searchParamsinterface PageProps {
-  interface PageProps {
-    searchParams: Promise<{ [key: string]: string | string[] | undefined }> | { [key: string]: string | string[] | undefined }
-  }
 
-export default async function DashboardPage({ searchParams }: PageProps) {
-  // First, handle authentication as before
+// First, let's define our search parameters type more precisely
+type SearchParamsType = { [key: string]: string | string[] | undefined }
+
+// Now, let's create a more specific type for the Promise version
+// Instead of using 'any', we'll use the actual type we expect
+type PromiseSearchParams = Promise<SearchParamsType>
+
+// Our page props interface now uses a union type instead of an intersection
+interface PageProps {
+  searchParams: SearchParamsType | PromiseSearchParams
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: PageProps) {
   const { userId } = await auth()
   const user = await currentUser()
   
@@ -18,11 +27,14 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     redirect('/sign-in')
   }
 
- // We need to properly await the searchParams, whether they're a Promise or not
-  const resolvedParams = await Promise.resolve(searchParams)
+  // We need to handle the parameter resolution more carefully
+  // First, check if it's actually a Promise
+  const resolvedParams: SearchParamsType = await (
+    searchParams instanceof Promise ? searchParams : Promise.resolve(searchParams)
+  )
+  
   const checkForRecentCheckout = resolvedParams?.success === 'true'
 
-  // Now we fetch the subscription data with appropriate options
   const [hasSubscription, subscriptionDetails] = await Promise.all([
     hasActiveSubscription(userId),
     getSubscriptionDetails(userId, {
@@ -31,7 +43,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     })
   ])
 
-  // Prepare the initial data for the client component
   const initialData = {
     hasSubscription,
     subscriptionDetails,
@@ -40,6 +51,5 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     }
   }
 
-  // Return the client component with the prepared data
   return <DashboardClient initialData={initialData} />
 }
