@@ -1,6 +1,6 @@
 'use client'
 
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { CalendarCheck, LockIcon, CircleCheckBig, CreditCard, Users, Shield } from 'lucide-react'
 import { CheckoutButton } from '@/components/ui/checkout-button'
@@ -9,6 +9,7 @@ import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'
 import { SubscriptionStatus } from '@/components/dashboard/subscription-status'
 import { SubscriptionSuccessModal } from '@/components/dashboard/subscription-success-modal'
 import { motion } from 'framer-motion'
+import { useState, useCallback } from 'react'
 
 interface DashboardClientProps {
   initialData: {
@@ -33,9 +34,19 @@ const fadeInUp = {
 }
 
 export default function DashboardClient({ initialData }: DashboardClientProps) {
-  const router = useRouter()
   const searchParams = useSearchParams()
-  const showSuccess = searchParams.get('success') === 'true'
+  const [showSuccessModal, setShowSuccessModal] = useState(
+    searchParams.get('success') === 'true'
+  )
+  
+  const handleCloseModal = useCallback(() => {
+    setShowSuccessModal(false)
+    
+    // Optionally clean up the URL without a redirect
+    if (window.history.replaceState) {
+      window.history.replaceState({}, '', '/dashboard')
+    }
+  }, [])
   
   const startDate = new Date('2025-03-01')
   const programStarted = new Date() >= startDate
@@ -170,12 +181,10 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
 
   return (
     <>
-      {showSuccess && (
+      {showSuccessModal && (
         <SubscriptionSuccessModal 
           isOpen={true} 
-          onClose={() => {
-            router.replace('/dashboard')
-          }} 
+          onClose={handleCloseModal}
         />
       )}
 

@@ -51,7 +51,7 @@ const faqs = [
   },
   {
     question: "Ist mein Erfolg garantiert?",
-    answer: "Nein, wie viel du aus diesem Programm herausholen kannst hängt an dir. Ich bringe dir das Fischen bei, du musst es auch lernen wollen und die Arbeit reinstecken.",
+    answer: "Nein, wie viel du aus diesem Programm herausholen kannst, hängt von dir ab. Ich bringe dir das Traden bei; du musst es auch lernen wollen und die Arbeit reinstecken.",
     category: "Zeitaufwand"
   },
   {
