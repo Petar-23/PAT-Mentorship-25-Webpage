@@ -7,51 +7,49 @@ import { stripe } from './stripe'
  * Returns true if the update was successful and verified.
  */
 export async function ensureCustomerTaxInfo(customerId: string) {
-  try {
-    // Update the customer and store the returned customer object
-    const updatedCustomer = await stripe.customers.update(customerId, {
-      metadata: {
-        tax_info_configured: 'true',
-        last_updated: new Date().toISOString()
-      },
-      invoice_settings: {
-        custom_fields: [
-          {
-            name: 'Steuer-ID',
-            value: '******6789'
-          }
-        ],
-        footer: `Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen, da Kleinunternehmer im Sinne des UStG.
-
-Price Action Trader
-Erlenweg 16
-21423 Winsen
-Deutschland
-kontakt@price-action-trader.de
-
-Steueridentifizierungsnummer: ******6789`
+    try {
+      const updatedCustomer = await stripe.customers.update(customerId, {
+        metadata: {
+          tax_info_configured: 'true',
+          last_updated: new Date().toISOString()
+        },
+        invoice_settings: {
+          custom_fields: [
+            {
+              name: 'USt-ID-Nr.:',
+              value: 'DE 123456789'  // Mandatory tax ID
+            }
+          ],
+          footer: `
+  Der Leistungszeitraum entspricht dem auf der Rechnung angegebenen Abrechnungszeitraum.
+  Die Leistung gilt als in dem Monat erbracht, für den die Zahlung erfolgt.
+  
+  Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen, da Kleinunternehmer im Sinne des UStG.
+  
+  Zahlungsbedingungen: Zahlbar sofort ohne Abzug`
+        }
+      })
+  
+      // Verification logic
+      const isConfigured = 
+        updatedCustomer.metadata.tax_info_configured === 'true' &&
+        updatedCustomer.invoice_settings.custom_fields?.some(
+          field => field.name === 'Steuer-ID'
+        );
+  
+      if (isConfigured) {
+        console.log(`Successfully updated customer ${customerId} with compliant invoice settings`)
+        return true
+      } else {
+        console.warn(`Update may have failed for customer ${customerId} - required fields missing`)
+        return false
       }
-    })
-    
-    // Verify the update was successful by checking the returned data
-    const isConfigured = updatedCustomer.metadata.tax_info_configured === 'true' &&
-                        updatedCustomer.invoice_settings.custom_fields?.some(
-                          field => field.name === 'Steuer-ID'
-                        )
-
-    if (isConfigured) {
-      console.log(`Successfully updated customer ${customerId} with tax information`)
-      return true
-    } else {
-      console.warn(`Update may have failed for customer ${customerId} - tax information not verified`)
+      
+    } catch (error) {
+      console.error('Error updating customer tax info:', error)
       return false
     }
-    
-  } catch (error) {
-    console.error('Error updating customer tax info:', error)
-    return false
   }
-}
 
 /**
  * Updates all existing customers with tax information.

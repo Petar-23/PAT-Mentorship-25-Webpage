@@ -38,17 +38,17 @@ export default function NotFound() {
             Die gesuchte Seite existiert leider nicht. 
             Möglicherweise wurde sie verschoben oder gelöscht.
           </p>
-
-          <Link 
-            href=".."
-            className="block w-full bg-white rounded-xl border border-gray-200 p-3 mb-8 text-gray-900 max-auto"
-          >
-            <div className="flex items-center justify-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              <span>Zurück</span>
-            </div>
-          </Link>
-
+          <div className='flex justify-center mb-8'>
+            <Link 
+              href=".."
+              className="inline-flex bg-white rounded-xl border border-gray-200 px-6 py-3 text-gray-900 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                <span>Zurück</span>
+              </div>
+            </Link>
+          </div>
           <p className="text-gray-600 text-sm">
             Benötigst du Hilfe? Schreibe uns eine{' '}
             <Link href="mailto:kontakt@price-action-trader.de" className="text-blue-600">
