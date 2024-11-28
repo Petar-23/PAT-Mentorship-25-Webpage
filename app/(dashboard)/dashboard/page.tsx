@@ -4,10 +4,10 @@ import { redirect } from 'next/navigation'
 import { hasActiveSubscription, getSubscriptionDetails } from '@/lib/stripe'
 import DashboardClient from './dashboard-client'
 
-// We define the page props interface to properly type the searchParams
-interface PageProps {
-  searchParams: { [key: string]: string | string[] | undefined }
-}
+// We define the page props interface to properly type the searchParamsinterface PageProps {
+  interface PageProps {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }> | { [key: string]: string | string[] | undefined }
+  }
 
 export default async function DashboardPage({ searchParams }: PageProps) {
   // First, handle authentication as before
@@ -18,13 +18,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     redirect('/sign-in')
   }
 
-  // We'll determine if we need to check for a recent checkout
-  // Instead of directly accessing searchParams.success, we handle it safely
-  const checkForRecentCheckout = await (async () => {
-    // This creates a proper async context for reading searchParams
-    const params = await Promise.resolve(searchParams)
-    return params?.success === 'true'
-  })()
+ // We need to properly await the searchParams, whether they're a Promise or not
+  const resolvedParams = await Promise.resolve(searchParams)
+  const checkForRecentCheckout = resolvedParams?.success === 'true'
 
   // Now we fetch the subscription data with appropriate options
   const [hasSubscription, subscriptionDetails] = await Promise.all([
