@@ -78,7 +78,7 @@ export default function DatenschutzPage() {
             <p className="text-gray-600 mb-4">
               Wir verwenden den Dienst &quot;Clerk&quot;, um die Verwaltung von Benutzerkonten und die Authentifizierung auf unserer Website zu ermöglichen. 
               Clerk erhebt und verarbeitet personenbezogene Daten wie Namen, E-Mail-Adressen und Authentifizierungsinformationen. Die Verarbeitung erfolgt auf Grundlage von 
-              <strong>Art. 6 Abs. 1 lit. b DSGVO</strong> (Erfüllung eines Vertrags) oder <strong>Art. 6 Abs. 1 lit. f DSGVO</strong> (berechtigtes Interesse an einer sicheren und 
+              <strong> Art. 6 Abs. 1 lit. b DSGVO</strong> (Erfüllung eines Vertrags) oder <strong>Art. 6 Abs. 1 lit. f DSGVO</strong> (berechtigtes Interesse an einer sicheren und 
               effizienten Benutzerverwaltung).
             </p>
 

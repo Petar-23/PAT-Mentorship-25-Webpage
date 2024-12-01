@@ -40,7 +40,7 @@ const programPhases: ProgramPhase[] = [
     phase: "Phase 3: Live Trading",
     description: "Wende dein Wissen unter realen Marktbedingungen an",
     features: [
-      "Live Trading Sessions mit minimalen Hebel",
+      "Live Trading Sessions mit minimalem Hebel",
       "Trade Review Workshops",
       "Fortgeschrittenes Risikomanagement",
       "Finde dein Model"
@@ -112,7 +112,7 @@ const supportFeatures = [
   {
     icon: <BrainCircuit className="h-full w-full" />,
     title: "Zugang zu Absolventen",
-    description: "Vernetze dich mit Absolventen vorheriger PAT Mentorships, die dir ein paar Schritte vorraus sind.",
+    description: "Vernetze dich mit Absolventen vorheriger PAT Mentorships, die dir ein paar Schritte voraus sind.",
     iconColor: "text-green-400",
     rainColor: "#34D399",
     gradientColor: "rgba(52, 211, 153, 0.2)"
