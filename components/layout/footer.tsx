@@ -1,4 +1,3 @@
-// src/components/layout/footer.tsx
 'use client'
 
 import Link from "next/link"
@@ -8,12 +7,21 @@ import {
   SiX, 
   SiDiscord 
 } from '@icons-pack/react-simple-icons'
-import { Cookie } from "lucide-react"
+import { Cookie, LineChart } from "lucide-react"
 import { useCookieSettings } from "@/lib/cookie-settings"
 
 export function Footer() {
   const { openSettings } = useCookieSettings()
   
+  const toolLinks = [
+    {
+      title: "Wachstumsrechner",
+      href: "/tools/equity-calculator",
+      description: "Berechne die optimale Kontraktgröße basierend auf deinem Kapital",
+      icon: LineChart
+    }
+  ]
+
   const legalLinks = [
     {
       title: "Impressum",
@@ -101,8 +109,45 @@ export function Footer() {
             ))}
           </div>
 
-          {/* Legal Links */}
+          {/* Tools & Legal Links */}
           <div className="md:col-span-2">
+            {/* Tools Section */}
+            <div className="mb-8">
+              <h3 className="font-semibold text-white mb-4">
+                Kostenlose Tools
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {toolLinks.map((link, index) => (
+                  <div key={index} className="text-sm group">
+                    <Link 
+                      href={link.href}
+                      className="text-blue-400 hover:text-blue-300 transition-colors font-medium inline-flex items-center gap-2"
+                    >
+                      <link.icon className="h-4 w-4" />
+                      {link.title}
+                      <svg
+                        className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </Link>
+                    <p className="text-gray-400 mt-1">
+                      {link.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Legal Links */}
             <h3 className="font-semibold text-white mb-4">
               Rechtliche Informationen
             </h3>
@@ -136,7 +181,7 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Social Links and Cookie Settings */}
+          {/* Rest of the footer remains the same */}
           <div className="space-y-8">
             {/* Social Links */}
             <div>
