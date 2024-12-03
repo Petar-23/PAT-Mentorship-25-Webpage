@@ -8,16 +8,26 @@ export async function POST() {
     const { userId } = await auth()
 
     if (!userId) {
-      return new NextResponse('Unauthorized', { status: 401 })
+      return NextResponse.json(
+        { message: 'Nicht autorisiert' }, 
+        { status: 401 }
+      )
     }
 
     const { url } = await createCustomerPortalSession(userId)
 
+    if (!url) {
+      return NextResponse.json(
+        { message: 'Fehler beim Erstellen der Portal-Session' }, 
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json({ url })
   } catch (error) {
     console.error('Error in create-portal-session:', error)
-    return new NextResponse(
-      'Error creating portal session', 
+    return NextResponse.json(
+      { message: 'Ein Fehler ist aufgetreten' }, 
       { status: 500 }
     )
   }
