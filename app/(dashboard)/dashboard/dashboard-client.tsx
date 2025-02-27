@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { CalendarCheck, LockIcon, CircleCheckBig, CreditCard, Users, Shield } from 'lucide-react'
+import { CalendarCheck, LockIcon, CircleCheckBig, CreditCard, BookOpen, ExternalLink } from 'lucide-react'
 import { CheckoutButton } from '@/components/ui/checkout-button'
 import { Button } from '@/components/ui/button'
 import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'
@@ -48,9 +48,12 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     }
   }, [])
   
-  const startDate = new Date('2025-03-01')
+  const startDate = new Date('2025-02-25')
   const programStarted = new Date() >= startDate
   const hasSubscriptionHistory = initialData.subscriptionDetails !== null
+
+  // YouTube video ID - replace with your actual video ID
+  const videoId = "7U7f8GQvwK8?si=nNXzZ67Ns-4iogD6"
 
   // Show the streamlined conversion page for new users
   if (!hasSubscriptionHistory) {
@@ -84,7 +87,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                   <div>
                     <p className="font-medium">Keine Zahlung bis März 2025</p>
                     <p className="text-sm text-green-600 mt-1">
-                      Jetzt sichern, Zahlung erst ab 1. März 2025
+                      Jetzt sichern, Zahlung erst ab 01. März 2025
                     </p>
                   </div>
                 </div>
@@ -97,7 +100,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                   <span className="text-xl text-gray-500 ml-2">/Monat</span>
                 </div>
                 <p className="text-sm text-gray-500 mt-2">
-                  Erste Zahlung am 1. März 2025
+                  Erste Zahlung am 01. März 2025
                 </p>
               </div>
 
@@ -142,7 +145,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
             <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-blue-600" />
+                  <BookOpen className="h-5 w-5 text-blue-600" />
                   Interaktives Live-Lernen
                 </CardTitle>
               </CardHeader>
@@ -157,7 +160,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
             <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-blue-600" />
+                  <LockIcon className="h-5 w-5 text-blue-600" />
                   Risikofreie Entscheidung
                 </CardTitle>
               </CardHeader>
@@ -205,82 +208,72 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           </div>
         )}
         
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Discord Access */}
+        <div className="grid gap-6">
+          {/* Onboarding Video */}
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <svg 
-                  className="h-5 w-5 text-[#5865F2]" 
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.118.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.419c0 1.334-.956 2.419-2.157 2.419zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.419c0 1.334-.946 2.419-2.157 2.419z"/>
-                </svg>
-                Discord Community
-              </CardTitle>
+              <CardTitle>Onboarding Video</CardTitle>
               <CardDescription>
-                Verbinde dich mit Mentoren und anderen Teilnehmern
+                Ich helfe dir alles zu finden
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 mb-4">
-                Tritt unserer exklusiven Discord-Community bei für Live-Sessions, Diskussionen und Networking.
+              <div className="relative pb-[56.25%] h-0 overflow-hidden rounded-lg">
+                <iframe 
+                  className="absolute top-0 left-0 w-full h-full"
+                  src={`https://www.youtube.com/embed/${videoId}`}
+                  title="PAT Mentorship 2025 Onboarding"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+              <p className="text-gray-600 mt-4 text-sm">
+                Schau dir dieses Video an, um zu erfahren, wie du an alle Inhalte kommst.
               </p>
-              {canAccessContent && programStarted ? (
-                <a 
-                  href={process.env.NEXT_PUBLIC_DISCORD_INVITE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center w-full px-4 py-2 bg-[#5865F2] text-white rounded-md hover:bg-[#4752C4] transition-colors gap-2"
-                >
-                  Discord Server beitreten
-                </a>
-              ) : (
-                <Button 
-                  className="w-full bg-[#5865F2] hover:bg-[#5865F2] cursor-not-allowed opacity-60"
-                  disabled
-                >
-                  Verfügbar ab 1. März 2025
-                </Button>
-              )}
             </CardContent>
           </Card>
-
+          
           {/* Whop Access */}
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
-              <CardTitle>Kursinhalte</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-blue-600" />
+                Kursinhalte & Community
+              </CardTitle>
               <CardDescription>
-                Zugriff auf deine Lernmaterialien
+                Zugriff auf deine Lernmaterialien und das Mentorship Forum
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                Greife auf deine Videolektionen, Ressourcen zu und verfolge deinen Fortschritt im Programm.
+                Greife auf deine Videolektionen, Ressourcen und Discord Community zu. Die Whop-Plattform verwaltet automatisch deinen Zugang zu allen Kursinhalten und der Discord Community.
               </p>
-              {canAccessContent && programStarted ? (
+              
+              {canAccessContent ? (
                 <a 
-                  href={process.env.NEXT_PUBLIC_WHOP_COURSE_URL}
+                  href={process.env.NEXT_PUBLIC_WHOP_COURSE_URL || "https://whop.com/checkout/plan_TtPFXidmjPAT7"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center w-full px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors gap-2"
+                  className="inline-flex items-center justify-center w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors gap-2"
                 >
-                  Zur Kursplattform
+                  <ExternalLink className="h-5 w-5 mr-2" />
+                  Zur Mentorship
                 </a>
               ) : (
                 <Button 
-                  className="w-full bg-black hover:bg-black cursor-not-allowed opacity-60"
+                  className="w-full bg-blue-600 hover:bg-blue-600 cursor-not-allowed opacity-60"
                   disabled
                 >
-                  Verfügbar ab 1. März 2025
+                  <ExternalLink className="h-5 w-5 mr-2" />
+                  Verfügbar ab dem 01. März 2025
                 </Button>
               )}
             </CardContent>
           </Card>
 
           {/* Subscription Management */}
-          <Card className="md:col-span-2">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
@@ -294,11 +287,11 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               <div className="text-sm text-gray-600">
                 {initialData.subscriptionDetails?.isCanceled ? (
                   <p className="text-red-600">
-                    Dein Abonnement wurde gekündigt. Erneuere jetzt dein Abonnement, um deinen Platz für das Programm ab 1. März 2025 zu sichern.
+                    Dein Abonnement wurde gekündigt. Erneuere jetzt dein Abonnement, um deinen Platz für das Programm ab 01. März 2025 zu sichern.
                   </p>
                 ) : (
                   <>
-                    <p>Dein Abonnement startet am 1. März 2025.</p>
+                    <p>Dein Abonnement startet am 01. März 2025.</p>
                     <p>Du kannst deine Zahlungsmethode und Abonnement-Einstellungen unten verwalten.</p>
                   </>
                 )}
