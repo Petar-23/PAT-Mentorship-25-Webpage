@@ -48,12 +48,12 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     }
   }, [])
   
-  const startDate = new Date('2025-02-25')
+  const startDate = new Date('2025-03-01')
   const programStarted = new Date() >= startDate
   const hasSubscriptionHistory = initialData.subscriptionDetails !== null
 
   // YouTube video ID - replace with your actual video ID
-  const videoId = "7U7f8GQvwK8?si=nNXzZ67Ns-4iogD6"
+  const videoId = "v2aOTaZQd98?si=AVXo7jYBzNi1QZJT"
 
   // Show the streamlined conversion page for new users
   if (!hasSubscriptionHistory) {
