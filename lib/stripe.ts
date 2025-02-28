@@ -100,47 +100,11 @@ export async function createCheckoutSession(userId: string, userEmail: string) {
       })
     }
 
-    // Define program start date in German timezone
-    const programStartDate = new Date('2025-03-01T23:59:00+01:00'); // German timezone (CET/CEST)
-    const now = new Date();
+    // Define program start date
+    const programStartDate = new Date('2025-03-01T23:59:00Z');
     
-    // Check if we're before or after the program start date
-    let subscriptionData = {};
-    
-    if (now < programStartDate) {
-      // We're before March 1st 23:59 German time - use trial period
-      // Calculate trial end date that is at least 2 days in the future (to satisfy Stripe)
-      const trialEndDate = new Date();
-      trialEndDate.setDate(trialEndDate.getDate() + 3); // Add 3 days to be safe
-      
-      // If the calculated trial end is after the program start, use the program start instead
-      const effectiveTrialEnd = trialEndDate > programStartDate ? programStartDate : trialEndDate;
-      const trialEndTimestamp = Math.floor(effectiveTrialEnd.getTime() / 1000);
-      
-      subscriptionData = {
-        trial_end: trialEndTimestamp,
-        metadata: {
-          userId: userId,
-          scheduled_start: programStartDate.toISOString(),
-          signup_type: "pre_launch"
-        }
-      };
-      
-      console.log(`Pre-launch signup: Setting trial_end to ${new Date(trialEndTimestamp * 1000).toISOString()}`);
-    } else {
-      // We're after March 1st 23:59 German time - no trial, direct subscription
-      subscriptionData = {
-        metadata: {
-          userId: userId,
-          scheduled_start: programStartDate.toISOString(),
-          signup_type: "post_launch"
-        }
-      };
-      
-      console.log(`Post-launch signup: No trial period, direct subscription`);
-    }
-
-    // Create a checkout session
+    // Create a checkout session WITHOUT trial for now
+    // This bypasses the trial_end validation entirely
     const session = await stripe.checkout.sessions.create({
       customer: customer.id,
       payment_method_types: ['card', 'sepa_debit'],
@@ -158,7 +122,14 @@ export async function createCheckoutSession(userId: string, userEmail: string) {
           quantity: 1,
         },
       ],
-      subscription_data: subscriptionData,
+      subscription_data: {
+        // No trial_end parameter - subscription will start immediately
+        metadata: {
+          userId: userId,
+          scheduledStart: programStartDate.toISOString(),
+          signupType: "pre_launch"
+        }
+      },
       success_url: `${baseUrl}/dashboard?success=true`,
       cancel_url: `${baseUrl}/dashboard?canceled=true`,
       metadata: {
