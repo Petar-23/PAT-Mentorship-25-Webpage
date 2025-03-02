@@ -6,7 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, ChevronUp, FilterX, TrendingUp, Calendar } from 'lucide-react'
+import { ChevronDown, ChevronUp, FilterX, TrendingUp, Calendar, AlertCircle } from 'lucide-react'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d']
 
@@ -56,6 +56,7 @@ export default function AdminDashboard() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [fetchAttempt, setFetchAttempt] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
   const [showInactiveCustomers, setShowInactiveCustomers] = useState(false)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('All')
@@ -74,28 +75,50 @@ export default function AdminDashboard() {
   const [showCancelledSection, setShowCancelledSection] = useState(false)
   const [showColumnFilters, setShowColumnFilters] = useState(false)
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setIsLoading(true)
-        const response = await fetch('/api/owner/dashboard-data')
-        
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status}`)
-        }
-        
-        const dashboardData = await response.json() as DashboardData
-        setData(dashboardData)
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error)
-        setError(error instanceof Error ? error.message : 'Failed to load dashboard data')
-      } finally {
-        setIsLoading(false)
+  // Add a new function to handle retries
+  const fetchDashboardDataWithRetry = async (attempt = 0) => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      const response = await fetch('/api/owner/dashboard-data', {
+        // Add cache: 'no-store' to prevent caching
+        cache: 'no-store'
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} - ${response.statusText}`)
       }
+      
+      const dashboardData = await response.json() as DashboardData
+      setData(dashboardData)
+    } catch (error) {
+      console.error(`Failed to fetch dashboard data (attempt ${attempt + 1}):`, error)
+      
+      // Implement exponential backoff for retries
+      if (attempt < 2) { // Try up to 3 times (0, 1, 2)
+        const backoffTime = Math.pow(2, attempt) * 1000 // 1s, 2s, 4s
+        console.log(`Retrying in ${backoffTime/1000}s...`)
+        
+        setTimeout(() => {
+          setFetchAttempt(attempt + 1)
+        }, backoffTime)
+        
+        setError(`Loading data failed. Retrying in ${backoffTime/1000} seconds...`)
+      } else {
+        setError(error instanceof Error 
+          ? `Failed to load dashboard data: ${error.message}` 
+          : 'Failed to load dashboard data. Please try again later.'
+        )
+      }
+    } finally {
+      setIsLoading(false)
     }
+  }
 
-    fetchDashboardData()
-  }, [])
+  useEffect(() => {
+    fetchDashboardDataWithRetry(fetchAttempt)
+  }, [fetchAttempt])
 
   const handleSort = (key: keyof CustomerData) => {
     let direction: 'asc' | 'desc' = 'asc'
@@ -324,7 +347,7 @@ export default function AdminDashboard() {
         ...item,
         value: activeCustomersWithThisMethod
       }
-    })
+    }).filter(item => item.value > 0) // Remove items with zero count
     
     // Filter monthly data to only show from March 2025 onwards
     const programStartDate = new Date('2025-03-01')
@@ -355,10 +378,13 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-64 w-full">
+      <div className="flex justify-center items-center min-h-64 w-full py-20">
         <div className="text-center">
           <LoadingSpinner className="h-10 w-10 mx-auto" />
           <p className="mt-4 text-lg text-gray-700">Loading dashboard data...</p>
+          {fetchAttempt > 0 && (
+            <p className="text-sm text-gray-600 mt-2">Attempt {fetchAttempt + 1} of 3</p>
+          )}
         </div>
       </div>
     )
@@ -366,10 +392,35 @@ export default function AdminDashboard() {
 
   if (error) {
     return (
-      <div className="p-6 text-center">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          <p className="font-bold">Error</p>
-          <p>{error}</p>
+      <div className="p-6 max-w-4xl mx-auto mt-8">
+        <Card className="bg-red-50 border-red-300">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-lg font-semibold text-red-800 mb-2">Error Loading Dashboard</h3>
+                <p className="text-red-700 mb-4">{error}</p>
+                <button 
+                  onClick={() => {
+                    setFetchAttempt(0)
+                    fetchDashboardDataWithRetry(0)
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <div className="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+          <h3 className="text-lg font-semibold mb-2">Troubleshooting Tips</h3>
+          <ul className="list-disc list-inside space-y-2 text-gray-700">
+            <li>Check your Stripe API key and ensure it has the necessary permissions</li>
+            <li>Verify your network connection and server status</li>
+            <li>The API might be timing out due to a large number of customers</li>
+            <li>Check server logs for more detailed error information</li>
+          </ul>
         </div>
       </div>
     )
@@ -499,7 +550,7 @@ export default function AdminDashboard() {
       </div>
       
       {/* Charts */}
-      {filteredChartData && (
+      {filteredChartData && filteredChartData.paymentMethodData.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Payment Method Distribution */}
           <Card>
