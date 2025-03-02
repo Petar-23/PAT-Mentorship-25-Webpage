@@ -31,13 +31,16 @@ export async function GET() {
     // Increased limit to avoid pagination issues
     const customers = await stripe.customers.list({
       limit: 100,
-      expand: ['data.subscriptions']
+      expand: ['data.subscriptions', 'data.subscriptions.data.default_payment_method']
     })
 
     // Step 2: Fetch all charges in one go instead of per customer
     const charges = await stripe.charges.list({
       limit: 100
     })
+    
+    // Additional logging for debugging
+    console.log(`Found ${customers.data.length} customers and ${charges.data.length} charges`)
 
     // Step 3: Create a map of customer IDs to their charges for quick lookup
     const customerCharges = new Map<string, Stripe.Charge[]>()
@@ -72,20 +75,56 @@ export async function GET() {
         paymentStatus = "Inactive"
       }
 
-      // Determine payment method based on subscription data
-      // Note: We're no longer making individual API calls for payment methods
+      // Determine payment method based on subscription data with more robust handling
       let paymentMethod = "Not Available"
-      if (subscriptions.length > 0 && subscriptions[0].default_payment_method) {
-        const pm = subscriptions[0].default_payment_method
-        if (typeof pm !== 'string' && pm.type === 'card' && pm.card) {
-          paymentMethod = `Credit Card (${pm.card.brand})`
-        } else if (typeof pm !== 'string' && pm.type === 'sepa_debit') {
-          paymentMethod = 'Bank Transfer (SEPA)'
-        } else if (typeof pm !== 'string') {
-          paymentMethod = pm.type
+      try {
+        // Log subscription data for debugging
+        console.log(`Processing payment method for customer ${customer.id}`)
+        
+        if (subscriptions.length > 0) {
+          const subscription = subscriptions[0]
+          console.log(`Customer ${customer.id} has subscription: ${subscription.id}`)
+          
+          // Check if default_payment_method exists and extract its details
+          if (subscription.default_payment_method) {
+            console.log(`Found payment method for sub ${subscription.id}: ${
+              typeof subscription.default_payment_method === 'string' 
+              ? subscription.default_payment_method 
+              : 'object'
+            }`)
+            
+            const pm = subscription.default_payment_method
+            
+            if (typeof pm === 'string') {
+              // It's just a string ID, try a fallback approach
+              paymentMethod = 'Card (Details Not Expanded)'
+            } else if (pm && pm.type) {
+              // Properly expanded payment method object
+              if (pm.type === 'card' && pm.card) {
+                paymentMethod = `Credit Card (${pm.card.brand || 'Unknown Brand'})`
+              } else if (pm.type === 'sepa_debit') {
+                paymentMethod = 'Bank Transfer (SEPA)'
+              } else {
+                paymentMethod = pm.type
+              }
+            }
+          } else {
+            // Log that no payment method was found
+            console.log(`No default_payment_method found for subscription ${subscription.id}`)
+            
+            // Check if there's a payment method in the customer object directly
+            if (customer.invoice_settings?.default_payment_method) {
+              paymentMethod = 'Customer Default Method'
+            } else if (hasActiveSubscription) {
+              paymentMethod = 'Pending Payment Method'
+            }
+          }
+        } else if (hasActiveSubscription) {
+          paymentMethod = 'Pending Payment Method'
         }
-      } else if (hasActiveSubscription) {
-        paymentMethod = 'Pending Payment Method'
+      } catch (e) {
+        console.error(`Error extracting payment method for customer ${customer.id}:`, e)
+        paymentMethod = 'Error Extracting Method'
       }
 
       // Calculate total spent by this customer using the pre-fetched charges
@@ -112,6 +151,15 @@ export async function GET() {
     const totalCustomers = enhancedCustomers.length
     const activeCustomers = enhancedCustomers.filter(c => c.status === 'active').length
     const paidCustomers = enhancedCustomers.filter(c => c.totalSpend > 0).length
+    
+    // Log the payment methods we found for debugging
+    console.log('Payment methods distribution:')
+    const methodCounts: Record<string, number> = {}
+    enhancedCustomers.forEach(c => {
+      if (!methodCounts[c.paymentMethod]) methodCounts[c.paymentMethod] = 0
+      methodCounts[c.paymentMethod]++
+    })
+    console.log(methodCounts)
     
     // Filter revenues starting from March 2025
     const relevantCustomers = enhancedCustomers.filter(customer => {
