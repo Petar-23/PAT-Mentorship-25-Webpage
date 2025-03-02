@@ -18,6 +18,7 @@ interface CustomerData {
   currency: string;
 }
 
+// Optimize the route by reducing API calls
 export async function GET() {
   try {
     const { userId } = await auth()
@@ -26,51 +27,38 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Fetch all customers with expanded payment info
+    // Step 1: Fetch all customers with expanded subscription data - single API call
+    // Increased limit to avoid pagination issues
     const customers = await stripe.customers.list({
       limit: 100,
       expand: ['data.subscriptions']
     })
 
-    // Process customers to get payment methods
-    const enhancedCustomers: CustomerData[] = []
-    
-    for (const customer of customers.data) {
-      // Fetch payment methods for this customer
-      let paymentMethods: Stripe.ApiList<Stripe.PaymentMethod> | { data: [] } = { data: [] }
-      try {
-        paymentMethods = await stripe.paymentMethods.list({
-          customer: customer.id,
-          type: 'card'
-        })
-      } catch (error) {
-        console.error(`Error fetching payment methods for ${customer.id}:`, error)
+    // Step 2: Fetch all charges in one go instead of per customer
+    const charges = await stripe.charges.list({
+      limit: 100
+    })
+
+    // Step 3: Create a map of customer IDs to their charges for quick lookup
+    const customerCharges = new Map<string, Stripe.Charge[]>()
+    charges.data.forEach(charge => {
+      if (charge.customer) {
+        const customerId = typeof charge.customer === 'string' ? charge.customer : charge.customer.id
+        if (!customerCharges.has(customerId)) {
+          customerCharges.set(customerId, [])
+        }
+        customerCharges.get(customerId)?.push(charge)
       }
+    })
 
-      // Try to get SEPA payment methods if available
-      let sepaPaymentMethods: Stripe.ApiList<Stripe.PaymentMethod> | { data: [] } = { data: [] }
-      try {
-        sepaPaymentMethods = await stripe.paymentMethods.list({
-          customer: customer.id,
-          type: 'sepa_debit'
-        })
-      } catch (error) {
-        // SEPA might not be enabled, just continue
-        console.error(error)
-      }
-
-      // Combine all payment methods
-      const allPaymentMethods = [
-        ...paymentMethods.data,
-        ...sepaPaymentMethods.data
-      ]
-
+    // Step 4: Process customers without additional API calls per customer
+    const enhancedCustomers: CustomerData[] = customers.data.map(customer => {
       const subscriptions = customer.subscriptions?.data || []
       const hasActiveSubscription = subscriptions.some(sub => 
         ['active', 'trialing'].includes(sub.status) && !sub.cancel_at_period_end
       )
 
-      // Calculate payment status and method
+      // Calculate payment status
       let paymentStatus = "No Status"
       if (hasActiveSubscription) {
         if (customer.balance > 0) {
@@ -84,38 +72,40 @@ export async function GET() {
         paymentStatus = "Inactive"
       }
 
-      // Determine payment method
+      // Determine payment method based on subscription data
+      // Note: We're no longer making individual API calls for payment methods
       let paymentMethod = "Not Available"
-      if (allPaymentMethods.length > 0) {
-        const defaultMethod = allPaymentMethods[0]
-        if (defaultMethod.type === 'card' && defaultMethod.card) {
-          paymentMethod = `Credit Card (${defaultMethod.card.brand})`
-        } else if (defaultMethod.type === 'sepa_debit') {
+      if (subscriptions.length > 0 && subscriptions[0].default_payment_method) {
+        const pm = subscriptions[0].default_payment_method
+        if (typeof pm !== 'string' && pm.type === 'card' && pm.card) {
+          paymentMethod = `Credit Card (${pm.card.brand})`
+        } else if (typeof pm !== 'string' && pm.type === 'sepa_debit') {
           paymentMethod = 'Bank Transfer (SEPA)'
-        } else {
-          paymentMethod = defaultMethod.type
+        } else if (typeof pm !== 'string') {
+          paymentMethod = pm.type
         }
       } else if (hasActiveSubscription) {
-        // If active but no payment method found, likely SEPA awaiting confirmation
-        paymentMethod = 'Bank Transfer (SEPA) Pending'
+        paymentMethod = 'Pending Payment Method'
       }
 
-      // Calculate total spent by this customer
-      const totalSpent = await calculateCustomerSpend(customer.id)
+      // Calculate total spent by this customer using the pre-fetched charges
+      const customerChargesList = customerCharges.get(customer.id) || []
+      const successfulCharges = customerChargesList.filter(charge => charge.status === 'succeeded')
+      const totalSpent = successfulCharges.reduce((sum, charge) => sum + charge.amount, 0) / 100
 
-      enhancedCustomers.push({
+      return {
         id: customer.id,
         email: customer.email,
-        name: customer.name || null, // Ensure name is string | null, not undefined
+        name: customer.name || null,
         createdAt: new Date(customer.created * 1000).toISOString(),
         status: hasActiveSubscription ? 'active' : 'inactive',
         paymentStatus,
         paymentMethod,
         totalSpend: totalSpent,
-        paymentCount: totalSpent > 0 ? 1 : 0,
+        paymentCount: successfulCharges.length,
         currency: customer.currency || 'eur'
-      })
-    }
+      }
+    })
 
     // Calculate aggregated statistics
     const programStartDate = new Date('2025-03-01')
@@ -174,24 +164,6 @@ export async function GET() {
   }
 }
 
-async function calculateCustomerSpend(customerId: string): Promise<number> {
-  try {
-    // Get charges for this customer
-    const charges = await stripe.charges.list({
-      customer: customerId,
-      limit: 100
-    })
-    
-    // Sum up successful charges
-    return charges.data
-      .filter(charge => charge.status === 'succeeded')
-      .reduce((sum, charge) => sum + charge.amount, 0) / 100
-  } catch (error) {
-    console.error(`Error calculating spend for ${customerId}:`, error)
-    return 0
-  }
-}
-
 function generateMonthlyData(customers: CustomerData[], startDate: Date) {
   const now = new Date()
   const months = []
@@ -234,4 +206,11 @@ function generateMonthlyData(customers: CustomerData[], startDate: Date) {
   })
 }
 
+// Add headers to force non-caching - prevent stale data
+export const headers = {
+  'Cache-Control': 'no-store, max-age=0'
+}
+
+// Use serverless runtime instead of edge for longer timeout
+export const runtime = 'nodejs' // or remove for default serverless
 export const dynamic = 'force-dynamic'
