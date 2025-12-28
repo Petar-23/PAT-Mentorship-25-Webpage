@@ -507,6 +507,12 @@ export function VideoPlayer({
               }}
               onUploadSuccess={(guid) => {
                 applyBunnyGuidToActiveVideo(guid)
+                // Sobald Bunny fertig ist (UploadZone ruft onUploadSuccess erst nach Processing),
+                // posten wir automatisch das Discord Announcement (idempotent via API + local ref).
+                if (!announcementAttemptedRef.current.has(activeVideo.id)) {
+                  announcementAttemptedRef.current.add(activeVideo.id)
+                  void triggerDiscordAnnouncement(activeVideo.id)
+                }
                 setUploadViewVideoId(null)
                 setIsPlayerLoaded(false)
               }}
