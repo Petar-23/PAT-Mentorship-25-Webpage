@@ -76,7 +76,7 @@ export default function FinalCTA() {
                     >
                         <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
                             Deine Trading-Reise <br />
-                            Beginnt im März 2025
+                            Beginnt im März 2026
                         </h2>
                         <p className="text-xl text-gray-300 max-w-2xl mx-auto">
                             Werde einer von 100 ambitionierten Tradern und erlebe ein transformatives Jahr 

@@ -229,6 +229,7 @@ export const Vortex = (props: VortexProps) => {
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

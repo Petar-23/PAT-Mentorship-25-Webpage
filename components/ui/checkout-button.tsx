@@ -1,63 +1,56 @@
-// src/components/checkout-button.tsx
 'use client'
 
 import { useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { useToast } from "@/hooks/use-toast"
 
-export function CheckoutButton() {
-  const [loading, setLoading] = useState(false)
-  const { toast } = useToast()
+interface CheckoutButtonProps {
+  disabled?: boolean
+}
+
+export function CheckoutButton({ disabled = false }: CheckoutButtonProps) {
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleCheckout = async () => {
+    if (isLoading || disabled) return
+
+    setIsLoading(true)
+
     try {
-      setLoading(true)
       const response = await fetch('/api/create-checkout', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       })
-
-      const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || 'Error creating checkout session')
+        throw new Error('Checkout fehlgeschlagen')
       }
 
-      if (!data.url) {
-        throw new Error('No checkout URL received')
-      }
+      const { url } = await response.json()
 
-      // Redirect to Stripe Checkout
-      window.location.href = data.url
+      if (url) {
+        window.location.href = url
+      }
     } catch (error) {
-      console.error('Checkout error:', error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to start checkout process',
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
+      console.error('Error starting checkout:', error)
+      setIsLoading(false)
+      alert('Fehler beim Starten des Checkouts. Bitte versuche es später erneut.')
     }
   }
 
   return (
-    <Button 
-      onClick={handleCheckout} 
-      disabled={loading}
-      className="w-full"
+    <Button
+      onClick={handleCheckout}
+      disabled={isLoading || disabled}
+      className="w-full text-lg py-6"
       size="lg"
     >
-      {loading ? (
+      {isLoading ? (
         <>
-          <LoadingSpinner className="mr-2" />
-          Processing...
+          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          Wird weitergeleitet...
         </>
       ) : (
-        'Platz jetzt sichern ->'
+        'Jetzt Platz sichern'
       )}
     </Button>
   )

@@ -1,55 +1,271 @@
-// src/lib/stripe-webhook-handler.ts
-
 import type Stripe from 'stripe'
+import { stripe } from './stripe'
+import { prisma } from './prisma'
 import { ensureCustomerTaxInfo } from './updateCustomers'
+import {
+  addRoleToGuildMember,
+  removeRoleFromGuildMember,
+  sendDiscordChannelMessage,
+} from './discord'
 
 // Define type for Stripe error handling
 interface StripeError extends Error {
-  type: string;
-  code?: string;
-  param?: string;
+  type: string
+  code?: string
+  param?: string
+}
+
+function requireEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`Missing ${name}`)
+  }
+  return value
+}
+
+function getCustomerIdFromSubscription(subscription: Stripe.Subscription): string | null {
+  if (!subscription.customer) return null
+  return typeof subscription.customer === 'string'
+    ? subscription.customer
+    : subscription.customer.id
+}
+
+function formatUnix(unix: number | null | undefined): string {
+  if (!unix) return '—'
+  return new Date(unix * 1000).toISOString()
+}
+
+function unixToDate(unix: number | null | undefined): Date | null {
+  if (!unix || !Number.isFinite(unix)) return null
+  return new Date(unix * 1000)
+}
+
+function getPriceIdsFromSubscription(subscription: Stripe.Subscription): string[] {
+  const items = subscription.items?.data ?? []
+  const ids = items
+    .map((item) => {
+      const price = item.price
+      const priceId = typeof price === 'string' ? price : price?.id
+      return typeof priceId === 'string' && priceId.length > 0 ? priceId : null
+    })
+    .filter((id): id is string => typeof id === 'string')
+
+  return Array.from(new Set(ids))
+}
+
+async function upsertUserSubscription(params: {
+  userId: string
+  stripeCustomerId: string
+  subscription: Stripe.Subscription
+}) {
+  const { userId, stripeCustomerId, subscription } = params
+
+  const priceIds = getPriceIdsFromSubscription(subscription)
+
+  await prisma.userSubscription.upsert({
+    where: { userId },
+    create: {
+      userId,
+      stripeCustomerId,
+      stripeSubscriptionId: subscription.id,
+      status: subscription.status,
+      cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
+      currentPeriodEnd: unixToDate(subscription.current_period_end),
+      cancelAt: unixToDate(subscription.cancel_at),
+      priceIds,
+    },
+    update: {
+      stripeCustomerId,
+      stripeSubscriptionId: subscription.id,
+      status: subscription.status,
+      cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
+      currentPeriodEnd: unixToDate(subscription.current_period_end),
+      cancelAt: unixToDate(subscription.cancel_at),
+      priceIds,
+    },
+  })
+}
+
+async function getCustomerInfo(customerId: string): Promise<{
+  email: string | null
+  appUserId: string | null
+  discordUserId: string | null
+}> {
+  const customer = await stripe.customers.retrieve(customerId)
+
+  // Stripe kann auch ein DeletedCustomer zurückgeben (hat dann { deleted: true })
+  if ('deleted' in customer && customer.deleted) {
+    return { email: null, appUserId: null, discordUserId: null }
+  }
+
+  return {
+    email: customer.email ?? null,
+    appUserId: customer.metadata?.userId ?? null,
+    discordUserId: customer.metadata?.discordUserId ?? null,
+  }
+}
+
+async function safeSendModMessage(content: string) {
+  const channelId = process.env.DISCORD_MOD_CHANNEL_ID
+  if (!channelId) return
+
+  try {
+    await sendDiscordChannelMessage({ channelId, content })
+  } catch (err) {
+    console.error('Failed to send Discord mod message:', err)
+  }
+}
+
+async function safeSetMenteeRole(discordUserId: string) {
+  try {
+    const guildId = requireEnv('DISCORD_GUILD_ID')
+    const roleId = requireEnv('DISCORD_ROLE_MENTEE26_ID')
+    await addRoleToGuildMember({ guildId, discordUserId, roleId })
+  } catch (err) {
+    console.error('Failed to add Discord role:', err)
+  }
+}
+
+async function safeRemoveMenteeRole(discordUserId: string) {
+  try {
+    const guildId = requireEnv('DISCORD_GUILD_ID')
+    const roleId = requireEnv('DISCORD_ROLE_MENTEE26_ID')
+    await removeRoleFromGuildMember({ guildId, discordUserId, roleId })
+  } catch (err) {
+    console.error('Failed to remove Discord role:', err)
+  }
 }
 
 /**
  * Main webhook handler that processes various Stripe events.
- * This function ensures proper tax information is set up for customers
- * and verifies invoice configuration for German legal requirements.
  */
 export async function handleStripeEvent(event: Stripe.Event) {
   console.log('Received Stripe event:', event.type)
+
   try {
     switch (event.type) {
       case 'customer.created': {
-        // When a new customer is created, immediately set up their tax information
-        // This ensures all future invoices will include proper German legal requirements
         const customer = event.data.object as Stripe.Customer
         console.log(`New customer created: ${customer.id}`)
-        
+
         await ensureCustomerTaxInfo(customer.id)
         break
       }
 
       case 'customer.subscription.created': {
-        // Double-check tax information when a subscription is created
-        // This serves as a safety net in case the customer.created handler failed
         const subscription = event.data.object as Stripe.Subscription
-        if (subscription.customer) {
-          const customerId = typeof subscription.customer === 'string' 
-            ? subscription.customer 
-            : subscription.customer.id
-          
+        const customerId = getCustomerIdFromSubscription(subscription)
+
+        if (customerId) {
           console.log(`New subscription created for customer: ${customerId}`)
           await ensureCustomerTaxInfo(customerId)
+
+          const info = await getCustomerInfo(customerId)
+
+          if (info.appUserId) {
+            await upsertUserSubscription({
+              userId: info.appUserId,
+              stripeCustomerId: customerId,
+              subscription,
+            })
+          }
+
+          await safeSendModMessage(
+            `🟢 Neues Abo erstellt\n- Email: ${info.email ?? '—'}\n- customerId: ${customerId}\n- userId: ${info.appUserId ?? '—'}\n- subscriptionId: ${subscription.id}\n- status: ${subscription.status}`
+          )
+
+          const isActive =
+            !subscription.cancel_at_period_end &&
+            ['active', 'trialing'].includes(subscription.status)
+
+          // Rolle setzen, wenn Discord schon verknüpft ist
+          if (isActive && info.discordUserId) {
+            await safeSetMenteeRole(info.discordUserId)
+          }
         }
+
+        break
+      }
+
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription
+        const customerId = getCustomerIdFromSubscription(subscription)
+
+        const prev = event.data.previous_attributes as
+          | { cancel_at_period_end?: boolean; status?: string }
+          | undefined
+
+        if (customerId) {
+          const info = await getCustomerInfo(customerId)
+
+          if (info.appUserId) {
+            await upsertUserSubscription({
+              userId: info.appUserId,
+              stripeCustomerId: customerId,
+              subscription,
+            })
+          }
+
+          // Nur einmal melden, wenn cancel_at_period_end neu auf true gesetzt wurde
+          if (subscription.cancel_at_period_end && prev?.cancel_at_period_end !== true) {
+            await safeSendModMessage(
+              `🟠 Kündigung eingegangen (läuft bis Periodenende)\n- Email: ${info.email ?? '—'}\n- customerId: ${customerId}\n- userId: ${info.appUserId ?? '—'}\n- subscriptionId: ${subscription.id}\n- current_period_end: ${formatUnix(subscription.current_period_end)}`
+            )
+          }
+
+          // Melden, wenn eine Kündigung zurückgenommen wurde (cancel_at_period_end wieder false)
+          if (!subscription.cancel_at_period_end && prev?.cancel_at_period_end === true) {
+            await safeSendModMessage(
+              `🟢 Kündigung zurückgenommen (Abo läuft weiter)\n- Email: ${info.email ?? '—'}\n- customerId: ${customerId}\n- userId: ${info.appUserId ?? '—'}\n- subscriptionId: ${subscription.id}\n- status: ${subscription.status}\n- current_period_end: ${formatUnix(subscription.current_period_end)}`
+            )
+          }
+
+          // Falls ein Abo (wieder) aktiv wird, Rolle sicherheitshalber setzen (idempotent)
+          const isActiveNow =
+            !subscription.cancel_at_period_end &&
+            ['active', 'trialing'].includes(subscription.status)
+
+          if (isActiveNow && info.discordUserId) {
+            await safeSetMenteeRole(info.discordUserId)
+          }
+        }
+
+        break
+      }
+
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription
+        const customerId = getCustomerIdFromSubscription(subscription)
+
+        if (customerId) {
+          const info = await getCustomerInfo(customerId)
+
+          if (info.appUserId) {
+            await upsertUserSubscription({
+              userId: info.appUserId,
+              stripeCustomerId: customerId,
+              subscription,
+            })
+          }
+
+          await safeSendModMessage(
+            `🔴 Abo beendet\n- Email: ${info.email ?? '—'}\n- customerId: ${customerId}\n- userId: ${info.appUserId ?? '—'}\n- subscriptionId: ${subscription.id}`
+          )
+
+          if (info.discordUserId) {
+            await safeRemoveMenteeRole(info.discordUserId)
+          }
+        }
+
         break
       }
 
       case 'invoice.created': {
-        // Log invoice creation - no action needed as tax info is set at customer level
         const invoice = event.data.object as Stripe.Invoice
-        console.log(`New invoice created ${invoice.id} - tax info should be included automatically`)
-        
-        // Optional: Add verification here if you want to double-check
+        console.log(
+          `New invoice created ${invoice.id} - tax info should be included automatically`
+        )
+
         if (!invoice.footer?.includes('Steueridentifizierungsnummer')) {
           console.warn(`Warning: Invoice ${invoice.id} may be missing tax information`)
         }
@@ -57,20 +273,16 @@ export async function handleStripeEvent(event: Stripe.Event) {
       }
 
       case 'invoice.finalized': {
-        // Monitor finalized invoices to ensure they have proper tax information
         const invoice = event.data.object as Stripe.Invoice
         console.log(`Invoice finalized ${invoice.id}`)
-        
-        // Optional: Add monitoring for tax information presence
+
         if (!invoice.footer?.includes('Steueridentifizierungsnummer')) {
           console.warn(`Warning: Finalized invoice ${invoice.id} may be missing tax information`)
-          
-          // If the invoice belongs to a customer, try to update their settings for future invoices
+
           if (invoice.customer) {
-            const customerId = typeof invoice.customer === 'string'
-              ? invoice.customer
-              : invoice.customer.id
-            
+            const customerId =
+              typeof invoice.customer === 'string' ? invoice.customer : invoice.customer.id
+
             console.log(`Attempting to update tax info for customer ${customerId}`)
             await ensureCustomerTaxInfo(customerId)
           }
@@ -79,8 +291,6 @@ export async function handleStripeEvent(event: Stripe.Event) {
       }
 
       case 'checkout.session.completed': {
-        // Log checkout completion - customer creation and subscription creation
-        // events will handle the tax information setup
         console.log('Checkout completed, customer and subscription events will follow')
         break
       }
@@ -94,13 +304,9 @@ export async function handleStripeEvent(event: Stripe.Event) {
       console.error('Error handling Stripe event:', {
         message: stripeError.message,
         type: stripeError.type,
-        code: stripeError.code
+        code: stripeError.code,
       })
     }
     throw error
   }
 }
-
-// These exports are needed for the Edge runtime in Next.js
-export const runtime = 'edge'
-export const dynamic = 'force-dynamic'

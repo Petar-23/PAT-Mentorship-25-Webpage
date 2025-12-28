@@ -1,8 +1,9 @@
 'use client'
 
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { CalendarCheck, LockIcon, CircleCheckBig, CreditCard, BookOpen, ExternalLink } from 'lucide-react'
+import { CalendarCheck, LockIcon, CircleCheckBig, CreditCard, BookOpen } from 'lucide-react'
 import { CheckoutButton } from '@/components/ui/checkout-button'
 import { Button } from '@/components/ui/button'
 import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'
@@ -35,27 +36,31 @@ const fadeInUp = {
 
 export default function DashboardClient({ initialData }: DashboardClientProps) {
   const searchParams = useSearchParams()
+  const showCoursesPaywall = searchParams.get('paywall') === 'courses'
   const [showSuccessModal, setShowSuccessModal] = useState(
     searchParams.get('success') === 'true'
   )
+
+  // State für Checkbox
+  const [termsAccepted, setTermsAccepted] = useState(false)
   
   const handleCloseModal = useCallback(() => {
     setShowSuccessModal(false)
     
-    // Optionally clean up the URL without a redirect
+    if (window.history.replaceState) {
+      window.history.replaceState({}, '', '/dashboard')
+    }
+  }, [])
+
+  const clearPaywallParam = useCallback(() => {
     if (window.history.replaceState) {
       window.history.replaceState({}, '', '/dashboard')
     }
   }, [])
   
-  const startDate = new Date('2025-03-01')
-  const programStarted = new Date() >= startDate
   const hasSubscriptionHistory = initialData.subscriptionDetails !== null
 
-  // YouTube video ID - replace with your actual video ID
-  const videoId = "v2aOTaZQd98?si=AVXo7jYBzNi1QZJT"
-
-  // Show the streamlined conversion page for new users
+  // Conversion page für neue User
   if (!hasSubscriptionHistory) {
     return (
       <div className="min-h-screen bg-gray-50 py-12">
@@ -65,6 +70,40 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6 }}
         >
+          {showCoursesPaywall && (
+            <motion.div {...fadeInUp} className="mb-8">
+              <Card className="border-amber-200 bg-amber-50 shadow-sm">
+                <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                      <LockIcon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-amber-900">
+                        Zugriff auf den Kursbereich gesperrt
+                      </p>
+                      <p className="text-sm text-amber-900/80 mt-1">
+                        Um die Kurse zu öffnen, brauchst du ein aktives Mentorship‑Abo.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button variant="outline" asChild className="w-full sm:w-auto">
+                      <a href="#checkout-cta">Jetzt freischalten</a>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full sm:w-auto"
+                      onClick={clearPaywallParam}
+                    >
+                      Später
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
           {/* Welcome Section */}
           <div className="text-center mb-12">
             <motion.div {...fadeInUp}>
@@ -72,7 +111,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                 Willkommen, {initialData.user.firstName || 'zukünftiger Trader'}!
               </h1>
               <p className="text-lg text-gray-600">
-                Du bist dabei, meiner exklusiven ICT Mentorship 2025 beizutreten.
+                Du bist dabei, meiner exklusiven ICT Mentorship 2026 beizutreten.
               </p>
             </motion.div>
           </div>
@@ -85,9 +124,9 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                 <div className="flex items-center gap-3 text-green-700">
                   <CalendarCheck className="h-5 w-5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium">Keine Zahlung bis März 2025</p>
+                    <p className="font-medium">Keine Zahlung bis März 2026</p>
                     <p className="text-sm text-green-600 mt-1">
-                      Jetzt sichern, Zahlung erst ab 01. März 2025
+                      Jetzt sichern, erste Zahlung erst ab 01. März 2026
                     </p>
                   </div>
                 </div>
@@ -99,8 +138,11 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                   <span className="text-5xl font-bold text-gray-900">€150</span>
                   <span className="text-xl text-gray-500 ml-2">/Monat</span>
                 </div>
-                <p className="text-sm text-gray-500 mt-2">
-                  Erste Zahlung am 01. März 2025
+                <p className="text-sm text-gray-600 mt-2 font-medium">
+                  netto (zzgl. gesetzl. MwSt.)
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Erste Zahlung am 01. März 2026
                 </p>
               </div>
 
@@ -130,8 +172,35 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               </div>
 
               {/* CTA Section */}
-              <div className="space-y-4">
-                <CheckoutButton />
+              <div id="checkout-cta" className="space-y-6">
+                {/* Checkbox */}
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="terms"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="mt-1 h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  />
+                  <label htmlFor="terms" className="text-sm text-gray-700 leading-relaxed">
+                    Ich akzeptiere die{' '}
+                    <a href="/AGB" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
+                      AGB
+                    </a>
+                    , habe die{' '}
+                    <a href="/Widerruf" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
+                      Widerrufsbelehrung
+                    </a>{' '}
+                    zur Kenntnis genommen und stimme der{' '}
+                    <a href="/datenschutz" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">
+                      Datenschutzerklärung
+                    </a>{' '}
+                    zu.
+                  </label>
+                </div>
+
+                <CheckoutButton disabled={!termsAccepted} />
+
                 <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
                   <LockIcon className="h-4 w-4" />
                   <span>Sichere Zahlung über Stripe</span>
@@ -177,11 +246,6 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     )
   }
 
-  // Existing dashboard for subscribed users
-  const canAccessContent = initialData.hasSubscription && 
-    !initialData.subscriptionDetails?.isCanceled &&
-    programStarted
-
   return (
     <>
       {showSuccessModal && (
@@ -196,6 +260,38 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           Willkommen, {initialData.user.firstName || 'Mitglied'}!
         </h1>
 
+        {showCoursesPaywall && !initialData.hasSubscription && (
+          <div className="mb-8">
+            <Card className="border-amber-200 bg-amber-50 shadow-sm">
+              <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                    <LockIcon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-amber-900">Kursbereich gesperrt</p>
+                    <p className="text-sm text-amber-900/80 mt-1">
+                      Dein Abo ist aktuell nicht aktiv. Bitte prüfe dein Stripe‑Abo oder schließe es ab.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="w-full sm:w-[240px]">
+                    <ManageSubscriptionButton />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    className="w-full sm:w-auto"
+                    onClick={clearPaywallParam}
+                  >
+                    Okay
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {initialData.subscriptionDetails && (
           <div className="mb-8">
             <SubscriptionStatus
@@ -209,32 +305,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
         )}
         
         <div className="grid gap-6">
-          {/* Onboarding Video */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle>Onboarding Video</CardTitle>
-              <CardDescription>
-                Ich helfe dir alles zu finden
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="relative pb-[56.25%] h-0 overflow-hidden rounded-lg">
-                <iframe 
-                  className="absolute top-0 left-0 w-full h-full"
-                  src={`https://www.youtube.com/embed/${videoId}`}
-                  title="PAT Mentorship 2025 Onboarding"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
-              </div>
-              <p className="text-gray-600 mt-4 text-sm">
-                Schau dir dieses Video an, um zu erfahren, wie du an alle Inhalte kommst.
-              </p>
-            </CardContent>
-          </Card>
-          
-          {/* Whop Access */}
+          {/* Mentorship Access */}
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -242,33 +313,17 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                 Kursinhalte & Community
               </CardTitle>
               <CardDescription>
-                Zugriff auf deine Lernmaterialien und das Mentorship Forum
+                Direkt zum Mentorship‑Bereich
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                Greife auf deine Videolektionen, Ressourcen und Discord Community zu. Die Whop-Plattform verwaltet automatisch deinen Zugang zu allen Kursinhalten und der Discord Community.
+                Hier kommst du direkt zur Discord‑Verknüpfung und zum Mentorship‑Bereich.
               </p>
               
-              {canAccessContent ? (
-                <a 
-                  href={process.env.NEXT_PUBLIC_WHOP_COURSE_URL || "https://whop.com/checkout/plan_TtPFXidmjPAT7"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors gap-2"
-                >
-                  <ExternalLink className="h-5 w-5 mr-2" />
-                  Zur Mentorship
-                </a>
-              ) : (
-                <Button 
-                  className="w-full bg-blue-600 hover:bg-blue-600 cursor-not-allowed opacity-60"
-                  disabled
-                >
-                  <ExternalLink className="h-5 w-5 mr-2" />
-                  Verfügbar ab dem 01. März 2025
-                </Button>
-              )}
+              <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
+                <Link href="/mentorship/discord">Zur Mentorship Platform</Link>
+              </Button>
             </CardContent>
           </Card>
 
@@ -287,11 +342,11 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               <div className="text-sm text-gray-600">
                 {initialData.subscriptionDetails?.isCanceled ? (
                   <p className="text-red-600">
-                    Dein Abonnement wurde gekündigt. Erneuere jetzt dein Abonnement, um deinen Platz für das Programm ab 01. März 2025 zu sichern.
+                    Dein Abonnement wurde gekündigt. Erneuere jetzt dein Abonnement, um deinen Platz für das Programm ab 01. März 2026 zu sichern.
                   </p>
                 ) : (
                   <>
-                    <p>Dein Abonnement startet am 01. März 2025.</p>
+                    <p>Dein Abonnement startet am 01. März 2026. Die erste Zahlung erfolgt automatisch an diesem Datum.</p>
                     <p>Du kannst deine Zahlungsmethode und Abonnement-Einstellungen unten verwalten.</p>
                   </>
                 )}

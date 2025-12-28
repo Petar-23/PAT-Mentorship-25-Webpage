@@ -31,7 +31,7 @@ export default function CTASection() {
                 </h2>
                 <p className="text-base sm:text-lg opacity-90 mb-6">
                   Trete jetzt der Warteliste bei und sichere dir als einer der Ersten deinen Platz
-                  im Mentorship Programm 2025.
+                  im Mentorship Programm 6.
                 </p>
                 {isSignedIn ? (
                   <Button 
@@ -61,7 +61,7 @@ export default function CTASection() {
                   </p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10">
-                  <p className="font-medium">🚀 Start im März 2025</p>
+                  <p className="font-medium">🚀 Start im März 2026</p>
                   <p className="text-sm opacity-90">
                     Die Vergabe der Plätze erfolgt nach dem Prinzip: Wer zuerst kommt, mahlt zuerst.
                   </p>

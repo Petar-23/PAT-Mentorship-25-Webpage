@@ -13,7 +13,7 @@ import { Analytics } from '@vercel/analytics/react'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'PAT Mentorship 2025',
+  title: 'PAT Mentorship 2026',
   description: 'Lerne Trading nach ICT Konzepten, Live und auf Deutsch',
   keywords: ['mentorship', 'trading', 'day trading', 'professional development', 'ICT'],
   icons: {

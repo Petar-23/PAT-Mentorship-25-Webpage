@@ -1,7 +1,7 @@
 // src/app/(dashboard)/dashboard/page.tsx
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
-import { hasActiveSubscription, getSubscriptionDetails } from '@/lib/stripe'
+import { getSubscriptionSnapshot } from '@/lib/stripe'
 import DashboardClient from './dashboard-client'
 
 // We need to match Next.js's exact type expectation
@@ -23,17 +23,14 @@ export default async function DashboardPage({
   const resolvedParams = await searchParams
   const checkForRecentCheckout = resolvedParams?.success === 'true'
 
-  const [hasSubscription, subscriptionDetails] = await Promise.all([
-    hasActiveSubscription(userId),
-    getSubscriptionDetails(userId, {
-      retryCount: checkForRecentCheckout ? 5 : 3,
-      checkForRecentCheckout
-    })
-  ])
+  const snapshot = await getSubscriptionSnapshot(userId, {
+    retryCount: checkForRecentCheckout ? 5 : 3,
+    checkForRecentCheckout,
+  })
 
   const initialData = {
-    hasSubscription,
-    subscriptionDetails,
+    hasSubscription: snapshot.hasActiveSubscription,
+    subscriptionDetails: snapshot.subscriptionDetails,
     user: {
       firstName: user.firstName
     }

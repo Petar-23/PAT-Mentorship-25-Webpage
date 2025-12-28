@@ -5,8 +5,8 @@ import { ChevronDown } from "lucide-react"
 
 const faqs = [
   {
-    question: "Warum startet das Programm im März 2025?",
-    answer: "Der Start im März 2025 ermöglicht es mir, alle Teilnehmer einzusammeln und sicherzustellen, dass alle gemeinsam beginnen, um von Tag eins an eine starke Community aufzubauen. Dies gibt dir auch die Zeit, deinen Platz zu sichern und dich auf das Programm vorzubereiten.",
+    question: "Warum startet das Programm im März 2026?",
+    answer: "Der Start im März 2026 ermöglicht es mir, alle Teilnehmer einzusammeln und sicherzustellen, dass alle gemeinsam beginnen, um von Tag eins an eine starke Community aufzubauen. Dies gibt dir auch die Zeit, deinen Platz zu sichern und dich auf das Programm vorzubereiten.",
     category: "Programmablauf"
   },
   {

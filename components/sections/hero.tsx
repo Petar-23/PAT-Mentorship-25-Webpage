@@ -136,7 +136,7 @@ export default function Hero() {
             <div className="space-y-8">
               <div className="inline-block">
                 <span className="inline-flex items-center rounded-full px-4 py-1 text-sm font-medium bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                  Limitiert auf 100 Plätze • Start im März 2025
+                  Limitiert auf 100 Plätze • Start im März 2026
                 </span>
               </div>
               
