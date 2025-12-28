@@ -110,7 +110,7 @@ export default async function DynamicCoursePage({ params }: Props) {
     })
 
     return (
-      <div className="flex min-h-screen bg-background">
+      <div className="flex h-full min-h-0 bg-background">
         <div className="hidden lg:block">
           <Sidebar
             kurse={kurseForSidebar}
@@ -184,7 +184,7 @@ export default async function DynamicCoursePage({ params }: Props) {
     allVideos.find((v) => v.bunnyGuid !== null)?.id ?? allVideos[0]?.id ?? null
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-full min-h-0 bg-background">
       <div className="hidden lg:block">
         <Sidebar
           kurse={kurseForSidebar}

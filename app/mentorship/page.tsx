@@ -55,7 +55,7 @@ export default async function CoursesDashboard({ searchParams = Promise.resolve(
   const openCreateCourseModal = create === '1' || create === 'true'
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-full min-h-0 bg-background">
       <div className="hidden lg:block">
         <Sidebar
           kurse={kurseForSidebar}

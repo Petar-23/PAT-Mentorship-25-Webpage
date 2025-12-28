@@ -104,7 +104,7 @@ export default async function DiscordPage({
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-full min-h-0 bg-background">
       <div className="hidden lg:block">
         <Sidebar kurse={kurseForSidebar} savedSidebarOrder={savedSidebarOrder} isAdmin={isAdmin} />
       </div>

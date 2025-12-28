@@ -20,5 +20,8 @@ export default async function CoursesLayout({ children }: { children: ReactNode 
     redirect('/dashboard?paywall=courses')
   }
 
-  return <>{children}</>
+  // Wichtig für UX: Mentorship ist "App-like" und braucht eine definierte Höhe,
+  // damit interne ScrollAreas (MiddleSidebar) wirklich scrollen statt die Seite endlos zu verlängern.
+  // 4rem = Navbar-Höhe (h-16).
+  return <div className="h-[calc(100dvh-4rem)] min-h-0">{children}</div>
 }

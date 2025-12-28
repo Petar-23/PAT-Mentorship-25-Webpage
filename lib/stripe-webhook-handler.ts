@@ -136,6 +136,30 @@ async function safeRemoveMenteeRole(discordUserId: string) {
   }
 }
 
+function shouldHaveAccessAndRole(subscription: Stripe.Subscription) {
+  const status = subscription.status
+  const isActiveOrTrial = status === 'active' || status === 'trialing'
+  if (!isActiveOrTrial) return false
+
+  // Falls das Periodenende bereits erreicht ist, soll der Zugriff/Rolle weg sein.
+  const periodStillActive = subscription.current_period_end
+    ? subscription.current_period_end * 1000 > Date.now()
+    : true
+  if (!periodStillActive) return false
+
+  // Business-Regel:
+  // - "active" behält Zugriff/Rolle bis Periodenende (auch wenn bereits gekündigt wurde)
+  // - "trialing" verliert Zugriff/Rolle sofort nach Kündigung (cancel_at_period_end oder cancel_at)
+  if (status === 'trialing') {
+    const cancelledScheduled =
+      Boolean(subscription.cancel_at_period_end) || subscription.cancel_at != null
+    return !cancelledScheduled
+  }
+
+  // status === 'active'
+  return true
+}
+
 /**
  * Main webhook handler that processes various Stripe events.
  */
@@ -174,13 +198,12 @@ export async function handleStripeEvent(event: Stripe.Event) {
             `🟢 Neues Abo erstellt\n- Email: ${info.email ?? '—'}\n- customerId: ${customerId}\n- userId: ${info.appUserId ?? '—'}\n- subscriptionId: ${subscription.id}\n- status: ${subscription.status}`
           )
 
-          const isActive =
-            !subscription.cancel_at_period_end &&
-            ['active', 'trialing'].includes(subscription.status)
-
-          // Rolle setzen, wenn Discord schon verknüpft ist
-          if (isActive && info.discordUserId) {
-            await safeSetMenteeRole(info.discordUserId)
+          if (info.discordUserId) {
+            if (shouldHaveAccessAndRole(subscription)) {
+              await safeSetMenteeRole(info.discordUserId)
+            } else {
+              await safeRemoveMenteeRole(info.discordUserId)
+            }
           }
         }
 
@@ -192,7 +215,11 @@ export async function handleStripeEvent(event: Stripe.Event) {
         const customerId = getCustomerIdFromSubscription(subscription)
 
         const prev = event.data.previous_attributes as
-          | { cancel_at_period_end?: boolean; status?: string }
+          | {
+              cancel_at_period_end?: boolean
+              cancel_at?: number | null
+              status?: string
+            }
           | undefined
 
         if (customerId) {
@@ -213,6 +240,13 @@ export async function handleStripeEvent(event: Stripe.Event) {
             )
           }
 
+          // Manche Kündigungen kommen als geplantes `cancel_at` (ohne cancel_at_period_end).
+          if (subscription.cancel_at != null && prev?.cancel_at !== subscription.cancel_at) {
+            await safeSendModMessage(
+              `🟠 Kündigung geplant (cancel_at)\n- Email: ${info.email ?? '—'}\n- customerId: ${customerId}\n- userId: ${info.appUserId ?? '—'}\n- subscriptionId: ${subscription.id}\n- cancel_at: ${formatUnix(subscription.cancel_at)}`
+            )
+          }
+
           // Melden, wenn eine Kündigung zurückgenommen wurde (cancel_at_period_end wieder false)
           if (!subscription.cancel_at_period_end && prev?.cancel_at_period_end === true) {
             await safeSendModMessage(
@@ -220,13 +254,15 @@ export async function handleStripeEvent(event: Stripe.Event) {
             )
           }
 
-          // Falls ein Abo (wieder) aktiv wird, Rolle sicherheitshalber setzen (idempotent)
-          const isActiveNow =
-            !subscription.cancel_at_period_end &&
-            ['active', 'trialing'].includes(subscription.status)
-
-          if (isActiveNow && info.discordUserId) {
-            await safeSetMenteeRole(info.discordUserId)
+          // Access/Rolle steuern:
+          // - Active bleibt bis Periodenende
+          // - Trial verliert sofort bei Kündigung
+          if (info.discordUserId) {
+            if (shouldHaveAccessAndRole(subscription)) {
+              await safeSetMenteeRole(info.discordUserId)
+            } else {
+              await safeRemoveMenteeRole(info.discordUserId)
+            }
           }
         }
 

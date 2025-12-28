@@ -67,10 +67,21 @@ function detailsFromValues(values: {
     status: values.status,
     startDate: PROGRAM_START_DATE.toISOString(),
     isPending: values.status === 'incomplete',
-    isCanceled: values.cancelAtPeriodEnd || values.status === 'canceled',
+    // Stripe kann Kündigungen als `cancel_at_period_end` ODER als geplantes `cancel_at` abbilden.
+    // Für unseren Access zählt beides als "gekündigt".
+    isCanceled: values.cancelAtPeriodEnd || values.cancelAt != null || values.status === 'canceled',
     cancelAt: values.cancelAt ? values.cancelAt.toISOString() : null,
     currentPeriodEnd: values.currentPeriodEnd ? values.currentPeriodEnd.toISOString() : null,
   }
+}
+
+function isTrialing(status: string) {
+  return status === 'trialing'
+}
+
+function isInPeriodEnd(date: Date | null) {
+  if (!date) return true
+  return date.getTime() > Date.now()
 }
 
 async function readSubscriptionFromDb(userId: string): Promise<{
@@ -163,7 +174,15 @@ export async function getSubscriptionSnapshot(
     }
 
     if (db.status !== 'none') {
-      const isActive = !db.cancelAtPeriodEnd && isActiveStatus(db.status)
+      // Access-Regel:
+      // - "active" bleibt bis Ende der Periode aktiv (auch wenn bereits gekündigt wurde)
+      // - "trialing" verliert Zugriff sofort nach Kündigung (cancel_at_period_end oder cancel_at)
+      const cancelledScheduled = db.cancelAtPeriodEnd || db.cancelAt != null
+      const periodStillActive = isInPeriodEnd(db.currentPeriodEnd)
+      const isActive =
+        periodStillActive &&
+        isActiveStatus(db.status) &&
+        (!isTrialing(db.status) ? true : !cancelledScheduled)
       const hasRequiredPrice = requiredPriceId ? db.priceIds.includes(requiredPriceId) : true
       return {
         hasActiveSubscription: isActive && hasRequiredPrice,
@@ -230,8 +249,16 @@ export async function getSubscriptionSnapshot(
 
       const compute = (subscription: Stripe.Subscription) => {
         const priceIds = getPriceIdsFromSubscription(subscription)
+        const cancelledScheduled =
+          Boolean(subscription.cancel_at_period_end) || subscription.cancel_at != null
+        const periodStillActive = subscription.current_period_end
+          ? subscription.current_period_end * 1000 > Date.now()
+          : true
+
         const isActive =
-          !subscription.cancel_at_period_end && isActiveStatus(subscription.status)
+          periodStillActive &&
+          isActiveStatus(subscription.status) &&
+          (!isTrialing(subscription.status) ? true : !cancelledScheduled)
         const hasRequiredPrice = requiredPriceId ? priceIds.includes(requiredPriceId) : true
         return { isActive, hasRequiredPrice, priceIds }
       }
@@ -281,7 +308,12 @@ export async function getSubscriptionSnapshot(
 
       // Wenn Stripe gerade nicht erreichbar ist, liefern wir (best-effort) DB-Daten, falls vorhanden.
       if (db && db.status !== 'none') {
-        const isActive = !db.cancelAtPeriodEnd && isActiveStatus(db.status)
+        const cancelledScheduled = db.cancelAtPeriodEnd || db.cancelAt != null
+        const periodStillActive = isInPeriodEnd(db.currentPeriodEnd)
+        const isActive =
+          periodStillActive &&
+          isActiveStatus(db.status) &&
+          (!isTrialing(db.status) ? true : !cancelledScheduled)
         const hasRequiredPrice = requiredPriceId ? db.priceIds.includes(requiredPriceId) : true
         return {
           hasActiveSubscription: isActive && hasRequiredPrice,
