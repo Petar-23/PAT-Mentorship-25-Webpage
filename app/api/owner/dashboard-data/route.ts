@@ -144,7 +144,7 @@ export async function GET() {
     // Create month-by-month data starting from March 2025
     const monthlyData = generateMonthlyData(enhancedCustomers, programStartDate)
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       customers: enhancedCustomers,
       stats: {
         totalCustomers,
@@ -155,6 +155,10 @@ export async function GET() {
       paymentMethodData,
       monthlyData
     })
+
+    // No caching (Route Handler darf kein `export const headers` haben)
+    res.headers.set('Cache-Control', 'no-store, max-age=0')
+    return res
   } catch (error) {
     console.error('Error in dashboard-data route:', error)
     return NextResponse.json(
@@ -204,11 +208,6 @@ function generateMonthlyData(customers: CustomerData[], startDate: Date) {
       revenue: monthRevenue
     }
   })
-}
-
-// Add headers to force non-caching - prevent stale data
-export const headers = {
-  'Cache-Control': 'no-store, max-age=0'
 }
 
 // Use serverless runtime instead of edge for longer timeout
