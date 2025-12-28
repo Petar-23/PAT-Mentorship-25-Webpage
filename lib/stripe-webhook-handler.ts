@@ -233,22 +233,41 @@ export async function handleStripeEvent(event: Stripe.Event) {
             })
           }
 
-          // Nur einmal melden, wenn cancel_at_period_end neu auf true gesetzt wurde
-          if (subscription.cancel_at_period_end && prev?.cancel_at_period_end !== true) {
+          const prevHasCancelAtPeriodEnd =
+            prev != null && Object.prototype.hasOwnProperty.call(prev, 'cancel_at_period_end')
+          const prevHasCancelAt =
+            prev != null && Object.prototype.hasOwnProperty.call(prev, 'cancel_at')
+
+          // Nur melden, wenn cancel_at_period_end IN DIESEM EVENT geändert wurde (Stripe sendet oft mehrere Updates).
+          if (
+            prevHasCancelAtPeriodEnd &&
+            subscription.cancel_at_period_end === true &&
+            prev.cancel_at_period_end === false
+          ) {
             await safeSendModMessage(
               `🟠 Kündigung eingegangen (läuft bis Periodenende)\n- Email: ${info.email ?? '—'}\n- customerId: ${customerId}\n- userId: ${info.appUserId ?? '—'}\n- subscriptionId: ${subscription.id}\n- current_period_end: ${formatUnix(subscription.current_period_end)}`
             )
           }
 
           // Manche Kündigungen kommen als geplantes `cancel_at` (ohne cancel_at_period_end).
-          if (subscription.cancel_at != null && prev?.cancel_at !== subscription.cancel_at) {
+          // Auch hier: nur melden, wenn sich cancel_at in diesem Event geändert hat.
+          if (
+            subscription.cancel_at_period_end !== true &&
+            prevHasCancelAt &&
+            prev.cancel_at == null &&
+            subscription.cancel_at != null
+          ) {
             await safeSendModMessage(
               `🟠 Kündigung geplant (cancel_at)\n- Email: ${info.email ?? '—'}\n- customerId: ${customerId}\n- userId: ${info.appUserId ?? '—'}\n- subscriptionId: ${subscription.id}\n- cancel_at: ${formatUnix(subscription.cancel_at)}`
             )
           }
 
           // Melden, wenn eine Kündigung zurückgenommen wurde (cancel_at_period_end wieder false)
-          if (!subscription.cancel_at_period_end && prev?.cancel_at_period_end === true) {
+          if (
+            prevHasCancelAtPeriodEnd &&
+            subscription.cancel_at_period_end === false &&
+            prev.cancel_at_period_end === true
+          ) {
             await safeSendModMessage(
               `🟢 Kündigung zurückgenommen (Abo läuft weiter)\n- Email: ${info.email ?? '—'}\n- customerId: ${customerId}\n- userId: ${info.appUserId ?? '—'}\n- subscriptionId: ${subscription.id}\n- status: ${subscription.status}\n- current_period_end: ${formatUnix(subscription.current_period_end)}`
             )
