@@ -23,6 +23,16 @@ export async function GET(
     return NextResponse.json({ error: 'Missing guid' }, { status: 400 })
   }
 
+  // Performance: DB-Cache zuerst (spart Bunny-API Calls)
+  const cached = await prisma.video.findFirst({
+    where: { bunnyGuid: guid },
+    select: { duration: true },
+  })
+
+  if (cached?.duration != null && cached.duration > 0) {
+    return NextResponse.json({ durationSeconds: cached.duration })
+  }
+
   const res = await fetch(
     `https://video.bunnycdn.com/library/${BUNNY_LIBRARY_ID}/videos/${guid}`,
     {

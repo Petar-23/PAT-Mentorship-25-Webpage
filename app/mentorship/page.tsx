@@ -249,24 +249,26 @@ export default async function MentorshipDashboard({ searchParams = Promise.resol
         />
       </div>
 
-      <div className="flex-1 p-4 sm:p-6 lg:p-10 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-10">
-        <MobileCoursesDrawer
-          variant="bottomBar"
-          kurse={kurseForSidebar}
-          savedSidebarOrder={savedSidebarOrder}
-          isAdmin={isAdmin}
-          openCreateCourseModal={isAdmin && openCreateCourseModal}
-        />
-
+      <div className="flex-1 p-4 sm:p-6 lg:p-10 pb-[calc(1.5rem+env(safe-area-inset-bottom))] lg:pb-10">
         <div className="w-full max-w-[1920px]">
           {/* Willkommensbereich (leichtgewichtig) */}
-          <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold leading-tight">
-              Willkommen zurück<MentorshipWelcomeName />
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Hier findest du deinen nächsten Schritt und die neuesten Inhalte.
-            </p>
+          <div className="mb-6 sm:mb-8 flex items-start gap-3">
+            <MobileCoursesDrawer
+              variant="icon"
+              kurse={kurseForSidebar}
+              savedSidebarOrder={savedSidebarOrder}
+              isAdmin={isAdmin}
+              openCreateCourseModal={isAdmin && openCreateCourseModal}
+            />
+
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold leading-tight">
+                Willkommen zurück<MentorshipWelcomeName />
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Hier findest du deinen nächsten Schritt und die neuesten Inhalte.
+              </p>
+            </div>
           </div>
 
           <div className="grid w-full grid-cols-1 md:grid-cols-2 xl:grid-cols-3 min-[1800px]:grid-cols-4 gap-6 auto-rows-fr">

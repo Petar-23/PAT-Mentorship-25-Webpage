@@ -131,20 +131,22 @@ export function MentorshipModuleGridSkeleton({
 
 export function MentorshipDashboardSkeleton({
   className,
-  paddingClassName = 'p-4 sm:p-6 lg:p-10 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-10',
+  paddingClassName = 'p-4 sm:p-6 lg:p-10 pb-[calc(1.5rem+env(safe-area-inset-bottom))] lg:pb-10',
 }: {
   className?: string
   paddingClassName?: string
 }) {
   return (
     <div className={cn('flex-1 min-h-0', className)}>
-      <MentorshipMobileBottomBarSkeleton />
       <div className={paddingClassName}>
         <div className="w-full max-w-[1920px]">
           {/* Welcome */}
-          <div className="mb-6 sm:mb-8">
-            <Skeleton className="h-9 w-52" />
-            <Skeleton className="mt-2 h-4 w-80 opacity-70" />
+          <div className="mb-6 sm:mb-8 flex items-start gap-3">
+            <Skeleton className="h-9 w-9 rounded-md" />
+            <div className="min-w-0 flex-1">
+              <Skeleton className="h-9 w-52" />
+              <Skeleton className="mt-2 h-4 w-80 opacity-70" />
+            </div>
           </div>
 
           <div className="grid w-full grid-cols-1 md:grid-cols-2 xl:grid-cols-3 min-[1800px]:grid-cols-4 gap-6 auto-rows-fr">

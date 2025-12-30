@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { BookOpen, SquareKanban, Users } from 'lucide-react'
+import { BookOpen, ChevronDown, SquareKanban, Users } from 'lucide-react'
+import patBanner from '@/public/images/pat-banner.jpeg'
 import { UserButton, useUser } from '@clerk/nextjs'
 import {
   Accordion,
@@ -11,7 +12,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { cn } from '@/lib/utils'
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'
 import { Button } from '@/components/ui/button'
@@ -44,6 +45,7 @@ export function SidebarUser({ kurse, savedSidebarOrder, activeCourseId }: Props)
   const pathname = usePathname()
   const isMentorship = pathname?.startsWith('/mentorship')
   const { user, isLoaded } = useUser()
+  const [mobileFooterOpen, setMobileFooterOpen] = useState(false)
 
   const activeItemId = useMemo(() => {
     if (pathname?.startsWith('/mentorship/discord')) return 'discord'
@@ -113,16 +115,18 @@ export function SidebarUser({ kurse, savedSidebarOrder, activeCourseId }: Props)
     >
       <div className="relative mb-1 -mx-4 -mt-4 h-48 overflow-hidden">
         <Image
-          src="/images/pat-banner.jpeg"
+          src={patBanner}
           alt="PAT Mentorship 2026 Banner"
           fill
           className="object-cover"
           sizes="320px"
           quality={70}
+          placeholder="blur"
+          priority
         />
         <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-white to-transparent opacity-80" />
         <div className="absolute inset-x-0 bottom-0 pb-2 flex justify-center">
-          <div className="inline-block px-6 py-2 mx-auto bg-white/20 backdrop-blur-md rounded-lg border border-white/30">
+          <div className="inline-block px-6 py-2 mx-auto rounded-lg border border-white/30 bg-white/60 supports-[backdrop-filter]:bg-white/20 backdrop-blur-md">
             <h2 className="text-xl font-bold text-white drop-shadow-md">PAT MENTORSHIP</h2>
           </div>
         </div>
@@ -171,45 +175,124 @@ export function SidebarUser({ kurse, savedSidebarOrder, activeCourseId }: Props)
       </div>
 
       {isMentorship ? (
-        <div className="mt-0 pt-2 border-t rounded-t-xl border-gray-300 -mx-4 px-4 pb-4 bg-gray-100">
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            className="w-full px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
-          >
-            <Link href="/mentorship">
-              <span className="flex items-center justify-center shrink-0 w-8">
-                <SquareKanban className="!h-5 !w-5" />
-              </span>
-              <span>Dashboard</span>
-            </Link>
-          </Button>
+        <div className="mt-0 border-t rounded-t-xl border-gray-300 -mx-4 px-4 pb-4 bg-gray-100">
+          {/* Desktop: Aktionen immer sichtbar */}
+          <div className="hidden lg:block pt-2">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="w-full px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
+            >
+              <Link href="/mentorship">
+                <span className="flex items-center justify-center shrink-0 w-8">
+                  <SquareKanban className="!h-5 !w-5" />
+                </span>
+                <span>Dashboard</span>
+              </Link>
+            </Button>
 
-          <ManageSubscriptionButton
-            variant="ghost"
-            size="sm"
-            label="Mitgliedschaft verwalten"
-            iconWrapperClassName="w-8"
-            iconClassName="!h-5 !w-5"
-            className="px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
-          />
-
-          <div className="mt-3 flex items-center gap-3">
-            <UserButton
-              afterSignOutUrl="/"
-              appearance={{
-                elements: {
-                  avatarBox: 'w-8 h-8',
-                },
-              }}
+            <ManageSubscriptionButton
+              variant="ghost"
+              size="sm"
+              label="Mitgliedschaft verwalten"
+              iconWrapperClassName="w-8"
+              iconClassName="!h-5 !w-5"
+              className="px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
             />
 
-            <div className="min-w-0">
-              <p className="text-sm font-medium leading-tight truncate">
-                {isLoaded ? displayName : '...'}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">{isLoaded ? email : ''}</p>
+            <div className="mt-3 flex items-center gap-3">
+              <UserButton
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    avatarBox: 'w-8 h-8',
+                  },
+                }}
+              />
+
+              <div className="min-w-0">
+                <p className="text-sm font-medium leading-tight truncate">
+                  {isLoaded ? displayName : '...'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">{isLoaded ? email : ''}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile: User immer sichtbar, Aktionen einklappbar */}
+          <div className="lg:hidden pt-2">
+            <div
+              className={cn(
+                'grid transition-[grid-template-rows,opacity] duration-200 ease-out',
+                mobileFooterOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+              )}
+              aria-hidden={!mobileFooterOpen}
+            >
+              <div
+                className={cn(
+                  'overflow-hidden space-y-1',
+                  !mobileFooterOpen ? 'pointer-events-none' : ''
+                )}
+              >
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="w-full px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
+                >
+                  <Link href="/mentorship">
+                    <span className="flex items-center justify-center shrink-0 w-8">
+                      <SquareKanban className="!h-5 !w-5" />
+                    </span>
+                    <span>Dashboard</span>
+                  </Link>
+                </Button>
+
+                <ManageSubscriptionButton
+                  variant="ghost"
+                  size="sm"
+                  label="Mitgliedschaft verwalten"
+                  iconWrapperClassName="w-8"
+                  iconClassName="!h-5 !w-5"
+                  className="px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
+                />
+              </div>
+            </div>
+
+            <div className="mt-3 flex items-center gap-3">
+              <UserButton
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    avatarBox: 'w-8 h-8',
+                  },
+                }}
+              />
+
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium leading-tight truncate">
+                  {isLoaded ? displayName : '...'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">{isLoaded ? email : ''}</p>
+              </div>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                aria-label={mobileFooterOpen ? 'Aktionen einklappen' : 'Aktionen anzeigen'}
+                aria-expanded={mobileFooterOpen}
+                onClick={() => setMobileFooterOpen((v) => !v)}
+              >
+                <ChevronDown
+                  className={cn(
+                    'h-5 w-5 transition-transform duration-200',
+                    mobileFooterOpen ? 'rotate-0' : 'rotate-180'
+                  )}
+                />
+              </Button>
             </div>
           </div>
         </div>
