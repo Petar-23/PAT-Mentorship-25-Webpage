@@ -322,7 +322,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               </p>
               
               <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
-                <Link href="/mentorship/discord">Zur Mentorship Platform</Link>
+                <Link href="/mentorship">Zur Mentorship Platform</Link>
               </Button>
             </CardContent>
           </Card>

@@ -45,7 +45,7 @@ type Props = {
     name: string
     description: string | null
     imageUrl: string | null
-    chapters: { length: number }[]
+    chaptersCount: number
     totalDurationSeconds: number | null
   }>
   playlistId: string

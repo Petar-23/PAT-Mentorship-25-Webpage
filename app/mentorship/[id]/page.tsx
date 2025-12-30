@@ -7,15 +7,22 @@ import { ModulDetailClient } from '@/components/modul-detail-client'
 import { ModuleGridClient } from '@/components/module-grid-client'
 import { getIsAdmin } from '@/lib/authz'
 import { MobileCoursesDrawer } from '@/components/mobile-courses-drawer'
+import { auth } from '@clerk/nextjs/server'
 
 
 interface Props {
   params: Promise<{ id: string }>
 }
 
+function percent(completed: number, total: number) {
+  if (!Number.isFinite(total) || total <= 0) return 0
+  return Math.max(0, Math.min(100, Math.round((completed / total) * 100)))
+}
+
 export default async function DynamicCoursePage({ params }: Props) {
   const { id } = await params
   const isAdmin = await getIsAdmin()
+  const { userId } = await auth()
 
   // Sidebar-Daten (für beide Pfade) – schlank: nur Count statt ganze Module laden
   const [kurseRaw, savedSetting] = await Promise.all([
@@ -57,7 +64,8 @@ export default async function DynamicCoursePage({ params }: Props) {
   if (kurs) {
     // Es ist ein Kurs → Module-Grid
     // Schlank: Module + Kapitel-Count und Video-Dauer Summen (ohne alle Kapitel/Videos zu laden)
-    const [modules, chapters, chapterDurationSums] = await Promise.all([
+    const [modules, chapters, chapterDurationSums, videoCountsByChapter, watchedProgressRows] =
+      await Promise.all([
       prisma.module.findMany({
         where: { playlistId: kurs.id },
         orderBy: { order: 'asc' },
@@ -81,6 +89,27 @@ export default async function DynamicCoursePage({ params }: Props) {
         },
         _sum: { duration: true },
       }),
+      // Für Progress: Anzahl Videos pro Kapitel (daraus pro Modul summieren)
+      prisma.video.groupBy({
+        by: ['chapterId'],
+        where: {
+          chapter: { module: { playlistId: kurs.id } },
+        },
+        _count: { _all: true },
+      }),
+      // Für Progress: nur "watched" Rows laden (deutlich weniger als alle Video-IDs)
+      !isAdmin && userId
+        ? prisma.videoProgress.findMany({
+            where: {
+              userId,
+              watched: true,
+              video: { chapter: { module: { playlistId: kurs.id } } },
+            },
+            select: {
+              video: { select: { chapter: { select: { moduleId: true } } } },
+            },
+          })
+        : Promise.resolve([]),
     ])
 
     const moduleIdByChapterId = new Map(chapters.map((c) => [c.id, c.moduleId]))
@@ -95,6 +124,44 @@ export default async function DynamicCoursePage({ params }: Props) {
       durationByModuleId[moduleId] = (durationByModuleId[moduleId] ?? 0) + seconds
     }
 
+    // Progress Map: { [moduleId]: { totalLessons, completedLessons, percent } }
+    const totalLessonsByModuleId: Record<string, number> = {}
+    const completedLessonsByModuleId: Record<string, number> = {}
+
+    for (const m of modules) {
+      totalLessonsByModuleId[m.id] = 0
+      completedLessonsByModuleId[m.id] = 0
+    }
+
+    for (const row of videoCountsByChapter) {
+      const moduleId = moduleIdByChapterId.get(row.chapterId)
+      if (!moduleId) continue
+      totalLessonsByModuleId[moduleId] =
+        (totalLessonsByModuleId[moduleId] ?? 0) + (row._count._all ?? 0)
+    }
+
+    for (const row of watchedProgressRows as Array<{ video: { chapter: { moduleId: string } } }>) {
+      const moduleId = row.video.chapter.moduleId
+      completedLessonsByModuleId[moduleId] = (completedLessonsByModuleId[moduleId] ?? 0) + 1
+    }
+
+    const progressByModuleId: Record<
+      string,
+      { totalLessons: number; completedLessons: number; percent: number }
+    > = {}
+
+    if (!isAdmin && userId) {
+      for (const m of modules) {
+        const totalLessons = totalLessonsByModuleId[m.id] ?? 0
+        const completedLessons = completedLessonsByModuleId[m.id] ?? 0
+        progressByModuleId[m.id] = {
+          totalLessons,
+          completedLessons,
+          percent: percent(completedLessons, totalLessons),
+        }
+      }
+    }
+
     const modulesForGrid = modules.map((m) => {
       const chapterCount = m._count.chapters
       const totalSeconds = durationByModuleId[m.id] ?? 0
@@ -103,8 +170,8 @@ export default async function DynamicCoursePage({ params }: Props) {
         name: m.name,
         description: m.description ?? null,
         imageUrl: m.imageUrl ?? null,
-        // Client braucht aktuell nur `chapters.length` – wir schicken daher nur ein Dummy-Array.
-        chapters: Array.from({ length: chapterCount }, () => ({ length: chapterCount })),
+        // Performance: Client braucht nur die Anzahl, kein Dummy-Array (spart JSON/JS).
+        chaptersCount: chapterCount,
         totalDurationSeconds: totalSeconds > 0 ? totalSeconds : null,
       }
     })
@@ -136,6 +203,7 @@ export default async function DynamicCoursePage({ params }: Props) {
               playlistId={kurs.id}
               playlistName={kurs.name}
               isAdmin={isAdmin}
+              initialProgressByModuleId={!isAdmin && userId ? progressByModuleId : undefined}
             />
             
           </div>
@@ -183,6 +251,21 @@ export default async function DynamicCoursePage({ params }: Props) {
   const initialVideoId =
     allVideos.find((v) => v.bunnyGuid !== null)?.id ?? allVideos[0]?.id ?? null
 
+  // Performance: Fortschritt direkt serverseitig laden → kein extra Client-Fetch nötig.
+  const initialWatchedVideoIds =
+    !isAdmin && userId && allVideos.length
+      ? (
+          await prisma.videoProgress.findMany({
+            where: {
+              userId,
+              watched: true,
+              videoId: { in: allVideos.map((v) => v.id) },
+            },
+            select: { videoId: true },
+          })
+        ).map((r) => r.videoId)
+      : []
+
   return (
     <div className="flex h-full min-h-0 bg-background">
       <div className="hidden lg:block">
@@ -196,6 +279,7 @@ export default async function DynamicCoursePage({ params }: Props) {
       <ModulDetailClient
         modul={modul}
         initialVideoId={initialVideoId}
+        initialWatchedVideoIds={initialWatchedVideoIds}
         isAdmin={isAdmin}
         sidebar={{
           kurse: kurseForSidebar,

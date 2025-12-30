@@ -621,7 +621,7 @@ export function MiddleSidebar({
         </Card>
       ) : null}
 
-      <ScrollArea className="flex-1 min-h-0 pb-20">
+      <ScrollArea className="flex-1 min-h-0 pb-2 sm:pb-4">
       <div className="space-y-2 pr-2">
         {sortedChapters.map((chapter) => {
           const isOpen = openChapters.has(chapter.id)

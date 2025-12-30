@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/Sidebar'
 import { ModulDetailClient } from '@/components/modul-detail-client'
 import { ModuleGridClient } from '@/components/module-grid-client'
 import { getIsAdmin } from '@/lib/authz'
+import { auth } from '@clerk/nextjs/server'
 
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 export default async function DynamicCoursePage({ params }: Props) {
   const { id } = await params
   const isAdmin = await getIsAdmin()
+  const { userId } = await auth()
 
   // Sidebar-Daten (für beide Pfade) – schlank: nur Count statt ganze Module laden
   const [kurseRaw, savedSetting] = await Promise.all([
@@ -102,8 +104,8 @@ export default async function DynamicCoursePage({ params }: Props) {
         name: m.name,
         description: m.description ?? null,
         imageUrl: m.imageUrl ?? null,
-        // Client braucht aktuell nur `chapters.length` – wir schicken daher nur ein Dummy-Array.
-        chapters: Array.from({ length: chapterCount }, () => ({ length: chapterCount })),
+        // Performance: Client braucht nur die Anzahl, kein Dummy-Array (spart JSON/JS).
+        chaptersCount: chapterCount,
         totalDurationSeconds: totalSeconds > 0 ? totalSeconds : null,
       }
     })
@@ -172,6 +174,21 @@ export default async function DynamicCoursePage({ params }: Props) {
   const initialVideoId =
     allVideos.find((v) => v.bunnyGuid !== null)?.id ?? allVideos[0]?.id ?? null
 
+  // Performance: Fortschritt direkt serverseitig laden → kein extra Client-Fetch nötig.
+  const initialWatchedVideoIds =
+    !isAdmin && userId && allVideos.length
+      ? (
+          await prisma.videoProgress.findMany({
+            where: {
+              userId,
+              watched: true,
+              videoId: { in: allVideos.map((v) => v.id) },
+            },
+            select: { videoId: true },
+          })
+        ).map((r) => r.videoId)
+      : []
+
   return (
     <div className="flex min-h-screen bg-background">
       <div className="hidden lg:block">
@@ -185,6 +202,7 @@ export default async function DynamicCoursePage({ params }: Props) {
       <ModulDetailClient
         modul={modul}
         initialVideoId={initialVideoId}
+        initialWatchedVideoIds={initialWatchedVideoIds}
         isAdmin={isAdmin}
         sidebar={{
           kurse: kurseForSidebar,

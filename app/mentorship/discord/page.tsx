@@ -21,18 +21,23 @@ export default async function DiscordPage({
 }: PageProps) {
   const { userId } = await auth()
   const isAdmin = await getIsAdmin()
-  // Lade Kurse aus DB
-  const kurse = await prisma.playlist.findMany({
-    include: {
-      modules: true, // Nur für .length
-    },
-    orderBy: { createdAt: 'desc' },
-  })
-
-  // Lade gespeicherte Sidebar-Reihenfolge
-  const savedSetting = await prisma.adminSetting.findUnique({
-    where: { key: 'sidebarOrder' },
-  })
+  // Performance: Für Sidebar nur Counts laden (keine Module/Chapters übertragen)
+  const [kurse, savedSetting] = await Promise.all([
+    prisma.playlist.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        iconUrl: true,
+        _count: { select: { modules: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.adminSetting.findUnique({
+      where: { key: 'sidebarOrder' },
+    }),
+  ])
 
   const savedSidebarOrder: string[] | null = savedSetting
     ? (savedSetting.value as string[])
@@ -45,7 +50,7 @@ export default async function DiscordPage({
     slug: kurs.slug,
     description: kurs.description ?? null,
     iconUrl: kurs.iconUrl ?? null,
-    modulesLength: kurs.modules.length,
+    modulesLength: kurs._count.modules,
   }))
 
   const resolvedParams = await searchParams

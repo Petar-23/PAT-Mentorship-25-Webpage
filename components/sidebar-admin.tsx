@@ -3,7 +3,17 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { BookOpen, Users, GripVertical, Plus, MoreVertical, Trash2, Pencil } from 'lucide-react'
+import {
+  BookOpen,
+  Users,
+  GripVertical,
+  Plus,
+  MoreVertical,
+  Trash2,
+  Pencil,
+  SquareKanban,
+} from 'lucide-react'
+import { UserButton, useUser } from '@clerk/nextjs'
 import {
   Accordion,
   AccordionContent,
@@ -43,6 +53,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'
 import {
   DndContext,
   closestCenter,
@@ -98,6 +109,8 @@ export function SidebarAdmin({
   const { toast } = useToast()
   const router = useRouter()
   const pathname = usePathname()
+  const isMentorship = pathname?.startsWith('/mentorship')
+  const { user, isLoaded } = useUser()
   const [isDeletingCourse, setIsDeletingCourse] = useState(false)
 
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false)
@@ -314,6 +327,10 @@ export function SidebarAdmin({
     }
   }
 
+  const displayName =
+    user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Mitglied'
+  const email = user?.primaryEmailAddress?.emailAddress ?? ''
+
   // Alle Nav-Items: Discord fest + Kurse
   const staticItems = useMemo<SidebarItem[]>(
     () => [
@@ -500,7 +517,12 @@ export function SidebarAdmin({
   }
 
   return (
-    <div className="w-full lg:w-80 border-r border-border bg-muted/40 p-4 flex flex-col h-full min-h-0">
+    <div
+      className={cn(
+        'w-full lg:w-80 border-r border-border p-4 flex flex-col h-full min-h-0',
+        isMentorship ? 'bg-gray-100/50' : 'bg-muted/40'
+      )}
+    >
       <div className="relative mb-1 -mx-4 -mt-4 h-48 overflow-hidden">
         <Image
           src="/images/pat-banner.jpeg"
@@ -751,6 +773,51 @@ export function SidebarAdmin({
           </AccordionItem>
         </Accordion>
       </div>
+
+      {isMentorship ? (
+        <div className="mt-4 pt-4 border-gray-300 -mx-4 px-4 pb-2">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="w-full px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
+          >
+            <Link href="/mentorship">
+              <span className="flex items-center justify-center shrink-0 w-8">
+                <SquareKanban className="!h-5 !w-5" />
+              </span>
+              <span>Dashboard</span>
+            </Link>
+          </Button>
+
+          <ManageSubscriptionButton
+            variant="ghost"
+            size="sm"
+            label="Abo verwalten"
+            iconWrapperClassName="w-8"
+            iconClassName="!h-5 !w-5"
+            className="px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
+          />
+
+          <div className="mt-3 flex items-center gap-3">
+            <UserButton
+              afterSignOutUrl="/"
+              appearance={{
+                elements: {
+                  avatarBox: 'w-8 h-8',
+                },
+              }}
+            />
+
+            <div className="min-w-0">
+              <p className="text-sm font-medium leading-tight truncate">
+                {isLoaded ? displayName : '...'}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">{isLoaded ? email : ''}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <AlertDialog
         open={deleteCourseId !== null}

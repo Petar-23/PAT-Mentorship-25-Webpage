@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import { Navbar } from '@/components/layout/navbar'
-import { Footer } from '@/components/layout/footer'
+import { FooterGate } from '@/components/layout/footer-gate'
 import {ClerkProvider} from '@clerk/nextjs'
 import { deDE } from '@clerk/localizations'
 import { CookieBanner } from '@/components/ui/cookie-banner'
@@ -37,7 +37,7 @@ export default function RootLayout({
             <main className="flex-1 min-h-0">
               {children}
             </main>
-            <Footer />
+            <FooterGate />
           </div>
           <Toaster />
           <CookieBanner />

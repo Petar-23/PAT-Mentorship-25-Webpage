@@ -47,7 +47,7 @@ type Props = {
       name: string
       description?: string | null
       imageUrl?: string | null 
-      chapters: { length: number }[]
+      chaptersCount: number
       totalDurationSeconds?: number | null
     }
     progress?: {
@@ -102,7 +102,7 @@ export function ModuleCard({ modul, progress = null }: Props) {
   
     return (
         <div className="relative group w-full">  {/* group für Hover */}
-            <Card className="overflow-hidden h-full flex flex-col transition-all border-gray-200 hover:border-gray-500/50 cursor-pointer" onClick={() => router.push(`/mentorship/${modul.id}`)}>
+            <Card className="overflow-hidden h-full flex flex-col transition-all border-gray-200 hover:border-gray-500/50 cursor-pointer" onClick={() => router.push(`/mentorship/modul/${modul.id}`)}>
             {/* 3-Punkte-Menü – unverändert */}
             {isAdmin && (
             <DropdownMenu>
@@ -196,7 +196,7 @@ export function ModuleCard({ modul, progress = null }: Props) {
                 ) : null}
 
                 <div className="text-xs text-gray-500 flex items-center justify-between gap-3">
-                  <span>{modul.chapters.length} Kapitel</span>
+                  <span>{modul.chaptersCount} Kapitel</span>
                   <span>{formatModuleDuration(modul.totalDurationSeconds ?? null)}</span>
                 </div>
               </div>

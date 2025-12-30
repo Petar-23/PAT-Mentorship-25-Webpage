@@ -9,19 +9,33 @@ type Props = {
     name: string
     description: string | null
     imageUrl: string | null
-    chapters: { length: number }[]
+    chaptersCount: number
     totalDurationSeconds: number | null
   }>
   playlistId: string
   playlistName?: string
+  initialProgressByModuleId?: Record<
+    string,
+    { percent: number; completedLessons: number; totalLessons: number }
+  >
 }
 
-export function ModuleGridUser({ modules, playlistId, playlistName }: Props) {
+export function ModuleGridUser({
+  modules,
+  playlistId,
+  playlistName,
+  initialProgressByModuleId,
+}: Props) {
   const [progressByModuleId, setProgressByModuleId] = useState<
     Record<string, { percent: number; completedLessons: number; totalLessons: number }>
-  >({})
+  >(initialProgressByModuleId ?? {})
 
   useEffect(() => {
+    if (initialProgressByModuleId) {
+      setProgressByModuleId(initialProgressByModuleId)
+      return
+    }
+
     let cancelled = false
 
     const load = async () => {
@@ -69,7 +83,7 @@ export function ModuleGridUser({ modules, playlistId, playlistName }: Props) {
       window.removeEventListener('focus', onFocus)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [playlistId])
+  }, [playlistId, initialProgressByModuleId])
 
   return (
     <div className="flex flex-col flex-1 min-w-0">

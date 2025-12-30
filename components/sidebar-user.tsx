@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { BookOpen, Users } from 'lucide-react'
+import { BookOpen, SquareKanban, Users } from 'lucide-react'
+import { UserButton, useUser } from '@clerk/nextjs'
 import {
   Accordion,
   AccordionContent,
@@ -12,6 +13,8 @@ import {
 import { cn } from '@/lib/utils'
 import { useMemo, type ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
+import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'
+import { Button } from '@/components/ui/button'
 
 type Kurs = {
   id: string
@@ -39,6 +42,8 @@ type Props = {
 
 export function SidebarUser({ kurse, savedSidebarOrder, activeCourseId }: Props) {
   const pathname = usePathname()
+  const isMentorship = pathname?.startsWith('/mentorship')
+  const { user, isLoaded } = useUser()
 
   const activeItemId = useMemo(() => {
     if (pathname?.startsWith('/mentorship/discord')) return 'discord'
@@ -95,8 +100,17 @@ export function SidebarUser({ kurse, savedSidebarOrder, activeCourseId }: Props)
     return staticItems
   }, [savedSidebarOrder, staticItems])
 
+  const displayName =
+    user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Mitglied'
+  const email = user?.primaryEmailAddress?.emailAddress ?? ''
+
   return (
-    <div className="w-full lg:w-80 border-r border-border bg-muted/40 p-4 flex flex-col h-full min-h-0">
+    <div
+      className={cn(
+        'w-full lg:w-80 border-r border-border p-4 flex flex-col h-full min-h-0',
+        isMentorship ? 'bg-gray-100/50' : 'bg-muted/40'
+      )}
+    >
       <div className="relative mb-1 -mx-4 -mt-4 h-48 overflow-hidden">
         <Image
           src="/images/pat-banner.jpeg"
@@ -155,6 +169,51 @@ export function SidebarUser({ kurse, savedSidebarOrder, activeCourseId }: Props)
           </AccordionItem>
         </Accordion>
       </div>
+
+      {isMentorship ? (
+        <div className="mt-4 pt-4 border-gray-300 -mx-4 px-4 pb-2">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="w-full px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
+          >
+            <Link href="/mentorship">
+              <span className="flex items-center justify-center shrink-0 w-8">
+                <SquareKanban className="!h-5 !w-5" />
+              </span>
+              <span>Dashboard</span>
+            </Link>
+          </Button>
+
+          <ManageSubscriptionButton
+            variant="ghost"
+            size="sm"
+            label="Abo verwalten"
+            iconWrapperClassName="w-8"
+            iconClassName="!h-5 !w-5"
+            className="px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
+          />
+
+          <div className="mt-3 flex items-center gap-3">
+            <UserButton
+              afterSignOutUrl="/"
+              appearance={{
+                elements: {
+                  avatarBox: 'w-8 h-8',
+                },
+              }}
+            />
+
+            <div className="min-w-0">
+              <p className="text-sm font-medium leading-tight truncate">
+                {isLoaded ? displayName : '...'}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">{isLoaded ? email : ''}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

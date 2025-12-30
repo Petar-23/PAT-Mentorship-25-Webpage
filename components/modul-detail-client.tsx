@@ -2,7 +2,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { VideoPlayer } from './video-player'
 import { useToast } from '@/hooks/use-toast'
@@ -51,6 +51,7 @@ type SidebarKurs = {
 type Props = {
   modul: Modul
   initialVideoId?: string | null
+  initialWatchedVideoIds?: string[]
   isAdmin: boolean
   sidebar: {
     kurse: SidebarKurs[]
@@ -61,26 +62,45 @@ type Props = {
 }
 
 
+const skeletonBase = 'animate-pulse rounded-md bg-neutral-200/80 dark:bg-neutral-800/70'
+
 const MiddleSidebar = dynamic(
   () => import('./middle-sidebar-entry').then((mod) => mod.MiddleSidebar),
   {
     ssr: false,
     loading: () => (
-      <div className="w-full lg:w-96 h-full min-h-0 border-r border-border bg-background p-4 sm:p-6 lg:p-8 flex items-center justify-center">
-        <p className="text-muted-foreground">Kapitel werden geladen...</p>
+      <div className="w-full lg:w-96 h-full min-h-0 border-r border-border bg-background p-4 sm:p-6 lg:p-8">
+        <div className="space-y-4">
+          <div className={`${skeletonBase} h-6 w-32`} />
+          <div className="space-y-3">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <div className={`${skeletonBase} h-4 w-3/4`} />
+                <div className={`${skeletonBase} h-3 w-1/2 opacity-70`} />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     ),
   }
 )
 
-export function ModulDetailClient({ modul, initialVideoId = null, isAdmin, sidebar }: Props) {
+export function ModulDetailClient({
+  modul,
+  initialVideoId = null,
+  initialWatchedVideoIds,
+  isAdmin,
+  sidebar,
+}: Props) {
   const { toast } = useToast()
   const [localModul, setLocalModul] = useState(modul)
   const [activeVideoId, setActiveVideoId] = useState<string | null>(initialVideoId)
-  const [watchedVideoIds, setWatchedVideoIds] = useState<string[]>([])
+  const [watchedVideoIds, setWatchedVideoIds] = useState<string[]>(initialWatchedVideoIds ?? [])
   const [coursesOpen, setCoursesOpen] = useState(false)
   const [contentOpen, setContentOpen] = useState(false)
   const isDesktop = useMediaQuery('(min-width: 1024px)')
+  const lastViewedSentRef = useRef<string | null>(null)
 
   // Zustand für Kapitel-Edit
   const [editingChapterId, setEditingChapterId] = useState<string | null>(null)
@@ -99,6 +119,27 @@ export function ModulDetailClient({ modul, initialVideoId = null, isAdmin, sideb
     }
   }, [localModul, activeVideoId])
 
+  // "Zuletzt angesehen" speichern (für /mentorship Dashboard → Weiterlernen)
+  useEffect(() => {
+    if (isAdmin) return
+    if (!activeVideoId) return
+    if (lastViewedSentRef.current === activeVideoId) return
+
+    lastViewedSentRef.current = activeVideoId
+
+    try {
+      void fetch('/api/playback/last-viewed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ videoId: activeVideoId }),
+        keepalive: true,
+      })
+    } catch {
+      // ignore
+    }
+  }, [activeVideoId, isAdmin])
+
   const activeVideo = localModul.chapters
     .flatMap((ch) => ch.videos)
     .find((v) => v.id === activeVideoId)
@@ -112,31 +153,7 @@ export function ModulDetailClient({ modul, initialVideoId = null, isAdmin, sideb
   const progressPercent =
     totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
 
-  useEffect(() => {
-    if (isAdmin) return
-
-    let cancelled = false
-
-    const load = async () => {
-      try {
-        const res = await fetch(`/api/progress/module/${localModul.id}`, { cache: 'no-store' })
-        if (!res.ok) return
-        const data = (await res.json()) as { watchedVideoIds?: unknown }
-        const ids = Array.isArray(data.watchedVideoIds)
-          ? data.watchedVideoIds.filter((x): x is string => typeof x === 'string')
-          : []
-        if (!cancelled) setWatchedVideoIds(ids)
-      } catch {
-        // ignore
-      }
-    }
-
-    void load()
-
-    return () => {
-      cancelled = true
-    }
-  }, [isAdmin, localModul.id])
+  // Performance: `watchedVideoIds` kommt serverseitig als Prop (kein extra Fetch nötig).
 
   const handleWatchedChange = (videoId: string, watched: boolean) => {
     setWatchedVideoIds((prev) => {
@@ -536,8 +553,18 @@ export function ModulDetailClient({ modul, initialVideoId = null, isAdmin, sideb
         />
       ) : (
         // Platzhalter nur für Desktop vor der ersten MediaQuery-Auswertung (verhindert Layout-Jump)
-        <div className="hidden lg:flex w-96 h-full min-h-0 border-r border-border bg-background p-4 sm:p-6 lg:p-8 items-center justify-center">
-          <p className="text-muted-foreground">Kapitel werden geladen...</p>
+        <div className="hidden lg:flex w-96 h-full min-h-0 border-r border-border bg-background p-4 sm:p-6 lg:p-8">
+          <div className="w-full space-y-4">
+            <div className={`${skeletonBase} h-6 w-32`} />
+            <div className="space-y-3">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <div className={`${skeletonBase} h-4 w-3/4`} />
+                  <div className={`${skeletonBase} h-3 w-1/2 opacity-70`} />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

@@ -11,10 +11,10 @@ export default async function CoursesLayout({ children }: { children: ReactNode 
     redirect('/sign-in')
   }
 
-  // Admin darf immer rein (für Content-Management)
-  const isAdmin = await getIsAdmin()
-
-  const allowed = isAdmin || (await hasActiveSubscription(userId))
+  // Performance/UX: Erst Subscription prüfen (meist DB-fast) und nur im "kein Abo" Fall
+  // noch den Admin-Check gegen Clerk machen.
+  const hasSub = await hasActiveSubscription(userId)
+  const allowed = hasSub || (await getIsAdmin())
 
   if (!allowed) {
     redirect('/dashboard?paywall=courses')

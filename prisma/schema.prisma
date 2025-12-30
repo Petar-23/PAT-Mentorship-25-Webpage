@@ -53,6 +53,7 @@ model Video {
   chapterId    String
   chapter      Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   progresses   VideoProgress[]
+  lastViewedBy UserPlaybackState[] @relation("UserPlaybackLastVideo")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   duration     Int?
@@ -73,6 +74,20 @@ model VideoProgress {
   @@unique([userId, videoId])
   @@index([userId])
   @@index([videoId])
+}
+
+// Merkt sich das zuletzt angesehene Video pro User (für "Weiterlernen").
+model UserPlaybackState {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  lastVideoId  String?
+  lastViewedAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  lastVideo Video? @relation("UserPlaybackLastVideo", fields: [lastVideoId], references: [id], onDelete: SetNull)
+
+  @@index([lastVideoId])
 }
 
 model AdminSetting {

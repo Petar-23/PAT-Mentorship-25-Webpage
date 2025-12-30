@@ -105,7 +105,7 @@ export async function POST(req: Request) {
     const chapterName = video.chapter.name
 
     // Vorbereitung für Schritt 5: Deep-Link auf ein konkretes Video.
-    const videoUrl = `${baseUrl}/mentorship/${moduleId}?video=${video.id}`
+    const videoUrl = `${baseUrl}/mentorship/modul/${moduleId}?video=${video.id}`
 
     const thumbnailUrl = `https://vz-dc8da426-d71.b-cdn.net/${video.bunnyGuid}/thumbnail.jpg`
 
