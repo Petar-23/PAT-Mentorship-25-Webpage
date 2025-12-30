@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { BookOpen } from "lucide-react"
+import { ArrowLeft, BookOpen } from "lucide-react"
 
 import { Sidebar } from "@/components/Sidebar"
 import { Button } from "@/components/ui/button"
@@ -23,7 +23,7 @@ type Props = {
   activeCourseId?: string | null
   isAdmin: boolean
   openCreateCourseModal?: boolean
-  variant?: "button" | "bottomBar"
+  variant?: "button" | "bottomBar" | "icon"
   className?: string
 }
 
@@ -53,6 +53,16 @@ export function MobileCoursesDrawer({
             </Button>
           </div>
         </div>
+      ) : variant === "icon" ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 p-0 hover:bg-gray-200"
+          onClick={() => setOpen(true)}
+          aria-label="Kurse öffnen"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
       ) : (
         <Button variant="outline" className="w-full h-11" onClick={() => setOpen(true)}>
           <BookOpen className="mr-2 h-4 w-4" />
@@ -61,7 +71,7 @@ export function MobileCoursesDrawer({
       )}
 
       <SlideOver open={open} onOpenChange={setOpen}>
-        <SlideOverContent side="left" title="Kurse" className="p-0">
+        <SlideOverContent side="left" title="Kurse" className="p-0 w-screen max-w-none">
           <Sidebar
             kurse={kurse}
             savedSidebarOrder={savedSidebarOrder}

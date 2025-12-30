@@ -7,7 +7,7 @@ import { fetchDiscordGuildMember } from '@/lib/discord'
 import { DiscordLinkButton } from '@/components/discord/discord-link-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getIsAdmin } from '@/lib/authz'
-import { Check } from 'lucide-react'
+import { Check, Link2 } from 'lucide-react'
 import { MobileCoursesDrawer } from '@/components/mobile-courses-drawer'
 
 type SearchParams = { [key: string]: string | string[] | undefined }
@@ -139,7 +139,16 @@ export default async function DiscordPage({
           </div>
 
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl">Discord Account verbinden</CardTitle>
+            <CardTitle className="flex items-center justify-center gap-2 text-3xl">
+              {connectedDiscordUserId ? (
+                <>
+                  <Link2 className="h-7 w-7 text-green-600" aria-hidden="true" />
+                  Discord Account verbunden
+                </>
+              ) : (
+                'Discord Account verbinden'
+              )}
+            </CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-6 text-center">

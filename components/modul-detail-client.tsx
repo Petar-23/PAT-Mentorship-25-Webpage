@@ -2,7 +2,7 @@
 
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { VideoPlayer } from './video-player'
 import { useToast } from '@/hooks/use-toast'
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { SlideOver, SlideOverContent } from '@/components/ui/slide-over'
 import { BookOpen, ListVideo } from 'lucide-react'
 import { useMediaQuery } from '@/hooks/use-media-query'
+import { useSearchParams } from 'next/navigation'
 
 type Video = {
   id: string
@@ -94,11 +95,14 @@ export function ModulDetailClient({
   sidebar,
 }: Props) {
   const { toast } = useToast()
+  const searchParams = useSearchParams()
+  const view = searchParams.get('view')
   const [localModul, setLocalModul] = useState(modul)
   const [activeVideoId, setActiveVideoId] = useState<string | null>(initialVideoId)
   const [watchedVideoIds, setWatchedVideoIds] = useState<string[]>(initialWatchedVideoIds ?? [])
-  const [coursesOpen, setCoursesOpen] = useState(false)
-  const [contentOpen, setContentOpen] = useState(false)
+  const [mobileView, setMobileView] = useState<'player' | 'content'>(() =>
+    view === 'content' ? 'content' : 'player'
+  )
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const lastViewedSentRef = useRef<string | null>(null)
 
@@ -118,6 +122,11 @@ export function ModulDetailClient({
       setActiveVideoId(firstVideoWithGuid.id)
     }
   }, [localModul, activeVideoId])
+
+  // URL → State sync (z.B. wenn User direkt /...?view=content öffnet)
+  useEffect(() => {
+    if (view === 'content') setMobileView('content')
+  }, [view])
 
   // "Zuletzt angesehen" speichern (für /mentorship Dashboard → Weiterlernen)
   useEffect(() => {
@@ -147,6 +156,20 @@ export function ModulDetailClient({
   const activeChapter = localModul.chapters.find((ch) =>
     ch.videos.some((v) => v.id === activeVideoId)
   )
+
+  const orderedVideoIds = useMemo(() => {
+    const chapters = [...(localModul.chapters || [])].sort((a, b) => (a.order || 0) - (b.order || 0))
+    return chapters.flatMap((ch) =>
+      [...(ch.videos || [])].sort((a, b) => (a.order || 0) - (b.order || 0)).map((v) => v.id)
+    )
+  }, [localModul.chapters])
+
+  const nextVideoId = useMemo(() => {
+    if (!activeVideoId) return null
+    const idx = orderedVideoIds.indexOf(activeVideoId)
+    if (idx === -1) return null
+    return orderedVideoIds[idx + 1] ?? null
+  }, [activeVideoId, orderedVideoIds])
 
   const totalLessons = localModul.chapters.reduce((sum, ch) => sum + ch.videos.length, 0)
   const completedLessons = watchedVideoIds.length
@@ -510,6 +533,57 @@ export function ModulDetailClient({
     }
   }
 
+  // Mobile Screen: Content (Middle-Sidebar) als „normale“ Full-Screen Ansicht
+  // (kein Drawer, kein Video-Player im Hintergrund).
+  //
+  // Wichtig: Dieser Block muss NACH den Handler-Definitionen stehen (sonst ReferenceError/TDZ).
+  if (!isDesktop && mobileView === 'content') {
+    return (
+      <div className="flex h-full min-h-0 flex-1">
+        <MiddleSidebar
+          modul={localModul}
+          courseTitle={localModul.playlist?.name ?? null}
+          courseId={localModul.playlist?.id ?? null}
+          activeVideoId={activeVideoId}
+          onVideoClick={(id) => {
+            setActiveVideoId(id)
+            setMobileView('player')
+          }}
+          watchedVideoIds={watchedVideoIds}
+          isAdmin={isAdmin}
+          userProgress={
+            !isAdmin
+              ? {
+                  percent: progressPercent,
+                  completedLessons,
+                  totalLessons,
+                }
+              : undefined
+          }
+          editingChapterId={editingChapterId}
+          tempChapterName={tempChapterName}
+          onChapterEditStart={(id, name) => {
+            setEditingChapterId(id)
+            setTempChapterName(name)
+          }}
+          onChapterEditSave={handleChapterNameSave}
+          onChapterEditCancel={() => {
+            setEditingChapterId(null)
+            setTempChapterName('')
+          }}
+          onTempChapterNameChange={setTempChapterName}
+          onVideosReorder={handleVideosReorder}
+          onMoveChapterUp={(id) => handleMoveChapter('up', id)}
+          onMoveChapterDown={(id) => handleMoveChapter('down', id)}
+          onAddVideo={handleAddVideo}
+          onAddChapter={handleAddChapter}
+          onChaptersReorder={handleChaptersReorder}
+          onDeleteChapter={handleChapterDelete}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="flex-1 flex min-w-0">
       {/* Desktop: MiddleSidebar dauerhaft sichtbar */}
@@ -580,93 +654,19 @@ export function ModulDetailClient({
             activeVideoWatched={activeVideoId ? watchedVideoIds.includes(activeVideoId) : false}
             onVideoWatchedChange={handleWatchedChange}
             isAdmin={isAdmin}
+            onBack={!isDesktop ? () => setMobileView('content') : undefined}
+            onNextVideo={
+              nextVideoId
+                ? () => {
+                    setActiveVideoId(nextVideoId)
+                    setMobileView('player')
+                  }
+                : undefined
+            }
+            nextVideoDisabled={!nextVideoId}
+            autoPlay={!isDesktop}
           />
         </div>
-
-        {/* Mobile Bottom-Bar: Kurse + Inhalt (Drawers) */}
-        <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-neutral-300/75 text-neutral-50 backdrop-blur supports-[backdrop-filter]:bg-neutral-300/60">
-          <div className="mx-auto max-w-7xl px-4 pt-3 [padding-bottom:calc(env(safe-area-inset-bottom)+0.75rem)]">
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant="outline"
-                className="h-11 text-neutral-900 dark:text-neutral-50"
-                onClick={() => setCoursesOpen(true)}
-                aria-label="Kurse öffnen"
-              >
-                <BookOpen className="mr-2 h-4 w-4" />
-                Kurse
-              </Button>
-              <Button
-                variant="default"
-                className="h-11"
-                onClick={() => setContentOpen(true)}
-                aria-label="Inhalt öffnen"
-              >
-                <ListVideo className="mr-2 h-4 w-4" />
-                Inhalt
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Drawer: Kurse */}
-        <SlideOver open={coursesOpen} onOpenChange={setCoursesOpen}>
-          <SlideOverContent side="left" title="Kurse" className="p-0">
-            <Sidebar
-              kurse={sidebar.kurse}
-              savedSidebarOrder={sidebar.savedSidebarOrder}
-              activeCourseId={sidebar.activeCourseId}
-              isAdmin={isAdmin}
-              openCreateCourseModal={sidebar.openCreateCourseModal}
-            />
-          </SlideOverContent>
-        </SlideOver>
-
-        {/* Mobile Drawer: Inhalt */}
-        <SlideOver open={contentOpen} onOpenChange={setContentOpen}>
-          <SlideOverContent side="right" title="Inhalt" className="p-0">
-            <MiddleSidebar
-              modul={localModul}
-              courseTitle={localModul.playlist?.name ?? null}
-              courseId={localModul.playlist?.id ?? null}
-              activeVideoId={activeVideoId}
-              onVideoClick={(id) => {
-                setActiveVideoId(id)
-                setContentOpen(false)
-              }}
-              watchedVideoIds={watchedVideoIds}
-              isAdmin={isAdmin}
-              userProgress={
-                !isAdmin
-                  ? {
-                      percent: progressPercent,
-                      completedLessons,
-                      totalLessons,
-                    }
-                  : undefined
-              }
-              editingChapterId={editingChapterId}
-              tempChapterName={tempChapterName}
-              onChapterEditStart={(id, name) => {
-                setEditingChapterId(id)
-                setTempChapterName(name)
-              }}
-              onChapterEditSave={handleChapterNameSave}
-              onChapterEditCancel={() => {
-                setEditingChapterId(null)
-                setTempChapterName('')
-              }}
-              onTempChapterNameChange={setTempChapterName}
-              onVideosReorder={handleVideosReorder}
-              onMoveChapterUp={(id) => handleMoveChapter('up', id)}
-              onMoveChapterDown={(id) => handleMoveChapter('down', id)}
-              onAddVideo={handleAddVideo}
-              onAddChapter={handleAddChapter}
-              onChaptersReorder={handleChaptersReorder}
-              onDeleteChapter={handleChapterDelete}
-            />
-          </SlideOverContent>
-        </SlideOver>
       </div>
     </div>
   )

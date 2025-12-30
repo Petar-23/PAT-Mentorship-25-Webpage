@@ -187,14 +187,7 @@ export default async function DynamicCoursePage({ params }: Props) {
           />
         </div>
 
-        <div className="flex-1 p-4 sm:p-6 lg:p-8 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-8">
-          <MobileCoursesDrawer
-            variant="bottomBar"
-            kurse={kurseForSidebar}
-            savedSidebarOrder={savedSidebarOrder}
-            activeCourseId={kurs.id}
-            isAdmin={isAdmin}
-          />
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 pb-[calc(1.5rem+env(safe-area-inset-bottom))] lg:pb-8">
 
         <div className="flex flex-wrap gap-6 sm:gap-8 items-start">  {/* Neuer Flex-Wrapper: Module links breit, + rechts kompakt */}
             {/* 1. Alle Module: volle Breite */}
@@ -204,6 +197,15 @@ export default async function DynamicCoursePage({ params }: Props) {
               playlistName={kurs.name}
               isAdmin={isAdmin}
               initialProgressByModuleId={!isAdmin && userId ? progressByModuleId : undefined}
+              mobileCoursesDrawer={
+                <MobileCoursesDrawer
+                  variant="icon"
+                  kurse={kurseForSidebar}
+                  savedSidebarOrder={savedSidebarOrder}
+                  activeCourseId={kurs.id}
+                  isAdmin={isAdmin}
+                />
+              }
             />
             
           </div>

@@ -102,7 +102,18 @@ export function ModuleCard({ modul, progress = null }: Props) {
   
     return (
         <div className="relative group w-full">  {/* group für Hover */}
-            <Card className="overflow-hidden h-full flex flex-col transition-all border-gray-200 hover:border-gray-500/50 cursor-pointer" onClick={() => router.push(`/mentorship/modul/${modul.id}`)}>
+            <Card
+              className="overflow-hidden h-full flex flex-col transition-all border-gray-200 hover:border-gray-500/50 cursor-pointer"
+              onClick={() => {
+                if (typeof window === 'undefined') {
+                  router.push(`/mentorship/modul/${modul.id}`)
+                  return
+                }
+
+                const isDesktop = window.matchMedia('(min-width: 1024px)').matches
+                router.push(isDesktop ? `/mentorship/modul/${modul.id}` : `/mentorship/modul/${modul.id}?view=content`)
+              }}
+            >
             {/* 3-Punkte-Menü – unverändert */}
             {isAdmin && (
             <DropdownMenu>

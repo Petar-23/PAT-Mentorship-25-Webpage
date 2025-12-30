@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Check, FileText, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, FileText, Trash2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { UploadZone } from './upload-zone'
 import { PdfUploadZone } from './pdf-upload-zone'
@@ -25,6 +25,10 @@ type Props = {
   activeVideoWatched?: boolean
   onVideoWatchedChange?: (videoId: string, watched: boolean) => void
   isAdmin: boolean
+  onBack?: () => void
+  onNextVideo?: () => void
+  nextVideoDisabled?: boolean
+  autoPlay?: boolean
 }
 
 type BunnyStatusResponse = {
@@ -41,6 +45,10 @@ export function VideoPlayer({
   activeVideoWatched = false,
   onVideoWatchedChange,
   isAdmin,
+  onBack,
+  onNextVideo,
+  nextVideoDisabled = false,
+  autoPlay = false,
 }: Props) {
   const { toast } = useToast()
 
@@ -60,7 +68,9 @@ export function VideoPlayer({
 
   const iframeSrc =
     activeVideo?.bunnyGuid
-      ? `https://iframe.mediadelivery.net/embed/${process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID}/${activeVideo.bunnyGuid}?autoplay=false`
+      ? `https://iframe.mediadelivery.net/embed/${process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID}/${activeVideo.bunnyGuid}?autoplay=${
+          autoPlay ? 'true' : 'false'
+        }`
       : null
 
   const adminPlaybackReady =
@@ -451,16 +461,29 @@ export function VideoPlayer({
   }
 
   return (
-    <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-12 flex flex-col max-w-7xl">
-      {/* Kapitel + Titel */}
-      <div className="mb-6 sm:mb-8">
-        {activeChapterName && (
-          <p className="text-sm text-muted-foreground mb-2">{activeChapterName}</p>
-        )}
+    <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 flex flex-col max-w-7xl">
+      {/* Header (wie Middle-Sidebar): Back + Chapter + Video Titel */}
+      <div className="mb-6 sm:mb-8 flex items-start gap-3">
+        {onBack ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 p-0 hover:bg-gray-300"
+            onClick={onBack}
+            aria-label="Zurück zur Inhaltsübersicht"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        ) : null}
 
-        <div className="w-full">
-          {isAdmin && isEditing ? (
-            <div className="flex items-center space-x-4 w-full">
+        <div className="min-w-0 flex-1">
+          {activeChapterName ? (
+            <p className="text-xs text-muted-foreground truncate">{activeChapterName}</p>
+          ) : null}
+
+          <div className="w-full">
+            {isAdmin && isEditing ? (
+              <div className="flex items-center space-x-4 w-full">
               <input
                 type="text"
                 value={tempTitle}
@@ -476,23 +499,22 @@ export function VideoPlayer({
               <Button size="icon" variant="outline" onClick={saveEdit}>
                 <Check className="h-5 w-5 text-green-500" />
               </Button>
-            </div>
-          ) : (
-            <div
-              className={`w-full border-2 border-transparent rounded-lg px-4 py-3 -mx-4 -my-3 ${
-                isAdmin && activeVideo
-                  ? 'cursor-pointer hover:border-gray-300 hover:bg-gray-50 transition-all'
-                  : ''
-              }`}
-              onClick={isAdmin && activeVideo ? startEdit : undefined}
-            >
-              <h2 className="text-2xl sm:text-3xl font-bold">
-                {activeVideo ? activeVideo.title : 'Wähle ein Video aus'}
-              </h2>
-            </div>
-          )}
+              </div>
+            ) : (
+              <div
+                className={[
+                  'w-full rounded-lg',
+                  isAdmin && activeVideo ? 'cursor-pointer hover:bg-gray-50 transition-all' : '',
+                ].join(' ')}
+                onClick={isAdmin && activeVideo ? startEdit : undefined}
+              >
+                <h2 className="text-2xl sm:text-3xl font-bold leading-tight">
+                  {activeVideo ? activeVideo.title : 'Wähle ein Video aus'}
+                </h2>
+              </div>
+            )}
+          </div>
         </div>
-
       </div>
 
       {/* Player oder UploadZone */}
@@ -719,33 +741,43 @@ export function VideoPlayer({
                 Delete video
               </Button>
             ) : !isAdmin && activeVideo ? (
-              <Button
-                variant={activeVideoWatched ? 'outline' : 'default'}
-                onClick={async () => {
-                  if (!activeVideo) return
-                  if (isSavingWatched) return
-                  setIsSavingWatched(true)
-                  const nextWatched = !activeVideoWatched
-                  const ok = await persistWatched(activeVideo.id, nextWatched, true)
-                  setIsSavingWatched(false)
-                  if (ok) {
-                    toast({
-                      title: nextWatched ? 'Als angesehen markiert' : 'Markierung entfernt',
-                      description: nextWatched
-                        ? 'Dein Fortschritt wurde aktualisiert.'
-                        : 'Dieses Video zählt jetzt nicht mehr als abgeschlossen.',
-                      duration: 2500,
-                    })
-                  }
-                }}
-                disabled={isSavingWatched}
-                className="w-full sm:w-auto"
-              >
-                <Check className="mr-2 h-4 w-4" />
-                {activeVideoWatched
-                  ? 'Als nicht angesehen markieren'
-                  : 'Als angesehen markieren'}
-              </Button>
+              <div className="w-full sm:w-auto grid grid-cols-2 gap-2 sm:flex sm:gap-3">
+                <Button
+                  variant={activeVideoWatched ? 'outline' : 'default'}
+                  onClick={async () => {
+                    if (!activeVideo) return
+                    if (isSavingWatched) return
+                    setIsSavingWatched(true)
+                    const nextWatched = !activeVideoWatched
+                    const ok = await persistWatched(activeVideo.id, nextWatched, true)
+                    setIsSavingWatched(false)
+                    if (ok) {
+                      toast({
+                        title: nextWatched ? 'Als angesehen markiert' : 'Markierung entfernt',
+                        description: nextWatched
+                          ? 'Dein Fortschritt wurde aktualisiert.'
+                          : 'Dieses Video zählt jetzt nicht mehr als abgeschlossen.',
+                        duration: 2500,
+                      })
+                    }
+                  }}
+                  disabled={isSavingWatched}
+                  className="w-full"
+                >
+                  <Check className="mr-2 h-4 w-4" />
+                  {activeVideoWatched ? 'Nicht angesehen' : 'Angesehen?'}
+                </Button>
+
+                <Button
+                  variant="default"
+                  onClick={onNextVideo}
+                  disabled={!onNextVideo || nextVideoDisabled}
+                  className="w-full bg-blue-700"
+                >
+                  <ArrowRight className="mr-2 h-4 w-4" />
+                  Nächstes Video
+                </Button>
+              </div>
             ) : null}
           </div>
         </div>

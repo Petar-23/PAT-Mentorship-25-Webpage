@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { ModuleGridUser } from './module-grid-user'
+import type { ReactNode } from 'react'
 
 const ModuleGridAdmin = dynamic(
   () => import('./module-grid-admin').then((m) => m.ModuleGridAdmin),
@@ -24,6 +25,7 @@ type Props = {
     string,
     { percent: number; completedLessons: number; totalLessons: number }
   >
+  mobileCoursesDrawer?: ReactNode
 }
 
 export function ModuleGridClient({
@@ -32,9 +34,17 @@ export function ModuleGridClient({
   playlistName,
   isAdmin,
   initialProgressByModuleId,
+  mobileCoursesDrawer,
 }: Props) {
   if (isAdmin) {
-    return <ModuleGridAdmin modules={modules} playlistId={playlistId} playlistName={playlistName} />
+    return (
+      <ModuleGridAdmin
+        modules={modules}
+        playlistId={playlistId}
+        playlistName={playlistName}
+        mobileCoursesDrawer={mobileCoursesDrawer}
+      />
+    )
   }
 
   return (
@@ -43,6 +53,7 @@ export function ModuleGridClient({
       playlistId={playlistId}
       playlistName={playlistName}
       initialProgressByModuleId={initialProgressByModuleId}
+      mobileCoursesDrawer={mobileCoursesDrawer}
     />
   )
 }

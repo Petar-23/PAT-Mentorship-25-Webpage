@@ -107,7 +107,7 @@ export function SidebarUser({ kurse, savedSidebarOrder, activeCourseId }: Props)
   return (
     <div
       className={cn(
-        'w-full lg:w-80 border-r border-border p-4 flex flex-col h-full min-h-0',
+        'w-full lg:w-80 border-r border-border p-4 pb-0 flex flex-col h-full min-h-0 shadow-lg',
         isMentorship ? 'bg-gray-100/50' : 'bg-muted/40'
       )}
     >
@@ -123,7 +123,7 @@ export function SidebarUser({ kurse, savedSidebarOrder, activeCourseId }: Props)
         <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-white to-transparent opacity-80" />
         <div className="absolute inset-x-0 bottom-0 pb-2 flex justify-center">
           <div className="inline-block px-6 py-2 mx-auto bg-white/20 backdrop-blur-md rounded-lg border border-white/30">
-            <h2 className="text-xl font-bold text-white drop-shadow-md">PAT Mentorship 2026</h2>
+            <h2 className="text-xl font-bold text-white drop-shadow-md">PAT MENTORSHIP</h2>
           </div>
         </div>
       </div>
@@ -136,7 +136,7 @@ export function SidebarUser({ kurse, savedSidebarOrder, activeCourseId }: Props)
             </AccordionTrigger>
 
             <AccordionContent className="px-1">
-              <div className="space-y-2 pt-4">
+              <div className="space-y-1.5 pt-3 sm:space-y-2 sm:pt-4">
                 {items.map((item) => (
                   <Link
                     key={item.id}
@@ -146,20 +146,20 @@ export function SidebarUser({ kurse, savedSidebarOrder, activeCourseId }: Props)
                   >
                     <div
                       className={cn(
-                        'flex items-center space-x-4 py-2 px-2 rounded-lg transition-colors cursor-pointer border border-border',
+                        'flex items-center space-x-3 sm:space-x-4 py-1.5 sm:py-2 px-2 rounded-lg transition-colors cursor-pointer border border-border',
                         item.id === activeItemId
                           ? 'bg-gray-200/50 dark:bg-gray-800/40 border-l-4 border-gray-200 dark:border-gray-700 border-l-gray-400 dark:border-l-gray-400'
                           : 'hover:bg-gray-200/50 dark:hover:bg-gray-800/30'
                       )}
                     >
                       <div
-                        className={`w-10 h-10 border bg-gradient-to-br ${item.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden`}
+                        className={`w-9 h-9 sm:w-10 sm:h-10 border bg-gradient-to-br ${item.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden`}
                       >
                         {item.icon}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{item.title}</p>
-                        <p className="text-xs text-muted-foreground">{item.subtitle}</p>
+                        <p className="font-medium text-[13px] sm:text-sm truncate">{item.title}</p>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground">{item.subtitle}</p>
                       </div>
                     </div>
                   </Link>
@@ -171,7 +171,7 @@ export function SidebarUser({ kurse, savedSidebarOrder, activeCourseId }: Props)
       </div>
 
       {isMentorship ? (
-        <div className="mt-4 pt-4 border-gray-300 -mx-4 px-4 pb-2">
+        <div className="mt-0 pt-2 border-t rounded-t-xl border-gray-300 -mx-4 px-4 pb-4 bg-gray-100">
           <Button
             asChild
             variant="ghost"
@@ -189,7 +189,7 @@ export function SidebarUser({ kurse, savedSidebarOrder, activeCourseId }: Props)
           <ManageSubscriptionButton
             variant="ghost"
             size="sm"
-            label="Abo verwalten"
+            label="Mitgliedschaft verwalten"
             iconWrapperClassName="w-8"
             iconClassName="!h-5 !w-5"
             className="px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"

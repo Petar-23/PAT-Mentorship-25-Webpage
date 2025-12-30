@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ModuleCard } from './module-card'
 import { useRouter } from 'next/navigation'
+import type { ReactNode } from 'react'
 import {
   DndContext,
   closestCorners,
@@ -50,9 +51,10 @@ type Props = {
   }>
   playlistId: string
   playlistName?: string
+  mobileCoursesDrawer?: ReactNode
 }
 
-export function ModuleGridAdmin({ modules, playlistId, playlistName }: Props) {
+export function ModuleGridAdmin({ modules, playlistId, playlistName, mobileCoursesDrawer }: Props) {
   const { toast } = useToast()
   const router = useRouter()
   const [items, setItems] = useState(modules.map((m) => m.id))
@@ -189,7 +191,8 @@ export function ModuleGridAdmin({ modules, playlistId, playlistName }: Props) {
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
       <SortableContext items={items} strategy={rectSortingStrategy}>
         <div className="flex flex-col flex-1 min-w-0">
-          <div className="mb-8">
+          <div className="mb-8 flex items-center gap-2">
+            {mobileCoursesDrawer}
             <h1 className="text-lg font-semibold text-foreground">{playlistName || 'Module'}</h1>
           </div>
 

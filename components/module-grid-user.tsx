@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { ModuleCardUser } from './module-card-user'
+import type { ReactNode } from 'react'
 
 type Props = {
   modules: Array<{
@@ -18,6 +19,7 @@ type Props = {
     string,
     { percent: number; completedLessons: number; totalLessons: number }
   >
+  mobileCoursesDrawer?: ReactNode
 }
 
 export function ModuleGridUser({
@@ -25,6 +27,7 @@ export function ModuleGridUser({
   playlistId,
   playlistName,
   initialProgressByModuleId,
+  mobileCoursesDrawer,
 }: Props) {
   const [progressByModuleId, setProgressByModuleId] = useState<
     Record<string, { percent: number; completedLessons: number; totalLessons: number }>
@@ -87,7 +90,8 @@ export function ModuleGridUser({
 
   return (
     <div className="flex flex-col flex-1 min-w-0">
-      <div className="mb-8">
+      <div className="mb-8 flex items-center gap-2">
+        {mobileCoursesDrawer}
         <h1 className="text-lg font-semibold text-foreground">{playlistName || 'Module'}</h1>
       </div>
 

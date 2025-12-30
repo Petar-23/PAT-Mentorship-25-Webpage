@@ -39,7 +39,15 @@ export function ModuleCardUser({ modul, progress = null }: Props) {
     <div className="relative group w-full">
       <Card
         className="overflow-hidden h-full flex flex-col transition-all border-gray-200 hover:border-gray-500/50 cursor-pointer"
-        onClick={() => router.push(`/mentorship/modul/${modul.id}`)}
+        onClick={() => {
+          if (typeof window === 'undefined') {
+            router.push(`/mentorship/modul/${modul.id}`)
+            return
+          }
+
+          const isDesktop = window.matchMedia('(min-width: 1024px)').matches
+          router.push(isDesktop ? `/mentorship/modul/${modul.id}` : `/mentorship/modul/${modul.id}?view=content`)
+        }}
       >
         {/* Bild oben */}
         <div className="relative aspect-video bg-gradient-to-br from-primary/20 to-primary/10 overflow-hidden flex items-center justify-center cursor-pointer">

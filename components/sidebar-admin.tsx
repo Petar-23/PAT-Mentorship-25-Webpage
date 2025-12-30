@@ -446,7 +446,7 @@ export function SidebarAdmin({
       <div ref={setNodeRef} style={style} className="relative">
         <div
           className={cn(
-            'flex items-center gap-2 py-2 px-2 rounded-lg transition-colors border border-border group cursor-pointer',
+            'flex items-center gap-2 py-1.5 px-2 rounded-lg transition-colors border border-border group cursor-pointer',
             item.id === activeItemId
               ? 'bg-gray-200/50 dark:bg-gray-800/40 border-l-4 border-gray-200 dark:border-gray-400 border-l-gray-400 dark:border-l-gray-400'
               : 'hover:bg-gray-200/50 dark:hover:bg-gray-800/30'
@@ -470,7 +470,7 @@ export function SidebarAdmin({
             aria-current={item.id === activeItemId ? 'page' : undefined}
           >
             <div
-              className={`w-10 h-10 border bg-gradient-to-br ${item.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden`}
+              className={`w-9 h-9 border bg-gradient-to-br ${item.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden`}
             >
               {item.icon}
             </div>
@@ -519,7 +519,7 @@ export function SidebarAdmin({
   return (
     <div
       className={cn(
-        'w-full lg:w-80 border-r border-border p-4 flex flex-col h-full min-h-0',
+        'w-full lg:w-80 border-r border-border p-4 flex flex-col h-full min-h-0 shadow-lg',
         isMentorship ? 'bg-gray-100/50' : 'bg-muted/40'
       )}
     >
@@ -535,7 +535,7 @@ export function SidebarAdmin({
         <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-white to-transparent opacity-80" />
         <div className="absolute inset-x-0 bottom-0 pb-2 flex justify-center">
           <div className="inline-block px-6 py-2 mx-auto bg-white/20 backdrop-blur-md rounded-lg border border-white/30">
-            <h2 className="text-xl font-bold text-white drop-shadow-md">PAT Mentorship 2026</h2>
+            <h2 className="text-xl font-bold text-white drop-shadow-md">PAT MENTORSHIP</h2>
           </div>
         </div>
       </div>
@@ -723,7 +723,7 @@ export function SidebarAdmin({
             </AccordionTrigger>
 
             <AccordionContent className="px-1">
-              <div className="space-y-2 pt-4">
+              <div className="space-y-1.5 pt-3">
                 {isAdmin ? (
                   <DndContext
                     sensors={sensors}
@@ -749,14 +749,14 @@ export function SidebarAdmin({
                     >
                       <div
                         className={cn(
-                          'flex items-center space-x-4 py-2 px-2 rounded-lg transition-colors cursor-pointer border border-border',
+                          'flex items-center space-x-3 py-1.5 px-2 rounded-lg transition-colors cursor-pointer border border-border',
                           item.id === activeItemId
                             ? 'bg-gray-200/50 dark:bg-gray-800/40 border-l-4 border-gray-200 dark:border-gray-700 border-l-gray-400 dark:border-l-gray-400'
                             : 'hover:bg-gray-200/50 dark:hover:bg-gray-800/30'
                         )}
                       >
                         <div
-                          className={`w-10 h-10 border bg-gradient-to-br ${item.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden`}
+                          className={`w-9 h-9 border bg-gradient-to-br ${item.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden`}
                         >
                           {item.icon}
                         </div>
@@ -775,7 +775,7 @@ export function SidebarAdmin({
       </div>
 
       {isMentorship ? (
-        <div className="mt-4 pt-4 border-gray-300 -mx-4 px-4 pb-2">
+        <div className="mt-0 pt-2 border-t border-gray-300 -mx-4 px-4 pb-2">
           <Button
             asChild
             variant="ghost"
@@ -793,7 +793,7 @@ export function SidebarAdmin({
           <ManageSubscriptionButton
             variant="ghost"
             size="sm"
-            label="Abo verwalten"
+            label="Mitgliedschaft verwalten"
             iconWrapperClassName="w-8"
             iconClassName="!h-5 !w-5"
             className="px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"

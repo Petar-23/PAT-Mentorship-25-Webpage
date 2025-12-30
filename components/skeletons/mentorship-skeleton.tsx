@@ -251,6 +251,39 @@ export function MentorshipModulDetailSkeleton({ className }: { className?: strin
   )
 }
 
+export function MentorshipMiddleSidebarSkeleton({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        'flex-1 w-full border-r border-border bg-background p-4 sm:p-6 lg:p-8 flex flex-col h-full min-h-0',
+        className
+      )}
+    >
+      {/* Header (Back + Titel) */}
+      <div className="mb-6 flex items-start gap-3">
+        <Skeleton className="h-8 w-8 rounded-md" />
+        <div className="flex-1 min-w-0 space-y-2">
+          <Skeleton className="h-3 w-28 opacity-70" />
+          <Skeleton className="h-7 w-64" />
+        </div>
+      </div>
+
+      {/* Progress Card Platzhalter */}
+      <Skeleton className="h-20 w-full rounded-xl" />
+
+      {/* Kapitel/Videos Liste Platzhalter */}
+      <div className="mt-6 flex-1 space-y-3 overflow-hidden">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div key={i} className="rounded-lg border border-border p-3 space-y-2">
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-3 w-10/12 opacity-70" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function MentorshipDiscordSkeleton({
   className,
   paddingClassName = 'p-4 sm:p-6 lg:p-12 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-12',
