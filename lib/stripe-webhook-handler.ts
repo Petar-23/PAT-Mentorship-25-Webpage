@@ -105,14 +105,25 @@ async function getCustomerInfo(customerId: string): Promise<{
   }
 }
 
-async function safeSendModMessage(content: string) {
+async function safeSendModEmbed(embed: {
+  title: string
+  description: string
+  color?: number
+  fields?: Array<{ name: string; value: string; inline?: boolean }>
+  footer?: { text: string }
+  timestamp?: string
+}) {
   const channelId = process.env.DISCORD_MOD_CHANNEL_ID
   if (!channelId) return
 
   try {
-    await sendDiscordChannelMessage({ channelId, content })
+    await sendDiscordChannelMessage({
+      channelId,
+      content: '',
+      embeds: [embed]
+    })
   } catch (err) {
-    console.error('Failed to send Discord mod message:', err)
+    console.error('Failed to send Discord mod embed:', err)
   }
 }
 
@@ -194,18 +205,20 @@ export async function handleStripeEvent(event: Stripe.Event) {
             })
           }
 
-          await safeSendModMessage(
-            `Neuer Kunde registriert
-
-Kundendetails:
-• E-Mail: ${info.email ?? 'Nicht verfügbar'}
-• Stripe Customer ID: ${customerId}
-• Interner User ID: ${info.appUserId ?? 'Nicht verfügbar'}
-• Subscription ID: ${subscription.id}
-• Status: ${subscription.status}
-
-Der Kunde hat erfolgreich ein Abonnement abgeschlossen und erhält Zugang zur Mentorship-Plattform.`
-          )
+          await safeSendModEmbed({
+            title: 'Neuer Kunde registriert',
+            description: 'Der Kunde hat erfolgreich ein Abonnement abgeschlossen und erhält Zugang zur Mentorship-Plattform.',
+            color: 0x22c55e, // Grün für neue Kunden
+            fields: [
+              { name: 'E-Mail', value: info.email ?? 'Nicht verfügbar', inline: true },
+              { name: 'Stripe Customer ID', value: customerId, inline: true },
+              { name: 'Interner User ID', value: info.appUserId ?? 'Nicht verfügbar', inline: true },
+              { name: 'Subscription ID', value: subscription.id, inline: false },
+              { name: 'Status', value: subscription.status, inline: true }
+            ],
+            footer: { text: 'Price Action Trader Mentorship' },
+            timestamp: new Date().toISOString()
+          })
 
           if (info.discordUserId) {
             if (shouldHaveAccessAndRole(subscription)) {
@@ -253,20 +266,20 @@ Der Kunde hat erfolgreich ein Abonnement abgeschlossen und erhält Zugang zur Me
             subscription.cancel_at_period_end === true &&
             prev.cancel_at_period_end === false
           ) {
-            await safeSendModMessage(
-              `Kündigung eingegangen
-
-Der Kunde hat die Kündigung seines Abonnements beantragt.
-
-Kundendetails:
-• E-Mail: ${info.email ?? 'Nicht verfügbar'}
-• Stripe Customer ID: ${customerId}
-• Interner User ID: ${info.appUserId ?? 'Nicht verfügbar'}
-• Subscription ID: ${subscription.id}
-• Kündigungsdatum: ${formatUnix(subscription.current_period_end)}
-
-Der Zugang bleibt bis zum Ende der aktuellen Abrechnungsperiode bestehen.`
-            )
+            await safeSendModEmbed({
+              title: 'Kündigung eingegangen',
+              description: 'Der Kunde hat die Kündigung seines Abonnements beantragt. Der Zugang bleibt bis zum Ende der aktuellen Abrechnungsperiode bestehen.',
+              color: 0xf59e0b, // Orange für Warnungen
+              fields: [
+                { name: 'E-Mail', value: info.email ?? 'Nicht verfügbar', inline: true },
+                { name: 'Stripe Customer ID', value: customerId, inline: true },
+                { name: 'Interner User ID', value: info.appUserId ?? 'Nicht verfügbar', inline: true },
+                { name: 'Subscription ID', value: subscription.id, inline: false },
+                { name: 'Kündigungsdatum', value: formatUnix(subscription.current_period_end), inline: true }
+              ],
+              footer: { text: 'Price Action Trader Mentorship' },
+              timestamp: new Date().toISOString()
+            })
           }
 
           // Manche Kündigungen kommen als geplantes `cancel_at` (ohne cancel_at_period_end).
@@ -277,20 +290,20 @@ Der Zugang bleibt bis zum Ende der aktuellen Abrechnungsperiode bestehen.`
             prev.cancel_at == null &&
             subscription.cancel_at != null
           ) {
-            await safeSendModMessage(
-              `Geplante Kündigung
-
-Eine terminierte Kündigung wurde für das Abonnement eingerichtet.
-
-Kundendetails:
-• E-Mail: ${info.email ?? 'Nicht verfügbar'}
-• Stripe Customer ID: ${customerId}
-• Interner User ID: ${info.appUserId ?? 'Nicht verfügbar'}
-• Subscription ID: ${subscription.id}
-• Geplantes Kündigungsdatum: ${formatUnix(subscription.cancel_at)}
-
-Das Abonnement wird zum angegebenen Zeitpunkt automatisch beendet.`
-            )
+            await safeSendModEmbed({
+              title: 'Geplante Kündigung',
+              description: 'Eine terminierte Kündigung wurde für das Abonnement eingerichtet. Das Abonnement wird zum angegebenen Zeitpunkt automatisch beendet.',
+              color: 0xf59e0b, // Orange für Warnungen
+              fields: [
+                { name: 'E-Mail', value: info.email ?? 'Nicht verfügbar', inline: true },
+                { name: 'Stripe Customer ID', value: customerId, inline: true },
+                { name: 'Interner User ID', value: info.appUserId ?? 'Nicht verfügbar', inline: true },
+                { name: 'Subscription ID', value: subscription.id, inline: false },
+                { name: 'Geplantes Kündigungsdatum', value: formatUnix(subscription.cancel_at), inline: true }
+              ],
+              footer: { text: 'Price Action Trader Mentorship' },
+              timestamp: new Date().toISOString()
+            })
           }
 
           // Melden, wenn eine Kündigung zurückgenommen wurde (cancel_at_period_end wieder false)
@@ -299,21 +312,21 @@ Das Abonnement wird zum angegebenen Zeitpunkt automatisch beendet.`
             subscription.cancel_at_period_end === false &&
             prev.cancel_at_period_end === true
           ) {
-            await safeSendModMessage(
-              `Kündigung zurückgenommen
-
-Der Kunde hat seine Kündigung zurückgezogen. Das Abonnement läuft weiter.
-
-Kundendetails:
-• E-Mail: ${info.email ?? 'Nicht verfügbar'}
-• Stripe Customer ID: ${customerId}
-• Interner User ID: ${info.appUserId ?? 'Nicht verfügbar'}
-• Subscription ID: ${subscription.id}
-• Status: ${subscription.status}
-• Nächste Abrechnung: ${formatUnix(subscription.current_period_end)}
-
-Der Kunde behält weiterhin vollen Zugang zur Mentorship-Plattform.`
-            )
+            await safeSendModEmbed({
+              title: 'Kündigung zurückgenommen',
+              description: 'Der Kunde hat seine Kündigung zurückgezogen. Das Abonnement läuft weiter und der Kunde behält vollen Zugang zur Mentorship-Plattform.',
+              color: 0x22c55e, // Grün für positive Änderungen
+              fields: [
+                { name: 'E-Mail', value: info.email ?? 'Nicht verfügbar', inline: true },
+                { name: 'Stripe Customer ID', value: customerId, inline: true },
+                { name: 'Interner User ID', value: info.appUserId ?? 'Nicht verfügbar', inline: true },
+                { name: 'Subscription ID', value: subscription.id, inline: false },
+                { name: 'Status', value: subscription.status, inline: true },
+                { name: 'Nächste Abrechnung', value: formatUnix(subscription.current_period_end), inline: true }
+              ],
+              footer: { text: 'Price Action Trader Mentorship' },
+              timestamp: new Date().toISOString()
+            })
           }
 
           // Access/Rolle steuern:
@@ -346,19 +359,19 @@ Der Kunde behält weiterhin vollen Zugang zur Mentorship-Plattform.`
             })
           }
 
-          await safeSendModMessage(
-            `Abonnement beendet
-
-Das Abonnement wurde erfolgreich beendet und der Zugang entzogen.
-
-Kundendetails:
-• E-Mail: ${info.email ?? 'Nicht verfügbar'}
-• Stripe Customer ID: ${customerId}
-• Interner User ID: ${info.appUserId ?? 'Nicht verfügbar'}
-• Subscription ID: ${subscription.id}
-
-Der Kunde hat keinen Zugang mehr zur Mentorship-Plattform. Discord-Rolle wurde entfernt.`
-          )
+          await safeSendModEmbed({
+            title: 'Abonnement beendet',
+            description: 'Das Abonnement wurde erfolgreich beendet und der Zugang entzogen. Discord-Rolle wurde entfernt.',
+            color: 0xef4444, // Rot für Beendigungen
+            fields: [
+              { name: 'E-Mail', value: info.email ?? 'Nicht verfügbar', inline: true },
+              { name: 'Stripe Customer ID', value: customerId, inline: true },
+              { name: 'Interner User ID', value: info.appUserId ?? 'Nicht verfügbar', inline: true },
+              { name: 'Subscription ID', value: subscription.id, inline: false }
+            ],
+            footer: { text: 'Price Action Trader Mentorship' },
+            timestamp: new Date().toISOString()
+          })
 
           if (info.discordUserId) {
             await safeRemoveMenteeRole(info.discordUserId)

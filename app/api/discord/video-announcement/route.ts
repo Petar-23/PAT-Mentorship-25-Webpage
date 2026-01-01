@@ -111,16 +111,14 @@ export async function POST(req: Request) {
 
     const courseForText = playlistName ?? moduleName
     const contentLines = [
-      'Neues Video verfügbar',
+      '@everyone',
       '',
-      `${video.title}`,
-      `${courseForText}`,
+      `Neues Video: **${video.title}**`,
+      `Kurs: **${courseForText}**`,
       '',
-      `Video ansehen: ${videoUrl}`,
+      videoUrl,
       '',
-      'Hinweis: Verwenden Sie die Sidebar in der Mentorship-Übersicht für einfache Navigation.',
-      '',
-      'Viel Erfolg beim Trading!',
+      'Viel Erfolg beim Trading!'
     ].filter((x): x is string => typeof x === 'string')
 
     let messageSent = false
@@ -156,19 +154,17 @@ export async function POST(req: Request) {
             {
               title: video.title,
               url: videoUrl,
-              description: `Neues Video aus dem Modul ${moduleName}`,
-              color: 0x2563eb, // Professionelle blaue Farbe
-              thumbnail: { url: embedImageUrl },
+              description: `Neues Video verfügbar in ${courseForText}`,
+              color: 0x2563eb,
               image: { url: embedImageUrl },
               fields: [
-                ...(playlistName ? [{ name: 'Kurs', value: playlistName, inline: true }] : []),
                 { name: 'Modul', value: moduleName, inline: true },
                 { name: 'Kapitel', value: chapterName, inline: true },
+                ...(playlistName ? [{ name: 'Kurs', value: playlistName, inline: true }] : []),
               ],
               footer: {
-                text: 'Price Action Trader Mentorship',
-              },
-              timestamp: new Date().toISOString(),
+                text: 'Price Action Trader Mentorship'
+              }
             },
           ],
           file: {
@@ -199,17 +195,16 @@ export async function POST(req: Request) {
             {
               title: video.title,
               url: videoUrl,
-              description: `Neues Video aus dem Modul ${moduleName}`,
-              color: 0x2563eb, // Professionelle blaue Farbe
+              description: `Neues Video verfügbar in ${courseForText}`,
+              color: 0x2563eb,
               fields: [
-                ...(playlistName ? [{ name: 'Kurs', value: playlistName, inline: true }] : []),
                 { name: 'Modul', value: moduleName, inline: true },
                 { name: 'Kapitel', value: chapterName, inline: true },
+                ...(playlistName ? [{ name: 'Kurs', value: playlistName, inline: true }] : []),
               ],
               footer: {
-                text: 'Price Action Trader Mentorship',
-              },
-              timestamp: new Date().toISOString(),
+                text: 'Price Action Trader Mentorship'
+              }
             },
           ],
         })
