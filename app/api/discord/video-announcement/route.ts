@@ -111,15 +111,17 @@ export async function POST(req: Request) {
 
     const courseForText = playlistName ?? moduleName
     const contentLines = [
-      '@everyone',
-      `Moin zusammen, ich habe soeben ein neues Video (**${video.title}**) veröffentlicht.`,
-      `Ihr findet das Video in der **${courseForText}** Playlist.`,
+      '📹 **Neues Video verfügbar!**',
       '',
-      // optionaler Link (hilft UX, auch wenn Deep-Link erst in Schritt 5 perfekt ist)
-      videoUrl,
+      `**${video.title}**`,
+      `*${courseForText}*`,
       '',
-      'Passt auf euch auf,',
-      'Petar',
+      '👉 [Direkt zum Video klicken](' + videoUrl + ')',
+      '',
+      '───',
+      '💡 *Tipp:* Klicke auf den Link oben oder nutze die Sidebar in der Mentorship-Übersicht.',
+      '',
+      '*Bleibt dran für mehr Trading-Wissen!* 🚀',
     ].filter((x): x is string => typeof x === 'string')
 
     let messageSent = false
@@ -153,15 +155,22 @@ export async function POST(req: Request) {
           allowedMentions: { parse: ['everyone'] },
           embeds: [
             {
-              title: video.title,
+              title: '🎬 ' + video.title,
               url: videoUrl,
+              description: `Ein neues Video aus dem Modul **${moduleName}**`,
+              color: 0x00ff00, // Grüne Farbe für Erfolg/Neu
               thumbnail: { url: embedImageUrl },
               image: { url: embedImageUrl },
               fields: [
-                ...(playlistName ? [{ name: 'Kurs', value: playlistName, inline: true }] : []),
-                { name: 'Modul', value: moduleName, inline: true },
-                { name: 'Kapitel', value: chapterName, inline: true },
+                ...(playlistName ? [{ name: '📚 Kurs', value: playlistName, inline: true }] : []),
+                { name: '📖 Modul', value: moduleName, inline: true },
+                { name: '📄 Kapitel', value: chapterName, inline: true },
               ],
+              footer: {
+                text: 'Price Action Trader Mentorship',
+                icon_url: 'https://your-domain.com/images/pat-logo.png' // Optional: Logo hinzufügen
+              },
+              timestamp: new Date().toISOString(),
             },
           ],
           file: {
@@ -190,13 +199,19 @@ export async function POST(req: Request) {
           allowedMentions: { parse: ['everyone'] },
           embeds: [
             {
-              title: video.title,
+              title: '🎬 ' + video.title,
               url: videoUrl,
+              description: `Ein neues Video aus dem Modul **${moduleName}**`,
+              color: 0x00ff00, // Grüne Farbe für Erfolg/Neu
               fields: [
-                ...(playlistName ? [{ name: 'Kurs', value: playlistName, inline: true }] : []),
-                { name: 'Modul', value: moduleName, inline: true },
-                { name: 'Kapitel', value: chapterName, inline: true },
+                ...(playlistName ? [{ name: '📚 Kurs', value: playlistName, inline: true }] : []),
+                { name: '📖 Modul', value: moduleName, inline: true },
+                { name: '📄 Kapitel', value: chapterName, inline: true },
               ],
+              footer: {
+                text: 'Price Action Trader Mentorship',
+              },
+              timestamp: new Date().toISOString(),
             },
           ],
         })

@@ -97,6 +97,8 @@ export function ModulDetailClient({
   const { toast } = useToast()
   const searchParams = useSearchParams()
   const view = searchParams.get('view')
+  const videoParam = searchParams.get('video')
+
   const [localModul, setLocalModul] = useState(modul)
   const [activeVideoId, setActiveVideoId] = useState<string | null>(initialVideoId)
   const [watchedVideoIds, setWatchedVideoIds] = useState<string[]>(initialWatchedVideoIds ?? [])
@@ -111,9 +113,23 @@ export function ModulDetailClient({
   const [tempChapterName, setTempChapterName] = useState('')
 
   // Automatisch das erste Video mit bunnyGuid auswählen (beim initialen Laden)
+  // Oder das Video aus dem URL-Parameter verwenden (z.B. von Discord-Links)
   useEffect(() => {
     if (activeVideoId) return // Nur beim ersten Laden ausführen
 
+    // Prüfe zuerst, ob ein video Parameter in der URL vorhanden ist
+    if (videoParam) {
+      const videoFromUrl = localModul.chapters
+        .flatMap((ch) => ch.videos)
+        .find((v) => v.id === videoParam)
+
+      if (videoFromUrl) {
+        setActiveVideoId(videoFromUrl.id)
+        return
+      }
+    }
+
+    // Fallback: Erstes Video mit bunnyGuid
     const firstVideoWithGuid = localModul.chapters
       .flatMap((ch) => ch.videos)
       .find((v) => v.bunnyGuid !== null)
@@ -121,7 +137,7 @@ export function ModulDetailClient({
     if (firstVideoWithGuid) {
       setActiveVideoId(firstVideoWithGuid.id)
     }
-  }, [localModul, activeVideoId])
+  }, [localModul, activeVideoId, videoParam])
 
   // URL → State sync (z.B. wenn User direkt /...?view=content öffnet)
   useEffect(() => {
