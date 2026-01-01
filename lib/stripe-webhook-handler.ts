@@ -195,7 +195,16 @@ export async function handleStripeEvent(event: Stripe.Event) {
           }
 
           await safeSendModMessage(
-            `🟢 Neues Abo erstellt\n- Email: ${info.email ?? '—'}\n- customerId: ${customerId}\n- userId: ${info.appUserId ?? '—'}\n- subscriptionId: ${subscription.id}\n- status: ${subscription.status}`
+            `Neuer Kunde registriert
+
+Kundendetails:
+• E-Mail: ${info.email ?? 'Nicht verfügbar'}
+• Stripe Customer ID: ${customerId}
+• Interner User ID: ${info.appUserId ?? 'Nicht verfügbar'}
+• Subscription ID: ${subscription.id}
+• Status: ${subscription.status}
+
+Der Kunde hat erfolgreich ein Abonnement abgeschlossen und erhält Zugang zur Mentorship-Plattform.`
           )
 
           if (info.discordUserId) {
@@ -245,7 +254,18 @@ export async function handleStripeEvent(event: Stripe.Event) {
             prev.cancel_at_period_end === false
           ) {
             await safeSendModMessage(
-              `🟠 Kündigung eingegangen (läuft bis Periodenende)\n- Email: ${info.email ?? '—'}\n- customerId: ${customerId}\n- userId: ${info.appUserId ?? '—'}\n- subscriptionId: ${subscription.id}\n- current_period_end: ${formatUnix(subscription.current_period_end)}`
+              `Kündigung eingegangen
+
+Der Kunde hat die Kündigung seines Abonnements beantragt.
+
+Kundendetails:
+• E-Mail: ${info.email ?? 'Nicht verfügbar'}
+• Stripe Customer ID: ${customerId}
+• Interner User ID: ${info.appUserId ?? 'Nicht verfügbar'}
+• Subscription ID: ${subscription.id}
+• Kündigungsdatum: ${formatUnix(subscription.current_period_end)}
+
+Der Zugang bleibt bis zum Ende der aktuellen Abrechnungsperiode bestehen.`
             )
           }
 
@@ -258,7 +278,18 @@ export async function handleStripeEvent(event: Stripe.Event) {
             subscription.cancel_at != null
           ) {
             await safeSendModMessage(
-              `🟠 Kündigung geplant (cancel_at)\n- Email: ${info.email ?? '—'}\n- customerId: ${customerId}\n- userId: ${info.appUserId ?? '—'}\n- subscriptionId: ${subscription.id}\n- cancel_at: ${formatUnix(subscription.cancel_at)}`
+              `Geplante Kündigung
+
+Eine terminierte Kündigung wurde für das Abonnement eingerichtet.
+
+Kundendetails:
+• E-Mail: ${info.email ?? 'Nicht verfügbar'}
+• Stripe Customer ID: ${customerId}
+• Interner User ID: ${info.appUserId ?? 'Nicht verfügbar'}
+• Subscription ID: ${subscription.id}
+• Geplantes Kündigungsdatum: ${formatUnix(subscription.cancel_at)}
+
+Das Abonnement wird zum angegebenen Zeitpunkt automatisch beendet.`
             )
           }
 
@@ -269,7 +300,19 @@ export async function handleStripeEvent(event: Stripe.Event) {
             prev.cancel_at_period_end === true
           ) {
             await safeSendModMessage(
-              `🟢 Kündigung zurückgenommen (Abo läuft weiter)\n- Email: ${info.email ?? '—'}\n- customerId: ${customerId}\n- userId: ${info.appUserId ?? '—'}\n- subscriptionId: ${subscription.id}\n- status: ${subscription.status}\n- current_period_end: ${formatUnix(subscription.current_period_end)}`
+              `Kündigung zurückgenommen
+
+Der Kunde hat seine Kündigung zurückgezogen. Das Abonnement läuft weiter.
+
+Kundendetails:
+• E-Mail: ${info.email ?? 'Nicht verfügbar'}
+• Stripe Customer ID: ${customerId}
+• Interner User ID: ${info.appUserId ?? 'Nicht verfügbar'}
+• Subscription ID: ${subscription.id}
+• Status: ${subscription.status}
+• Nächste Abrechnung: ${formatUnix(subscription.current_period_end)}
+
+Der Kunde behält weiterhin vollen Zugang zur Mentorship-Plattform.`
             )
           }
 
@@ -304,7 +347,17 @@ export async function handleStripeEvent(event: Stripe.Event) {
           }
 
           await safeSendModMessage(
-            `🔴 Abo beendet\n- Email: ${info.email ?? '—'}\n- customerId: ${customerId}\n- userId: ${info.appUserId ?? '—'}\n- subscriptionId: ${subscription.id}`
+            `Abonnement beendet
+
+Das Abonnement wurde erfolgreich beendet und der Zugang entzogen.
+
+Kundendetails:
+• E-Mail: ${info.email ?? 'Nicht verfügbar'}
+• Stripe Customer ID: ${customerId}
+• Interner User ID: ${info.appUserId ?? 'Nicht verfügbar'}
+• Subscription ID: ${subscription.id}
+
+Der Kunde hat keinen Zugang mehr zur Mentorship-Plattform. Discord-Rolle wurde entfernt.`
           )
 
           if (info.discordUserId) {
