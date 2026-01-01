@@ -110,20 +110,9 @@ export async function POST(req: Request) {
     const thumbnailUrl = `https://vz-dc8da426-d71.b-cdn.net/${video.bunnyGuid}/thumbnail.jpg`
 
     const courseForText = playlistName ?? moduleName
-    const contentLines = [
-      '@everyone',
-      `Moin zusammen, ich habe soeben ein neues Video (**${video.title}**) veröffentlicht.`,
-      `Ihr findet das Video in der **${courseForText}**.`,
-      '',
-      videoUrl,
-      '',
-      'Passt auf euch auf,',
-      'Petar'
-    ].filter((x): x is string => typeof x === 'string')
 
     let messageSent = false
     try {
-      const content = contentLines.join('\n')
 
       // Hotlink-Protection: Die Bunny Thumbnail-URLs liefern oft 403 ohne passenden Referer.
       // Deshalb laden wir das Thumbnail serverseitig (mit Referer) und schicken es als Attachment,
@@ -148,19 +137,27 @@ export async function POST(req: Request) {
 
         const message = await sendDiscordChannelMessageWithAttachment({
           channelId,
-          content,
+          content: '', // Remove separate content, everything goes in embed
           allowedMentions: { parse: ['everyone'] },
           embeds: [
             {
-              title: video.title,
+              title: `Neues Video: ${video.title}`,
               url: videoUrl,
-              description: `Neues Video verfügbar in ${courseForText}`,
-              color: 0x2563eb,
+              description: `@everyone
+
+Moin zusammen, ich habe soeben ein neues Video veröffentlicht.
+Ihr findet das Video in der **${courseForText}**.
+
+${videoUrl}
+
+Passt auf euch auf,
+Petar`,
+              color: 0x24fc35,
               image: { url: embedImageUrl },
               fields: [
+                ...(playlistName ? [{ name: 'Kurs', value: playlistName, inline: true }] : []),
                 { name: 'Modul', value: moduleName, inline: true },
                 { name: 'Kapitel', value: chapterName, inline: true },
-                ...(playlistName ? [{ name: 'Kurs', value: playlistName, inline: true }] : []),
               ],
               footer: {
                 text: 'Price Action Trader Mentorship',
@@ -190,18 +187,26 @@ export async function POST(req: Request) {
 
         const message = await sendDiscordChannelMessage({
           channelId,
-          content,
+          content: '', // Remove separate content, everything goes in embed
           allowedMentions: { parse: ['everyone'] },
           embeds: [
             {
-              title: video.title,
+              title: `Neues Video: ${video.title}`,
               url: videoUrl,
-              description: `Neues Video verfügbar in ${courseForText}`,
+              description: `@everyone
+
+Moin zusammen, ich habe soeben ein neues Video veröffentlicht.
+Ihr findet das Video in der **${courseForText}**.
+
+${videoUrl}
+
+Passt auf euch auf,
+Petar`,
               color: 0x2563eb,
               fields: [
+                ...(playlistName ? [{ name: 'Kurs', value: playlistName, inline: true }] : []),
                 { name: 'Modul', value: moduleName, inline: true },
                 { name: 'Kapitel', value: chapterName, inline: true },
-                ...(playlistName ? [{ name: 'Kurs', value: playlistName, inline: true }] : []),
               ],
               footer: {
                 text: 'Price Action Trader Mentorship',
