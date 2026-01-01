@@ -112,13 +112,13 @@ export async function POST(req: Request) {
     const courseForText = playlistName ?? moduleName
     const contentLines = [
       '@everyone',
-      '',
-      `Neues Video: **${video.title}**`,
-      `Kurs: **${courseForText}**`,
+      `Moin zusammen, ich habe soeben ein neues Video (**${video.title}**) veröffentlicht.`,
+      `Ihr findet das Video in der **${courseForText}**.`,
       '',
       videoUrl,
       '',
-      'Viel Erfolg beim Trading!'
+      'Passt auf euch auf,',
+      'Petar'
     ].filter((x): x is string => typeof x === 'string')
 
     let messageSent = false
@@ -163,7 +163,8 @@ export async function POST(req: Request) {
                 ...(playlistName ? [{ name: 'Kurs', value: playlistName, inline: true }] : []),
               ],
               footer: {
-                text: 'Price Action Trader Mentorship'
+                text: 'Price Action Trader Mentorship',
+                icon_url: `${baseUrl}/images/pat-banner.jpeg`
               }
             },
           ],
@@ -203,7 +204,8 @@ export async function POST(req: Request) {
                 ...(playlistName ? [{ name: 'Kurs', value: playlistName, inline: true }] : []),
               ],
               footer: {
-                text: 'Price Action Trader Mentorship'
+                text: 'Price Action Trader Mentorship',
+                icon_url: `${baseUrl}/images/pat-banner.jpeg`
               }
             },
           ],
