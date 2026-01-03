@@ -6,7 +6,7 @@ export default function DatenschutzPage() {
       <Card className="max-w-3xl mx-auto bg-white">
         <div className="p-6 md:p-8">
           <h1 className="text-3xl font-bold mb-8">Datenschutzerklärung</h1>
-          <p className="text-gray-600 mb-8">der Maric Capital GmbH <br /> Stand: Dezember 2025</p>
+          <p className="text-gray-600 mb-8">der Maric Capital GmbH <br /> Stand: Januar 2026</p>
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">1. Verantwortlicher und Kontaktdaten</h2>
@@ -58,7 +58,7 @@ export default function DatenschutzPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">4. Hosting und Content Delivery Networks (CDN)</h2>
             <p className="text-gray-600 mb-4">
-              Diese Website wird bei einem externen Dienstleister gehostet (Hoster). Die personenbezogenen Daten, die auf dieser Website erfasst werden, werden auf den Servern des Hosters gespeichert.
+              Diese Website wird bei Vercel (EU-Edge-Caching, USA-Transfer mit SCCs) gehostet. Bunny.net CDN für Videos (EU-Server). Verarbeitung Art. 6 Abs. 1 lit. f DSGVO (Berechtigtes Interesse an Sicherheit/Beschleunigung).
             </p>
           </section>
 
@@ -112,6 +112,19 @@ export default function DatenschutzPage() {
             <p className="text-gray-600 mb-4">
               Stripe kann Daten außerhalb der EU verarbeiten, insbesondere in den USA. Stripe gewährleistet in diesen Fällen den Schutz der Daten durch Standardvertragsklauseln (SCCs) gemäß Art. 46 DSGVO.
             </p>
+
+            <h3 className="text-lg font-medium mb-2">Verwendung von Discord</h3>
+            <p className="text-gray-600 mb-4">
+              Zur Community-Kommunikation nutzen wir Discord. Discord erhebt Namen, E-Mail, Discord-ID und Rollen. Verarbeitung nach Art. 6 Abs. 1 lit. b/f DSGVO (Vertrag/Interesse). 
+              <a href="https://discord.com/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Datenschutzerklärung Discord</a>.
+              Transfer USA via SCCs.
+            </p>
+
+            <h3 className="text-lg font-medium mb-2">Video-Hosting via Bunny.net</h3>
+            <p className="text-gray-600 mb-4">
+              Videos werden auf Bunny.net (EU-Server) gehostet. Logs/IPs für 30 Tage. Art. 6 Abs. 1 lit. f DSGVO.
+              <a href="https://bunny.net/privacy/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Privacy Bunny</a>.
+            </p>
           </section>
 
           <section className="mb-8">
@@ -121,7 +134,7 @@ export default function DatenschutzPage() {
             </p>
           </section>
 
-          <p className="text-gray-600">Maric Capital GmbH - Dezember 2025</p>
+          <p className="text-gray-600">Maric Capital GmbH - Januar 2026</p>
         </div>
       </Card>
     </div>

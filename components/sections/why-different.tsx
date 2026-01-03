@@ -18,8 +18,8 @@ const features = [
   },
   {
     icon: <Users className="h-5 w-5 sm:h-6 sm:w-6" />,
-    title: "1:1 Sessions",
-    description: "Erhalte Antworten auf deine spezifischen Fragen in Mentoring-Sessions.",
+    title: "Monatliche Q&A Live-Session",
+    description: "Am Ende jedes Monats stellst du im Livestream alle Fragen und ich beantworte sie so detailliert wie möglich.",
   },
   {
     icon: <ChartSpline className="h-5 w-5 sm:h-6 sm:w-6" />,
@@ -34,7 +34,7 @@ const features = [
   {
     icon: <CreditCard className="h-5 w-5 sm:h-6 sm:w-6" />,
     title: "Faire Preisgestaltung",
-    description: "Zahle monatlich, kündige jederzeit. Kein Mehrwert, keine Kosten.",
+    description: "€150/Monat (inkl. MwSt.). Monatlich kündbar, keine versteckten Kosten.",
   },
 ]
 

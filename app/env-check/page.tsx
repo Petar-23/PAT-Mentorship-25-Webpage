@@ -45,6 +45,19 @@ STRIPE_WEBHOOK_SECRET: ${process.env.STRIPE_WEBHOOK_SECRET ? '✓' : '❌'}
         </pre>
       </section>
 
+      {/* Whop */}
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">Whop</h2>
+        <pre className="bg-gray-100 p-6 rounded-lg font-mono text-sm">
+          {`
+WHOP_API_KEY: ${process.env.WHOP_API_KEY ? '✓' : '❌'}
+WHOP_PRODUCT_ID: ${process.env.WHOP_PRODUCT_ID || '❌'}
+WHOP_OFFER_ID: ${process.env.WHOP_OFFER_ID || '—'}
+WHOP_STORE_ID: ${process.env.WHOP_STORE_ID || '—'}
+          `.trim()}
+        </pre>
+      </section>
+
       {/* Bunny */}
       <section>
         <h2 className="text-xl font-semibold mb-4">Bunny.net</h2>

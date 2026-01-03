@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect, useMemo } from 'react'
 
 interface InfiniteScrollProps {
   children: React.ReactNode[]
@@ -17,34 +17,48 @@ export default function InfiniteScroll({
   pauseOnHover = true,
   gap = 16
 }: InfiniteScrollProps) {
-  const [isHovered, setIsHovered] = useState(false)
+  const isHoveredRef = useRef(false)
+  const initializedRef = useRef(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [containerWidth, setContainerWidth] = useState(0)
-  const [itemWidth, setItemWidth] = useState(0)
-  const [items, setItems] = useState<React.ReactNode[]>([...children])
-  const [position, setPosition] = useState(0)
+  const sequenceWidthRef = useRef(0)
+  const positionRef = useRef(0)
   const animationFrameRef = useRef<number>()
   const lastTimeRef = useRef<number>(0)
   const velocityRef = useRef(0)
   const targetVelocityRef = useRef(0)
 
-  useEffect(() => {
-    setItems([...children, ...children, ...children])
-  }, [children])
+  const baseItems = useMemo(() => React.Children.toArray(children), [children])
+  const baseCount = baseItems.length
+  const items = useMemo(() => [...baseItems, ...baseItems], [baseItems])
+
+  const applyTransform = (x: number) => {
+    if (!scrollRef.current) return
+    scrollRef.current.style.transform = `translateX(${x}px)`
+  }
 
   useEffect(() => {
     if (!containerRef.current || !scrollRef.current) return
 
     const updateMeasurements = () => {
       if (!containerRef.current || !scrollRef.current) return
-      
-      const firstItem = scrollRef.current.children[0] as HTMLElement
-      if (!firstItem) return
 
-      const itemFullWidth = firstItem.offsetWidth + gap
-      setItemWidth(itemFullWidth)
-      setContainerWidth(containerRef.current.offsetWidth)
+      // We render 2x the list. The second copy starts at index `baseCount`.
+      // Measuring that offset gives us the full width of ONE sequence including gaps/margins.
+      const first = scrollRef.current.children[0] as HTMLElement | undefined
+      const secondStart = scrollRef.current.children[baseCount] as HTMLElement | undefined
+      if (!first || !secondStart) return
+
+      const sequenceWidth = secondStart.offsetLeft - first.offsetLeft
+      if (!(sequenceWidth > 0)) return
+      sequenceWidthRef.current = sequenceWidth
+
+      if (!initializedRef.current) {
+        const initial = direction === 'right' ? -sequenceWidth : 0
+        positionRef.current = initial
+        applyTransform(initial)
+        initializedRef.current = true
+      }
     }
 
     updateMeasurements()
@@ -53,30 +67,47 @@ export default function InfiniteScroll({
     resizeObserver.observe(containerRef.current)
 
     return () => resizeObserver.disconnect()
-  }, [gap])
+  }, [gap, baseCount, direction])
 
   useEffect(() => {
-    if (!itemWidth || !containerWidth) return
+    // Re-initialize when direction or content changes.
+    initializedRef.current = false
+  }, [direction, baseCount, gap])
+
+  useEffect(() => {
+    if (!baseCount) return
+
+    // Reset timing when (re)starting the animation to avoid huge elapsed deltas.
+    lastTimeRef.current = 0
 
     const animate = (timestamp: number) => {
       if (!lastTimeRef.current) lastTimeRef.current = timestamp
       const elapsed = timestamp - lastTimeRef.current
+
+      const sequenceWidth = sequenceWidthRef.current
+      if (!(sequenceWidth > 0)) {
+        lastTimeRef.current = timestamp
+        animationFrameRef.current = requestAnimationFrame(animate)
+        return
+      }
       
-      targetVelocityRef.current = isHovered ? 0 : (direction === 'left' ? -speed : speed)
+      const isPaused = pauseOnHover && isHoveredRef.current
+      targetVelocityRef.current = isPaused ? 0 : (direction === 'left' ? -speed : speed)
       velocityRef.current += (targetVelocityRef.current - velocityRef.current) * 0.1
 
       const delta = (elapsed * velocityRef.current) / 20
-      const newPosition = position + delta
+      let newPosition = positionRef.current + delta
       
-      if (direction === 'left' && Math.abs(newPosition) >= itemWidth) {
-        setPosition(0)
-        setItems(prev => [...prev.slice(1), prev[0]])
+      if (direction === 'left' && newPosition <= -sequenceWidth) {
+        const steps = Math.floor(Math.abs(newPosition) / sequenceWidth)
+        newPosition = newPosition + sequenceWidth * steps
       } else if (direction === 'right' && newPosition >= 0) {
-        setPosition(-itemWidth)
-        setItems(prev => [prev[prev.length - 1], ...prev.slice(0, -1)])
-      } else {
-        setPosition(newPosition)
+        const steps = Math.floor(newPosition / sequenceWidth) + 1
+        newPosition = newPosition - sequenceWidth * steps
       }
+
+      positionRef.current = newPosition
+      applyTransform(newPosition)
       
       lastTimeRef.current = timestamp
       animationFrameRef.current = requestAnimationFrame(animate)
@@ -89,7 +120,7 @@ export default function InfiniteScroll({
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [itemWidth, containerWidth, direction, speed, isHovered, position])
+  }, [direction, speed, pauseOnHover, baseCount])
 
   return (
     <div
@@ -101,20 +132,22 @@ export default function InfiniteScroll({
         className="flex" // Removed absolute positioning and h-full
         style={{
           gap: `${gap}px`,
-          transform: `translateX(${position}px)`,
-          width: 'max-content'
+          width: 'max-content',
+          willChange: 'transform',
         }}
       >
         {items.map((child, index) => (
           <div
             key={index}
             className="flex-shrink-0"
-            onMouseEnter={() => pauseOnHover && setIsHovered(true)}
+            onMouseEnter={() => {
+              if (!pauseOnHover) return
+              isHoveredRef.current = true
+            }}
             onMouseLeave={() => {
-              if (pauseOnHover) {
-                setIsHovered(false)
-                velocityRef.current = 0
-              }
+              if (!pauseOnHover) return
+              isHoveredRef.current = false
+              velocityRef.current = 0
             }}
           >
             {child}

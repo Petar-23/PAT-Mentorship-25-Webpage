@@ -12,8 +12,8 @@ export interface Trade {
     trades: Trade[];
   }
   
-  // Define initial equity
-  const INITIAL_EQUITY = 25000;
+  // Initial equity for P&L-based CSVs (not used for equity-curve CSVs)
+  const INITIAL_EQUITY = 2000;
   
   // Helper to format date string to YYYY-MM-DD
   function formatDate(dateString: string): string {
@@ -31,21 +31,87 @@ export interface Trade {
   // Process CSV data into structured trading data
   function processTradingData(csvData: string): TradingDay[] {
     try {
+      const lines = csvData
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      if (lines.length <= 1) return [];
+
+      // Try to auto-detect delimiter (comma vs semicolon) from header row
+      const header = lines[0] ?? "";
+      const commaCount = (header.match(/,/g) || []).length;
+      const semicolonCount = (header.match(/;/g) || []).length;
+      const delimiter = semicolonCount > commaCount ? ";" : ",";
+      const headerLower = header.toLowerCase();
+      const isEquityCurveCsv =
+        headerLower.includes('equity') &&
+        !headerLower.includes('p&l') &&
+        !headerLower.includes('pnl');
+
+      // Case 1: Equity curve CSV (Date + Equity)
+      // Example:
+      // ,Equity
+      // 2025-11-05,2378.36
+      if (isEquityCurveCsv) {
+        const rows = lines
+          .slice(1)
+          .map((line) => line.split(delimiter).map((str) => str.trim()))
+          .map((cols) => {
+            const dateRaw = cols[0] ?? "";
+            const equityRaw = cols[1] ?? "";
+            const date = formatDate(dateRaw);
+            if (!date) return null;
+
+            const cleaned = equityRaw.replace(/"/g, "").replace(/\s/g, "");
+            const normalizedNumber =
+              cleaned.includes(',') && !cleaned.includes('.') ? cleaned.replace(',', '.') : cleaned;
+            const equityValue = Number.parseFloat(normalizedNumber);
+            if (!Number.isFinite(equityValue)) return null;
+
+            return { date, equityValue };
+          })
+          .filter((x): x is { date: string; equityValue: number } => x != null)
+          .sort((a, b) => a.date.localeCompare(b.date));
+
+        if (rows.length === 0) return [];
+
+        let prevEquity: number | null = null;
+
+        return rows.map((row) => {
+          const pnl = prevEquity == null ? 0 : row.equityValue - prevEquity;
+          prevEquity = row.equityValue;
+
+          return {
+            date: row.date,
+            equity: row.equityValue,
+            trades: [{ date: row.date, pnl }],
+          };
+        });
+      }
+
       // Parse CSV into array of trades
-      const trades = csvData
-        .split('\n')
+      const trades = lines
         .slice(1) // Skip header row
-        .filter(line => line.trim()) // Remove empty lines
-        .map(line => {
-          const [datetime, pnl] = line.split(',').map(str => str.trim());
+        .map((line) => {
+          const [datetimeRaw, pnlRaw] = line.split(delimiter).map((str) => str.trim());
+          const datetime = datetimeRaw ?? "";
+          const pnlString = (pnlRaw ?? "").replace(/"/g, "").replace(/\s/g, "");
           const date = formatDate(datetime);
           if (!date) {
             console.warn('Skipping trade with invalid date:', datetime);
             return null;
           }
+          const normalizedPnL =
+            pnlString.includes(',') && !pnlString.includes('.') ? pnlString.replace(',', '.') : pnlString;
+          const pnlValue = Number.parseFloat(normalizedPnL);
+          if (!Number.isFinite(pnlValue)) {
+            console.warn('Skipping trade with invalid PnL:', pnlRaw);
+            return null;
+          }
           return {
             date,
-            pnl: parseFloat(pnl)
+            pnl: pnlValue
           };
         })
         .filter((trade): trade is Trade => trade !== null); // Type guard to remove null trades
@@ -83,46 +149,35 @@ export interface Trade {
     }
   }
   
-  // Your CSV data (unchanged)
-  const csvData = `Time,Realized P&L (value),Realized P&L (currency)
-  2024-11-20 20:57:48,525,USD
-  2024-11-20 20:15:40,0,USD
-  2024-11-20 14:39:40,325,USD
-  2024-11-19 19:07:02,-150,USD
-  2024-11-19 16:56:52,20,USD
-  2024-11-19 16:04:24,25,USD
-  2024-11-19 10:02:39,510,USD
-  2024-11-18 19:57:35,560,USD
-  2024-11-15 20:44:45,985,USD
-  2024-11-15 20:24:28,-205,USD
-  2024-11-14 15:21:21,-215,USD
-  2024-11-12 16:11:54,-340,USD
-  2024-11-06 21:09:49,475,USD
-  2024-11-06 20:06:29,-235,USD
-  2024-11-05 16:46:32,-430,USD
-  2024-11-05 16:18:26,-405,USD
-  2024-11-01 19:30:29,-220,USD
-  2024-11-01 13:55:39,-375,USD
-  2024-11-01 13:47:39,-235,USD
-  2024-10-31 20:05:21,400,USD
-  2024-10-31 18:02:07,336.6666666666424,USD
-  2024-10-31 18:00:13,156.6666666666424,USD
-  2024-10-31 17:55:02,456.6666666666424,USD
-  2024-10-29 12:16:15,64.99999999992724,USD
-  2024-10-29 12:00:31,-510,USD
-  2024-10-29 09:09:04,580,USD
-  2024-10-29 08:53:29,-315,USD
-  2024-10-29 08:21:20,-360,USD
-  2024-10-25 19:17:06,1580,USD
-  2024-10-22 18:53:01,975,USD
-  2024-10-22 18:19:20,-240,USD
-  2024-10-18 16:13:50,47.5,USD
-  2024-10-18 16:08:14,562.5,USD
-  2024-10-15 16:54:48,910,USD
-  2024-10-14 16:52:04,922.5,USD
-  2024-10-14 16:51:18,497.5,USD
-  2024-10-11 20:19:05,435,USD
-  2024-10-11 20:04:33,-120,USD`;
+  // Your CSV data (Equity curve)
+  const csvData = `,Equity
+2025-11-05,2378.36
+2025-11-06,2151.58
+2025-11-07,2134.2999999999997
+2025-11-10,2163.9999999999995
+2025-11-12,2173.9999999999995
+2025-11-13,2253.0999999999995
+2025-11-14,2326.7999999999993
+2025-11-17,2311.899999999999
+2025-11-18,2045.5999999999992
+2025-11-19,2265.399999999999
+2025-11-20,2272.7999999999993
+2025-11-21,2391.999999999999
+2025-11-24,2401.999999999999
+2025-11-25,2682.899999999999
+2025-11-26,2880.599999999999
+2025-12-01,2929.259999999999
+2025-12-02,3176.679999999999
+2025-12-03,3233.3799999999987
+2025-12-04,3326.679999999999
+2025-12-05,3219.479999999999
+2025-12-08,3265.679999999999
+2025-12-09,3402.479999999999
+2025-12-10,3497.079999999999
+2025-12-11,3520.039999999999
+2025-12-12,3574.639999999999
+2025-12-16,3623.239999999999
+2025-12-18,3723.54`;
   
   // Process the data
   export const processedTradingData = processTradingData(csvData);

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { hasActiveSubscription } from '@/lib/stripe'
-import { getIsAdmin } from '@/lib/authz'
+import { getIsAdmin, isMentorshipAccessible } from '@/lib/authz'
 
 export default async function CoursesLayout({ children }: { children: ReactNode }) {
   const { userId } = await auth()
@@ -14,10 +14,20 @@ export default async function CoursesLayout({ children }: { children: ReactNode 
   // Performance/UX: Erst Subscription prüfen (meist DB-fast) und nur im "kein Abo" Fall
   // noch den Admin-Check gegen Clerk machen.
   const hasSub = await hasActiveSubscription(userId)
-  const allowed = hasSub || (await getIsAdmin())
+  const isAdmin = await getIsAdmin()
+  const mentorshipAccessible = isMentorshipAccessible()
+
+  // User kann Abo haben, aber Zugang ist zeitlich blockiert
+  const allowed = (hasSub || isAdmin) && mentorshipAccessible
 
   if (!allowed) {
-    redirect('/dashboard?paywall=courses')
+    if (!mentorshipAccessible && hasSub) {
+      // User hat Abo, aber Mentorship startet erst später
+      redirect('/dashboard?message=mentorship-not-started')
+    } else {
+      // Kein Abo oder andere Blockierung
+      redirect('/dashboard?paywall=courses')
+    }
   }
 
   // Wichtig für UX: Mentorship ist "App-like" und braucht eine definierte Höhe,

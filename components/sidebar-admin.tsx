@@ -780,7 +780,7 @@ export function SidebarAdmin({
       </div>
 
       {isMentorship ? (
-        <div className="mt-0 border-t border-gray-300 -mx-4 px-4 pb-2">
+        <div className="mt-0 border-t rounded-t-xl bg-gray-100 border-gray-300 -mx-4 px-4 pb-2">
           {/* Desktop: Aktionen immer sichtbar */}
           <div className="hidden lg:block pt-2">
             <Button

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Button } from "@/components/ui/button"
-import { ArrowRight, PlayCircle, Users } from "lucide-react"
+import { ArrowRight, PlayCircle, Star, Users } from "lucide-react"
 import Link from "next/link"
 import { MatrixRain } from "../ui/matrix-rain"
 import Image from "next/image"
@@ -18,6 +18,7 @@ export default function Hero() {
   const [isNavigating, setIsNavigating] = useState(false)
   const { isSignedIn } = useUser()
   const router = useRouter()
+  const [whopStats, setWhopStats] = useState<{ count: number; average: number } | null>(null)
 
   useEffect(() => {
     if (!isMobile) {
@@ -36,50 +37,51 @@ export default function Hero() {
     }
   }, [isMobile])
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadWhopStats() {
+      try {
+        const res = await fetch('/api/whop/reviews?limit=200&per=50')
+        if (!res.ok) return
+
+        const data = (await res.json()) as { reviews?: Array<{ rating: number | null }> }
+        const reviews = Array.isArray(data?.reviews) ? data.reviews : []
+
+        const ratingValues = reviews
+          .map((r) => (typeof r.rating === 'number' && Number.isFinite(r.rating) ? r.rating : null))
+          .filter((x): x is number => x != null)
+
+        const average = ratingValues.length > 0 ? ratingValues.reduce((sum, v) => sum + v, 0) / ratingValues.length : 5
+
+        if (!cancelled) {
+          setWhopStats({ count: reviews.length, average })
+        }
+      } catch {
+        // Silent fail
+      }
+    }
+
+    loadWhopStats()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const whopCount = whopStats?.count ?? 48
+  const whopAvg = whopStats?.average ?? 5
+  const whopAvgRounded = Math.round(whopAvg * 10) / 10
+  const whopAvgText = (whopAvgRounded % 1 === 0 ? whopAvgRounded.toFixed(0) : whopAvgRounded.toFixed(1)).replace(
+    '.',
+    ','
+  )
+
   const handleGetStarted = () => {
     if (isSignedIn) {
       setIsNavigating(true)
       router.push('/dashboard')
       setTimeout(() => setIsNavigating(false), 500)
     }
-  }
-
-  // Custom SignInButton wrapper component
-  const SignInWrapper = ({ children }: { children: React.ReactNode }) => (
-    <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-      <div>
-        {children}
-      </div>
-    </SignInButton>
-  )
-
-  // Get Started button component
-  const GetStartedButton = () => {
-    if (isSignedIn) {
-      return (
-        <Button 
-          size="lg" 
-          onClick={handleGetStarted}
-          disabled={isNavigating}
-          className="w-full flex items-center gap-2 justify-center"
-        >
-          Sichere dir deinen Platz
-          <ArrowRight className="h-4 w-4" />
-        </Button>
-      )
-    }
-
-    return (
-      <SignInWrapper>
-        <Button 
-          size="lg"
-          className="w-full flex items-center gap-2 justify-center"
-        >
-          Sichere dir deinen Platz
-          <ArrowRight className="h-4 w-4" />
-        </Button>
-      </SignInWrapper>
-    )
   }
 
   return (
@@ -136,7 +138,7 @@ export default function Hero() {
             <div className="space-y-8">
               <div className="inline-block">
                 <span className="inline-flex items-center rounded-full px-4 py-1 text-sm font-medium bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                  Limitiert auf 100 Plätze • Start im März 2026
+                  Limitiert auf 100 Plätze • Start am 01.03.2026
                 </span>
               </div>
               
@@ -153,7 +155,24 @@ export default function Hero() {
               
               <div className="flex flex-col sm:flex-row gap-4 pt-2 w-full">
                 <div className="w-full sm:w-auto">
-                  <GetStartedButton />
+                  {isSignedIn ? (
+                    <Button
+                      size="lg"
+                      onClick={handleGetStarted}
+                      disabled={isNavigating}
+                      className="w-full flex items-center gap-2 justify-center"
+                    >
+                      Sichere dir deinen Platz
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+                      <Button size="lg" className="w-full flex items-center gap-2 justify-center">
+                        Sichere dir deinen Platz
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </SignInButton>
+                  )}
                 </div>
                 
                 <div className="w-full sm:w-auto">
@@ -168,11 +187,11 @@ export default function Hero() {
               <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-4 lg:pt-6">
                 <div>
                   <p className="text-2xl lg:text-3xl font-bold text-gray-900">€150</p>
-                  <p className="text-sm text-gray-600">Monatlich Kündbar</p>
+                  <p className="text-sm text-gray-600">/Monat (inkl. MwSt.)</p>
                 </div>
                 <div>
                   <p className="text-2xl lg:text-3xl font-bold text-gray-900">2-3x</p>
-                  <p className="text-sm text-gray-600">Lektionen / Woche</p>
+                  <p className="text-sm text-gray-600">Live Calls / Woche</p>
                 </div>
                 <div>
                   <p className="text-2xl lg:text-3xl font-bold text-gray-900">100</p>
@@ -221,8 +240,8 @@ export default function Hero() {
                       <Users className="h-6 w-6 text-purple-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold">Offene 1:1 Sessions</h3>
-                      <p className="text-sm text-gray-600">Direktes Mentoring & Fragen</p>
+                      <h3 className="font-semibold">Q&A Live-Session</h3>
+                      <p className="text-sm text-gray-600">Am Monatsende Deep-Dive in eure Fragen</p>
                     </div>
                   </div>
 
@@ -235,6 +254,40 @@ export default function Hero() {
                       </p>
                     </div>
                   </div>
+
+                  <a
+                    href="https://whop.com/price-action-trader-mentorship-24-d9/pat-mentorship-2025/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <div className="rounded-lg border bg-white p-3 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Image
+                            src="/images/whop-logo.png"
+                            alt="Whop"
+                            width={24}
+                            height={24}
+                            className="h-6 w-6"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-gray-900">
+                              Whop-Reviews
+                            </p>
+                            <p className="text-xs text-gray-600 tabular-nums truncate">
+                              {whopAvgText} von 5 Sterne ({whopCount} Bewertungen){whopStats ? '' : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 text-amber-500 flex-shrink-0">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star key={i} className="h-4 w-4 fill-current" />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </a>
                 </div>
               </div>
             </div>

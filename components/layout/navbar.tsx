@@ -3,25 +3,93 @@
 import { useUser } from '@clerk/nextjs'
 import { UserButton, SignInButton } from '@clerk/nextjs'
 import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Menu, X, Home, Settings, CreditCard, Notebook } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export function Navbar() {
   const { user, isSignedIn } = useUser()
   const [isOpen, setIsOpen] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
+  const [mentorshipStatus, setMentorshipStatus] = useState<{
+    accessible: boolean
+    startDate: string
+    hasSubscription: boolean
+  } | null>(null)
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const router = useRouter()
-  
+  const postCheckoutRef = useRef(false)
+
   const isMentorship = pathname?.startsWith('/mentorship')
   const isDashboard = pathname === '/dashboard'
   const isAdmin = user?.organizationMemberships?.some(
     membership => membership.role === 'org:admin'
   )
+  const isCheckoutSuccess = isDashboard && searchParams.get('success') === 'true'
+
+  // Lade Mentorship-Status beim ersten Laden
+  useEffect(() => {
+    if (!isSignedIn) {
+      setMentorshipStatus(null)
+      return
+    }
+
+    // Wenn wir aus Stripe zurückkommen, kann es ein paar Sekunden dauern bis Webhooks/DB aktuell sind.
+    // Deshalb pollen wir kurz, damit der Mentorship-Button ohne Refresh sofort erscheint.
+    if (isCheckoutSuccess) {
+      postCheckoutRef.current = true
+    }
+
+    let cancelled = false
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
+    let attempts = 0
+    const maxAttempts = postCheckoutRef.current ? 12 : 1 // ~18s bei 1.5s Delay
+
+    const load = async () => {
+      attempts += 1
+      try {
+        const res = await fetch('/api/mentorship-status', { cache: 'no-store' })
+        const data = await res.json()
+
+        if (cancelled) return
+        setMentorshipStatus(data)
+
+        // Sobald das Abo aktiv ist, stoppen wir und deaktivieren den Post-Checkout-Modus.
+        if (data?.hasSubscription) {
+          postCheckoutRef.current = false
+          return
+        }
+
+        if (postCheckoutRef.current && attempts < maxAttempts) {
+          timeoutId = setTimeout(load, 1500)
+          return
+        }
+
+        // Timeout erreicht -> nicht endlos pollen.
+        postCheckoutRef.current = false
+      } catch (err) {
+        console.error('Failed to load mentorship status:', err)
+
+        if (cancelled) return
+        if (postCheckoutRef.current && attempts < maxAttempts) {
+          timeoutId = setTimeout(load, 1500)
+        } else {
+          postCheckoutRef.current = false
+        }
+      }
+    }
+
+    load()
+
+    return () => {
+      cancelled = true
+      if (timeoutId) clearTimeout(timeoutId)
+    }
+  }, [isSignedIn, isCheckoutSuccess])
 
   // Prevent body scroll when menu is open
   useEffect(() => {
@@ -78,12 +146,29 @@ export function Navbar() {
                 <div className="flex items-center gap-3">
                   {!isMentorship ? (
                     <>
-                      <Button asChild className="flex items-center gap-2">
-                        <Link href="/mentorship">
-                          <Notebook className="h-4 w-4" />
-                          <span>Mentorship</span>
-                        </Link>
-                      </Button>
+                      {mentorshipStatus ? (
+                        !mentorshipStatus.accessible ? (
+                          <Button
+                            variant="outline"
+                            className="flex items-center gap-3 bg-gray-900 hover:bg-gray-800 text-gray-300 border-gray-700 cursor-not-allowed px-3 py-1 leading-tight"
+                            disabled
+                            title="Mentorship startet ab 01.03.2026"
+                          >
+                            <Notebook className="h-5 w-5" />
+                            <div className="flex flex-col items-start gap-0">
+                              <span className="text-sm">Mentorship</span>
+                              <span className="text-[10px] text-gray-400 mb-1">Start 01.03.2026</span>
+                            </div>
+                          </Button>
+                        ) : mentorshipStatus.hasSubscription || isAdmin ? (
+                          <Button asChild className="flex items-center gap-2">
+                            <Link href="/mentorship">
+                              <Notebook className="h-4 w-4" />
+                              <span>Mentorship</span>
+                            </Link>
+                          </Button>
+                        ) : null
+                      ) : null}
 
                       <Button
                         variant="outline"
@@ -195,12 +280,29 @@ export function Navbar() {
                   <div className="flex flex-col gap-4">
                     {!isMentorship ? (
                       <>
-                        <Button asChild className="w-full flex items-center justify-center gap-2">
-                          <Link href="/mentorship" onClick={() => setIsOpen(false)}>
-                            <Notebook className="h-4 w-4" />
-                            <span>Mentorship</span>
-                          </Link>
-                        </Button>
+                        {mentorshipStatus ? (
+                          !mentorshipStatus.accessible ? (
+                            <Button
+                              variant="outline"
+                              className="w-full flex items-center gap-3 bg-gray-900 hover:bg-gray-800 text-gray-300 border-gray-700 cursor-not-allowed px-3 py-1 leading-tight"
+                              disabled
+                              title="Mentorship startet ab 01.03.2026"
+                            >
+                              <Notebook className="h-5 w-5" />
+                              <div className="flex flex-col items-start gap-0">
+                                <span className="text-sm">Mentorship</span>
+                                <span className="text-[10px] text-gray-400 mb-1">Start 01.03.2026</span>
+                              </div>
+                            </Button>
+                          ) : mentorshipStatus.hasSubscription || isAdmin ? (
+                            <Button asChild className="w-full flex items-center justify-center gap-2">
+                              <Link href="/mentorship" onClick={() => setIsOpen(false)}>
+                                <Notebook className="h-4 w-4" />
+                                <span>Mentorship</span>
+                              </Link>
+                            </Button>
+                          ) : null
+                        ) : null}
 
                         <Button
                           variant="outline"

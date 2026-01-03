@@ -6,7 +6,7 @@ export default function WiderrufPage() {
       <Card className="max-w-3xl mx-auto bg-white">
         <div className="p-6 md:p-8">
           <h1 className="text-3xl font-bold mb-8">Widerrufsbelehrung</h1>
-          <p className="text-gray-600 mb-8">der Maric Capital GmbH <br /> Stand: Dezember 2025</p>
+          <p className="text-gray-600 mb-8">der Maric Capital GmbH <br /> Stand: Januar 2026</p>
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Widerrufsrecht für Verbraucher</h2>
@@ -26,7 +26,7 @@ export default function WiderrufPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Kontakt für Widerruf</h2>
             <p className="text-gray-600 mb-4">
-              An: Maric Capital GmbH, Karolinenstraße 13, 64342 Seeheim-Jugenheim, E-Mail: kontakt@price-action-trader.de
+              An: Maric Capital GmbH, Karolinenstraße 13, 64342 Seeheim-Jugenheim, <a href="mailto:kontakt@price-action-trader.de" className="text-blue-600 underline hover:text-blue-700">E-Mail: kontakt@price-action-trader.de</a>
             </p>
           </section>
 
@@ -40,7 +40,7 @@ export default function WiderrufPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Vorzeitiges Erlöschen des Widerrufsrechts</h2>
             <p className="text-gray-600 mb-4">
-              Bei allen monatlichen Mentoring-Programmen (Gruppen-Mentorship und privates 1:1-Mentoring) erlischt Ihr Widerrufsrecht vollständig und endgültig bereits mit Beginn der Leistungserbringung, wenn Sie vor Absenden Ihrer Bestellung ausdrücklich verlangt haben, dass wir vor Ablauf der Widerrufsfrist mit der Ausführung der Dienstleistung beginnen, und gleichzeitig bestätigt haben, dass Ihnen bewusst ist, dass Sie Ihr Widerrufsrecht mit Beginn der Leistungserbringung vollständig verlieren.
+              Bei allen monatlichen Mentoring-Programmen (Gruppen-Mentorship und privates 1:1-Mentoring) erlischt Ihr Widerrufsrecht vollständig und endgültig bereits mit Beginn der Leistungserbringung, wenn Sie vor Absenden Ihrer Bestellung ausdrücklich verlangt haben, dass wir vor Ablauf der Widerrufsfrist mit der Ausführung der Dienstleistung beginnen, und gleichzeitig bestätigt haben, dass Ihnen bewusst ist, dass Sie Ihr Widerrufsrecht mit Beginn der Leistungserbringung vollständig verlieren. Siehe auch AGB § 7 für Details.
             </p>
           </section>
 
@@ -55,7 +55,7 @@ export default function WiderrufPage() {
                 <p>Maric Capital GmbH</p>
                 <p>Karolinenstraße 13</p>
                 <p>64342 Seeheim-Jugenheim</p>
-                <p>E-Mail: kontakt@price-action-trader.de</p>
+                <p><a href="mailto:kontakt@price-action-trader.de" className="text-blue-600 underline hover:text-blue-700">E-Mail: kontakt@price-action-trader.de</a></p>
               </div>
               
               <p>
@@ -73,6 +73,8 @@ export default function WiderrufPage() {
               <p className="text-sm italic">(*) Unzutreffendes streichen</p>
             </div>
           </section>
+          
+          <p className="text-gray-600 mt-8 pt-8 border-t border-gray-200">Maric Capital GmbH - Januar 2026</p>
         </div>
       </Card>
     </div>

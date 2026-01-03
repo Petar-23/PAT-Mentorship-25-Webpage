@@ -31,7 +31,7 @@ export default function CTASection() {
                 </h2>
                 <p className="text-base sm:text-lg opacity-90 mb-6">
                   Trete jetzt der Warteliste bei und sichere dir als einer der Ersten deinen Platz
-                  im Mentorship Programm 6.
+                  im Mentorship Programm 2026.
                 </p>
                 {isSignedIn ? (
                   <Button 
@@ -69,7 +69,7 @@ export default function CTASection() {
                 <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10">
                   <p className="font-medium">💎 Kostenlose Reservierung</p>
                   <p className="text-sm opacity-90">
-                    Dein Zahlungsmittel wird erst beim Start der Mentorship mit 150€/Monat belastet. Du kannst jederzeit kündigen.
+                    Dein Zahlungsmittel wird erst beim Start der Mentorship mit 150€/Monat (inkl. MwSt.) belastet. Du kannst jederzeit kündigen.
                   </p>
                 </div>
               </div>

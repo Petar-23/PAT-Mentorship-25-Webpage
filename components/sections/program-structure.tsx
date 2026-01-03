@@ -54,7 +54,7 @@ const programPhases: ProgramPhase[] = [
       "Trading Psychologie",
       "Bias aus höheren Timeframes",
       "Persönliche Strategieentwicklung",
-      "1:1 Sessions"
+      "Monatliche Q&A Live-Session"
     ],
     duration: "Monat 10-12"
   }
@@ -78,17 +78,24 @@ const weeklySchedule: WeeklySession[] = [
   },
   {
     day: "Donnerstag",
-    time: "18:00 Uhr",
-    type: "Strategie & Ausbildung",
-    description: "Vermittlung neuer Inhalte und Q&A",
+    time: "19:00 Uhr",
+    type: "Live Call (Training & Markt)",
+    description: "Neue Inhalte, gemeinsame Analyse und praktische Anwendung",
     gradientColor: "rgba(167, 139, 250, 0.2)" // Purple
   },
   {
-    day: "Freitag",
-    time: "18:00 Uhr",
-    type: "Wochenvorbereitung",
-    description: "Marktrückblick und Planung der kommenden Woche",
+    day: "Sonntag",
+    time: "Video",
+    type: "Wochenvorbereitung (Aufzeichnung)",
+    description: "Planung der kommenden Woche und wichtiger Kontext",
     gradientColor: "rgba(52, 211, 153, 0.2)" // Green
+  },
+  {
+    day: "Di & Do",
+    time: "bis 15:30 Uhr",
+    type: "Daily Review (Aufzeichnung)",
+    description: "Voraufgezeichnetes Daily Review – Veröffentlichung vor 15:30",
+    gradientColor: "rgba(244, 63, 94, 0.18)" // Rose
   }
 ];
 
@@ -165,9 +172,9 @@ export default function ProgramStructure() {
         {/* Weekly Schedule */}
         <div className="bg-slate-900 rounded-2xl p-6 sm:p-8 mb-24 border border-slate-800">
           <h3 className="text-2xl font-bold text-white mb-6 text-center">
-            Wöchentliche Live Sessions*
+            Wöchentlicher Ablauf*
           </h3>
-          <div className="grid md:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {weeklySchedule.map((session, index) => (
               <GradientCard
                 key={index}
@@ -196,8 +203,8 @@ export default function ProgramStructure() {
           
           <div className="mt-8 p-4 bg-blue-900/20 rounded-lg border border-blue-800/30">
             <p className="text-center text-blue-300 text-sm">
-              Alle Sessions werden aufgezeichnet und sind für dich jederzeit verfügbar.
-              Keine Zeit für die Live Session? Schaue sie dir in Ruhe an und stelle deine Fragen in der nächsten Q&A Runde.
+              Alle Inhalte werden aufgezeichnet und sind für dich jederzeit verfügbar.
+              Zusätzlich gibt es am Ende jedes Monats eine Q&A Live-Session, in der du alle Fragen stellen kannst.
             </p>
           </div>
 

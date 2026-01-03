@@ -4,3 +4,5 @@ ADD COLUMN     "iconUrl" TEXT;
 
 
 
+
+

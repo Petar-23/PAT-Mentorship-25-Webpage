@@ -382,7 +382,8 @@ export async function createCheckoutSession(userId: string, userEmail: string) {
     })
 
     if (existingCustomers.data.length > 0) {
-      customer = existingCustomers.data[0]
+      // Falls es (durch Tests) mehrere Customers gibt, nehmen wir den neuesten.
+      customer = [...existingCustomers.data].sort((a, b) => b.created - a.created)[0]
     } else {
       customer = await stripe.customers.create({
         email: userEmail,
@@ -391,6 +392,18 @@ export async function createCheckoutSession(userId: string, userEmail: string) {
         },
       })
     }
+
+    // Safety (wichtig für ordnungsgemäße Rechnungen):
+    // Wir setzen die Customer-Invoice-Settings explizit leer, damit keine alten/globalen Stripe-Defaults
+    // (z.B. §19 UStG / Platzhalter-USt-ID) in neu erzeugten Rechnungen landen.
+    // Das ist besonders wichtig, weil Stripe bei Subscription-Erstellung sofort eine Invoice erzeugen kann
+    // (auch bei Trial/0€), und dann ist es zu spät.
+    await stripe.customers.update(customer.id, {
+      invoice_settings: {
+        footer: '',
+        custom_fields: [],
+      },
+    })
 
     // Trial-End-Datum: 01.03.2026 00:00 UTC
     const trialEndDate = new Date('2026-03-01T00:00:00Z')

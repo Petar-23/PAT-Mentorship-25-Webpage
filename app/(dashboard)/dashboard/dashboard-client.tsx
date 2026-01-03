@@ -10,7 +10,7 @@ import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'
 import { SubscriptionStatus } from '@/components/dashboard/subscription-status'
 import { SubscriptionSuccessModal } from '@/components/dashboard/subscription-success-modal'
 import { motion } from 'framer-motion'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 
 interface DashboardClientProps {
   initialData: {
@@ -37,9 +37,19 @@ const fadeInUp = {
 export default function DashboardClient({ initialData }: DashboardClientProps) {
   const searchParams = useSearchParams()
   const showCoursesPaywall = searchParams.get('paywall') === 'courses'
+  const showMentorshipNotStarted = searchParams.get('message') === 'mentorship-not-started'
   const [showSuccessModal, setShowSuccessModal] = useState(
     searchParams.get('success') === 'true'
   )
+  const [mentorshipStatus, setMentorshipStatus] = useState<{ accessible: boolean; startDate: string } | null>(null)
+
+  // Lade Mentorship-Status
+  useEffect(() => {
+    fetch('/api/mentorship-status')
+      .then(res => res.json())
+      .then(setMentorshipStatus)
+      .catch(err => console.error('Failed to load mentorship status:', err))
+  }, [])
 
   // State für Checkbox
   const [termsAccepted, setTermsAccepted] = useState(false)
@@ -97,6 +107,37 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                       onClick={clearPaywallParam}
                     >
                       Später
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {showMentorshipNotStarted && (
+            <motion.div {...fadeInUp} className="mb-8">
+              <Card className="border-blue-200 bg-blue-50 shadow-sm">
+                <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+                      <CalendarCheck className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-blue-900">
+                        Mentorship startet bald
+                      </p>
+                      <p className="text-sm text-blue-900/80 mt-1">
+                        Du hast bereits ein aktives Abo! Der Mentorship-Bereich öffnet am 01.03.2026.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button
+                      variant="ghost"
+                      className="w-full sm:w-auto"
+                      onClick={clearPaywallParam}
+                    >
+                      Verstanden
                     </Button>
                   </div>
                 </CardContent>
@@ -320,10 +361,20 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               <p className="text-gray-600 mb-4">
                 Hier kommst du direkt zur Discord‑Verknüpfung und zum Mentorship‑Bereich.
               </p>
-              
-              <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
-                <Link href="/mentorship">Zur Mentorship Platform</Link>
-              </Button>
+
+              {!mentorshipStatus?.accessible ? (
+                <Button
+                  disabled
+                  className="w-full bg-blue-600 hover:bg-blue-600 opacity-60 cursor-not-allowed"
+                  title="Mentorship startet am 01.03.2026"
+                >
+                  Zur Mentorship Platform (Startet am 01.03.2026)
+                </Button>
+              ) : (
+                <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
+                  <Link href="/mentorship">Zur Mentorship Platform</Link>
+                </Button>
+              )}
             </CardContent>
           </Card>
 

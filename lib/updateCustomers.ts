@@ -3,53 +3,59 @@
 import { stripe } from './stripe'
 
 /**
- * Updates a single customer with tax information and invoice settings.
+ * Updates a single customer with safe metadata and (if needed) removes legacy invoice settings.
  * Returns true if the update was successful and verified.
  */
 export async function ensureCustomerTaxInfo(customerId: string) {
-    try {
-      const updatedCustomer = await stripe.customers.update(customerId, {
-        metadata: {
-          tax_info_configured: 'true',
-          last_updated: new Date().toISOString()
-        },
-        invoice_settings: {
-          custom_fields: [
-            {
-              name: 'USt-ID-Nr.:',
-              value: 'DE 123456789'  // Mandatory tax ID
-            }
-          ],
-          footer: `
-  Der Leistungszeitraum entspricht dem auf der Rechnung angegebenen Abrechnungszeitraum.
-  Die Leistung gilt als in dem Monat erbracht, für den die Zahlung erfolgt.
-  
-  Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen, da Kleinunternehmer im Sinne des UStG.
-  
-  Zahlungsbedingungen: Zahlbar sofort ohne Abzug`
-        }
-      })
-  
-      // Verification logic
-      const isConfigured = 
-        updatedCustomer.metadata.tax_info_configured === 'true' &&
-        updatedCustomer.invoice_settings.custom_fields?.some(
-          field => field.name === 'Steuer-ID'
-        );
-  
-      if (isConfigured) {
-        console.log(`Successfully updated customer ${customerId} with compliant invoice settings`)
-        return true
-      } else {
-        console.warn(`Update may have failed for customer ${customerId} - required fields missing`)
-        return false
-      }
-      
-    } catch (error) {
-      console.error('Error updating customer tax info:', error)
+  try {
+    // Safety: Wenn wir in der Vergangenheit versehentlich falsche Rechnungstexte (z.B. §19 UStG)
+    // oder Platzhalter-IDs gesetzt haben, entfernen wir diese hier wieder.
+    const customer = await stripe.customers.retrieve(customerId)
+    if ('deleted' in customer && customer.deleted) {
       return false
     }
+
+    const currentFooter = customer.invoice_settings?.footer ?? null
+    const currentCustomFields = customer.invoice_settings?.custom_fields ?? null
+
+    const hasLegacyFooter =
+      typeof currentFooter === 'string' &&
+      (currentFooter.includes('§ 19 UStG') ||
+        currentFooter.includes('Kleinunternehmer') ||
+        currentFooter.includes('Zahlungsbedingungen: Zahlbar sofort ohne Abzug'))
+
+    const hasLegacyPlaceholderTaxId =
+      Array.isArray(currentCustomFields) &&
+      currentCustomFields.some((f) => {
+        const name = f?.name ?? ''
+        const value = f?.value ?? ''
+        return (
+          (name.includes('USt-ID') || name.includes('USt') || name.includes('Steuer')) &&
+          value.includes('DE 123456789')
+        )
+      })
+
+    await stripe.customers.update(customerId, {
+      metadata: {
+        tax_info_configured: 'true',
+        last_updated: new Date().toISOString(),
+      },
+      ...(hasLegacyFooter || hasLegacyPlaceholderTaxId
+        ? {
+            invoice_settings: {
+              footer: '',
+              custom_fields: [],
+            },
+          }
+        : {}),
+    })
+
+    return true
+  } catch (error) {
+    console.error('Error updating customer metadata:', error)
+    return false
   }
+}
 
 /**
  * Updates all existing customers with tax information.
