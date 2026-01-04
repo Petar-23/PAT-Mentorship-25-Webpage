@@ -5,14 +5,24 @@ import { ChevronDown } from "lucide-react"
 
 const faqs = [
   {
-    question: "Warum startet das Programm im März 2025?",
-    answer: "Der Start im März 2025 ermöglicht es mir, alle Teilnehmer einzusammeln und sicherzustellen, dass alle gemeinsam beginnen, um von Tag eins an eine starke Community aufzubauen. Dies gibt dir auch die Zeit, deinen Platz zu sichern und dich auf das Programm vorzubereiten.",
+    question: "Warum startet das Programm im März 2026?",
+    answer: "Der Start am 01.03.2026 ermöglicht es mir, alle Teilnehmer einzusammeln und sicherzustellen, dass alle gemeinsam beginnen, um von Tag eins an eine starke Community aufzubauen. Dies gibt dir auch die Zeit, deinen Platz zu sichern und dich auf das Programm vorzubereiten.",
     category: "Programmablauf"
   },
   {
     question: "Wie funktioniert das monatliche Abonnement?",
-    answer: "Das Programm kostet 150€ pro Monat und du kannst jederzeit kündigen, wenn du nicht zufrieden bist. Dieses flexible Modell gewährleistet hochwertige Betreuung und ermöglicht es dir gleichzeitig, den Wert des Programms monatlich zu evaluieren.",
+    answer: "Das Programm kostet 150€ pro Monat (inkl. MwSt.) und du kannst jederzeit kündigen, wenn du nicht zufrieden bist. Dieses flexible Modell gewährleistet hochwertige Betreuung und ermöglicht es dir gleichzeitig, den Wert des Programms monatlich zu evaluieren.",
     category: "Preisgestaltung"
+  },
+  {
+    question: "Wie laufen die Q&A Sessions ab?",
+    answer: "Am Ende jedes Monats gibt es eine Q&A Live-Session als Livestream. Du kannst dort alle deine Fragen stellen und ich nehme mir so viel Zeit wie möglich, um sie im Detail zu beantworten. Natürlich sind auch diese Sessions aufgezeichnet.",
+    category: "Programmablauf"
+  },
+  {
+    question: "Wann finden die Live Calls statt und was ist der Wochenplan?",
+    answer: "Die wöchentlichen Live Calls sind Dienstag um 15:00 Uhr und Donnerstag um 19:00 Uhr. Am Sonntag gibt es ein aufgezeichnetes Video zur Wochenvorbereitung. Zusätzlich gibt es am Dienstag und Donnerstag ein Daily Review (voraufgezeichnet), das jeweils vor 15:30 Uhr veröffentlicht wird. Alles ist als Aufzeichnung verfügbar, falls du live nicht kannst.",
+    category: "Zeitaufwand"
   },
   {
     question: "Was passiert, wenn ich mein Abonnement kündige?",

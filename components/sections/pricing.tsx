@@ -21,7 +21,7 @@ export default function Pricing() {
             Simple, Transparent Pricing
           </h2>
           <p className="text-lg text-gray-600">
-            Join our waitlist today to secure your spot in the 2025 program.
+            Join our waitlist today to secure your spot in the 2026 program.
           </p>
         </div>
 
@@ -35,7 +35,7 @@ export default function Pricing() {
           
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Mentorship Program</CardTitle>
-            <CardDescription>Starting March 2025</CardDescription>
+            <CardDescription>Starting March 2026</CardDescription>
             <div className="mt-4">
               <span className="text-4xl font-bold">€150</span>
               <span className="text-gray-600">/month</span>

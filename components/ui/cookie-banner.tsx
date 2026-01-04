@@ -60,6 +60,7 @@ export function CookieBanner() {
     // Check if consent was already given
     const storedConsent = localStorage.getItem('cookieConsent')
     if (!storedConsent) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Banner erst nach Client-Hydration anzeigen
       setShowBanner(true)
     } else {
       // Parse stored consent and update both states
@@ -69,12 +70,10 @@ export function CookieBanner() {
     }
   }, [])
 
-  // Reset temporary consent when dialog opens
-  useEffect(() => {
-    if (isOpen) {
-      setTempConsent(savedConsent)
-    }
-  }, [isOpen, savedConsent])
+  const openSettingsWithSync = () => {
+    setTempConsent(savedConsent)
+    openSettings()
+  }
 
   const handleAcceptAll = () => {
     const fullConsent = {
@@ -113,7 +112,7 @@ export function CookieBanner() {
               <div className="text-white text-sm">
                 Diese Website verwendet Cookies, um Ihre Erfahrung zu verbessern.{' '}
                 <button 
-                  onClick={openSettings}
+                  onClick={openSettingsWithSync}
                   className="text-blue-400 hover:text-blue-300 underline"
                 >
                   Details anzeigen
@@ -122,7 +121,7 @@ export function CookieBanner() {
               <div className="flex items-center gap-3">
                 <Button
                   variant="secondary"
-                  onClick={openSettings}
+                  onClick={openSettingsWithSync}
                   className="bg-slate-800 text-white hover:bg-slate-700"
                 >
                   Einstellungen

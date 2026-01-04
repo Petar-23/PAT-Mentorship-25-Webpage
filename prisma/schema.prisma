@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Playlist {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  description String?
+  iconUrl     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  modules   Module[]
+}
+
+model Module {
+  id          String    @id @default(uuid())
+  name        String
+  order       Int       @default(0)
+  playlistId  String
+  playlist    Playlist  @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  chapters    Chapter[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  description   String?
+  imageUrl String?
+}
+
+model Chapter {
+  id        String   @id @default(uuid())
+  name      String
+  order     Int      @default(0)
+  moduleId  String
+  module    Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  videos    Video[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Video {
+  id           String   @id @default(uuid())
+  title        String
+  bunnyGuid    String?
+  pdfUrl       String?  // die anhängende PDF
+  thumbnailUrl String?  // später von Bunny
+  announcedAt  DateTime?
+  announcementMessageId String?
+  order        Int      @default(0)
+  chapterId    String
+  chapter      Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  progresses   VideoProgress[]
+  lastViewedBy UserPlaybackState[] @relation("UserPlaybackLastVideo")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  duration     Int?
+}
+
+model VideoProgress {
+  id        String   @id @default(uuid())
+  userId    String
+  videoId   String
+  watched   Boolean  @default(false)
+  watchedAt DateTime?
+  manual    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@index([userId])
+  @@index([videoId])
+}
+
+// Merkt sich das zuletzt angesehene Video pro User (für "Weiterlernen").
+model UserPlaybackState {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  lastVideoId  String?
+  lastViewedAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  lastVideo Video? @relation("UserPlaybackLastVideo", fields: [lastVideoId], references: [id], onDelete: SetNull)
+
+  @@index([lastVideoId])
+}
+
+model AdminSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique   // z. B. "sidebarOrder"
+  value       Json     // der gespeicherte Wert, z. B. ["discord", "kurs-1"]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model UserSubscription {
+  id                   String   @id @default(uuid())
+  userId               String   @unique
+
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+
+  status              String
+  cancelAtPeriodEnd   Boolean  @default(false)
+  currentPeriodEnd    DateTime?
+  cancelAt            DateTime?
+  priceIds            Json?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
+}

@@ -1,4 +1,5 @@
-import { Quote } from "lucide-react"
+import Image from "next/image"
+import { Quote, Star } from "lucide-react"
 import { GradientCard } from "@/components/ui/gradient-card"
 
 interface TestimonialCardProps {
@@ -18,9 +19,11 @@ interface TestimonialCardProps {
 }
 
 export function TestimonialCard({ testimonial, isMobile, onClick }: TestimonialCardProps) {
+  const isWhopReview = testimonial.role.toLowerCase().includes('whop')
+
   return (
     <GradientCard
-      gradientColor={testimonial.gradientColor}
+      gradientColor={isWhopReview ? 'rgba(0, 0, 0, 0)' : testimonial.gradientColor}
       className={`bg-white border-gray-200 cursor-pointer transition-transform hover:scale-[1.02] ${
         isMobile ? 'w-[calc(100vw-32px)]' : 'w-[400px] mx-3'
       }`}
@@ -29,7 +32,27 @@ export function TestimonialCard({ testimonial, isMobile, onClick }: TestimonialC
       <div className="p-6 flex flex-col gap-4 min-h-[320px]">
         {/* Header */}
         <div className="flex-shrink-0">
-          <Quote className="h-8 w-8 text-blue-500" />
+          {isWhopReview ? (
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Image
+                  src="/images/whop-logo.png"
+                  alt="Whop"
+                  width={28}
+                  height={28}
+                  className="h-7 w-7"
+                />
+                <p className="text-sm font-semibold text-gray-900">Whop Review</p>
+              </div>
+              <div className="flex items-center gap-1 text-amber-500">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-current" />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <Quote className="h-8 w-8 text-blue-500" />
+          )}
         </div>
         
         {/* Quote */}

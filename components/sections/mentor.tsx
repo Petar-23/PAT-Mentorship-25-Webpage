@@ -4,26 +4,28 @@ import Image from 'next/image'
 import { Play, Users, LineChart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CardWithMatrix } from "@/components/ui/card-with-matrix"
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { AreaChart, Area, ReferenceLine, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useState, useEffect } from 'react'
 import { processedTradingData } from '@/components/tradingData/trading-performance-data'
-import { calculateTradingStats } from '@/lib/trading-stats'
 
 // Trading performance component
 function TradingPerformance() {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
+    const raf = requestAnimationFrame(() => setIsMounted(true))
+    return () => cancelAnimationFrame(raf)
   }, []);
 
   if (!isMounted) {
     return null;
   }
 
-  const stats = calculateTradingStats(processedTradingData);
+  const winRate = '41'
+  const roiPerMonth = '36,8'
+  const accountSize = '2.000'
+  const totalReturn = '73,6'
 
-  const totalReturn = ((processedTradingData[processedTradingData.length - 1].equity - processedTradingData[0].equity) / processedTradingData[0].equity * 100).toFixed(1);
   return (
     <CardWithMatrix
       icon={<LineChart className="h-full w-full" />}
@@ -35,10 +37,15 @@ function TradingPerformance() {
       <div className="p-6">
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
-          <p className="text-gray-400 text-sm">Meine aktuelle Statistik</p>
+          <div>
+            <p className="text-gray-400 text-sm">Meine aktuelle Statistik</p>
+            <p className="text-gray-500 text-xs mt-1">
+              FK-Konto mit 2000 USD Max Drawdown
+            </p>
+          </div>
           <div className="flex flex-col items-end">
-            <span className="text-green-400 text-2xl font-semibold">+{totalReturn}%</span>
-            <span className="text-gray-400 text-xs">40 Tage Rendite</span>
+            <span className="text-green-400 text-2xl font-semibold">+{roiPerMonth}%</span>
+            <span className="text-gray-400 text-xs">Ø ROI / Monat</span>
           </div>
         </div>
 
@@ -61,9 +68,9 @@ function TradingPerformance() {
                 tickFormatter={(dateStr: string) => {
                   if (!dateStr) return '';
                   // Parse date in YYYY-MM-DD format
-                  const [month, day] = dateStr.split('-').map(num => parseInt(num));
-                  // JavaScript months are 0-based, so we subtract 1 from the month
-                  return `${day}/${month}`;
+                  const [year, month, day] = dateStr.split('-').map((num) => parseInt(num, 10));
+                  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return '';
+                  return `${day}.${month}.`;
                 }}
                 tick={{ fontSize: 10 }}
                 tickLine={{ stroke: '#1E293B' }}
@@ -72,12 +79,28 @@ function TradingPerformance() {
               />
               <YAxis 
                 stroke="#475569"
-                tickFormatter={(value) => `$${(value/1000).toFixed(0)}k`}
+                domain={[0, 'dataMax']}
+                tickFormatter={(value) => {
+                  const abs = Math.abs(value)
+                  if (abs >= 1000) return `$${(value / 1000).toFixed(1)}k`
+                  return `$${Math.round(value)}`
+                }}
                 tick={{ fontSize: 12 }}
                 tickLine={{ stroke: '#1E293B' }}
                 axisLine={{ stroke: '#1E293B' }}
                 width={45}
                 tickCount={5}
+              />
+              <ReferenceLine
+                y={2000}
+                stroke="#94A3B8"
+                strokeDasharray="6 6"
+                label={{
+                  value: 'Reales Startkapital',
+                  position: 'insideTopLeft',
+                  fill: '#94A3B8',
+                  fontSize: 11,
+                }}
               />
               <Tooltip 
                 contentStyle={{
@@ -108,20 +131,15 @@ function TradingPerformance() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:justify-between mt-4 px-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mt-4 px-2">
           <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
-            <span className="text-gray-400 text-xs md:text-sm">Win Rate:</span>
-            <span className="text-white font-medium">{stats.winRate}%</span>
+            <span className="text-gray-400 text-xs md:text-sm">Total Return:</span>
+            <span className="text-white font-medium">+{totalReturn}%</span>
           </div>
-          <div className="hidden sm:block h-4 w-px bg-gray-700" />
-          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
-            <span className="text-gray-400 text-xs md:text-sm">Profit Factor:</span>
-            <span className="text-white font-medium">{stats.profitFactor}</span>
-          </div>
-          <div className="hidden sm:block h-4 w-px bg-gray-700" />
-          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
-            <span className="text-gray-400 text-xs md:text-sm">Avg Win/Loss:</span>
-            <span className="text-white font-medium">{stats.avgWinLossRatio}</span>
+          <div className="flex items-center justify-start sm:justify-end">
+            <span className="text-gray-400 text-xs md:text-sm">
+              Live auf YouTube eingeloggt & alle Trades veröffentlicht
+            </span>
           </div>
         </div>
       </div>
@@ -131,8 +149,7 @@ function TradingPerformance() {
 
 // Main Mentor Section
 export default function MentorSection() {
-  // Calculate total trades and win rate for stats card
-  const stats = calculateTradingStats(processedTradingData);
+  const winRate = '41'
 
   return (
     <section className="py-16 sm:py-24 bg-slate-950 relative overflow-hidden">
@@ -220,7 +237,7 @@ export default function MentorSection() {
               <div className="mt-6 grid grid-cols-2 gap-4">
                 <CardWithMatrix
                   icon={<Users className="h-full w-full" />}
-                  value="90+"
+                  value="130+"
                   subtitle="Erfolgreiche Mentees"
                   iconColor="text-blue-400"
                   rainColor="#60A5FA"
@@ -228,8 +245,8 @@ export default function MentorSection() {
                 />
                 <CardWithMatrix
                   icon={<LineChart className="h-full w-full" />}
-                  value={`${stats.winRate}%`}
-                  subtitle="Win-Rate (40-Tage)"
+                  value={`${winRate}%`}
+                  subtitle="Win-Rate (letzte 2 Monate)"
                   iconColor="text-green-400"
                   rainColor="#34D399"
                   gradientColor="rgba(52, 211, 153, 0.2)"
@@ -242,11 +259,11 @@ export default function MentorSection() {
                   Ich habe mich intensiv mit dem Trading nach 
                   ICT&apos;s Smart Money Konzepten beschäftigt und über 1000 
                   Stunden Videomaterial durchgearbeitet. Dazu gehören 
-                  ICT&apos;s Private Mentorship sowie die Mentorships der Jahre 2022, 2023, 2024 - und vieles mehr.
+                  ICT&apos;s Private Mentorship, die ICT 2025 Lecture Series sowie die Mentorships der Jahre 2022, 2023, 2024 - und vieles mehr.
                 </p>
                 <p className="text-base sm:text-lg text-gray-300 leading-relaxed mb-4">
                   Seit Anfang 2024, lehre ich diese Konzepte in meiner eigenen privaten Mentorship. 
-                  Mittlerweile konnten fast 100 Mentees messbare Erfolge erzielen.
+                  Mittlerweile konnten 130+ Mentees messbare Erfolge erzielen.
                 </p>
                 <p className="text-base sm:text-lg text-gray-300 leading-relaxed">
                   Ich werbe nicht mit Lifestyle und Luxus, sondern mit echten Trades 

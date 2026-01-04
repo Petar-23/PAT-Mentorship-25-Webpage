@@ -13,6 +13,7 @@ interface GlowingButtonProps {
 export function GlowingButton({ children, onClick, className = '' }: GlowingButtonProps) {
   const buttonRef = useRef<HTMLDivElement>(null)
   const [mousePosition, setMousePosition] = useState<number | null>(null)
+  const [shadowOffset, setShadowOffset] = useState<'8px' | '-8px'>('8px')
   const [isHovered, setIsHovered] = useState(false)
 
   useEffect(() => {
@@ -23,6 +24,7 @@ export function GlowingButton({ children, onClick, className = '' }: GlowingButt
       const rect = button.getBoundingClientRect()
       const x = ev.clientX - rect.left
       setMousePosition(x)
+      setShadowOffset(x > rect.width / 2 ? '8px' : '-8px')
     }
 
     button.addEventListener('mousemove', updateMousePosition)
@@ -41,11 +43,12 @@ export function GlowingButton({ children, onClick, className = '' }: GlowingButt
         onHoverEnd={() => {
           setIsHovered(false)
           setMousePosition(null)
+          setShadowOffset('8px')
         }}
         onClick={onClick}
         animate={{
           boxShadow: isHovered
-            ? `${mousePosition && mousePosition > (buttonRef.current?.offsetWidth ?? 0) / 2 ? '8px' : '-8px'} 0 20px rgba(255, 177, 66, 0.3)`
+            ? `${shadowOffset} 0 20px rgba(255, 177, 66, 0.3)`
             : '8px 0 20px rgba(255, 177, 66, 0)'
         }}
         transition={{ duration: 0.2 }}

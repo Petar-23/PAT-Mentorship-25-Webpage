@@ -148,7 +148,7 @@ export function SubscriptionStatus({
           </div>
           {statusDisplay.showCountdown && (
             <div className="pt-2">
-              <p className="text-sm text-emerald-600 mb-2">Zeit bis zum Start der Mentorship 2025:</p>
+              <p className="text-sm text-emerald-600 mb-2">Zeit bis zum Start der Mentorship 2026:</p>
               <CountdownProgress startDate={startDate} />
             </div>
           )}

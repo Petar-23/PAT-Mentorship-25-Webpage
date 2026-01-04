@@ -1,15 +1,40 @@
 'use client'
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
 import { Card } from "@/components/ui/card"
+import Image from "next/image"
 import InfiniteScroll from "@/components/ui/infinite-scroll"
-import { TrendingUp, Receipt, ChartCandlestick } from "lucide-react"
+import { TrendingUp, Receipt, ChartCandlestick, Star } from "lucide-react"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { TestimonialModal } from "../ui/testimonial-modal"
 import { TestimonialCard } from "../ui/testimonial-card"
 
-const testimonials = [
+const WHOP_REVIEWS_URL = "https://whop.com/price-action-trader-mentorship-24-d9/pat-mentorship-2025/"
+
+type Testimonial = {
+  quote: string
+  author: string
+  role: string
+  results: {
+    label: string
+    value: string
+    description: string
+  }
+  gradientColor: string
+}
+
+type WhopReview = {
+  id: string
+  rating: number | null
+  title: string | null
+  body: string
+  author: string
+  createdAt: string | null
+  source: 'whop'
+}
+
+const staticTestimonials: Testimonial[] = [
   {
     quote: "Ich danke @Petar und der ganzen Community. Wir formen  uns gemeinsam zu ICT Tradern und die Ergebnisse lassen sich sehen und es folgen bald viele andere.",
     author: "Sergej M.",
@@ -161,14 +186,98 @@ const testimonials = [
 
 export default function Testimonials() {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [selectedTestimonial, setSelectedTestimonial] = useState<typeof testimonials[0] | null>(null)
+  const [selectedTestimonial, setSelectedTestimonial] = useState<Testimonial | null>(null)
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [touchStart, setTouchStart] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  const [whopTestimonials, setWhopTestimonials] = useState<Testimonial[]>([])
+  const [whopStats, setWhopStats] = useState<{ count: number; average: number } | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadWhopReviews() {
+      try {
+        const res = await fetch('/api/whop/reviews?limit=200&per=50')
+        if (!res.ok) return
+
+        const data = (await res.json()) as { reviews?: WhopReview[] }
+        const reviews = Array.isArray(data?.reviews) ? data.reviews : []
+
+        const ratingValues = reviews
+          .map((review) => (typeof review.rating === 'number' && Number.isFinite(review.rating) ? review.rating : null))
+          .filter((x): x is number => x != null)
+
+        const average = ratingValues.length > 0 ? ratingValues.reduce((sum, v) => sum + v, 0) / ratingValues.length : 5
+
+        const reviewsForCards = reviews.filter((review) => {
+          const title = review.title?.trim() || ''
+          const body = review.body?.trim() || ''
+          if (title.length === 0 && body.length === 0) return false
+          return true
+        })
+
+        const mapped: Testimonial[] = reviewsForCards.slice(0, 48).map((review) => {
+          const title = review.title?.trim()
+          const body = review.body?.trim() || ''
+          const quote = title ? (body ? `${title}\n\n${body}` : title) : body
+
+          let dateLabel = 'Whop'
+          if (review.createdAt) {
+            const d = new Date(review.createdAt)
+            if (!Number.isNaN(d.getTime())) {
+              dateLabel = d.toLocaleDateString('de-DE', { year: 'numeric', month: 'short' })
+            }
+          }
+
+          const ratingValue = typeof review.rating === 'number' && Number.isFinite(review.rating) ? review.rating : 5
+
+          return {
+            quote,
+            author: review.author.trim(),
+            role: 'Whop Review',
+            results: {
+              label: 'Bewertung',
+              value: `${ratingValue.toFixed(1)}★`,
+              description: dateLabel,
+            },
+            // No amber cursor-glow on Whop cards – we highlight Whop via logo + stars in the card header.
+            gradientColor: 'rgba(0, 0, 0, 0)',
+          }
+        })
+
+        if (!cancelled) {
+          setWhopStats({ count: reviews.length, average })
+          setWhopTestimonials(mapped)
+          setCurrentIndex(0)
+        }
+      } catch {
+        // Silent fail: keep static testimonials as fallback
+      }
+    }
+
+    loadWhopReviews()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const allTestimonials = whopTestimonials.length > 0 ? [...whopTestimonials, ...staticTestimonials] : staticTestimonials
+
+  const isWhopReview = (testimonial: Testimonial) => testimonial.role.toLowerCase().includes("whop")
+
+  const handleTestimonialClick = (testimonial: Testimonial) => {
+    if (isWhopReview(testimonial)) {
+      window.open(WHOP_REVIEWS_URL, "_blank", "noopener,noreferrer")
+      return
+    }
+    setSelectedTestimonial(testimonial)
+  }
+
   // Split testimonials for desktop scroll
-  const firstHalf = testimonials.slice(0, Math.ceil(testimonials.length / 2))
-  const secondHalf = testimonials.slice(Math.ceil(testimonials.length / 2))
+  const firstHalf = allTestimonials.slice(0, Math.ceil(allTestimonials.length / 2))
+  const secondHalf = allTestimonials.slice(Math.ceil(allTestimonials.length / 2))
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.touches[0].clientX)
@@ -181,7 +290,7 @@ export default function Testimonials() {
     const diff = touchStart - currentTouch
 
     if (Math.abs(diff) > 50) {
-      if (diff > 0 && currentIndex < testimonials.length - 1) {
+      if (diff > 0 && currentIndex < allTestimonials.length - 1) {
         setCurrentIndex(prev => prev + 1)
       } else if (diff < 0 && currentIndex > 0) {
         setCurrentIndex(prev => prev - 1)
@@ -193,24 +302,29 @@ export default function Testimonials() {
   return (
     <section className="py-24 bg-white">
       <div className="container mx-auto px-4 max-w-6xl">
-        <div className="grid md:grid-cols-3 gap-4 mb-12">
+        <div className="grid md:grid-cols-4 gap-4 mb-12">
             <StatCard
               icon={<TrendingUp className="h-6 w-6" />}
-              value="25+"
+              value="50+"
               label="Gefundete FK-Konten"
               color="blue"
             />
             <StatCard
               icon={<Receipt className="h-6 w-6" />}
-              value="46.000+ USD"
-              label="Kombinierte Payouts (nach 6 Monaten)"
+              value="60.000+ USD"
+              label="Kombinierte Payouts"
               color="purple"
             />
             <StatCard
               icon={<ChartCandlestick className="h-6 w-6" />}
-              value="90+"
-              label="Aktive Trader"
+              value="130+"
+              label="Erfolgreiche Mentees"
               color="green"
+            />
+            <WhopRatingCard
+              count={whopStats?.count ?? null}
+              average={whopStats?.average ?? null}
+              isLive={whopStats != null}
             />
           </div>
 
@@ -228,7 +342,7 @@ export default function Testimonials() {
                 animate={{ x: `-${currentIndex * 100}%` }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
               >
-                {testimonials.map((testimonial, index) => (
+                {allTestimonials.map((testimonial, index) => (
                   <div 
                     key={index} 
                     className="min-w-full flex-shrink-0 flex justify-center"
@@ -236,24 +350,25 @@ export default function Testimonials() {
                     <TestimonialCard 
                       testimonial={testimonial} 
                       isMobile={true}
-                      onClick={() => setSelectedTestimonial(testimonial)}
+                      onClick={() => handleTestimonialClick(testimonial)}
                     />
                   </div>
                 ))}
               </motion.div>
             </div>
 
-            {/* Pagination Dots */}
-            <div className="flex justify-center mt-6 gap-2">
-              {testimonials.map((_, index) => (
-                <button
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    index === currentIndex ? 'bg-blue-500' : 'bg-gray-300'
-                  }`}
-                  onClick={() => setCurrentIndex(index)}
-                />
-              ))}
+            <div className="mt-6 flex flex-col items-center gap-2">
+              <p className="text-sm text-gray-500 tabular-nums">
+                {Math.min(currentIndex + 1, allTestimonials.length)} / {allTestimonials.length}
+              </p>
+              <a
+                href={WHOP_REVIEWS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:underline"
+              >
+                Alle Bewertungen auf Whop ansehen
+              </a>
             </div>
           </div>
         ) : (
@@ -263,13 +378,13 @@ export default function Testimonials() {
             <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-white to-transparent z-10" />
             
             <div className="pb-8">
-              <InfiniteScroll speed={0.5} className="py-4" pauseOnHover>
+              <InfiniteScroll key={`whop-row-1-${whopTestimonials.length}`} speed={0.5} className="py-4" pauseOnHover>
                 {firstHalf.map((testimonial, index) => (
                   <div key={index} className="flex-shrink-0">
                     <TestimonialCard 
                       testimonial={testimonial} 
                       isMobile={false}
-                      onClick={() => setSelectedTestimonial(testimonial)}
+                      onClick={() => handleTestimonialClick(testimonial)}
                     />
                   </div>
                 ))}
@@ -277,13 +392,13 @@ export default function Testimonials() {
             </div>
 
             <div className="pb-4">
-              <InfiniteScroll direction="right" speed={0.7} className="py-4 pauseOnHover">
+              <InfiniteScroll key={`whop-row-2-${whopTestimonials.length}`} direction="right" speed={0.7} className="py-4 pauseOnHover">
                 {secondHalf.map((testimonial, index) => (
                   <div key={index} className="flex-shrink-0">
                     <TestimonialCard 
                       testimonial={testimonial} 
                       isMobile={false}
-                      onClick={() => setSelectedTestimonial(testimonial)}
+                      onClick={() => handleTestimonialClick(testimonial)}
                     />
                   </div>
                 ))}
@@ -304,12 +419,50 @@ export default function Testimonials() {
         <p className="text-sm text-gray-500 text-center mt-8">
           *Ergebnisse können variieren. Trading ist mit Risiken verbunden. Vergangene Leistungen garantieren keine zukünftigen Ergebnisse.
           <br/>
-          Statistiken beruhen auf geteilten Feedbacks in der Mentorship 2024.
+          Statistiken basieren auf M24+M25 sowie geteilten Feedbacks (u. a. Reviews auf Whop).
         </p>
       </div>
     </section>
   )
 }
+
+function WhopRatingCard({ count, average, isLive }: { count: number | null; average: number | null; isLive: boolean }) {
+  const displayCount = typeof count === 'number' && Number.isFinite(count) ? count : 48
+  const displayAvg = typeof average === 'number' && Number.isFinite(average) ? average : 5
+  const rounded = Math.round(displayAvg * 10) / 10
+  const ratingText = (rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)).replace('.', ',')
+
+  return (
+    <a
+      href={WHOP_REVIEWS_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block"
+    >
+      <Card className="p-4 bg-gradient-to-br from-amber-50 to-amber-100/50 border border-amber-200/60 hover:border-amber-300/80 hover:shadow-sm transition">
+        <div className="flex items-start gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <Image src="/images/whop-logo.png" alt="Whop" width={28} height={28} />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-gray-900">
+                Whop-Reviews
+              </p>
+              <div className="mt-1 flex items-center gap-1 text-amber-500">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-current" />
+                ))}
+              </div>
+              <p className="mt-1 text-xs text-gray-600 tabular-nums truncate">
+                {ratingText} von 5 (insgesamt {displayCount} Reviews){isLive ? ' (live)' : ''}
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </a>
+  )
+}
+
 const StatCard = ({ icon, value, label, color }: { 
   icon: React.ReactNode
   value: string

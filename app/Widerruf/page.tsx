@@ -1,4 +1,3 @@
-// src/app/widerruf/page.tsx
 import { Card } from "@/components/ui/card"
 
 export default function WiderrufPage() {
@@ -7,111 +6,75 @@ export default function WiderrufPage() {
       <Card className="max-w-3xl mx-auto bg-white">
         <div className="p-6 md:p-8">
           <h1 className="text-3xl font-bold mb-8">Widerrufsbelehrung</h1>
+          <p className="text-gray-600 mb-8">der Maric Capital GmbH <br /> Stand: Januar 2026</p>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Widerrufsrecht</h2>
+            <h2 className="text-xl font-semibold mb-4">Widerrufsrecht für Verbraucher</h2>
             <p className="text-gray-600 mb-4">
               Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen.
               Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsabschlusses.
             </p>
-            
-            <p className="text-gray-600 mb-4">
-              Um Ihr Widerrufsrecht auszuüben, müssen Sie uns
-            </p>
-            
-            <div className="text-gray-600 mb-4 pl-4">
-              <p>Price Action Trader</p>
-              <p>Erlenweg 16</p>
-              <p>21423 Winsen</p>
-              <p>E-Mail: kontakt@price-action-trader.de</p>
-            </div>
+          </section>
 
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Ausübung des Widerrufsrechts</h2>
             <p className="text-gray-600 mb-4">
-              mittels einer eindeutigen Erklärung (z.B. ein mit der Post versandter Brief oder E-Mail) über
-              Ihren Entschluss, diesen Vertrag zu widerrufen, informieren. Sie können dafür das beigefügte
-              Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.
+              Um Ihr Widerrufsrecht auszuüben, müssen Sie uns mittels einer eindeutigen Erklärung (z. B. E-Mail oder Brief) über Ihren Entschluss, diesen Vertrag zu widerrufen, informieren. Sie können dafür das untenstehende Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.
             </p>
+          </section>
 
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Kontakt für Widerruf</h2>
             <p className="text-gray-600 mb-4">
-              Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung über die Ausübung des
-              Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.
+              An: Maric Capital GmbH, Karolinenstraße 13, 64342 Seeheim-Jugenheim, <a href="mailto:kontakt@price-action-trader.de" className="text-blue-600 underline hover:text-blue-700">E-Mail: kontakt@price-action-trader.de</a>
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Folgen des Widerrufs</h2>
             <p className="text-gray-600 mb-4">
-              Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen, die wir von Ihnen erhalten
-              haben, einschließlich der Lieferkosten (mit Ausnahme der zusätzlichen Kosten, die sich daraus
-              ergeben, dass Sie eine andere Art der Lieferung als die von uns angebotene, günstigste
-              Standardlieferung gewählt haben), unverzüglich und spätestens binnen vierzehn Tagen ab dem Tag
-              zurückzuzahlen, an dem die Mitteilung über Ihren Widerruf dieses Vertrags bei uns eingegangen
-              ist.
+              Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen unverzüglich und spätestens binnen 14 Tagen ab Erhalt Ihrer Widerrufserklärung zurückzuzahlen.
             </p>
+          </section>
 
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Vorzeitiges Erlöschen des Widerrufsrechts</h2>
             <p className="text-gray-600 mb-4">
-              Für diese Rückzahlung verwenden wir dasselbe Zahlungsmittel, das Sie bei der ursprünglichen
-              Transaktion eingesetzt haben, es sei denn, mit Ihnen wurde ausdrücklich etwas anderes vereinbart;
-              in keinem Fall werden Ihnen wegen dieser Rückzahlung Entgelte berechnet.
-            </p>
-
-            <p className="text-gray-600 mb-4">
-              Haben Sie verlangt, dass die Dienstleistungen während der Widerrufsfrist beginnen sollen, so haben
-              Sie uns einen angemessenen Betrag zu zahlen, der dem Anteil der bis zu dem Zeitpunkt, zu dem Sie
-              uns von der Ausübung des Widerrufsrechts hinsichtlich dieses Vertrags unterrichten, bereits
-              erbrachten Dienstleistungen im Vergleich zum Gesamtumfang der im Vertrag vorgesehenen
-              Dienstleistungen entspricht.
+              Bei allen monatlichen Mentoring-Programmen (Gruppen-Mentorship und privates 1:1-Mentoring) erlischt Ihr Widerrufsrecht vollständig und endgültig bereits mit Beginn der Leistungserbringung, wenn Sie vor Absenden Ihrer Bestellung ausdrücklich verlangt haben, dass wir vor Ablauf der Widerrufsfrist mit der Ausführung der Dienstleistung beginnen, und gleichzeitig bestätigt haben, dass Ihnen bewusst ist, dass Sie Ihr Widerrufsrecht mit Beginn der Leistungserbringung vollständig verlieren. Siehe auch AGB § 7 für Details.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Muster-Widerrufsformular</h2>
-            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-              <p className="text-gray-600 mb-4 italic">
-                (Wenn Sie den Vertrag widerrufen wollen, dann füllen Sie bitte dieses Formular aus und senden
-                Sie es zurück.)
+            <p className="text-gray-600 mb-4 italic">
+              (Wenn Sie den Vertrag widerrufen wollen, dann füllen Sie bitte dieses Formular aus und senden Sie es zurück.)
+            </p>
+            <div className="space-y-4 text-gray-600">
+              <p>An:</p>
+              <div className="pl-4">
+                <p>Maric Capital GmbH</p>
+                <p>Karolinenstraße 13</p>
+                <p>64342 Seeheim-Jugenheim</p>
+                <p><a href="mailto:kontakt@price-action-trader.de" className="text-blue-600 underline hover:text-blue-700">E-Mail: kontakt@price-action-trader.de</a></p>
+              </div>
+              
+              <p>
+                Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über den Kauf der folgenden Waren (*)/die Erbringung der folgenden Dienstleistung (*)
               </p>
               
-              <div className="space-y-4 text-gray-600">
-                <p>An:</p>
-                <div className="pl-4">
-                  <p>Petar Maric</p>
-                  <p>Price Action Trader</p>
-                  <p>Erlenweg 16</p>
-                  <p>21423 Winsen</p>
-                  <p>E-Mail: kontakt@price-action-trader.de</p>
-                </div>
-                
-                <p>
-                  Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über den Kauf
-                  der folgenden Waren (*)/die Erbringung der folgenden Dienstleistung (*)
-                </p>
-                
-                <div className="pl-4 space-y-2">
-                  <p>- Bestellt am (*)/erhalten am (*)</p>
-                  <p>- Name des/der Verbraucher(s)</p>
-                  <p>- Anschrift des/der Verbraucher(s)</p>
-                  <p>- Unterschrift des/der Verbraucher(s) (nur bei Mitteilung auf Papier)</p>
-                  <p>- Datum</p>
-                </div>
-                
-                <p className="text-sm italic">(*) Unzutreffendes streichen</p>
+              <div className="pl-4 space-y-2">
+                <p>- Bestellt am (*)/erhalten am (*)</p>
+                <p>- Name des/der Verbraucher(s)</p>
+                <p>- Anschrift des/der Verbraucher(s)</p>
+                <p>- Unterschrift des/der Verbraucher(s) (nur bei Mitteilung auf Papier)</p>
+                <p>- Datum</p>
               </div>
+              
+              <p className="text-sm italic">(*) Unzutreffendes streichen</p>
             </div>
           </section>
-
-          <section>
-            <h2 className="text-xl font-semibold mb-4">Besondere Hinweise</h2>
-            <div className="space-y-4 text-gray-600">
-              <p>
-                Das Widerrufsrecht erlischt bei einem Vertrag zur Erbringung von Dienstleistungen auch dann,
-                wenn der Unternehmer die Dienstleistung vollständig erbracht hat und mit der Ausführung der
-                Dienstleistung erst begonnen hat, nachdem der Verbraucher dazu seine ausdrückliche Zustimmung
-                gegeben hat und gleichzeitig seine Kenntnis davon bestätigt hat, dass er sein Widerrufsrecht
-                bei vollständiger Vertragserfüllung durch den Unternehmer verliert.
-              </p>
-            </div>
-          </section>
+          
+          <p className="text-gray-600 mt-8 pt-8 border-t border-gray-200">Maric Capital GmbH - Januar 2026</p>
         </div>
       </Card>
     </div>

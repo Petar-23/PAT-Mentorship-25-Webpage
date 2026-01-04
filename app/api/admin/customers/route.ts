@@ -1,5 +1,5 @@
 // src/app/api/admin/customers/route.ts
-import { auth } from '@clerk/nextjs/server'
+import { auth, clerkClient } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import type Stripe from 'stripe'
@@ -70,6 +70,17 @@ export async function GET() {
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const client = await clerkClient()
+    const memberships = await client.users.getOrganizationMembershipList({
+      userId,
+      limit: 100,
+    })
+    const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
+
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const customers = await stripe.customers.list({
