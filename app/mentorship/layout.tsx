@@ -18,7 +18,7 @@ export default async function CoursesLayout({ children }: { children: ReactNode 
   const mentorshipAccessible = isMentorshipAccessible()
 
   // User kann Abo haben, aber Zugang ist zeitlich blockiert
-  const allowed = (hasSub || isAdmin) && mentorshipAccessible
+  const allowed = isAdmin || (hasSub && mentorshipAccessible)
 
   if (!allowed) {
     if (!mentorshipAccessible && hasSub) {

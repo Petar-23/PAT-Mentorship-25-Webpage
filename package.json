@@ -7,6 +7,7 @@
     "build": "next build --webpack",
     "vercel-build": "prisma generate && prisma migrate deploy && next build --webpack",
     "start": "next start",
+    "invoices:download": "node scripts/download-invoices.mjs --env-file .env.local",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -55,6 +56,7 @@
     "sanitize-filename": "^1.6.3",
     "simplex-noise": "^4.0.3",
     "stripe": "^17.3.1",
+    "jszip": "^3.10.1",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.170.0",

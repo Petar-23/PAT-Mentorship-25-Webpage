@@ -15,7 +15,7 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   typescript: true,
 })
 
-const PROGRAM_START_DATE = new Date('2026-03-01T00:00:00Z')
+const PROGRAM_START_DATE = new Date('2026-03-01T00:00:00+01:00')
 
 type SubscriptionDetails = {
   status: string
@@ -406,7 +406,7 @@ export async function createCheckoutSession(userId: string, userEmail: string) {
     })
 
     // Trial-End-Datum: 01.03.2026 00:00 UTC
-    const trialEndDate = new Date('2026-03-01T00:00:00Z')
+    const trialEndDate = new Date('2026-03-01T00:00:00+01:00')
     const trialEndUnix = Math.floor(trialEndDate.getTime() / 1000)
 
     const session = await stripe.checkout.sessions.create({

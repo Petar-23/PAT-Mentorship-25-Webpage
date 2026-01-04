@@ -35,6 +35,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# exports (invoice PDF downloads, etc.)
+/exports
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -19,7 +19,7 @@ export async function GET() {
 
   return NextResponse.json({
     accessible,
-    startDate: '2026-03-01T00:00:00.000Z', // Temporär hardcoded
+    startDate: process.env.MENTORSHIP_START_DATE || '2026-03-01T00:00:00+01:00',
     hasSubscription,
   })
 }

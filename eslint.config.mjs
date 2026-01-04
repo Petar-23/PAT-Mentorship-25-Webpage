@@ -1,6 +1,6 @@
 import nextCoreWebVitals from 'eslint-config-next/core-web-vitals'
 
-export default [
+const config = [
   ...nextCoreWebVitals,
   // project-specific ignores (zusätzlich zu Next.js Defaults)
   {
@@ -18,5 +18,7 @@ export default [
     },
   },
 ]
+
+export default config
 
 

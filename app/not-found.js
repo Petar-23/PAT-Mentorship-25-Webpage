@@ -1,26 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import { MatrixRain } from '@/components/ui/matrix-rain'
+import dynamic from 'next/dynamic'
+
+const MatrixRainNoSSR = dynamic(
+  () => import('@/components/ui/matrix-rain').then((m) => m.MatrixRain),
+  { ssr: false }
+)
 
 export default function NotFound() {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return null
-  }
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white px-4">
       {/* Background Matrix */}
       <div className="fixed inset-0 opacity-95">
-        <MatrixRain color="rgba(37, 99, 235, 0.2)" />
+        <MatrixRainNoSSR color="rgba(37, 99, 235, 0.2)" />
       </div>
 
       {/* Content */}

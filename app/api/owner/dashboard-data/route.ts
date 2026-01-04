@@ -1,5 +1,5 @@
 // src/app/api/owner/dashboard-data/route.ts
-import { auth } from '@clerk/nextjs/server'
+import { auth, clerkClient } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import type Stripe from 'stripe'
@@ -25,6 +25,17 @@ export async function GET() {
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Security: Owner-Dashboard-Daten dürfen nur Admins sehen.
+    const client = await clerkClient()
+    const memberships = await client.users.getOrganizationMembershipList({
+      userId,
+      limit: 100,
+    })
+    const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     // Step 1: Fetch all customers with expanded subscription data - single API call

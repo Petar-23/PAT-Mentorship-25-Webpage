@@ -132,15 +132,12 @@ function VideoThumbnail({
   isProcessing: boolean
   isWatched?: boolean
 }) {
-  const [hasError, setHasError] = useState(false)
-
-  useEffect(() => {
-    setHasError(false)
-  }, [bunnyGuid])
+  const [errorGuid, setErrorGuid] = useState<string | null>(null)
+  const hasError = Boolean(bunnyGuid && errorGuid === bunnyGuid)
 
   useEffect(() => {
     if (!hasError) return
-    const t = setTimeout(() => setHasError(false), 20_000)
+    const t = setTimeout(() => setErrorGuid(null), 20_000)
     return () => clearTimeout(t)
   }, [hasError])
 
@@ -170,7 +167,7 @@ function VideoThumbnail({
           // sonst können Thumbnails je nach CDN/Hotlink-Settings leer bleiben.
           unoptimized
           referrerPolicy="origin"
-          onError={() => setHasError(true)}
+          onError={() => setErrorGuid(bunnyGuid)}
         />
       )}
 
@@ -340,6 +337,7 @@ export function MiddleSidebar({
 
   const [videoDurations, setVideoDurations] = useState<Record<string, number | null>>({})
   const durationAttemptsRef = useRef<Record<string, number>>({})
+  const [durationAttempts, setDurationAttempts] = useState<Record<string, number>>({})
   const [videoStatuses, setVideoStatuses] = useState<Record<string, BunnyStatus | null>>({})
   const statusAttemptsRef = useRef<Record<string, number>>({})
 
@@ -367,9 +365,12 @@ export function MiddleSidebar({
     if (missing.length === 0 && pending.length === 0) return
 
     const fetchGuids = async (guids: string[]) => {
+      const attemptUpdates: Record<string, number> = {}
       const results = await Promise.all(
         guids.map(async (guid) => {
-          durationAttemptsRef.current[guid] = (durationAttemptsRef.current[guid] ?? 0) + 1
+          const nextAttempt = (durationAttemptsRef.current[guid] ?? 0) + 1
+          durationAttemptsRef.current[guid] = nextAttempt
+          attemptUpdates[guid] = nextAttempt
           try {
             const res = await fetch(`/api/videos/duration/${guid}`, { cache: 'no-store' })
             if (!res.ok) return [guid, null] as const
@@ -384,6 +385,8 @@ export function MiddleSidebar({
       )
 
       if (cancelled) return
+
+      setDurationAttempts((prev) => ({ ...prev, ...attemptUpdates }))
 
       setVideoDurations((prev) => {
         const next = { ...prev }
@@ -526,23 +529,13 @@ export function MiddleSidebar({
     if (seconds === undefined) return 'Lädt...'
 
     if (seconds === null) {
-      const attempts = durationAttemptsRef.current[video.bunnyGuid] ?? 0
+      const attempts = durationAttempts[video.bunnyGuid] ?? 0
       return attempts >= MAX_DURATION_ATTEMPTS ? '—' : 'Lädt...'
     }
 
     return formatDuration(seconds)
   }
   
-  useEffect(() => {
-    if (editingChapterId) {
-      setOpenChapters((prev) => {
-        const newSet = new Set(prev)
-        newSet.add(editingChapterId)
-        return newSet
-      })
-    }
-  }, [editingChapterId])
-
   const toggleChapter = (chapterId: string) => {
     setOpenChapters((prev) => {
       const newSet = new Set(prev)
@@ -624,7 +617,7 @@ export function MiddleSidebar({
       <ScrollArea className="flex-1 min-h-0 pb-2 sm:pb-4">
       <div className="space-y-2 pr-2">
         {sortedChapters.map((chapter) => {
-          const isOpen = openChapters.has(chapter.id)
+          const isOpen = openChapters.has(chapter.id) || editingChapterId === chapter.id
           const sortedVideos = [...chapter.videos].sort((a, b) => (a.order || 0) - (b.order || 0))
 
           return (

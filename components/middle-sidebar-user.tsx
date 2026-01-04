@@ -79,11 +79,8 @@ function VideoThumbnail({
   title: string
   isWatched?: boolean
 }) {
-  const [hasError, setHasError] = useState(false)
-
-  useEffect(() => {
-    setHasError(false)
-  }, [bunnyGuid])
+  const [errorGuid, setErrorGuid] = useState<string | null>(null)
+  const hasError = Boolean(bunnyGuid && errorGuid === bunnyGuid)
 
   const showWatchedOverlay = Boolean(isWatched)
 
@@ -102,7 +99,7 @@ function VideoThumbnail({
           className="object-cover rounded-md"
           referrerPolicy="origin"
           unoptimized
-          onError={() => setHasError(true)}
+          onError={() => setErrorGuid(bunnyGuid)}
         />
       )}
 

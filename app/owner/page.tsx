@@ -3,41 +3,35 @@
 
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import AdminDashboard from '@/components/dashboard/AdminDashboard'
+import { useEffect } from 'react'
+import AdminDashboardV2 from '@/components/dashboard/AdminDashboardV2'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function OwnerPage() {
   const { user, isSignedIn, isLoaded } = useUser()
   const router = useRouter()
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [isChecking, setIsChecking] = useState(true)
+  const isAdmin =
+    user?.organizationMemberships?.some((membership) => membership.role === 'org:admin') || false
 
   useEffect(() => {
-    if (isLoaded) {
-      if (!isSignedIn) {
-        router.push('/')
-        return
-      }
+    if (!isLoaded) return
 
-      const userIsAdmin = user?.organizationMemberships?.some(
-        membership => membership.role === 'org:admin'
-      ) || false
-      
-      setIsAdmin(userIsAdmin)
-
-      if (!userIsAdmin) {
-        router.push('/dashboard')
-      }
-      
-      setIsChecking(false)
+    if (!isSignedIn) {
+      router.replace('/')
+      return
     }
-  }, [isLoaded, isSignedIn, user, router])
+
+    if (!isAdmin) {
+      router.replace('/dashboard')
+    }
+  }, [isLoaded, isSignedIn, isAdmin, router])
+
+  const canShowDashboard = isLoaded && isSignedIn && isAdmin
 
   return (
     <div className="container mx-auto">
       <AnimatePresence mode="wait">
-        {isChecking || !isLoaded || !isAdmin ? (
+        {!canShowDashboard ? (
           <motion.div 
             key="loading"
             initial={{ opacity: 0 }}
@@ -57,7 +51,7 @@ export default function OwnerPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <AdminDashboard />
+            <AdminDashboardV2 />
           </motion.div>
         )}
       </AnimatePresence>

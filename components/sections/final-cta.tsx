@@ -17,38 +17,31 @@ export default function FinalCTA() {
         router.push('/dashboard')
     }
 
-    // Wrapper component for the CTA button
-    const CTAButton = () => {
-        const buttonContent = (
-            <>
-                <span>Platz jetzt sichern</span>
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-            </>
-        )
+    const buttonContent = (
+        <>
+            <span>Platz jetzt sichern</span>
+            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+        </>
+    )
 
-        if (isSignedIn) {
-            return (
-                <Button 
-                    onClick={handleJoinClick}
-                    size="lg" 
-                    className="bg-white text-slate-900 hover:bg-white/90 text-lg px-8 py-6 h-auto group"
-                >
-                    {buttonContent}
-                </Button>
-            )
-        }
-
-        return (
-            <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-                <Button 
-                    size="lg" 
-                    className="bg-white text-slate-900 hover:bg-white/90 text-lg px-8 py-6 h-auto group"
-                >
-                    {buttonContent}
-                </Button>
-            </SignInButton>
-        )
-    }
+    const ctaButton = isSignedIn ? (
+        <Button
+            onClick={handleJoinClick}
+            size="lg"
+            className="bg-white text-slate-900 hover:bg-white/90 text-lg px-8 py-6 h-auto group"
+        >
+            {buttonContent}
+        </Button>
+    ) : (
+        <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+            <Button
+                size="lg"
+                className="bg-white text-slate-900 hover:bg-white/90 text-lg px-8 py-6 h-auto group"
+            >
+                {buttonContent}
+            </Button>
+        </SignInButton>
+    )
 
     return (
         <section className="relative py-24 overflow-hidden">
@@ -123,7 +116,7 @@ export default function FinalCTA() {
                     whileInView={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.2 }}
                 >
-                    <CTAButton />
+                    {ctaButton}
                     
                     <p className="mt-6 text-gray-400">
                         Keine Zahlung bis zum Programmstart.

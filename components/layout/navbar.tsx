@@ -147,7 +147,7 @@ export function Navbar() {
                   {!isMentorship ? (
                     <>
                       {mentorshipStatus ? (
-                        !mentorshipStatus.accessible ? (
+                        !mentorshipStatus.accessible && !isAdmin ? (
                           <Button
                             variant="outline"
                             className="flex items-center gap-3 bg-gray-900 hover:bg-gray-800 text-gray-300 border-gray-700 cursor-not-allowed px-3 py-1 leading-tight"
@@ -281,7 +281,7 @@ export function Navbar() {
                     {!isMentorship ? (
                       <>
                         {mentorshipStatus ? (
-                          !mentorshipStatus.accessible ? (
+                          !mentorshipStatus.accessible && !isAdmin ? (
                             <Button
                               variant="outline"
                               className="w-full flex items-center gap-3 bg-gray-900 hover:bg-gray-800 text-gray-300 border-gray-700 cursor-not-allowed px-3 py-1 leading-tight"

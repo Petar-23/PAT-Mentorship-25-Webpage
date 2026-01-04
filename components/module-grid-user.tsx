@@ -29,15 +29,14 @@ export function ModuleGridUser({
   initialProgressByModuleId,
   mobileCoursesDrawer,
 }: Props) {
-  const [progressByModuleId, setProgressByModuleId] = useState<
+  const [fetchedProgressByModuleId, setFetchedProgressByModuleId] = useState<
     Record<string, { percent: number; completedLessons: number; totalLessons: number }>
-  >(initialProgressByModuleId ?? {})
+  >({})
+
+  const progressByModuleId = initialProgressByModuleId ?? fetchedProgressByModuleId
 
   useEffect(() => {
-    if (initialProgressByModuleId) {
-      setProgressByModuleId(initialProgressByModuleId)
-      return
-    }
+    if (initialProgressByModuleId) return
 
     let cancelled = false
 
@@ -65,7 +64,7 @@ export function ModuleGridUser({
           next[moduleId] = { percent, completedLessons, totalLessons }
         }
 
-        if (!cancelled) setProgressByModuleId(next)
+        if (!cancelled) setFetchedProgressByModuleId(next)
       } catch {
         // ignore
       }
