@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { Menu, X, Home, Settings, CreditCard, Notebook } from 'lucide-react'
+import { Menu, X, Home, Settings, Notebook, Gauge } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -190,8 +190,8 @@ export function Navbar() {
                           </>
                         ) : (
                           <>
-                            <CreditCard className="h-4 w-4" />
-                            <span>Abo</span>
+                            <Gauge className="h-4 w-4" />
+                            <span>Dashboard</span>
                           </>
                         )}
                       </Button>
@@ -324,8 +324,8 @@ export function Navbar() {
                             </>
                           ) : (
                             <>
-                              <CreditCard className="h-4 w-4" />
-                              <span>Abo</span>
+                              <Gauge className="h-4 w-4" />
+                              <span>Dashboard</span>
                             </>
                           )}
                         </Button>
