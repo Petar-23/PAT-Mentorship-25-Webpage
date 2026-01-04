@@ -223,7 +223,12 @@ function getProductFromPrice(price: Stripe.Price | string | null | undefined): {
 
   const product = price.product
   const productId = typeof product === 'string' ? product : product?.id ?? null
-  const productName = typeof product === 'string' ? null : product?.name ?? null
+  const productName =
+    typeof product === 'string'
+      ? null
+      : product && 'name' in product
+        ? (product.name as string)
+        : null
 
   return {
     productId,
@@ -430,8 +435,10 @@ export async function GET(req: Request) {
         productName = info.name
         productActive = info.active
       } else {
-        productName = product.name || productId
-        productActive = typeof product.active === 'boolean' ? product.active : null
+        productName = 'name' in product && typeof product.name === 'string' && product.name.length > 0
+          ? product.name
+          : productId
+        productActive = 'active' in product && typeof product.active === 'boolean' ? product.active : null
         productNameCache.set(productId, productName)
         productActiveCache.set(productId, productActive)
       }
