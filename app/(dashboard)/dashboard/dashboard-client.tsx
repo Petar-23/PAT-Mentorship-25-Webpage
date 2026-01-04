@@ -180,7 +180,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                   <span className="text-xl text-gray-500 ml-2">/Monat</span>
                 </div>
                 <p className="text-sm text-gray-600 mt-2 font-medium">
-                  netto (zzgl. gesetzl. MwSt.)
+                  inkl. gesetzl. MwSt.
                 </p>
                 <p className="text-sm text-gray-500 mt-1">
                   Erste Zahlung am 01. März 2026
