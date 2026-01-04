@@ -155,10 +155,8 @@ export async function GET(request: Request) {
     const per = Math.min(Math.max(Number.parseInt(rawPer ?? '50', 10) || 50, 1), 50)
     const maxPages = 20
 
-    const candidateEndpoints = [
-      'https://api.whop.com/api/v5/reviews',
-      'https://api.whop.com/api/v2/reviews',
-    ]
+    // Whop Reviews API: v2 is the stable endpoint. v5 returns 404 (siehe Debug).
+    const candidateEndpoints = ['https://api.whop.com/api/v2/reviews']
 
     let lastError: { status?: number; message: string; body?: string } | null = null
     let best: { endpoint: string; collected: NormalizedWhopReview[]; pagesFetched: number } | null = null
@@ -172,9 +170,19 @@ export async function GET(request: Request) {
 
       for (; page <= maxPages && collected.length < limit; page++) {
         const url = new URL(endpoint)
-        if (productId) url.searchParams.set('product_id', productId)
-        if (offerId) url.searchParams.set('offer_id', offerId)
-        if (storeId) url.searchParams.set('store_id', storeId)
+        // Wichtig: Whop zeigt auf der Store/Product-Page oft STORE-weite Review-Zahlen
+        // (z.B. publishedReviewsCount), die Reviews stammen dann aus mehreren Access-Passes.
+        // Wenn WHOP_STORE_ID gesetzt ist, holen wir daher STORE-weit und ignorieren Product/Offer Filter.
+        if (storeId) {
+          // API-Param-Namen variieren je nach Whop-Version – wir setzen mehrere Aliase.
+          url.searchParams.set('store_id', storeId)
+          url.searchParams.set('company_id', storeId)
+          url.searchParams.set('business_id', storeId)
+        } else if (offerId) {
+          url.searchParams.set('offer_id', offerId)
+        } else if (productId) {
+          url.searchParams.set('product_id', productId)
+        }
 
         // Whop list endpoints typically paginate via `page` + `per` (max 50).
         url.searchParams.set('page', String(page))
