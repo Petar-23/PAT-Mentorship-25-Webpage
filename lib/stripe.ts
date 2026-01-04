@@ -195,16 +195,6 @@ export async function getSubscriptionSnapshot(
   // Wenn noch kein DB-Record existiert und wir NICHT direkt aus dem Checkout zurückkommen,
   // behandeln wir den User sofort als "kein Abo" und vermeiden langsame Stripe-Lookups.
   if (!db && !checkForRecentCheckout) {
-    await writeSubscriptionToDb({
-      userId,
-      stripeCustomerId: null,
-      stripeSubscriptionId: null,
-      status: 'none',
-      cancelAtPeriodEnd: false,
-      cancelAt: null,
-      currentPeriodEnd: null,
-      priceIds: [],
-    })
     return { hasActiveSubscription: false, subscriptionDetails: null }
   }
 
