@@ -53,6 +53,13 @@ export function Navbar() {
       attempts += 1
       try {
         const res = await fetch('/api/mentorship-status', { cache: 'no-store' })
+        if (!res.ok) {
+          const text = await res.text().catch(() => '')
+          throw new Error(
+            `mentorship-status failed (${res.status}): ${text || res.statusText}`
+          )
+        }
+
         const data = await res.json()
 
         if (cancelled) return

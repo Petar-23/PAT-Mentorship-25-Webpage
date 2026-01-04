@@ -45,10 +45,21 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
 
   // Lade Mentorship-Status
   useEffect(() => {
-    fetch('/api/mentorship-status')
-      .then(res => res.json())
-      .then(setMentorshipStatus)
-      .catch(err => console.error('Failed to load mentorship status:', err))
+    let cancelled = false
+    const load = async () => {
+      try {
+        const res = await fetch('/api/mentorship-status', { cache: 'no-store' })
+        if (!res.ok) return
+        const data = await res.json()
+        if (!cancelled) setMentorshipStatus(data)
+      } catch (err) {
+        console.error('Failed to load mentorship status:', err)
+      }
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   // State für Checkbox
