@@ -153,7 +153,7 @@ export function Navbar() {
                 <div className="flex items-center gap-3">
                   {!isMentorship ? (
                     <>
-                      {mentorshipStatus ? (
+                      {mentorshipStatus && (mentorshipStatus.hasSubscription || isAdmin) ? (
                         !mentorshipStatus.accessible && !isAdmin ? (
                           <Button
                             variant="outline"
@@ -167,14 +167,14 @@ export function Navbar() {
                               <span className="text-[10px] text-gray-400 mb-1">Start 01.03.2026</span>
                             </div>
                           </Button>
-                        ) : mentorshipStatus.hasSubscription || isAdmin ? (
+                        ) : (
                           <Button asChild className="flex items-center gap-2">
                             <Link href="/mentorship">
                               <Notebook className="h-4 w-4" />
                               <span>Mentorship</span>
                             </Link>
                           </Button>
-                        ) : null
+                        )
                       ) : null}
 
                       <Button
@@ -287,7 +287,7 @@ export function Navbar() {
                   <div className="flex flex-col gap-4">
                     {!isMentorship ? (
                       <>
-                        {mentorshipStatus ? (
+                        {mentorshipStatus && (mentorshipStatus.hasSubscription || isAdmin) ? (
                           !mentorshipStatus.accessible && !isAdmin ? (
                             <Button
                               variant="outline"
@@ -301,14 +301,14 @@ export function Navbar() {
                                 <span className="text-[10px] text-gray-400 mb-1">Start 01.03.2026</span>
                               </div>
                             </Button>
-                          ) : mentorshipStatus.hasSubscription || isAdmin ? (
+                          ) : (
                             <Button asChild className="w-full flex items-center justify-center gap-2">
                               <Link href="/mentorship" onClick={() => setIsOpen(false)}>
                                 <Notebook className="h-4 w-4" />
                                 <span>Mentorship</span>
                               </Link>
                             </Button>
-                          ) : null
+                          )
                         ) : null}
 
                         <Button
