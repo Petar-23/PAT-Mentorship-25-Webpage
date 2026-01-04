@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { Menu, X, Home, Settings, CreditCard, Notebook } from 'lucide-react'
+import { Menu, X, Home, Settings, Notebook, Gauge } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -153,7 +153,7 @@ export function Navbar() {
                 <div className="flex items-center gap-3">
                   {!isMentorship ? (
                     <>
-                      {mentorshipStatus ? (
+                      {mentorshipStatus && (mentorshipStatus.hasSubscription || isAdmin) ? (
                         !mentorshipStatus.accessible && !isAdmin ? (
                           <Button
                             variant="outline"
@@ -167,14 +167,14 @@ export function Navbar() {
                               <span className="text-[10px] text-gray-400 mb-1">Start 01.03.2026</span>
                             </div>
                           </Button>
-                        ) : mentorshipStatus.hasSubscription || isAdmin ? (
+                        ) : (
                           <Button asChild className="flex items-center gap-2">
                             <Link href="/mentorship">
                               <Notebook className="h-4 w-4" />
                               <span>Mentorship</span>
                             </Link>
                           </Button>
-                        ) : null
+                        )
                       ) : null}
 
                       <Button
@@ -190,8 +190,8 @@ export function Navbar() {
                           </>
                         ) : (
                           <>
-                            <CreditCard className="h-4 w-4" />
-                            <span>Abo</span>
+                            <Gauge className="h-4 w-4" />
+                            <span>Dashboard</span>
                           </>
                         )}
                       </Button>
@@ -287,7 +287,7 @@ export function Navbar() {
                   <div className="flex flex-col gap-4">
                     {!isMentorship ? (
                       <>
-                        {mentorshipStatus ? (
+                        {mentorshipStatus && (mentorshipStatus.hasSubscription || isAdmin) ? (
                           !mentorshipStatus.accessible && !isAdmin ? (
                             <Button
                               variant="outline"
@@ -301,14 +301,14 @@ export function Navbar() {
                                 <span className="text-[10px] text-gray-400 mb-1">Start 01.03.2026</span>
                               </div>
                             </Button>
-                          ) : mentorshipStatus.hasSubscription || isAdmin ? (
+                          ) : (
                             <Button asChild className="w-full flex items-center justify-center gap-2">
                               <Link href="/mentorship" onClick={() => setIsOpen(false)}>
                                 <Notebook className="h-4 w-4" />
                                 <span>Mentorship</span>
                               </Link>
                             </Button>
-                          ) : null
+                          )
                         ) : null}
 
                         <Button
@@ -324,8 +324,8 @@ export function Navbar() {
                             </>
                           ) : (
                             <>
-                              <CreditCard className="h-4 w-4" />
-                              <span>Abo</span>
+                              <Gauge className="h-4 w-4" />
+                              <span>Dashboard</span>
                             </>
                           )}
                         </Button>

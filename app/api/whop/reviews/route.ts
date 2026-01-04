@@ -155,27 +155,40 @@ export async function GET(request: Request) {
     const per = Math.min(Math.max(Number.parseInt(rawPer ?? '50', 10) || 50, 1), 50)
     const maxPages = 20
 
-    const candidateEndpoints = [
-      'https://api.whop.com/api/v2/reviews',
-      'https://api.whop.com/api/v5/reviews',
-    ]
+    // Whop Reviews API: v2 is the stable endpoint. v5 returns 404 (siehe Debug).
+    const candidateEndpoints = ['https://api.whop.com/api/v2/reviews']
 
     let lastError: { status?: number; message: string; body?: string } | null = null
+    let best: { endpoint: string; collected: NormalizedWhopReview[]; pagesFetched: number } | null = null
+    const debugMeta: Array<{ endpoint: string; count: number; pagesFetched: number; error?: string }> = []
 
     for (const endpoint of candidateEndpoints) {
       const collected: NormalizedWhopReview[] = []
       const seen = new Set<string>()
       let page = 1
+      let endpointError: string | null = null
 
       for (; page <= maxPages && collected.length < limit; page++) {
         const url = new URL(endpoint)
-        if (productId) url.searchParams.set('product_id', productId)
-        if (offerId) url.searchParams.set('offer_id', offerId)
-        if (storeId) url.searchParams.set('store_id', storeId)
+        // Wichtig: Whop zeigt auf der Store/Product-Page oft STORE-weite Review-Zahlen
+        // (z.B. publishedReviewsCount), die Reviews stammen dann aus mehreren Access-Passes.
+        // Wenn WHOP_STORE_ID gesetzt ist, holen wir daher STORE-weit und ignorieren Product/Offer Filter.
+        if (storeId) {
+          // API-Param-Namen variieren je nach Whop-Version – wir setzen mehrere Aliase.
+          url.searchParams.set('store_id', storeId)
+          url.searchParams.set('company_id', storeId)
+          url.searchParams.set('business_id', storeId)
+        } else if (offerId) {
+          url.searchParams.set('offer_id', offerId)
+        } else if (productId) {
+          url.searchParams.set('product_id', productId)
+        }
 
         // Whop list endpoints typically paginate via `page` + `per` (max 50).
         url.searchParams.set('page', String(page))
         url.searchParams.set('per', String(per))
+        // Some APIs use `page_size` instead of `per`.
+        url.searchParams.set('page_size', String(per))
 
         // Some versions may also accept `limit` – keep it in sync.
         url.searchParams.set('limit', String(per))
@@ -191,6 +204,7 @@ export async function GET(request: Request) {
         if (!res.ok) {
           const body = await res.text().catch(() => '')
           lastError = { status: res.status, message: `Whop API Fehler (${res.status})`, body }
+          endpointError = `${lastError.message}: ${body || res.statusText}`.trim()
           break
         }
 
@@ -219,46 +233,74 @@ export async function GET(request: Request) {
 
         // Stop if pagination doesn't move forward (safety against infinite loops)
         if (added === 0) break
-
-        // Heuristic: if less than page size, it's the last page
-        if (items.length < per) break
       }
 
-      if (collected.length === 0) {
-        continue
-      }
-
-      if (debug) {
-        console.log(`[whop/reviews] endpoint=${endpoint}`)
-        console.log(`[whop/reviews] fetched=${collected.length} per=${per} pages=${Math.max(1, page - 1)}`)
-        console.log(
-          `[whop/reviews] product_id=${productId ?? '—'} offer_id=${offerId ?? '—'} store_id=${storeId ?? '—'}`
-        )
-        console.log(`[whop/reviews] printing reviews: author | rating | text`)
-        for (const r of collected) {
-          const text = [r.title, r.body].filter(Boolean).join(' — ')
-          console.log(`${r.author} | ${r.rating ?? '—'} | ${text}`)
-        }
-      }
-
-      const response = NextResponse.json({
-        source: 'whop',
+      const pagesFetched = Math.max(1, page - 1)
+      debugMeta.push({
+        endpoint,
         count: collected.length,
-        reviews: collected,
+        pagesFetched,
+        ...(endpointError ? { error: endpointError } : {}),
       })
 
-      // CDN caching (Vercel etc.)
-      response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=300, stale-while-revalidate=3600')
-      return response
+      if (!best || collected.length > best.collected.length) {
+        best = { endpoint, collected, pagesFetched }
+      }
     }
 
-    return NextResponse.json(
-      {
-        error: 'Whop Reviews konnten nicht geladen werden.',
-        details: lastError,
-      },
-      { status: 502 }
-    )
+    if (!best || best.collected.length === 0) {
+      return NextResponse.json(
+        {
+          error: 'Whop Reviews konnten nicht geladen werden.',
+          details: lastError,
+          ...(debug
+            ? {
+                meta: {
+                  productId,
+                  offerId,
+                  storeId,
+                  limit,
+                  per,
+                  tried: debugMeta,
+                },
+              }
+            : {}),
+        },
+        { status: 502 }
+      )
+    }
+
+    if (debug) {
+      console.log(`[whop/reviews] chosen_endpoint=${best.endpoint}`)
+      console.log(`[whop/reviews] fetched=${best.collected.length} per=${per} pages=${best.pagesFetched}`)
+      console.log(
+        `[whop/reviews] product_id=${productId ?? '—'} offer_id=${offerId ?? '—'} store_id=${storeId ?? '—'}`
+      )
+    }
+
+    const response = NextResponse.json({
+      source: 'whop',
+      count: best.collected.length,
+      reviews: best.collected,
+      ...(debug
+        ? {
+            meta: {
+              chosenEndpoint: best.endpoint,
+              pagesFetched: best.pagesFetched,
+              productId,
+              offerId,
+              storeId,
+              limit,
+              per,
+              tried: debugMeta,
+            },
+          }
+        : {}),
+    })
+
+    // CDN caching (Vercel etc.)
+    response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=300, stale-while-revalidate=3600')
+    return response
   } catch (error: unknown) {
     console.error('Error fetching Whop reviews:', error)
     return NextResponse.json(
