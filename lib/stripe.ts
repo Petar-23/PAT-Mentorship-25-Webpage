@@ -191,6 +191,23 @@ export async function getSubscriptionSnapshot(
     }
   }
 
+  // Wichtig für Stabilität (verhindert 504 Timeouts in z. B. /api/mentorship-status):
+  // Wenn noch kein DB-Record existiert und wir NICHT direkt aus dem Checkout zurückkommen,
+  // behandeln wir den User sofort als "kein Abo" und vermeiden langsame Stripe-Lookups.
+  if (!db && !checkForRecentCheckout) {
+    await writeSubscriptionToDb({
+      userId,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      status: 'none',
+      cancelAtPeriodEnd: false,
+      cancelAt: null,
+      currentPeriodEnd: null,
+      priceIds: [],
+    })
+    return { hasActiveSubscription: false, subscriptionDetails: null }
+  }
+
   // Fallback: Nur wenn noch kein DB-Record existiert (oder 'none'), einmal Stripe fragen und DB befüllen.
   // Bei "recent checkout" erlauben wir ein paar Retries, weil Stripe manchmal verzögert ist.
   for (let i = 0; i < maxRetries; i++) {
