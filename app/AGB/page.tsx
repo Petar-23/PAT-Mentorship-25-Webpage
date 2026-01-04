@@ -26,7 +26,7 @@ export default function AGBPage() {
             <h2 className="text-xl font-semibold mb-4">§ 3 Vertragsschluss und Preisangabe</h2>
             <ol className="list-decimal pl-6 space-y-2 text-gray-600">
               <li>Der Vertrag kommt über Zahlungs- oder Buchungsfunktionen auf der Website des Anbieters (z. B. Stripe-Checkout), über Whop (für Events/1:1) oder durch Annahme einer individuellen Rechnung zustande.</li>
-              <li>Die auf der Website angezeigten Preise sind Endpreise inklusive jeweils gültiger gesetzlicher Umsatzsteuer (MwSt.). Der Gesamtpreis (brutto) wird bei der Bestellung transparent ausgewiesen und vor Abschluss nochmals deutlich angezeigt.</li>
+              <li>Die auf der Website angezeigten Preise sind Endpreise. Soweit Umsatzsteuer anfällt, ist diese im Preis enthalten. Der Gesamtpreis (brutto) wird bei der Bestellung transparent ausgewiesen und vor Abschluss nochmals deutlich angezeigt.</li>
               <li>Mit Abschluss der Bestellung (z. B. Checkout oder Whop) erklärt sich der Kunde mit dem ausgewiesenen Gesamtpreis einverstanden.</li>
             </ol>
           </section>
