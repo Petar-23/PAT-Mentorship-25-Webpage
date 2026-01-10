@@ -48,7 +48,7 @@ export function Footer() {
   const socialLinks = [
     {
       name: "YouTube",
-      href: "https://www.youtube.com/@PeakFlowTrading",
+      href: "https://www.youtube.com/@PriceActionTrader_Petar",
       icon: SiYoutube,
       color: "text-red-500 hover:text-red-600"
     },
