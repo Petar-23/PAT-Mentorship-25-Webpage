@@ -6,10 +6,6 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing STRIPE_SECRET_KEY')
 }
 
-if (!process.env.NEXT_PUBLIC_APP_URL) {
-  throw new Error('Missing NEXT_PUBLIC_APP_URL')
-}
-
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2024-10-28.acacia',
   typescript: true,
