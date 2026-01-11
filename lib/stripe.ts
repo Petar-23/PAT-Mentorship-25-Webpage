@@ -6,10 +6,6 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing STRIPE_SECRET_KEY')
 }
 
-if (!process.env.NEXT_PUBLIC_APP_URL) {
-  throw new Error('Missing NEXT_PUBLIC_APP_URL')
-}
-
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2024-10-28.acacia',
   typescript: true,
@@ -38,6 +34,29 @@ function sleep(ms: number) {
 function normalizePriceIds(value: unknown): string[] {
   if (!Array.isArray(value)) return []
   return value.filter((x): x is string => typeof x === 'string' && x.length > 0)
+}
+
+function parseCommaSeparatedIds(value: string | undefined): string[] {
+  if (!value) return []
+  return value
+    .split(',')
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0)
+}
+
+function getAccessPriceIdsFromEnv(): string[] {
+  // New (recommended): allow multiple mentorship prices (e.g. M25 + M26)
+  const access = parseCommaSeparatedIds(process.env.STRIPE_ACCESS_PRICE_IDS)
+  if (access.length > 0) return access
+
+  // Backwards compatible fallback: single price id used both for checkout and access.
+  const single = process.env.STRIPE_PRICE_ID
+  return single ? [single] : []
+}
+
+function hasAnyRequiredPrice(priceIds: string[], requiredPriceIds: string[]): boolean {
+  if (requiredPriceIds.length === 0) return true
+  return priceIds.some((id) => requiredPriceIds.includes(id))
 }
 
 function getPriceIdsFromSubscription(subscription: Stripe.Subscription): string[] {
@@ -161,7 +180,7 @@ export async function getSubscriptionSnapshot(
   userId: string,
   options: { retryCount?: number; checkForRecentCheckout?: boolean } = {}
 ): Promise<SubscriptionSnapshot> {
-  const requiredPriceId = process.env.STRIPE_PRICE_ID
+  const requiredPriceIds = getAccessPriceIdsFromEnv()
   const maxRetries = Math.max(1, options.retryCount ?? 1)
   const checkForRecentCheckout = options.checkForRecentCheckout === true
 
@@ -183,10 +202,17 @@ export async function getSubscriptionSnapshot(
         periodStillActive &&
         isActiveStatus(db.status) &&
         (!isTrialing(db.status) ? true : !cancelledScheduled)
-      const hasRequiredPrice = requiredPriceId ? db.priceIds.includes(requiredPriceId) : true
-      return {
+      const hasRequiredPrice = hasAnyRequiredPrice(db.priceIds, requiredPriceIds)
+
+      const snapshotFromDb = {
         hasActiveSubscription: isActive && hasRequiredPrice,
         subscriptionDetails: detailsFromValues(db),
+      }
+
+      // Normalfall: DB-Cache benutzen (schnell).
+      // Ausnahme: direkt nach Checkout (success=true) "ziehen wir Stripe nach", falls DB noch eine alte/canceled Subscription hält.
+      if (!checkForRecentCheckout || snapshotFromDb.hasActiveSubscription) {
+        return snapshotFromDb
       }
     }
   }
@@ -266,17 +292,27 @@ export async function getSubscriptionSnapshot(
           periodStillActive &&
           isActiveStatus(subscription.status) &&
           (!isTrialing(subscription.status) ? true : !cancelledScheduled)
-        const hasRequiredPrice = requiredPriceId ? priceIds.includes(requiredPriceId) : true
+        const hasRequiredPrice = hasAnyRequiredPrice(priceIds, requiredPriceIds)
         return { isActive, hasRequiredPrice, priceIds }
       }
 
-      const accessSubscription =
-        subscriptions.data.find((sub) => {
-          const r = compute(sub)
-          return r.isActive && r.hasRequiredPrice
-        }) ?? subscriptions.data[0]
+      const computedSubscriptions = subscriptions.data.map((sub) => ({ sub, r: compute(sub) }))
 
-      const computed = compute(accessSubscription)
+      // Prefer subscriptions that match our access price IDs (if configured).
+      let candidates = computedSubscriptions
+      if (requiredPriceIds.length > 0) {
+        const matching = computedSubscriptions.filter((x) => x.r.hasRequiredPrice)
+        if (matching.length > 0) candidates = matching
+      }
+
+      // Prefer active/trialing subscriptions per business rules.
+      const activeCandidates = candidates.filter((x) => x.r.isActive)
+      const pool = activeCandidates.length > 0 ? activeCandidates : candidates
+
+      // Tie-breaker: newest subscription wins.
+      const picked = [...pool].sort((a, b) => (b.sub.created ?? 0) - (a.sub.created ?? 0))[0]
+      const accessSubscription = picked.sub
+      const computed = picked.r
 
       const cancelAt = accessSubscription.cancel_at
         ? new Date(accessSubscription.cancel_at * 1000)
@@ -321,7 +357,7 @@ export async function getSubscriptionSnapshot(
           periodStillActive &&
           isActiveStatus(db.status) &&
           (!isTrialing(db.status) ? true : !cancelledScheduled)
-        const hasRequiredPrice = requiredPriceId ? db.priceIds.includes(requiredPriceId) : true
+        const hasRequiredPrice = hasAnyRequiredPrice(db.priceIds, requiredPriceIds)
         return {
           hasActiveSubscription: isActive && hasRequiredPrice,
           subscriptionDetails: detailsFromValues(db),
@@ -340,24 +376,67 @@ export async function hasActiveSubscription(userId: string): Promise<boolean> {
   return snapshot.hasActiveSubscription
 }
 
-export async function createCustomerPortalSession(userId: string) {
+export async function createCustomerPortalSession(userId: string, userEmail?: string | null) {
   try {
     if (!process.env.NEXT_PUBLIC_APP_URL) {
       throw new Error('Missing NEXT_PUBLIC_APP_URL environment variable')
     }
 
-    // Find customer by userId
-    const customers = await stripe.customers.search({
-      query: `metadata['userId']:'${userId}'`,
+    // 1) Prefer DB mapping (fast & robust)
+    const db = await prisma.userSubscription.findUnique({
+      where: { userId },
+      select: { stripeCustomerId: true },
     })
 
-    if (!customers.data.length) {
-      throw new Error('No customer found')
+    let stripeCustomerId = db?.stripeCustomerId ?? null
+
+    // 2) Fallback: search by metadata.userId
+    if (!stripeCustomerId) {
+      const customers = await stripe.customers.search({
+        query: `metadata['userId']:'${userId}'`,
+      })
+
+      const liveCustomers = customers.data.filter((c) => !('deleted' in c && c.deleted))
+      if (liveCustomers.length > 0) {
+        stripeCustomerId = [...liveCustomers].sort((a, b) => b.created - a.created)[0].id
+      }
     }
+
+    // 3) Fallback: search by email (older purchases without metadata.userId)
+    if (!stripeCustomerId && userEmail) {
+      const customers = await stripe.customers.search({
+        query: `email:'${userEmail}'`,
+      })
+
+      const liveCustomers = customers.data
+        .filter((c) => !('deleted' in c && c.deleted))
+        .sort((a, b) => b.created - a.created)
+
+      if (liveCustomers.length > 0) {
+        const picked = liveCustomers[0]
+        stripeCustomerId = picked.id
+
+        // Best-effort: link the Stripe customer to the app user for future webhook & lookup stability.
+        try {
+          if (picked.metadata?.userId !== userId) {
+            await stripe.customers.update(picked.id, {
+              metadata: {
+                ...(picked.metadata ?? {}),
+                userId,
+              },
+            })
+          }
+        } catch (error) {
+          console.error('Failed to link Stripe customer metadata.userId in portal flow:', error)
+        }
+      }
+    }
+
+    if (!stripeCustomerId) throw new Error('No customer found')
 
     // Create Stripe portal session
     const session = await stripe.billingPortal.sessions.create({
-      customer: customers.data[0].id,
+      customer: stripeCustomerId,
       return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
       locale: 'de',
     })

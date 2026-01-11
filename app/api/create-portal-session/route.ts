@@ -1,11 +1,12 @@
 // src/app/api/create-portal-session/route.ts
-import { auth } from '@clerk/nextjs/server'
+import { auth, currentUser } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { createCustomerPortalSession } from '@/lib/stripe'
 
 export async function POST() {
   try {
     const { userId } = await auth()
+    const user = await currentUser()
 
     if (!userId) {
       return NextResponse.json(
@@ -14,7 +15,11 @@ export async function POST() {
       )
     }
 
-    const { url } = await createCustomerPortalSession(userId)
+    const primaryEmail =
+      user?.emailAddresses.find((email) => email.id === user.primaryEmailAddressId)
+        ?.emailAddress ?? null
+
+    const { url } = await createCustomerPortalSession(userId, primaryEmail)
 
     if (!url) {
       return NextResponse.json(
