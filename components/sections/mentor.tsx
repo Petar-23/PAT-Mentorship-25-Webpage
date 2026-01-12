@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { Award, Play, Users, LineChart } from "lucide-react"
+import { Award, Play, Users, LineChart, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CardWithMatrix } from "@/components/ui/card-with-matrix"
 import { AreaChart, Area, ReferenceLine, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
@@ -149,6 +149,32 @@ function TradingPerformance() {
 
 // Main Mentor Section
 export default function MentorSection() {
+  const [whopReviewCount, setWhopReviewCount] = useState<number | null>(null)
+  const [whopReviewsError, setWhopReviewsError] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadWhopReviewCount() {
+      try {
+        // Max: 200 (Route capped). Reicht für die Landing Page; bei sehr vielen Reviews zeigen wir "200+".
+        const res = await fetch('/api/whop/reviews?limit=200&per=50')
+        const data = await res.json().catch(() => null)
+        if (!res.ok) throw new Error(data?.error || 'Failed to load reviews')
+        const count = typeof data?.count === 'number' ? data.count : null
+        if (!cancelled) setWhopReviewCount(count)
+      } catch (e) {
+        console.error('Failed to load Whop reviews count:', e)
+        if (!cancelled) setWhopReviewsError(true)
+      }
+    }
+
+    loadWhopReviewCount()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   return (
     <section className="py-16 sm:py-24 bg-slate-950 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950 to-slate-950/20" />
@@ -324,6 +350,58 @@ export default function MentorSection() {
                   - schaue dir gerne meinen YouTube Kanal an. Mein Ziel ist es, dir 
                   eine nachhaltige Fähigkeit zu vermitteln, mit der du ein stabiles monatliches Einkommen erzielen kannst.
                 </p>
+
+                {/* Whop Reviews Card */}
+                <div className="mt-6">
+                  <CardWithMatrix
+                    icon={
+                      <div className="relative h-full w-full">
+                        <Image
+                          src="/images/whop-logo.png"
+                          alt="Whop"
+                          fill
+                          className="object-contain"
+                          sizes="40px"
+                        />
+                      </div>
+                    }
+                    title="Whop Reviews"
+                    iconColor="text-yellow-300"
+                    rainColor="#FBBF24"
+                    gradientColor="rgba(251, 191, 36, 0.18)"
+                    className="lg:min-h-[130px]"
+                  >
+                    <div className="p-6 flex items-center lg:min-h-[130px]">
+                      <div className="flex items-center gap-4">
+                        <div className="h-10 w-10">
+                          <div className="relative h-10 w-10">
+                            <Image
+                              src="/images/whop-logo.png"
+                              alt="Whop"
+                              fill
+                              className="object-contain"
+                              sizes="40px"
+                            />
+                          </div>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1 text-amber-400">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star key={i} className="h-4 w-4 fill-current" />
+                            ))}
+                          </div>
+                          <p className="text-sm text-gray-400 mt-1">
+                            {whopReviewsError
+                              ? 'Whop Reviews aktuell nicht verfügbar'
+                              : whopReviewCount == null
+                                ? 'Bewertungen werden geladen…'
+                                : `${whopReviewCount >= 200 ? '200+' : whopReviewCount} Bewertungen (Whop)`}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardWithMatrix>
+                </div>
               </div>
             </div>
           </div>

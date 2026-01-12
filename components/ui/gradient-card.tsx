@@ -97,7 +97,7 @@ export const GradientCard = forwardRef<HTMLDivElement, GradientCardProps>(({
     <div
       ref={ref || innerRef}
       className={cn(
-        "relative overflow-hidden rounded-xl bg-slate-900 border border-slate-800 transition-all duration-200",
+        "relative overflow-hidden rounded-xl bg-slate-900 border border-slate-800 transition-all duration-200 flex flex-col",
         isHovering && "border-slate-700 shadow-md shadow-slate-900/50",
         className
       )}
@@ -125,7 +125,9 @@ export const GradientCard = forwardRef<HTMLDivElement, GradientCardProps>(({
       />
       
       {/* Content */}
-      <div className="relative z-10">
+      {/* NOTE: Do NOT make this wrapper `relative` – otherwise absolute children inside (e.g. Matrix rain)
+          will size/position against this wrapper instead of the full card height (important for min-height cards). */}
+      <div className="z-10">
         {children}
       </div>
     </div>
