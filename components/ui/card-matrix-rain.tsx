@@ -24,43 +24,58 @@ export function CardMatrixRain({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    // Increase padding for better coverage
+    const padding = 40
+    const chars = '0123456789ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ+-<>'
+    const fontSize = isMobile ? 10 : 12
+
+    // IMPORTANT: rect can change when the card height changes (e.g. min-h on desktop).
+    // We keep it mutable and update it on each resize so rain fills the full card.
+    let rect = container.getBoundingClientRect()
+    let columns = Math.ceil((rect.width + padding) / fontSize)
+    let drops: number[] = Array(columns).fill(1)
+
+    const initDrops = () => {
+      for (let i = 0; i < drops.length; i++) {
+        drops[i] = Math.random() * -50 // Increased range for initial positions
+      }
+    }
+
+    initDrops()
+
     const resizeCanvas = () => {
-      const rect = container.getBoundingClientRect()
+      rect = container.getBoundingClientRect()
       const pixelRatio = window.devicePixelRatio || 1
-      
-      // Increase padding for better coverage
-      const padding = 40
+
+      // Prevent scale accumulation on repeated resizes
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+
       canvas.width = (rect.width + padding) * pixelRatio
       canvas.height = (rect.height + padding) * pixelRatio
-      
+
       ctx.scale(pixelRatio, pixelRatio)
-      
+
       canvas.style.width = `${rect.width + padding}px`
       canvas.style.height = `${rect.height + padding}px`
-      canvas.style.left = `${-padding/2}px`
-      canvas.style.top = `${-padding/2}px`
+      canvas.style.left = `${-padding / 2}px`
+      canvas.style.top = `${-padding / 2}px`
+
+      const nextColumns = Math.ceil((rect.width + padding) / fontSize)
+      if (nextColumns !== columns) {
+        columns = nextColumns
+        drops = Array(columns).fill(1)
+        initDrops()
+      }
     }
-    
+
     resizeCanvas()
-    
+
     const resizeObserver = new ResizeObserver(resizeCanvas)
     resizeObserver.observe(container)
 
-    const chars = '0123456789ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ+-<>'
-    
-    const fontSize = isMobile ? 10 : 12
-    const rect = container.getBoundingClientRect()
-    const columns = Math.ceil((rect.width + 40) / fontSize)
-    const drops: number[] = Array(columns).fill(1)
-
-    // Initialize drops with better distribution
-    for (let i = 0; i < drops.length; i++) {
-      drops[i] = Math.random() * -50 // Increased range for initial positions
-    }
-
     const draw = () => {
       ctx.fillStyle = backgroundColor
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.fillRect(0, 0, rect.width + padding, rect.height + padding)
 
       ctx.fillStyle = color
       ctx.font = `${fontSize}px monospace`
@@ -73,7 +88,7 @@ export function CardMatrixRain({
         ctx.fillText(text, x, y)
 
         // Reset drops with varied positions above
-        if (y > rect.height + 40) {
+        if (y > rect.height + padding) {
           drops[i] = Math.random() * -10 - 1 // Varied reset positions
         }
         drops[i] += Math.random() * 0.5 + 0.5 // Varied drop speeds

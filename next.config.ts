@@ -18,6 +18,11 @@ const nextConfig = {
         hostname: 'vz-dc8da426-d71.b-cdn.net',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'i.ytimg.com',
+        pathname: '/**',
+      },
     ],
   },
   experimental: {
