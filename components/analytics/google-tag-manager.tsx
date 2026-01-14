@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Script from 'next/script'
 
 interface CookieConsent {
@@ -10,15 +10,17 @@ interface CookieConsent {
 }
 
 /**
- * Google Ads Tag (gtag.js) Komponente
- * Lädt das Google Ads Script nur, wenn der Nutzer Marketing-Cookies akzeptiert hat.
+ * Google Ads Tag (gtag.js) mit Consent Mode v2
  * 
- * Wichtig: Du musst NEXT_PUBLIC_GOOGLE_ADS_ID als Environment Variable setzen:
- * NEXT_PUBLIC_GOOGLE_ADS_ID=AW-XXXXXXXXXX
+ * Das Tag wird IMMER geladen (damit Google es findet), aber:
+ * - Ohne Cookie-Consent: Keine Daten werden gesammelt (denied)
+ * - Mit Cookie-Consent: Volles Tracking aktiviert (granted)
+ * 
+ * Das ist die offizielle, DSGVO-konforme Google-Lösung.
  */
 export function GoogleTagManager() {
-  const [hasConsent, setHasConsent] = useState(false)
-  const [isLoaded, setIsLoaded] = useState(false)
+  const [consentState, setConsentState] = useState<'pending' | 'granted' | 'denied'>('pending')
+  const hasInitialized = useRef(false)
   const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID
 
   useEffect(() => {
@@ -27,13 +29,16 @@ export function GoogleTagManager() {
       const storedConsent = localStorage.getItem('cookieConsent')
       if (storedConsent) {
         const consent = JSON.parse(storedConsent) as CookieConsent
-        setHasConsent(consent.marketing === true)
+        setConsentState(consent.marketing === true ? 'granted' : 'denied')
+      } else {
+        // Noch keine Entscheidung getroffen
+        setConsentState('denied')
       }
     }
 
     checkConsent()
 
-    // Lausche auf Änderungen im localStorage (z.B. wenn User Consent ändert)
+    // Lausche auf Änderungen im localStorage
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'cookieConsent') {
         checkConsent()
@@ -52,32 +57,57 @@ export function GoogleTagManager() {
     }
   }, [])
 
+  // Update Google Consent wenn sich der Status ändert
+  useEffect(() => {
+    if (consentState !== 'pending' && typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      window.gtag('consent', 'update', {
+        'ad_storage': consentState,
+        'ad_user_data': consentState,
+        'ad_personalization': consentState,
+        'analytics_storage': consentState,
+      })
+    }
+  }, [consentState])
+
   // Wenn keine Google Ads ID konfiguriert ist, nichts rendern
   if (!googleAdsId) {
     return null
   }
 
-  // Wenn kein Marketing-Consent, nichts laden
-  if (!hasConsent) {
-    return null
-  }
-
   return (
     <>
-      {/* Google Ads Tag (gtag.js) */}
+      {/* Google Consent Mode v2 - Default auf "denied" setzen BEVOR gtag.js lädt */}
+      <Script
+        id="google-consent-init"
+        strategy="beforeInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            
+            // Consent Mode v2: Default auf "denied" (DSGVO-konform)
+            gtag('consent', 'default', {
+              'ad_storage': 'denied',
+              'ad_user_data': 'denied',
+              'ad_personalization': 'denied',
+              'analytics_storage': 'denied',
+              'wait_for_update': 500
+            });
+          `,
+        }}
+      />
+
+      {/* Google Ads Tag (gtag.js) - lädt immer, respektiert aber Consent */}
       <Script
         id="google-ads-script"
         src={`https://www.googletagmanager.com/gtag/js?id=${googleAdsId}`}
         strategy="afterInteractive"
-        onLoad={() => setIsLoaded(true)}
       />
       <Script
         id="google-ads-config"
         strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
             gtag('config', '${googleAdsId}');
           `,
@@ -99,9 +129,6 @@ export function trackEvent(eventName: string, eventParams?: Record<string, unkno
 
 /**
  * Spezifische Conversion-Events für Google Ads
- * 
- * Wichtig: Für vollständiges Conversion-Tracking brauchst du das Conversion-Label
- * aus Google Ads. Setze es als NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL.
  */
 export const trackConversion = {
   // Wenn jemand auf "Sichere dir deinen Platz" klickt
