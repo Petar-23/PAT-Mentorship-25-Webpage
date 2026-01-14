@@ -6,15 +6,22 @@ import { useRouter } from 'next/navigation'
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { VortexBackground } from "@/components/ui/vortex-wrapper"
+import { trackConversion } from '@/components/analytics/google-tag-manager'
 
 export default function CTASection() {
   const { isSignedIn } = useUser()
   const router = useRouter()
 
   const handleClick = () => {
+    trackConversion.ctaClick()
     if (isSignedIn) {
       router.push('/dashboard')
     }
+  }
+  
+  const handleSignInClick = () => {
+    trackConversion.ctaClick()
+    trackConversion.signInStart()
   }
 
   return (
@@ -46,6 +53,7 @@ export default function CTASection() {
                     <Button 
                       size="lg" 
                       className="w-full sm:w-auto bg-white text-slate-900 hover:bg-white/90"
+                      onClick={handleSignInClick}
                     >
                       Sichere dir deinen Platz
                     </Button>

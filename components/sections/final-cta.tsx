@@ -7,6 +7,7 @@ import { GlowingCard } from "@/components/ui/glowing-card"
 import { Vortex } from "@/components/ui/vortex"
 import { useUser, SignInButton } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
+import { trackConversion } from '@/components/analytics/google-tag-manager'
 
 export default function FinalCTA() {
     const { isSignedIn } = useUser()
@@ -14,7 +15,14 @@ export default function FinalCTA() {
 
     // Handle click for signed-in users
     const handleJoinClick = () => {
+        trackConversion.ctaClick()
         router.push('/dashboard')
+    }
+    
+    // Handle click for non-signed-in users
+    const handleSignInClick = () => {
+        trackConversion.ctaClick()
+        trackConversion.signInStart()
     }
 
     const buttonContent = (
@@ -37,6 +45,7 @@ export default function FinalCTA() {
             <Button
                 size="lg"
                 className="bg-white text-slate-900 hover:bg-white/90 text-lg px-8 py-6 h-auto group"
+                onClick={handleSignInClick}
             >
                 {buttonContent}
             </Button>
