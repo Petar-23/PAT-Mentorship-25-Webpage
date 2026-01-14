@@ -10,7 +10,8 @@ import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'
 import { SubscriptionStatus } from '@/components/dashboard/subscription-status'
 import { SubscriptionSuccessModal } from '@/components/dashboard/subscription-success-modal'
 import { motion } from 'framer-motion'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { trackConversion } from '@/components/analytics/google-tag-manager'
 
 interface DashboardClientProps {
   initialData: {
@@ -42,6 +43,15 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
     searchParams.get('success') === 'true'
   )
   const [mentorshipStatus, setMentorshipStatus] = useState<{ accessible: boolean; startDate: string } | null>(null)
+  const hasTrackedPurchase = useRef(false)
+  
+  // Track Purchase Conversion wenn User von erfolgreicher Zahlung kommt
+  useEffect(() => {
+    if (searchParams.get('success') === 'true' && !hasTrackedPurchase.current) {
+      hasTrackedPurchase.current = true
+      trackConversion.purchase(150)
+    }
+  }, [searchParams])
 
   // Lade Mentorship-Status
   useEffect(() => {

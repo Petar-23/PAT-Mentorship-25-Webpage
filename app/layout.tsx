@@ -9,6 +9,7 @@ import { deDE } from '@clerk/localizations'
 import { CookieBanner } from '@/components/ui/cookie-banner'
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/react'
+import { GoogleTagManager } from '@/components/analytics/google-tag-manager'
 import { Suspense } from 'react'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -44,6 +45,7 @@ export default function RootLayout({
           </div>
           <Toaster />
           <CookieBanner />
+          <GoogleTagManager />
           <SpeedInsights />
           <Analytics />
         </body>
