@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { trackConversion } from '@/components/analytics/google-tag-manager'
 
 interface CheckoutButtonProps {
   disabled?: boolean
@@ -15,6 +16,9 @@ export function CheckoutButton({ disabled = false }: CheckoutButtonProps) {
     if (isLoading || disabled) return
 
     setIsLoading(true)
+    
+    // Track Checkout-Start für Google Ads Conversion
+    trackConversion.checkoutStart()
 
     try {
       const response = await fetch('/api/create-checkout', {

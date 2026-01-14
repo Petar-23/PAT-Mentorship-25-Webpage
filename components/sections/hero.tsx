@@ -10,6 +10,7 @@ import { useMediaQuery } from "@/hooks/use-media-query"
 import { motion } from "framer-motion"
 import { SignInButton, useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
+import { trackConversion } from '@/components/analytics/google-tag-manager'
 
 export default function Hero() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
@@ -77,11 +78,20 @@ export default function Hero() {
   )
 
   const handleGetStarted = () => {
+    // Track CTA Click für Conversion-Optimierung
+    trackConversion.ctaClick()
+    
     if (isSignedIn) {
       setIsNavigating(true)
       router.push('/dashboard')
       setTimeout(() => setIsNavigating(false), 500)
     }
+  }
+  
+  const handleSignInClick = () => {
+    // Track wenn nicht-eingeloggter User auf CTA klickt
+    trackConversion.ctaClick()
+    trackConversion.signInStart()
   }
 
   return (
@@ -167,7 +177,11 @@ export default function Hero() {
                     </Button>
                   ) : (
                     <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-                      <Button size="lg" className="w-full flex items-center gap-2 justify-center">
+                      <Button 
+                        size="lg" 
+                        className="w-full flex items-center gap-2 justify-center"
+                        onClick={handleSignInClick}
+                      >
                         Sichere dir deinen Platz
                         <ArrowRight className="h-4 w-4" />
                       </Button>

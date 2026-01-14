@@ -94,6 +94,9 @@ export function CookieBanner() {
     setTempConsent(consentData)
     setShowBanner(false)
     closeSettings()
+    
+    // Benachrichtige andere Komponenten (z.B. GTM) über die Consent-Änderung
+    window.dispatchEvent(new CustomEvent('cookieConsentChanged'))
   }
 
   const handleClose = () => {
