@@ -19,9 +19,16 @@ interface CookieConsent {
  * Das ist die offizielle, DSGVO-konforme Google-Lösung.
  */
 export function GoogleTagManager() {
-  const [consentState, setConsentState] = useState<'pending' | 'granted' | 'denied'>('pending')
+  const [consentState, setConsentState] = useState<{
+    analytics: 'pending' | 'granted' | 'denied'
+    marketing: 'pending' | 'granted' | 'denied'
+  }>({
+    analytics: 'pending',
+    marketing: 'pending',
+  })
   const hasInitialized = useRef(false)
   const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID
+  const googleAnalyticsId = process.env.NEXT_PUBLIC_GA_ID
 
   useEffect(() => {
     // Prüfe initialen Consent
@@ -29,10 +36,16 @@ export function GoogleTagManager() {
       const storedConsent = localStorage.getItem('cookieConsent')
       if (storedConsent) {
         const consent = JSON.parse(storedConsent) as CookieConsent
-        setConsentState(consent.marketing === true ? 'granted' : 'denied')
+        setConsentState({
+          analytics: consent.analytics === true ? 'granted' : 'denied',
+          marketing: consent.marketing === true ? 'granted' : 'denied',
+        })
       } else {
         // Noch keine Entscheidung getroffen
-        setConsentState('denied')
+        setConsentState({
+          analytics: 'denied',
+          marketing: 'denied',
+        })
       }
     }
 
@@ -59,18 +72,25 @@ export function GoogleTagManager() {
 
   // Update Google Consent wenn sich der Status ändert
   useEffect(() => {
-    if (consentState !== 'pending' && typeof window !== 'undefined' && typeof window.gtag === 'function') {
+    if (
+      consentState.analytics !== 'pending' &&
+      consentState.marketing !== 'pending' &&
+      typeof window !== 'undefined' &&
+      typeof window.gtag === 'function'
+    ) {
       window.gtag('consent', 'update', {
-        'ad_storage': consentState,
-        'ad_user_data': consentState,
-        'ad_personalization': consentState,
-        'analytics_storage': consentState,
+        'ad_storage': consentState.marketing,
+        'ad_user_data': consentState.marketing,
+        'ad_personalization': consentState.marketing,
+        'analytics_storage': consentState.analytics,
       })
     }
   }, [consentState])
 
-  // Wenn keine Google Ads ID konfiguriert ist, nichts rendern
-  if (!googleAdsId) {
+  const gtagId = googleAnalyticsId ?? googleAdsId
+
+  // Wenn keine ID konfiguriert ist, nichts rendern
+  if (!gtagId) {
     return null
   }
 
@@ -97,19 +117,20 @@ export function GoogleTagManager() {
         }}
       />
 
-      {/* Google Ads Tag (gtag.js) - lädt immer, respektiert aber Consent */}
+      {/* Google Tag (gtag.js) - lädt immer, respektiert aber Consent */}
       <Script
-        id="google-ads-script"
-        src={`https://www.googletagmanager.com/gtag/js?id=${googleAdsId}`}
+        id="google-gtag-script"
+        src={`https://www.googletagmanager.com/gtag/js?id=${gtagId}`}
         strategy="afterInteractive"
       />
       <Script
-        id="google-ads-config"
+        id="google-gtag-config"
         strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `
             gtag('js', new Date());
-            gtag('config', '${googleAdsId}');
+            ${googleAnalyticsId ? `gtag('config', '${googleAnalyticsId}');` : ''}
+            ${googleAdsId ? `gtag('config', '${googleAdsId}');` : ''}
           `,
         }}
       />

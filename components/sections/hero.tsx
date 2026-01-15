@@ -7,7 +7,6 @@ import Link from "next/link"
 import { MatrixRain } from "../ui/matrix-rain"
 import Image from "next/image"
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { motion } from "framer-motion"
 import { SignInButton, useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { trackConversion } from '@/components/analytics/google-tag-manager'
@@ -17,12 +16,13 @@ export default function Hero() {
   const containerRef = useRef<HTMLDivElement>(null)
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [isNavigating, setIsNavigating] = useState(false)
+  const [isInView, setIsInView] = useState(false)
   const { isSignedIn } = useUser()
   const router = useRouter()
   const [whopStats, setWhopStats] = useState<{ count: number; average: number } | null>(null)
 
   useEffect(() => {
-    if (!isMobile) {
+    if (!isMobile && isInView) {
       const handleMouseMove = (e: MouseEvent) => {
         if (containerRef.current) {
           const rect = containerRef.current.getBoundingClientRect()
@@ -36,7 +36,21 @@ export default function Hero() {
       window.addEventListener('mousemove', handleMouseMove)
       return () => window.removeEventListener('mousemove', handleMouseMove)
     }
-  }, [isMobile])
+  }, [isMobile, isInView])
+
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting)
+      },
+      { threshold: 0.15 }
+    )
+
+    observer.observe(containerRef.current)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -63,9 +77,34 @@ export default function Hero() {
       }
     }
 
-    loadWhopStats()
+    const w =
+      typeof window !== 'undefined'
+        ? (window as Window & {
+            requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+            cancelIdleCallback?: (id: number) => void
+          })
+        : undefined
+
+    let cleanup: (() => void) | undefined
+    if (w?.requestIdleCallback) {
+      const id = w.requestIdleCallback(() => {
+        if (!cancelled) {
+          void loadWhopStats()
+        }
+      }, { timeout: 2000 })
+      cleanup = () => w.cancelIdleCallback?.(id)
+    } else if (typeof window !== 'undefined') {
+      const id = window.setTimeout(() => {
+        if (!cancelled) {
+          void loadWhopStats()
+        }
+      }, 1200)
+      cleanup = () => window.clearTimeout(id)
+    }
+
     return () => {
       cancelled = true
+      cleanup?.()
     }
   }, [])
 
@@ -93,6 +132,15 @@ export default function Hero() {
     trackConversion.ctaClick()
     trackConversion.signInStart()
   }
+  
+  const handleScrollToDetails = () => {
+    const target = document.getElementById('why-different')
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } else {
+      window.location.hash = 'why-different'
+    }
+  }
 
   return (
     <section 
@@ -101,29 +149,16 @@ export default function Hero() {
     >
        {/* Matrix Background Layer */}
        {isMobile ? (
-        // Mobile version with moving gradient
+        // Mobile version with static background for better performance
         <div className="absolute inset-0">
-          <div className="absolute inset-0">
-            <MatrixRain color="rgba(128, 128, 128, 0.3)" />
-          </div>
-          {/* Animated gradient overlay */}
-          <motion.div 
+          <div
             className="absolute inset-0"
-            initial={{ backgroundPosition: '0% 0%' }}
-            animate={{ 
-              backgroundPosition: ['0% 0%', '100% 100%', '0% 100%', '100% 0%', '0% 0%'],
-            }}
-            transition={{ 
-              duration: 20,
-              ease: "linear",
-              repeat: Infinity,
-            }}
             style={{
               background: `radial-gradient(
                 circle 150vw at 50% 50%,
-                transparent 10%,
-                rgba(255, 255, 255, 0.85) 30%,
-                rgba(255, 255, 255, 0.95) 100%
+                rgba(255, 255, 255, 0.7) 0%,
+                rgba(255, 255, 255, 0.92) 45%,
+                rgba(255, 255, 255, 1) 100%
               )`,
             }}
           />
@@ -137,7 +172,7 @@ export default function Hero() {
             WebkitMask: `radial-gradient(circle 300px at ${mousePosition.x}px ${mousePosition.y}px, white, transparent)`,
           }}
         >
-          <MatrixRain color="rgba(128, 128, 128, 0.3)" />
+          {isInView && <MatrixRain color="rgba(128, 128, 128, 0.3)" />}
         </div>
        )}
 
@@ -153,14 +188,16 @@ export default function Hero() {
               </div>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 lg:leading-[1.1]">
-                Lerne Trading nach {' '}
-                <br className="hidden sm:block" />
-                ICT Konzepten in einer {' '}
-                <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent"> Live Mentorship</span>
+                <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent">
+                  Kein Videokurs:
+                </span>
+                <br />
+                ICT live lernen, verstehen und anwenden
               </h1>
               
               <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-xl">
-              Statt mit passend ausgewählten Beispielen aus aufgezeichneten Kursen, bringe ich dir das Trading direkt an der Live-Price-Action bei. Du lernst anhand aktueller Marktbewegungen und erhältst Erklärungen in Echtzeit.
+                Wir bauen dein Verständnis Schritt für Schritt auf: Theorie, danach Live-Tape-Reading und später echtes Live-Trading.
+                Du zahlst monatlich und kannst jederzeit kündigen, wenn der Mehrwert nicht passt.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 pt-2 w-full">
@@ -176,25 +213,30 @@ export default function Hero() {
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   ) : (
-                    <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-                      <Button 
-                        size="lg" 
-                        className="w-full flex items-center gap-2 justify-center"
-                        onClick={handleSignInClick}
-                      >
-                        Sichere dir deinen Platz
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </SignInButton>
+                    <Button size="lg" className="w-full" onClick={handleScrollToDetails}>
+                      Details ansehen
+                    </Button>
                   )}
                 </div>
                 
                 <div className="w-full sm:w-auto">
-                  <Button size="lg" variant="outline" asChild className="w-full">
-                    <Link href="#why-different">
+                  {isSignedIn ? (
+                    <Button size="lg" variant="outline" className="w-full" onClick={handleScrollToDetails}>
                       Mentorship Details
-                    </Link>
-                  </Button>
+                    </Button>
+                  ) : (
+                    <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+                      <Button 
+                        size="lg" 
+                        variant="outline"
+                        className="w-full flex items-center gap-2 justify-center"
+                        onClick={handleSignInClick}
+                      >
+                        Platz sichern
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </SignInButton>
+                  )}
                 </div>
               </div>
 

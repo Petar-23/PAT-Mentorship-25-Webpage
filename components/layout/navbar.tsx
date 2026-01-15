@@ -138,6 +138,8 @@ export function Navbar() {
                 width={32}
                 height={32}
                 className="rounded-lg"
+                priority
+                sizes="32px"
               />
               <span className="text-xl font-semibold hidden sm:inline">
                 PRICE ACTION TRADER

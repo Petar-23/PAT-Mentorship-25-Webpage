@@ -257,9 +257,34 @@ export default function Testimonials() {
       }
     }
 
-    loadWhopReviews()
+    const w =
+      typeof window !== 'undefined'
+        ? (window as Window & {
+            requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+            cancelIdleCallback?: (id: number) => void
+          })
+        : undefined
+
+    let cleanup: (() => void) | undefined
+    if (w?.requestIdleCallback) {
+      const id = w.requestIdleCallback(() => {
+        if (!cancelled) {
+          void loadWhopReviews()
+        }
+      }, { timeout: 2000 })
+      cleanup = () => w.cancelIdleCallback?.(id)
+    } else if (typeof window !== 'undefined') {
+      const id = window.setTimeout(() => {
+        if (!cancelled) {
+          void loadWhopReviews()
+        }
+      }, 1200)
+      cleanup = () => window.clearTimeout(id)
+    }
+
     return () => {
       cancelled = true
+      cleanup?.()
     }
   }, [])
 
@@ -358,8 +383,26 @@ export default function Testimonials() {
             </div>
 
             <div className="mt-6 flex flex-col items-center gap-2">
-              <p className="text-sm text-gray-500 tabular-nums">
-                {Math.min(currentIndex + 1, allTestimonials.length)} / {allTestimonials.length}
+              <div className="flex items-center gap-1">
+                {(() => {
+                  const total = allTestimonials.length
+                  const maxDots = Math.min(total, 7)
+                  const activeDot = total <= maxDots
+                    ? currentIndex
+                    : currentIndex % maxDots
+
+                  return Array.from({ length: maxDots }).map((_, index) => (
+                    <span
+                      key={index}
+                      className={`h-2 w-2 rounded-full transition-colors ${
+                        activeDot === index ? "bg-blue-600" : "bg-gray-300"
+                      }`}
+                    />
+                  ))
+                })()}
+              </div>
+              <p className="text-xs text-gray-500">
+                Wischen für weitere Bewertungen
               </p>
               <a
                 href={WHOP_REVIEWS_URL}
