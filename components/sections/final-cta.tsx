@@ -1,6 +1,7 @@
 // src/components/sections/final-cta.tsx
 "use client"
 import { motion } from "framer-motion"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Users, Clock, Trophy } from "lucide-react"
 import { GlowingCard } from "@/components/ui/glowing-card"
@@ -8,10 +9,31 @@ import { Vortex } from "@/components/ui/vortex"
 import { useUser, SignInButton } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { trackConversion } from '@/components/analytics/google-tag-manager'
+import { useMediaQuery } from "@/hooks/use-media-query"
 
 export default function FinalCTA() {
     const { isSignedIn } = useUser()
     const router = useRouter()
+    const isMobile = useMediaQuery("(max-width: 768px)")
+    const sectionRef = useRef<HTMLElement>(null)
+    const [isInView, setIsInView] = useState(false)
+    const vortexConfig = isMobile
+        ? {
+            particleCount: 150,
+            baseHue: 240,
+            baseSpeed: 0.1,
+            rangeSpeed: 0.6,
+            baseRadius: 0.4,
+            rangeRadius: 1.0,
+        }
+        : {
+            particleCount: 500,
+            baseHue: 240,
+            baseSpeed: 0.2,
+            rangeSpeed: 1.0,
+            baseRadius: 0.5,
+            rangeRadius: 1.5,
+        }
 
     // Handle click for signed-in users
     const handleJoinClick = () => {
@@ -32,6 +54,20 @@ export default function FinalCTA() {
         </>
     )
 
+    useEffect(() => {
+        if (!sectionRef.current) return
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setIsInView(entry.isIntersecting)
+            },
+            { threshold: 0.15 }
+        )
+
+        observer.observe(sectionRef.current)
+        return () => observer.disconnect()
+    }, [])
+
     const ctaButton = isSignedIn ? (
         <Button
             onClick={handleJoinClick}
@@ -51,21 +87,32 @@ export default function FinalCTA() {
             </Button>
         </SignInButton>
     )
+    
+    const handleScrollToDetails = () => {
+        const target = document.getElementById('why-different')
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        } else {
+            window.location.hash = 'why-different'
+        }
+    }
 
     return (
-        <section className="relative py-24 overflow-hidden">
+        <section ref={sectionRef} className="relative py-24 overflow-hidden">
             {/* Vortex Background */}
             <div className="absolute inset-0 bg-slate-950">
-                <Vortex
-                    particleCount={500}
-                    baseHue={240}
-                    baseSpeed={0.2}
-                    rangeSpeed={1.0}
-                    baseRadius={0.5}
-                    rangeRadius={1.5}
-                    backgroundColor="transparent"
-                    containerClassName="opacity-30"
-                />
+                {isInView && (
+                    <Vortex
+                        particleCount={vortexConfig.particleCount}
+                        baseHue={vortexConfig.baseHue}
+                        baseSpeed={vortexConfig.baseSpeed}
+                        rangeSpeed={vortexConfig.rangeSpeed}
+                        baseRadius={vortexConfig.baseRadius}
+                        rangeRadius={vortexConfig.rangeRadius}
+                        backgroundColor="transparent"
+                        containerClassName="opacity-30"
+                    />
+                )}
             </div>
             
             {/* Content */}
@@ -126,6 +173,17 @@ export default function FinalCTA() {
                     transition={{ delay: 0.2 }}
                 >
                     {ctaButton}
+                    {!isSignedIn && (
+                        <p className="mt-4 text-gray-300">
+                            <button
+                                type="button"
+                                onClick={handleScrollToDetails}
+                                className="underline underline-offset-4 hover:text-white"
+                            >
+                                Ohne Anmeldung: Details ansehen
+                            </button>
+                        </p>
+                    )}
                     
                     <p className="mt-6 text-gray-400">
                         Keine Zahlung bis zum Programmstart.

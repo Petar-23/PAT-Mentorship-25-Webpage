@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { PlayCircle, Users, Calendar, ChartSpline, Trophy, CreditCard } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { MatrixRain } from "@/components/ui/matrix-rain"
+import { useMediaQuery } from "@/hooks/use-media-query"
 
 const features = [
   {
@@ -42,8 +43,10 @@ function FeatureCard({ feature }: { feature: typeof features[0] }) {
   const [isHovered, setIsHovered] = useState(false)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const cardRef = useRef<HTMLDivElement>(null)
+  const isMobile = useMediaQuery("(max-width: 768px)")
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isMobile) return
     if (!cardRef.current) return
     const rect = cardRef.current.getBoundingClientRect()
     setMousePosition({
@@ -56,8 +59,12 @@ function FeatureCard({ feature }: { feature: typeof features[0] }) {
     <Card 
       ref={cardRef}
       className="relative border-2 hover:border-blue-500/20 transition-colors overflow-hidden group"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => {
+        if (!isMobile) setIsHovered(true)
+      }}
+      onMouseLeave={() => {
+        if (!isMobile) setIsHovered(false)
+      }}
       onMouseMove={handleMouseMove}
     >
       {/* Matrix Rain Layer */}
@@ -68,7 +75,7 @@ function FeatureCard({ feature }: { feature: typeof features[0] }) {
           WebkitMask: `radial-gradient(circle 80px at ${mousePosition.x}% ${mousePosition.y}%, white, transparent)`,
         }}
       >
-        {isHovered && <MatrixRain color="rgba(0, 0, 255, 0.15)" />}
+        {!isMobile && isHovered && <MatrixRain color="rgba(0, 0, 255, 0.15)" />}
       </div>
       
       {/* Content */}

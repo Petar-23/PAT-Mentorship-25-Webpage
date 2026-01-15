@@ -11,6 +11,15 @@ import { trackConversion } from '@/components/analytics/google-tag-manager'
 export default function CTASection() {
   const { isSignedIn } = useUser()
   const router = useRouter()
+  
+  const handleScrollToDetails = () => {
+    const target = document.getElementById('why-different')
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } else {
+      window.location.hash = 'why-different'
+    }
+  }
 
   const handleClick = () => {
     trackConversion.ctaClick()
@@ -49,15 +58,24 @@ export default function CTASection() {
                     Sichere dir deinen Platz
                   </Button>
                 ) : (
-                  <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-                    <Button 
-                      size="lg" 
-                      className="w-full sm:w-auto bg-white text-slate-900 hover:bg-white/90"
-                      onClick={handleSignInClick}
+                  <div className="flex flex-col gap-3">
+                    <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+                      <Button 
+                        size="lg" 
+                        className="w-full sm:w-auto bg-white text-slate-900 hover:bg-white/90"
+                        onClick={handleSignInClick}
+                      >
+                        Sichere dir deinen Platz
+                      </Button>
+                    </SignInButton>
+                    <button
+                      type="button"
+                      onClick={handleScrollToDetails}
+                      className="text-left text-sm underline underline-offset-4 text-white/90 hover:text-white"
                     >
-                      Sichere dir deinen Platz
-                    </Button>
-                  </SignInButton>
+                      Ohne Anmeldung: Details ansehen
+                    </button>
+                  </div>
                 )}
               </div>
               

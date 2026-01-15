@@ -24,7 +24,7 @@ export function TestimonialCard({ testimonial, isMobile, onClick }: TestimonialC
   return (
     <GradientCard
       gradientColor={isWhopReview ? 'rgba(0, 0, 0, 0)' : testimonial.gradientColor}
-      className={`bg-white border-gray-200 cursor-pointer transition-transform hover:scale-[1.02] ${
+      className={`bg-white border-gray-200 cursor-pointer transition-transform md:hover:scale-[1.02] ${
         isMobile ? 'w-[calc(100vw-32px)]' : 'w-[400px] mx-3'
       }`}
       onClick={onClick}
@@ -57,7 +57,11 @@ export function TestimonialCard({ testimonial, isMobile, onClick }: TestimonialC
         
         {/* Quote */}
         <div className="flex-grow">
-          <p className="line-clamp-3 text-gray-900 break-words whitespace-pre-wrap">
+          <p
+            className={`break-words whitespace-pre-wrap text-gray-900 leading-relaxed ${
+              isMobile ? 'text-base line-clamp-4' : 'text-sm line-clamp-3'
+            }`}
+          >
             {testimonial.quote}
           </p>
         </div>
@@ -66,16 +70,16 @@ export function TestimonialCard({ testimonial, isMobile, onClick }: TestimonialC
         <div className="flex-shrink-0 border-t border-gray-100 pt-4 mt-auto">
           <div className="mb-4">
             <p className="font-semibold text-gray-900">{testimonial.author}</p>
-            <p className="text-sm text-gray-500">{testimonial.role}</p>
+            <p className="text-sm text-gray-600">{testimonial.role}</p>
           </div>
           
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-sm text-gray-600">{testimonial.results.label}</p>
+          <div className="bg-emerald-50/70 rounded-lg p-3 border border-emerald-100">
+            <p className="text-sm text-gray-700">{testimonial.results.label}</p>
             <div className="flex items-baseline gap-2 flex-wrap">
               <p className="text-2xl font-bold text-green-600">
                 {testimonial.results.value}
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-600">
                 {testimonial.results.description}
               </p>
             </div>

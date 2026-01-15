@@ -24,29 +24,29 @@ interface MobileFeatureCardProps {
 function MobileFeatureCard({ feature }: MobileFeatureCardProps) {
   return (
     <motion.div
-      className={`p-4 space-y-4 ${feature.highlight ? 'bg-blue-50/20' : ''}`}
+      className={`p-4 space-y-4 ${feature.highlight ? 'bg-emerald-50/40' : 'bg-white'}`}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
     >
       <div>
-        <p className="font-medium text-gray-900 mb-2">{feature.name}</p>
-        <p className="text-sm text-gray-500 mb-4">{feature.description}</p>
+        <p className="font-semibold text-gray-900 mb-2">{feature.name}</p>
+        <p className="text-sm text-gray-700 mb-4">{feature.description}</p>
       </div>
       
       {/* Our Mentorship */}
-      <div className="bg-white rounded-lg p-3 border border-blue-100">
-        <p className="text-sm font-medium text-blue-600 mb-2">Meine Mentorship:</p>
+      <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
+        <p className="text-sm font-semibold text-emerald-700 mb-2">Meine Mentorship:</p>
         <span className="inline-flex items-center gap-2 text-gray-900">
-          <Check className="h-4 w-4 text-blue-500 flex-shrink-0" />
+          <Check className="h-4 w-4 text-emerald-600 flex-shrink-0" />
           <span>{feature.us}</span>
         </span>
       </div>
 
       {/* Other Courses */}
-      <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-        <p className="text-sm font-medium text-gray-600 mb-2">Andere Kurse:</p>
-        <span className="inline-flex items-center gap-2 text-gray-700">
+      <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+        <p className="text-sm font-semibold text-red-700 mb-2">Andere Kurse:</p>
+        <span className="inline-flex items-center gap-2 text-gray-900">
           {feature.highlight && <X className="h-4 w-4 text-red-500 flex-shrink-0" />}
           <span>{feature.others}</span>
         </span>
@@ -147,11 +147,11 @@ export default function PricingComparison() {
 
         <Card className="overflow-hidden border-0 shadow-2xl">
           {/* Mobile Version */}
-          <div className="md:hidden divide-y">
+          <div className="md:hidden divide-y bg-white">
             {comparisonData.categories.map((category, categoryIndex) => (
               <div key={categoryIndex} className="divide-y">
-                <div className="p-4 bg-gray-50">
-                  <p className="font-semibold text-gray-900">{category.name}</p>
+                <div className="p-4 bg-gray-900">
+                  <p className="font-semibold text-white">{category.name}</p>
                 </div>
                 {category.features.map((feature, featureIndex) => (
                   <MobileFeatureCard key={featureIndex} feature={feature} />
@@ -162,28 +162,28 @@ export default function PricingComparison() {
 
           {/* Desktop Version */}
           <div className="hidden md:block divide-y">
-            <div className="grid grid-cols-12 bg-gray-50 p-6 border-b">
+            <div className="grid grid-cols-12 bg-gray-100 p-6 border-b">
               <div className="col-span-4">
                 <p className="font-semibold text-gray-900">Features</p>
               </div>
               <div className="col-span-4 text-center">
-                <p className="font-semibold text-blue-600">Meine Mentorship</p>
+                <p className="font-semibold text-emerald-700">Meine Mentorship</p>
               </div>
               <div className="col-span-4 text-center">
-                <p className="font-semibold text-gray-600">Andere Kurse</p>
+                <p className="font-semibold text-red-700">Andere Kurse</p>
               </div>
             </div>
             
             {comparisonData.categories.map((category, categoryIndex) => (
               <div key={categoryIndex} className="divide-y">
-                <div className="p-6 bg-gray-50/50">
-                  <p className="font-semibold text-gray-900">{category.name}</p>
+                <div className="p-6 bg-gray-900">
+                  <p className="font-semibold text-white">{category.name}</p>
                 </div>
                 {category.features.map((feature, featureIndex) => (
                   <motion.div
                     key={featureIndex}
-                    className={`grid grid-cols-12 p-6 hover:bg-blue-50/50 transition-colors ${
-                      feature.highlight ? 'bg-blue-50/20' : ''
+                    className={`grid grid-cols-12 p-6 hover:bg-emerald-50/40 transition-colors ${
+                      feature.highlight ? 'bg-emerald-50/30' : ''
                     }`}
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -191,17 +191,17 @@ export default function PricingComparison() {
                     transition={{ delay: featureIndex * 0.1 }}
                   >
                     <div className="col-span-4">
-                      <p className="font-medium text-gray-900">{feature.name}</p>
-                      <p className="text-sm text-gray-500 mt-1">{feature.description}</p>
+                      <p className="font-semibold text-gray-900">{feature.name}</p>
+                      <p className="text-sm text-gray-700 mt-1">{feature.description}</p>
                     </div>
                     <div className="col-span-4 text-center flex items-center justify-center">
-                      <span className="inline-flex items-center gap-2 text-blue-600 font-medium">
-                        <Check className="h-5 w-5 text-blue-500" />
+                      <span className="inline-flex items-center gap-2 text-emerald-700 font-semibold">
+                        <Check className="h-5 w-5 text-emerald-600" />
                         {feature.us}
                       </span>
                     </div>
                     <div className="col-span-4 text-center flex items-center justify-center">
-                      <span className="inline-flex items-center gap-2 text-gray-500">
+                      <span className="inline-flex items-center gap-2 text-gray-900">
                         {feature.highlight && <X className="h-5 w-5 text-red-500" />}
                         {feature.others}
                       </span>
