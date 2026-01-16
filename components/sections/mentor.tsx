@@ -291,7 +291,7 @@ export default function MentorSection() {
             <div className="flex-1">
               <div className="relative aspect-[4/3] rounded-2xl overflow-hidden">
                 <Image
-                  src="/images/mentor-image-2.png"
+                  src="/images/mentor_petar.png"
                   alt="Trading Mentor"
                   fill
                   className="object-cover"

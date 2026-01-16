@@ -30,7 +30,7 @@ function MobileFeatureCard({ feature }: MobileFeatureCardProps) {
       viewport={{ once: true }}
     >
       <div>
-        <p className="font-semibold text-gray-900 mb-2">{feature.name}</p>
+        <p className="font-semibold text-gray-800 mb-2">{feature.name}</p>
         <p className="text-sm text-gray-700 mb-4">{feature.description}</p>
       </div>
       
@@ -191,7 +191,7 @@ export default function PricingComparison() {
                     transition={{ delay: featureIndex * 0.1 }}
                   >
                     <div className="col-span-4">
-                      <p className="font-semibold text-gray-900">{feature.name}</p>
+                      <p className="font-semibold text-gray-800">{feature.name}</p>
                       <p className="text-sm text-gray-700 mt-1">{feature.description}</p>
                     </div>
                     <div className="col-span-4 text-center flex items-center justify-center">

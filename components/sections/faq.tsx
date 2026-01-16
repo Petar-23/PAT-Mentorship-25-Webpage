@@ -98,7 +98,7 @@ function FAQItem({ question, answer, category, isOpen, toggleOpen }: FAQItemProp
       >
         <div>
           <p className="text-sm font-medium text-blue-600 mb-2">{category}</p>
-          <h3 className="font-medium text-gray-900">{question}</h3>
+          <h3 className="font-medium text-gray-800">{question}</h3>
         </div>
         <div className="ml-4 flex-shrink-0">
           <motion.div
