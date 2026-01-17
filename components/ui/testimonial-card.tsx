@@ -1,5 +1,5 @@
 import Image from "next/image"
-import { Quote, Star } from "lucide-react"
+import { BadgeCheck, Quote, Star } from "lucide-react"
 import { GradientCard } from "@/components/ui/gradient-card"
 
 interface TestimonialCardProps {
@@ -44,14 +44,26 @@ export function TestimonialCard({ testimonial, isMobile, onClick }: TestimonialC
                 />
                 <p className="text-sm font-semibold text-gray-900">Whop Review</p>
               </div>
-              <div className="flex items-center gap-1 text-amber-500">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-current" />
-                ))}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 text-amber-500">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-current" />
+                  ))}
+                </div>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200">
+                  <BadgeCheck className="h-3.5 w-3.5" />
+                  Verifiziert
+                </span>
               </div>
             </div>
           ) : (
-            <Quote className="h-8 w-8 text-blue-500" />
+            <div className="flex items-center justify-between">
+              <Quote className="h-8 w-8 text-blue-500" />
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200">
+                <BadgeCheck className="h-3.5 w-3.5" />
+                Verifiziert
+              </span>
+            </div>
           )}
         </div>
         

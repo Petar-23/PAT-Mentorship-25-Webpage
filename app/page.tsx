@@ -12,12 +12,12 @@ export default function HomePage() {
   return (
     <main className="min-h-screen">
       <Hero />
+      <Testimonials />
       <WhyDifferent />
       <PricingComparison />
       <MentorSection />
       <ProgramStructure />
       <CTASection />
-      <Testimonials />
       <FAQ />
       <FinalCTA />
     </main>
