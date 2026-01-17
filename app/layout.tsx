@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
@@ -26,6 +26,12 @@ export const metadata: Metadata = {
   }
 }
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -34,7 +40,7 @@ export default function RootLayout({
   return (
     <ClerkProvider afterSignOutUrl={"/"} localization={deDE} signInFallbackRedirectUrl="/dashboard" signUpFallbackRedirectUrl="/dashboard">
       <html lang="en" className="h-full scroll-smooth">
-        <body className={`${inter.className} h-full`}>
+        <body className={`${inter.className} h-full overflow-x-hidden`}>
           <div className="min-h-full flex flex-col">
             <Suspense fallback={<div className="h-16 w-full" />}>
               <Navbar />

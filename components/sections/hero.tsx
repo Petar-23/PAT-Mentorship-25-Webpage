@@ -266,18 +266,18 @@ export default function Hero() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-4 lg:pt-6">
-                <div>
-                  <p className="text-2xl lg:text-3xl font-bold text-gray-900">€150</p>
-                  <p className="text-sm text-gray-600">/Monat (inkl. MwSt.)</p>
+              <div className="flex flex-wrap justify-center gap-3 pt-4 lg:pt-6 text-center">
+                <div className="min-w-[110px] flex-1 sm:flex-initial">
+                  <p className="text-xl lg:text-3xl font-bold text-gray-900">€150</p>
+                  <p className="text-xs sm:text-sm text-gray-600">/Monat (inkl. MwSt.)</p>
                 </div>
-                <div>
-                  <p className="text-2xl lg:text-3xl font-bold text-gray-900">2-3x</p>
-                  <p className="text-sm text-gray-600">Live Calls / Woche</p>
+                <div className="min-w-[110px] flex-1 sm:flex-initial">
+                  <p className="text-xl lg:text-3xl font-bold text-gray-900">2-3x</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Live Calls / Woche</p>
                 </div>
-                <div>
-                  <p className="text-2xl lg:text-3xl font-bold text-gray-900">100</p>
-                  <p className="text-sm text-gray-600">Limitierte Plätze</p>
+                <div className="min-w-[110px] flex-1 sm:flex-initial">
+                  <p className="text-xl lg:text-3xl font-bold text-gray-900">100</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Limitierte Plätze</p>
                 </div>
               </div>
 
