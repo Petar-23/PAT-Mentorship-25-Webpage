@@ -24,9 +24,7 @@ export function TestimonialCard({ testimonial, isMobile, onClick }: TestimonialC
   return (
     <GradientCard
       gradientColor={isWhopReview ? 'rgba(0, 0, 0, 0)' : testimonial.gradientColor}
-      className={`bg-white border-gray-200 cursor-pointer transition-transform md:hover:scale-[1.02] ${
-        isMobile ? 'w-[calc(100vw-32px)]' : 'w-[400px] mx-3'
-      }`}
+      className="bg-white border-gray-200 cursor-pointer transition-transform md:hover:scale-[1.02] w-[calc(100vw-32px)] sm:w-[400px] sm:mx-3"
       onClick={onClick}
     >
       <div className="p-6 flex flex-col gap-4 min-h-[320px]">

@@ -34,26 +34,26 @@
      return () => window.clearInterval(id)
    }, [target])
 
-   return (
-     <div className={className}>
-       <div className="grid grid-cols-4 gap-2 text-center">
-         <div className="rounded-lg bg-white/80 border border-gray-200 px-2 py-2">
-           <div className="text-lg font-bold text-gray-900">{timeLeft.days}</div>
-           <div className="text-[11px] uppercase tracking-wide text-gray-500">Tage</div>
-         </div>
-         <div className="rounded-lg bg-white/80 border border-gray-200 px-2 py-2">
-           <div className="text-lg font-bold text-gray-900">{pad(timeLeft.hours)}</div>
-           <div className="text-[11px] uppercase tracking-wide text-gray-500">Std</div>
-         </div>
-         <div className="rounded-lg bg-white/80 border border-gray-200 px-2 py-2">
-           <div className="text-lg font-bold text-gray-900">{pad(timeLeft.minutes)}</div>
-           <div className="text-[11px] uppercase tracking-wide text-gray-500">Min</div>
-         </div>
-         <div className="rounded-lg bg-white/80 border border-gray-200 px-2 py-2">
-           <div className="text-lg font-bold text-gray-900">{pad(timeLeft.seconds)}</div>
-           <div className="text-[11px] uppercase tracking-wide text-gray-500">Sek</div>
-         </div>
-       </div>
-     </div>
-   )
+  return (
+    <div className={className}>
+      <div className="flex flex-wrap justify-center gap-2 text-center">
+        <div className="rounded-md bg-white/80 border border-gray-200 px-2 py-1 min-w-[64px]">
+          <div className="text-sm font-bold text-gray-900">{timeLeft.days}</div>
+          <div className="text-[10px] uppercase tracking-wide text-gray-500">Tage</div>
+        </div>
+        <div className="rounded-md bg-white/80 border border-gray-200 px-2 py-1 min-w-[64px]">
+          <div className="text-sm font-bold text-gray-900">{pad(timeLeft.hours)}</div>
+          <div className="text-[10px] uppercase tracking-wide text-gray-500">Std</div>
+        </div>
+        <div className="rounded-md bg-white/80 border border-gray-200 px-2 py-1 min-w-[64px]">
+          <div className="text-sm font-bold text-gray-900">{pad(timeLeft.minutes)}</div>
+          <div className="text-[10px] uppercase tracking-wide text-gray-500">Min</div>
+        </div>
+        <div className="rounded-md bg-white/80 border border-gray-200 px-2 py-1 min-w-[64px]">
+          <div className="text-sm font-bold text-gray-900">{pad(timeLeft.seconds)}</div>
+          <div className="text-[10px] uppercase tracking-wide text-gray-500">Sek</div>
+        </div>
+      </div>
+    </div>
+  )
  }
