@@ -40,9 +40,9 @@ const staticTestimonials: Testimonial[] = [
     author: "Sergej M.",
     role: "Future Trader",
     results: {
-      label: "Win-Rate",
-      value: "+25%",
-      description: "Durchschnitt nach 6 Monaten"
+      label: "Payouts",
+      value: "+3.000 $",
+      description: "Payouts (2025)"
     },
     gradientColor: "rgba(59, 130, 246, 0)"
   },
@@ -288,7 +288,22 @@ export default function Testimonials() {
     }
   }, [])
 
-  const allTestimonials = whopTestimonials.length > 0 ? [...whopTestimonials, ...staticTestimonials] : staticTestimonials
+  const allTestimonials = (() => {
+    if (whopTestimonials.length === 0) return staticTestimonials
+    const mixed: Testimonial[] = []
+    const maxLength = Math.max(whopTestimonials.length, staticTestimonials.length)
+
+    for (let i = 0; i < maxLength; i += 1) {
+      if (i < staticTestimonials.length) {
+        mixed.push(staticTestimonials[i])
+      }
+      if (i < whopTestimonials.length) {
+        mixed.push(whopTestimonials[i])
+      }
+    }
+
+    return mixed
+  })()
 
   const isWhopReview = (testimonial: Testimonial) => testimonial.role.toLowerCase().includes("whop")
 
@@ -327,7 +342,17 @@ export default function Testimonials() {
   return (
     <section className="py-24 bg-white">
       <div className="container mx-auto px-4 max-w-6xl">
-        <div className="grid md:grid-cols-4 gap-4 mb-12">
+        <div className="text-center mb-10">
+          <p className="text-blue-600 font-semibold mb-3">ERFOLGSGESCHICHTEN</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+            PAT Trader Erfolgsgeschichten
+          </h2>
+          <p className="text-gray-600 max-w-2xl mx-auto text-lg">
+            Höre die Meinung von erfolgreichen Mentorship Absolventen
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-12">
             <StatCard
               icon={<TrendingUp className="h-6 w-6" />}
               value="50+"
@@ -336,7 +361,7 @@ export default function Testimonials() {
             />
             <StatCard
               icon={<Receipt className="h-6 w-6" />}
-              value="60.000+ USD"
+              value="$60K+"
               label="Kombinierte Payouts"
               color="purple"
             />

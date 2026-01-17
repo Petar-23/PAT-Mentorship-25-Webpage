@@ -124,7 +124,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="relative bg-white z-50">
+      <header className="sticky top-0 bg-white z-50">
         <div className={isMentorship ? 'w-full px-4' : 'container mx-auto px-4'}>
           <nav className="h-16 flex items-center justify-between">
             {/* Logo */}
@@ -355,6 +355,11 @@ export function Navbar() {
         {/* Gradient Border */}
         <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-gray-300 to-transparent animate-gradient-x" />
       </header>
+
+      <div className="bg-amber-50 text-amber-950 text-[10px] sm:text-xs md:text-sm px-3 sm:px-4 py-2 border-b border-amber-200/80 text-center">
+        Trading ist riskant und die meisten Daytrader verlieren Geld. Petars Ergebnisse sind nicht typisch.
+        Alle Informationen dienen nur Bildungszwecken und stellen keine Anlageberatung oder Kauf-/Verkaufsempfehlungen dar.
+      </div>
 
       {/* Backdrop Overlay */}
       <AnimatePresence>
