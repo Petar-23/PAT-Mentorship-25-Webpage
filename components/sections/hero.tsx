@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight, Star, Users, Award, LineChart, BadgeCheck } from "lucide-react"
 import Link from "next/link"
 import { MatrixRain } from "../ui/matrix-rain"
+import { Countdown } from "@/components/ui/countdown"
 import Image from "next/image"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { SignInButton, useUser } from '@clerk/nextjs'
@@ -279,6 +280,16 @@ export default function Hero() {
                   <p className="text-sm text-gray-600">Limitierte Plätze</p>
                 </div>
               </div>
+
+              <div className="pt-6 hidden lg:block">
+                <p className="text-sm font-semibold text-gray-700 mb-3">
+                  Countdown bis zum Einschreibungsschluss
+                  <span className="ml-2 text-sm font-semibold text-amber-600">
+                    Nur noch wenige Plätze verfügbar
+                  </span>
+                </p>
+                <Countdown targetDate="2026-03-01T00:00:00+01:00" />
+              </div>
             </div>
 
             {/* Right Column - Visual Element */}
@@ -350,6 +361,16 @@ export default function Hero() {
                       Payout‑Nachweis
                     </div>
                   </div>
+                </div>
+
+                <div className="mt-4 lg:hidden text-center">
+                  <p className="text-sm font-semibold text-gray-700 mb-2">
+                    Countdown bis zum Einschreibungsschluss
+                  </p>
+                  <p className="text-xs text-amber-600 mb-3 font-semibold">
+                    Nur noch wenige Plätze verfügbar
+                  </p>
+                  <Countdown targetDate="2026-03-01T00:00:00+01:00" />
                 </div>
 
                 <div className="mt-4 grid sm:grid-cols-2 gap-3 items-stretch">

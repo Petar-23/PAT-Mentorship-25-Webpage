@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight, Users, Clock, Trophy } from "lucide-react"
 import { GlowingCard } from "@/components/ui/glowing-card"
 import { Vortex } from "@/components/ui/vortex"
+import { Countdown } from "@/components/ui/countdown"
 import { useUser, SignInButton } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { trackConversion } from '@/components/analytics/google-tag-manager'
@@ -132,6 +133,17 @@ export default function FinalCTA() {
                             mit Live-Marktanalysen, Echtzeit-Trading und messbarem Wachstum.
                         </p>
                     </motion.div>
+                    <div className="mt-8 flex justify-center">
+                        <div className="max-w-md w-full">
+                            <p className="text-sm font-semibold text-gray-200 mb-2">
+                                Countdown bis zum Einschreibungsschluss
+                            </p>
+                            <p className="text-sm font-semibold text-amber-400 mb-3">
+                                Nur noch wenige Plätze verfügbar
+                            </p>
+                            <Countdown targetDate="2026-03-01T00:00:00+01:00" className="text-white" />
+                        </div>
+                    </div>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-6 mb-12">
