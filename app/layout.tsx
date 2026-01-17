@@ -10,6 +10,7 @@ import { CookieBanner } from '@/components/ui/cookie-banner'
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/react'
 import { GoogleTagManager } from '@/components/analytics/google-tag-manager'
+import { MicrosoftClarity } from '@/components/analytics/microsoft-clarity'
 import { Suspense } from 'react'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -46,6 +47,7 @@ export default function RootLayout({
           <Toaster />
           <CookieBanner />
           <GoogleTagManager />
+          <MicrosoftClarity />
           <SpeedInsights />
           <Analytics />
         </body>

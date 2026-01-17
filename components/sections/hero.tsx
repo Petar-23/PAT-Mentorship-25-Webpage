@@ -213,18 +213,11 @@ export default function Hero() {
                 </div>
               </div>
               <h1 className="hidden lg:block text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 lg:leading-[1.1]">
-                Kein Videokurs: ICT{" "}
+                Dein{" "}
                 <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent">
-                  live lernen
+                  Live-Mentoring
                 </span>
-                ,{" "}
-                <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent">
-                  verstehen
-                </span>{" "}
-                und{" "}
-                <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent">
-                  anwenden
-                </span>
+                : ICT verstehen, lernen und anwenden
               </h1>
               
               <p className="hidden lg:block text-lg md:text-xl text-gray-600 leading-relaxed max-w-xl">
@@ -295,19 +288,12 @@ export default function Hero() {
                 <div className="relative overflow-hidden rounded-2xl shadow-xl ring-1 ring-gray-200/60 bg-white aspect-[3/4] sm:aspect-[4/5]">
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-900/75 via-gray-900/35 to-transparent" />
                   <div className="absolute top-4 left-4 right-4 lg:hidden z-10">
-                    <h1 className="text-2xl font-bold tracking-tight text-gray-900 leading-tight drop-shadow-sm">
-                      Kein Videokurs: ICT{" "}
+                    <h1 className="text-[21px] sm:text-2xl font-bold tracking-tight text-gray-900 leading-snug drop-shadow-sm">
+                      Dein{" "}
                       <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent">
-                        live lernen
+                        Live-Mentoring
                       </span>
-                      ,{" "}
-                      <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent">
-                        verstehen
-                      </span>{" "}
-                      und{" "}
-                      <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent">
-                        anwenden
-                      </span>
+                      : ICT verstehen, lernen und anwenden
                     </h1>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <span className="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-gray-900 ring-1 ring-white/70">
@@ -340,16 +326,16 @@ export default function Hero() {
                   />
                   <div className="absolute bottom-4 left-4 right-4 grid grid-cols-2 gap-2">
                     <div className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs font-semibold text-gray-900 ring-1 ring-white/90 border border-white/60 shadow-[0_8px_24px_rgba(15,23,42,0.2)] backdrop-blur-md">
-                      <div className="h-6 w-6 rounded-lg bg-blue-500/15 text-blue-700 flex items-center justify-center">
-                        <Users className="h-3.5 w-3.5" />
-                      </div>
-                      130+ Mentees
-                    </div>
-                    <div className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs font-semibold text-gray-900 ring-1 ring-white/90 border border-white/60 shadow-[0_8px_24px_rgba(15,23,42,0.2)] backdrop-blur-md">
                       <div className="h-6 w-6 rounded-lg bg-purple-500/15 text-purple-700 flex items-center justify-center">
                         <Award className="h-3.5 w-3.5" />
                       </div>
-                      2 Jahre Coaching
+                      2 Jahre Coaching-Erfahrung
+                    </div>
+                    <div className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs font-semibold text-gray-900 ring-1 ring-white/90 border border-white/60 shadow-[0_8px_24px_rgba(15,23,42,0.2)] backdrop-blur-md">
+                      <div className="h-6 w-6 rounded-lg bg-blue-500/15 text-blue-700 flex items-center justify-center">
+                        <Users className="h-3.5 w-3.5" />
+                      </div>
+                      130+ erfolgreiche Absolventen
                     </div>
                     <div className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs font-semibold text-gray-900 ring-1 ring-white/90 border border-white/60 shadow-[0_8px_24px_rgba(15,23,42,0.2)] backdrop-blur-md">
                       <div className="h-6 w-6 rounded-lg bg-emerald-500/15 text-emerald-700 flex items-center justify-center">
@@ -366,14 +352,14 @@ export default function Hero() {
                   </div>
                 </div>
 
-                <div className="mt-4 grid sm:grid-cols-2 gap-3">
+                <div className="mt-4 grid sm:grid-cols-2 gap-3 items-stretch">
                   <a
                     href="https://whop.com/price-action-trader-mentorship-24-d9/pat-mentorship-2025/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hidden sm:block"
+                    className="hidden sm:block h-full"
                   >
-                    <div className="rounded-xl border bg-white p-4 shadow-sm hover:bg-gray-50 transition-colors">
+                    <div className="rounded-xl border bg-white p-4 shadow-sm hover:bg-gray-50 transition-colors h-full">
                       <div className="flex items-center gap-3">
                         <Image
                           src="/images/whop-logo.png"
@@ -397,8 +383,13 @@ export default function Hero() {
                     </div>
                   </a>
 
-                  <div className="rounded-xl border bg-white p-4 shadow-sm">
-                    <p className="text-sm font-semibold text-gray-900">Langfristiger Zugang</p>
+                  <div className="rounded-xl border bg-white p-4 shadow-sm h-full">
+                    <div className="flex items-center gap-3">
+                      <div className="h-7 w-7 rounded-lg bg-emerald-500/15 text-emerald-700 flex items-center justify-center">
+                        <BadgeCheck className="h-4 w-4" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-900">Langfristiger Zugang</p>
+                    </div>
                     <p className="text-xs text-gray-600 mt-1">
                       Bleib 12 Monate dabei & erhalte dauerhaft Zugriff auf alle Materialien
                     </p>

@@ -62,10 +62,12 @@ export default function Features() {
             return (
               <Card key={feature.title} className="border-2 hover:border-blue-500/20 transition-colors">
                 <CardHeader>
-                  <div className="h-12 w-12 rounded-lg bg-blue-50 flex items-center justify-center mb-4">
-                    <Icon className="h-6 w-6 text-blue-500" />
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-12 w-12 rounded-lg bg-blue-50 flex items-center justify-center">
+                      <Icon className="h-6 w-6 text-blue-500" />
+                    </div>
+                    <CardTitle>{feature.title}</CardTitle>
                   </div>
-                  <CardTitle>{feature.title}</CardTitle>
                   <CardDescription>{feature.description}</CardDescription>
                 </CardHeader>
               </Card>
