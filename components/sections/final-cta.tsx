@@ -173,17 +173,6 @@ export default function FinalCTA() {
                     transition={{ delay: 0.2 }}
                 >
                     {ctaButton}
-                    {!isSignedIn && (
-                        <p className="mt-4 text-gray-300">
-                            <button
-                                type="button"
-                                onClick={handleScrollToDetails}
-                                className="underline underline-offset-4 hover:text-white"
-                            >
-                                Ohne Anmeldung: Details ansehen
-                            </button>
-                        </p>
-                    )}
                     
                     <p className="mt-6 text-gray-400">
                         Keine Zahlung bis zum Programmstart.

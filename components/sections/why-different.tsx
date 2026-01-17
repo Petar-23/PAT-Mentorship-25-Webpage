@@ -14,13 +14,13 @@ const features = [
   },
   {
     icon: <Calendar className="h-5 w-5 sm:h-6 sm:w-6" />,
-    title: "2-3 Live Sessions pro Woche",
-    description: "Regelmäßige Livestreams für Lektionen, Übungen und Live-Trading.",
+    title: "Live Sessions",
+    description: "2-3 Live-Sessions pro Woche für Lektionen, Übungen und Live-Trading.",
   },
   {
     icon: <Users className="h-5 w-5 sm:h-6 sm:w-6" />,
-    title: "Monatliche Q&A Live-Session",
-    description: "Am Ende jedes Monats stellst du im Livestream alle Fragen und ich beantworte sie so detailliert wie möglich.",
+    title: "Q&A Live-Session",
+    description: "Monatlicher Livestream am Monatsende für deine Fragen – klar und direkt beantwortet.",
   },
   {
     icon: <ChartSpline className="h-5 w-5 sm:h-6 sm:w-6" />,
@@ -81,12 +81,14 @@ function FeatureCard({ feature }: { feature: typeof features[0] }) {
       {/* Content */}
       <CardContent className="relative z-10 p-4 sm:p-6">
         <div className="flex flex-col h-full">
-          <div className="text-blue-500 bg-blue-50 p-2 sm:p-3 rounded-lg w-fit mb-3 sm:mb-4">
-            {feature.icon}
+          <div className="flex items-center gap-3 mb-3 sm:mb-4">
+            <div className="text-blue-500 bg-blue-50 p-2 sm:p-3 rounded-lg">
+              {feature.icon}
+            </div>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+              {feature.title}
+            </h3>
           </div>
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
-            {feature.title}
-          </h3>
           <p className="text-sm sm:text-base text-gray-600">
             {feature.description}
           </p>
