@@ -1,6 +1,6 @@
 // src/components/sections/final-cta.tsx
 "use client"
-import { motion } from "framer-motion"
+import { motion } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Users, Clock, Trophy } from "lucide-react"
@@ -126,7 +126,9 @@ export default function FinalCTA() {
                     >
                         <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
                             Deine Trading-Reise <br />
-                            Beginnt im März 2026
+                            <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent">
+                                Beginnt im März 2026
+                            </span>
                         </h2>
                         <p className="text-xl text-gray-300 max-w-2xl mx-auto">
                             Werde einer von 100 ambitionierten Tradern und erlebe ein transformatives Jahr 
@@ -135,18 +137,15 @@ export default function FinalCTA() {
                     </motion.div>
                     <div className="mt-8 flex justify-center">
                         <div className="max-w-md w-full">
-                            <p className="text-sm font-semibold text-gray-200 mb-2">
-                                Countdown bis zum Einschreibungsschluss
+                            <p className="text-sm text-gray-200 mb-3">
+                                Verbleibende Zeit zur Anmeldung in die Warteliste
                             </p>
-                            <p className="text-sm font-semibold text-amber-400 mb-3">
-                                Nur noch wenige Plätze verfügbar
-                            </p>
-                            <Countdown targetDate="2026-03-01T00:00:00+01:00" className="text-white" />
+                            <Countdown targetDate="2026-03-01T00:00:00+01:00" variant="dark" />
                         </div>
                     </div>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-6 mb-12">
+                <div className="hidden md:grid md:grid-cols-3 gap-6 mb-12">
                     {[
                         {
                             icon: <Users className="h-8 w-8 text-blue-400 mb-4" />,
@@ -179,7 +178,7 @@ export default function FinalCTA() {
                 </div>
 
                 <motion.div
-                    className="text-center"
+                    className="text-center mt-8 md:mt-0"
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.2 }}

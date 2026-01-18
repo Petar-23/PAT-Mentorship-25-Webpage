@@ -143,6 +143,20 @@ export default function Hero() {
     }
   }
 
+  const handleScrollToMentorTarget = (targetName: string) => {
+    const viewport = isMobile ? 'mobile' : 'desktop'
+    const selector = `[data-mentor-target="${targetName}"][data-mentor-viewport="${viewport}"]`
+    const target = document.querySelector(selector)
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
+    const fallback = document.querySelector(`[data-mentor-target="${targetName}"]`)
+    if (fallback) {
+      fallback.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
   return (
     <section 
       ref={containerRef}
@@ -266,7 +280,7 @@ export default function Hero() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-3 pt-4 lg:pt-6 text-center">
+              <div className="flex flex-wrap justify-center gap-3 pt-4 lg:pt-3 text-center lg:justify-start lg:text-left">
                 <div className="min-w-[110px] flex-1 sm:flex-initial">
                   <p className="text-xl lg:text-3xl font-bold text-gray-900">€150</p>
                   <p className="text-xs sm:text-sm text-gray-600">/Monat (inkl. MwSt.)</p>
@@ -281,14 +295,12 @@ export default function Hero() {
                 </div>
               </div>
 
-              <div className="pt-6 hidden lg:block">
-                <p className="text-sm font-semibold text-gray-700 mb-3">
-                  Countdown bis zum Einschreibungsschluss
-                  <span className="ml-2 text-sm font-semibold text-amber-600">
-                    Nur noch wenige Plätze verfügbar
-                  </span>
-                </p>
+              <div className="pt-3 hidden lg:block text-left">
+                
                 <Countdown targetDate="2026-03-01T00:00:00+01:00" />
+                <p className="text-sm text-gray-700 mt-3">
+                  Verbleibende Zeit zur Einschreibung in die Warteliste
+                </p>
               </div>
             </div>
 
@@ -336,39 +348,52 @@ export default function Hero() {
                     priority
                   />
                   <div className="absolute bottom-4 left-4 right-4 grid grid-cols-2 gap-2">
-                    <div className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs font-semibold text-gray-900 ring-1 ring-white/90 border border-white/60 shadow-[0_8px_24px_rgba(15,23,42,0.2)] backdrop-blur-md">
+                    <button
+                      type="button"
+                      onClick={() => handleScrollToMentorTarget('experience')}
+                      className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs font-semibold text-gray-900 ring-1 ring-white/90 border border-white/60 shadow-[0_8px_24px_rgba(15,23,42,0.2)] backdrop-blur-md hover:bg-white/90 transition"
+                    >
                       <div className="h-6 w-6 rounded-lg bg-purple-500/15 text-purple-700 flex items-center justify-center">
                         <Award className="h-3.5 w-3.5" />
                       </div>
                       2 Jahre Coaching-Erfahrung
-                    </div>
-                    <div className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs font-semibold text-gray-900 ring-1 ring-white/90 border border-white/60 shadow-[0_8px_24px_rgba(15,23,42,0.2)] backdrop-blur-md">
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleScrollToMentorTarget('mentees')}
+                      className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs font-semibold text-gray-900 ring-1 ring-white/90 border border-white/60 shadow-[0_8px_24px_rgba(15,23,42,0.2)] backdrop-blur-md hover:bg-white/90 transition"
+                    >
                       <div className="h-6 w-6 rounded-lg bg-blue-500/15 text-blue-700 flex items-center justify-center">
                         <Users className="h-3.5 w-3.5" />
                       </div>
                       130+ erfolgreiche Absolventen
-                    </div>
-                    <div className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs font-semibold text-gray-900 ring-1 ring-white/90 border border-white/60 shadow-[0_8px_24px_rgba(15,23,42,0.2)] backdrop-blur-md">
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleScrollToMentorTarget('performance')}
+                      className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs font-semibold text-gray-900 ring-1 ring-white/90 border border-white/60 shadow-[0_8px_24px_rgba(15,23,42,0.2)] backdrop-blur-md hover:bg-white/90 transition"
+                    >
                       <div className="h-6 w-6 rounded-lg bg-emerald-500/15 text-emerald-700 flex items-center justify-center">
                         <LineChart className="h-3.5 w-3.5" />
                       </div>
                       Performance sichtbar
-                    </div>
-                    <div className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs font-semibold text-gray-900 ring-1 ring-white/90 border border-white/60 shadow-[0_8px_24px_rgba(15,23,42,0.2)] backdrop-blur-md">
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleScrollToMentorTarget('payout')}
+                      className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs font-semibold text-gray-900 ring-1 ring-white/90 border border-white/60 shadow-[0_8px_24px_rgba(15,23,42,0.2)] backdrop-blur-md hover:bg-white/90 transition"
+                    >
                       <div className="h-6 w-6 rounded-lg bg-amber-500/15 text-amber-700 flex items-center justify-center">
                         <BadgeCheck className="h-3.5 w-3.5" />
                       </div>
                       Payout‑Nachweis
-                    </div>
+                    </button>
                   </div>
                 </div>
 
                 <div className="mt-4 lg:hidden text-center">
-                  <p className="text-sm font-semibold text-gray-700 mb-2">
-                    Countdown bis zum Einschreibungsschluss
-                  </p>
-                  <p className="text-xs text-amber-600 mb-3 font-semibold">
-                    Nur noch wenige Plätze verfügbar
+                  <p className="text-xs text-gray-700 mb-2">
+                    Verbleibende Zeit zur Einschreibung in die Warteliste
                   </p>
                   <Countdown targetDate="2026-03-01T00:00:00+01:00" />
                 </div>

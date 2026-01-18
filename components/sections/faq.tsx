@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence } from "motion/react"
 import { ChevronDown } from "lucide-react"
 
 const faqs = [
@@ -115,7 +115,7 @@ function FAQItem({ question, answer, category, isOpen, toggleOpen }: FAQItemProp
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
             className="overflow-hidden"
           >
             <p className="pb-6 text-gray-600">

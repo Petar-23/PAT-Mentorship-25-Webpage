@@ -29,7 +29,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
 }
 
 export default function RootLayout({
@@ -41,11 +40,17 @@ export default function RootLayout({
     <ClerkProvider afterSignOutUrl={"/"} localization={deDE} signInFallbackRedirectUrl="/dashboard" signUpFallbackRedirectUrl="/dashboard">
       <html lang="en" className="h-full scroll-smooth">
         <body className={`${inter.className} h-full overflow-x-hidden`}>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-slate-900 focus:shadow-lg"
+          >
+            Zum Inhalt springen
+          </a>
           <div className="min-h-full flex flex-col">
             <Suspense fallback={<div className="h-16 w-full" />}>
               <Navbar />
             </Suspense>
-            <main className="flex-1 min-h-0">
+            <main id="main-content" className="flex-1 min-h-0">
               {children}
             </main>
             <FooterGate />
