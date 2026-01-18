@@ -22,6 +22,10 @@ const config = {
   	},
   	extend: {
   		keyframes: {
+  				'toast-progress': {
+  					from: { transform: 'scaleX(1)' },
+  					to: { transform: 'scaleX(0)' },
+  				},
   			'accordion-down': {
   				from: {
   					height: '0'
@@ -84,6 +88,7 @@ const config = {
   			},
   		},
   		animation: {
+  				'toast-progress': 'toast-progress var(--toast-duration, 6s) linear forwards',
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
   			'shine': 'shine 8s ease-in-out infinite',
