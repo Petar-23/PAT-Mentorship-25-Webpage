@@ -287,6 +287,8 @@ export default function MentorSection() {
           </div>
 
           <div>
+            <span data-mentor-target="experience" data-mentor-viewport="mobile" />
+            <span data-mentor-target="mentees" data-mentor-viewport="mobile" />
             <p className="text-base sm:text-lg text-gray-300 leading-relaxed mb-4">
               Ich habe mich intensiv mit dem Trading nach 
               ICT&apos;s Smart Money Konzepten beschäftigt und über 1000 
@@ -305,16 +307,19 @@ export default function MentorSection() {
           </div>
 
           <div className="space-y-6 sm:space-y-8">
-            <TradingPerformance />
+            <div data-mentor-target="performance" data-mentor-viewport="mobile">
+              <TradingPerformance />
+            </div>
 
-            <CardWithMatrix
-              icon={<LineChart className="h-full w-full" />}
-              title="Topstep Payout"
-              iconColor="text-green-400"
-              rainColor="#34D399"
-              gradientColor="rgba(52, 211, 153, 0.2)"
-              className="overflow-hidden"
-            >
+            <div data-mentor-target="payout" data-mentor-viewport="mobile">
+              <CardWithMatrix
+                icon={<LineChart className="h-full w-full" />}
+                title="Topstep Payout"
+                iconColor="text-green-400"
+                rainColor="#34D399"
+                gradientColor="rgba(52, 211, 153, 0.2)"
+                className="overflow-hidden"
+              >
               <a
                 href="https://x.com/Topstep/status/1960336160917479927?s=20"
                 target="_blank"
@@ -345,7 +350,8 @@ export default function MentorSection() {
                   </div>
                 </div>
               </a>
-            </CardWithMatrix>
+              </CardWithMatrix>
+            </div>
           </div>
 
           <CardWithMatrix
@@ -367,6 +373,7 @@ export default function MentorSection() {
                 />
                 <div className="absolute inset-0 bg-black/40" />
                 <Button
+                  aria-label="Video abspielen"
                   onClick={() => {
                     window.open('https://www.youtube.com/watch?v=63V_7Ji_omw', '_blank')
                   }}
@@ -399,16 +406,19 @@ export default function MentorSection() {
         <div className="hidden lg:grid lg:grid-cols-2 gap-8 sm:gap-12 items-start">
           {/* Left Column - Text and Trading Performance */}
           <div className="space-y-6 sm:space-y-8">
-            <TradingPerformance />
+            <div data-mentor-target="performance" data-mentor-viewport="desktop">
+              <TradingPerformance />
+            </div>
 
-            <CardWithMatrix
-              icon={<LineChart className="h-full w-full" />}
-              title="Topstep Payout"
-              iconColor="text-green-400"
-              rainColor="#34D399"
-              gradientColor="rgba(52, 211, 153, 0.2)"
-              className="overflow-hidden"
-            >
+            <div data-mentor-target="payout" data-mentor-viewport="desktop">
+              <CardWithMatrix
+                icon={<LineChart className="h-full w-full" />}
+                title="Topstep Payout"
+                iconColor="text-green-400"
+                rainColor="#34D399"
+                gradientColor="rgba(52, 211, 153, 0.2)"
+                className="overflow-hidden"
+              >
               <a
                 href="https://x.com/Topstep/status/1960336160917479927?s=20"
                 target="_blank"
@@ -439,7 +449,8 @@ export default function MentorSection() {
                   </div>
                 </div>
               </a>
-            </CardWithMatrix>
+              </CardWithMatrix>
+            </div>
 
             <CardWithMatrix
               icon={<Play className="h-full w-full" />}
@@ -460,6 +471,7 @@ export default function MentorSection() {
                   />
                   <div className="absolute inset-0 bg-black/40" />
                   <Button
+                    aria-label="Video abspielen"
                     onClick={() => {
                       window.open('https://www.youtube.com/watch?v=63V_7Ji_omw', '_blank')
                     }}
@@ -535,6 +547,8 @@ export default function MentorSection() {
               </div>
 
               <div className="mt-6">
+                <span data-mentor-target="experience" data-mentor-viewport="desktop" />
+                <span data-mentor-target="mentees" data-mentor-viewport="desktop" />
                 <p className="text-base sm:text-lg text-gray-300 leading-relaxed mb-4">
                   Ich habe mich intensiv mit dem Trading nach 
                   ICT&apos;s Smart Money Konzepten beschäftigt und über 1000 
