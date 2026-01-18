@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import LeadMagnetHero from '@/components/sections/lead-magnet-hero'
 import LeadMagnetSteps from '@/components/sections/lead-magnet-steps'
 import LeadMagnetBenefits from '@/components/sections/lead-magnet-benefits'
@@ -16,7 +17,9 @@ export default function QuickGuidePage() {
         <LeadMagnetHero />
         <LeadMagnetSteps />
         <LeadMagnetBenefits />
-        <LeadMagnetForm />
+        <Suspense fallback={null}>
+          <LeadMagnetForm />
+        </Suspense>
       </main>
     </>
   )
