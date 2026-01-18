@@ -39,7 +39,7 @@ const objections = [
 
 export default function LeadMagnetBenefits() {
   return (
-    <section className="bg-white px-3 py-16 sm:px-6 sm:py-24">
+    <section className="bg-white px-5 py-16 sm:px-6 sm:py-24">
       <div className="mx-auto w-full max-w-6xl">
         <div className="grid gap-10 lg:grid-cols-2">
           <div>
@@ -57,10 +57,11 @@ export default function LeadMagnetBenefits() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Button
                 asChild
-                variant="outline"
-                className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+                className="bg-emerald-600 text-white hover:bg-emerald-700"
               >
-                <a href="#lead-magnet-form">Jetzt Kostenlos Starten</a>
+                <a href="#lead-magnet-form">
+                  3‑Tage‑Plan & Checkliste Jetzt Sichern
+                </a>
               </Button>
               <p className="text-pretty text-xs text-neutral-500">
                 Die Inhalte kommen ausschließlich per E‑Mail.

@@ -23,7 +23,7 @@ const steps = [
 
 export default function LeadMagnetSteps() {
   return (
-    <section className="bg-neutral-50 px-3 py-16 sm:px-6 sm:py-24">
+    <section className="bg-neutral-50 px-5 py-16 sm:px-6 sm:py-24">
       <div className="mx-auto w-full max-w-6xl">
         <div className="flex flex-col gap-4">
           <p className="text-pretty text-sm font-medium text-emerald-700">
@@ -33,7 +33,7 @@ export default function LeadMagnetSteps() {
             Drei Klare Schritte, Ein Ziel
           </h2>
           <p className="text-pretty text-base text-neutral-700 sm:text-lg">
-            Jeden Tag ein klares Ergebnis, delivered per E‑Mail.
+            Drei Videos statt 700+ ICT‑Videos, geliefert per E‑Mail.
           </p>
         </div>
         <div className="mt-10 grid gap-6 lg:grid-cols-3">
