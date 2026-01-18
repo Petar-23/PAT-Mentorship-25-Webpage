@@ -13,7 +13,7 @@ export default function QuickGuidePage() {
       >
         Zum Inhalt springen
       </a>
-      <main id="main" className="min-h-dvh bg-white text-neutral-950">
+      <main id="main" className="min-h-dvh bg-white text-neutral-950 overflow-x-hidden">
         <LeadMagnetHero />
         <LeadMagnetSteps />
         <LeadMagnetBenefits />
