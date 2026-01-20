@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { Menu, X, Home, Settings, Notebook, Gauge } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -26,6 +27,7 @@ export function Navbar() {
 
   const isMentorship = pathname?.startsWith('/mentorship')
   const isDashboard = pathname === '/dashboard'
+  const isQuickGuide = pathname === '/quick-guide'
   const isAdmin = user?.organizationMemberships?.some(
     membership => membership.role === 'org:admin'
   )
@@ -356,7 +358,12 @@ export function Navbar() {
         <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-gray-300 to-transparent animate-gradient-x" />
       </header>
 
-      <div className="bg-gray-100 text-gray-600 text-[10px] sm:text-xs md:text-sm px-3 sm:px-4 py-2 border-b border-gray-200 text-center">
+      <div
+        className={cn(
+          'bg-gray-100 text-gray-600 text-[10px] sm:text-xs md:text-sm px-3 sm:px-4 py-2 border-b border-gray-200 text-center',
+          isQuickGuide && 'hidden md:block'
+        )}
+      >
         Trading ist riskant und die meisten Daytrader verlieren Geld. Petar&apos;s Ergebnisse sind nicht typisch.
         Alle Informationen dienen nur Bildungszwecken und stellen keine Anlageberatung oder Kauf-/Verkaufsempfehlungen dar.
       </div>

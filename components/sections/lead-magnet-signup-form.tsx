@@ -3,6 +3,7 @@
 import type { ChangeEvent, FormEvent } from 'react'
 import { useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -24,6 +25,9 @@ type LeadMagnetSignupFormProps = {
   idPrefix?: string
 }
 
+const WHOP_REVIEWS_URL =
+  'https://whop.com/price-action-trader-mentorship-24-d9/pat-mentorship-2025/'
+
 const isValidEmail = (value: string) => {
   const email = value.trim()
   if (!email) return false
@@ -31,7 +35,7 @@ const isValidEmail = (value: string) => {
 }
 
 export default function LeadMagnetSignupForm({
-  buttonLabel = '3‑Tage‑Plan & Checkliste Jetzt Sichern',
+  buttonLabel = 'Modell 22 Checkliste Jetzt Sichern',
   className,
   idPrefix = 'lead-magnet',
 }: LeadMagnetSignupFormProps) {
@@ -198,11 +202,28 @@ export default function LeadMagnetSignupForm({
           </p>
         ) : null}
       </div>
+      <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+        <span className="flex items-center gap-0.5">
+          {[1, 2, 3, 4, 5].map(star => (
+            <Star
+              key={star}
+              className="h-3.5 w-3.5 fill-amber-400 text-amber-400"
+              aria-hidden="true"
+            />
+          ))}
+        </span>
+        <a
+          href={WHOP_REVIEWS_URL}
+          className="text-blue-700 underline underline-offset-4"
+        >
+          5,0/5 • Whop‑Bewertungen
+        </a>
+      </div>
       <Button
         type="submit"
         size="lg"
         className={cn(
-          'w-full touch-manipulation bg-emerald-600 text-white hover:bg-emerald-700',
+          'w-full touch-manipulation bg-blue-600 text-white hover:bg-blue-700',
           status === 'success' && 'opacity-80'
         )}
         disabled={status === 'submitting'}
