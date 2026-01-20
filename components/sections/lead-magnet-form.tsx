@@ -28,7 +28,7 @@ export default function LeadMagnetForm() {
               <li>• Einfache Abmeldung mit einem Klick</li>
             </ul>
           </div>
-          <Card className="min-w-0 w-full border-emerald-200 p-6 sm:p-8">
+          <Card className="min-w-0 w-full border-blue-200 p-6 sm:p-8">
             <h3 className="text-balance text-xl font-semibold text-neutral-950">
               Kostenlos Anmelden
             </h3>

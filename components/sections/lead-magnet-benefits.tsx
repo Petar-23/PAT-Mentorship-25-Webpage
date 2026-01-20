@@ -43,7 +43,7 @@ export default function LeadMagnetBenefits() {
       <div className="mx-auto w-full max-w-6xl">
         <div className="grid gap-10 lg:grid-cols-2">
           <div>
-            <p className="text-pretty text-sm font-medium text-emerald-700">
+            <p className="text-pretty text-sm font-medium text-blue-700">
               Warum Diese 3 Videos Funktionieren
             </p>
             <h2 className="text-balance mt-4 text-3xl font-semibold text-neutral-950 sm:text-4xl">
@@ -57,10 +57,10 @@ export default function LeadMagnetBenefits() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Button
                 asChild
-                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                className="bg-blue-600 text-white hover:bg-blue-700"
               >
                 <a href="#lead-magnet-form">
-                  3‑Tage‑Plan & Checkliste Jetzt Sichern
+                  Modell 22 Checkliste Jetzt Sichern
                 </a>
               </Button>
               <p className="text-pretty text-xs text-neutral-500">
@@ -70,7 +70,7 @@ export default function LeadMagnetBenefits() {
           </div>
           <div className="space-y-4">
             {benefits.map(benefit => (
-              <Card key={benefit.title} className="border-emerald-100 p-6">
+              <Card key={benefit.title} className="border-blue-100 p-6">
                 <h3 className="text-balance text-lg font-semibold text-neutral-950">
                   {benefit.title}
                 </h3>
