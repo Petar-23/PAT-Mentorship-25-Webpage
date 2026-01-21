@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { HeroPill } from '@/components/ui/hero-pill'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 
@@ -202,23 +203,24 @@ export default function LeadMagnetSignupForm({
           </p>
         ) : null}
       </div>
-      <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
-        <span className="flex items-center gap-0.5">
-          {[1, 2, 3, 4, 5].map(star => (
-            <Star
-              key={star}
-              className="h-3.5 w-3.5 fill-amber-400 text-amber-400"
-              aria-hidden="true"
-            />
-          ))}
-        </span>
-        <a
-          href={WHOP_REVIEWS_URL}
-          className="text-blue-700 underline underline-offset-4"
-        >
-          5,0/5 • Whop‑Bewertungen
-        </a>
-      </div>
+      <HeroPill
+        href={WHOP_REVIEWS_URL}
+        isExternal
+        variant="amber"
+        size="sm"
+        announcement={
+          <span className="flex items-center gap-0.5">
+            {[1, 2, 3, 4, 5].map(star => (
+              <Star
+                key={star}
+                className="h-3 w-3 fill-amber-500 text-amber-500"
+                aria-hidden="true"
+              />
+            ))}
+          </span>
+        }
+        label="5,0/5 • Whop‑Bewertungen"
+      />
       <Button
         type="submit"
         size="lg"

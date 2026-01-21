@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { HeroPill } from '@/components/ui/hero-pill'
 
 const benefits = [
   {
@@ -10,7 +10,7 @@ const benefits = [
   {
     title: 'Klare Entscheidungsvorlage',
     description:
-      'Die Checkliste und der Trading‑Plan geben dir eine klare Abfolge, bevor du auf „Trade“ klickst.',
+      'Die Checkliste und der Trading‑Plan geben dir eine klare Abfolge, bevor du auf „Trade" klickst.',
   },
   {
     title: 'Strukturierter Fortschritt',
@@ -39,17 +39,21 @@ const objections = [
 
 export default function LeadMagnetBenefits() {
   return (
-    <section className="bg-white px-5 py-16 sm:px-6 sm:py-24">
+    <section className="px-5 py-16 sm:px-6 sm:py-24">
       <div className="mx-auto w-full max-w-6xl">
         <div className="grid gap-10 lg:grid-cols-2">
           <div>
-            <p className="text-pretty text-sm font-medium text-blue-700">
-              Warum Diese 3 Videos Funktionieren
-            </p>
-            <h2 className="text-balance mt-4 text-3xl font-semibold text-neutral-950 sm:text-4xl">
+            <div className="w-fit">
+              <HeroPill 
+                variant="dark"
+                announcement="✨" 
+                label="Warum Diese 3 Videos Funktionieren" 
+              />
+            </div>
+            <h2 className="text-balance mt-4 text-3xl font-semibold text-white sm:text-4xl">
               Von Konzept Zu Handlung
             </h2>
-            <p className="text-pretty mt-4 text-base text-neutral-700 sm:text-lg">
+            <p className="text-pretty mt-4 text-base text-neutral-300 sm:text-lg">
               Der größte Fehler ist es, zu schnell zu viel zu wollen und die
               Grundlagen zu überspringen. Du bekommst die wenigen Bausteine, die
               den Unterschied machen, und eine klare Reihenfolge, wie du sie nutzt.
@@ -63,38 +67,44 @@ export default function LeadMagnetBenefits() {
                   Modell 22 Checkliste Jetzt Sichern
                 </a>
               </Button>
-              <p className="text-pretty text-xs text-neutral-500">
+              <p className="text-pretty text-xs text-neutral-400">
                 Die Inhalte kommen ausschließlich per E‑Mail.
               </p>
             </div>
           </div>
           <div className="space-y-4">
             {benefits.map(benefit => (
-              <Card key={benefit.title} className="border-blue-100 p-6">
-                <h3 className="text-balance text-lg font-semibold text-neutral-950">
+              <div 
+                key={benefit.title} 
+                className="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm"
+              >
+                <h3 className="text-balance text-lg font-semibold text-white">
                   {benefit.title}
                 </h3>
-                <p className="text-pretty mt-2 text-sm text-neutral-600">
+                <p className="text-pretty mt-2 text-sm text-neutral-300">
                   {benefit.description}
                 </p>
-              </Card>
+              </div>
             ))}
           </div>
         </div>
         <div className="mt-14">
-          <h2 className="text-balance text-2xl font-semibold text-neutral-950">
+          <h2 className="text-balance text-2xl font-semibold text-white">
             Häufige Fragen
           </h2>
           <div className="mt-6 grid gap-4 lg:grid-cols-3">
             {objections.map(item => (
-              <Card key={item.title} className="p-6">
-                <h3 className="text-balance text-base font-semibold text-neutral-950">
+              <div 
+                key={item.title} 
+                className="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm"
+              >
+                <h3 className="text-balance text-base font-semibold text-white">
                   {item.title}
                 </h3>
-                <p className="text-pretty mt-2 text-sm text-neutral-600">
+                <p className="text-pretty mt-2 text-sm text-neutral-300">
                   {item.answer}
                 </p>
-              </Card>
+              </div>
             ))}
           </div>
         </div>

@@ -1,31 +1,28 @@
 import { Suspense } from 'react'
 import Image from 'next/image'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { GlassCard } from '@/components/ui/glass-card'
+import { HeroPill } from '@/components/ui/hero-pill'
 import LeadMagnetSignupForm from '@/components/sections/lead-magnet-signup-form'
-import styles from '@/components/sections/lead-magnet-cover.module.css'
+import { AuroraBackground } from '@/components/ui/aurora-background'
 
-const coverMockupSrc = '/images/lead-magnet/ICT%20QUICK-START.png'
-const videoThumbnailSrc = '/images/lead-magnet/Video_01_Thumb_02.png'
+const videoThumbnailSrc = '/images/lead-magnet/thumbnail_002.png'
 
 export default function LeadMagnetHero() {
   return (
-    <section className="overflow-hidden bg-white px-5 py-10 sm:px-6 sm:py-20">
+    <AuroraBackground className="h-auto min-h-0 overflow-hidden bg-white px-5 py-10 sm:px-6 sm:py-20">
       <div className="mx-auto w-full min-w-0 max-w-6xl">
         <div className="lg:hidden">
-          <p className="text-pretty text-sm font-medium text-blue-700">
-            Kostenloser 3‑Tage‑Quick‑Start
-          </p>
+          <div className="w-fit">
+            <HeroPill 
+              announcement="🚀" 
+              label="Kostenloser 3‑Tage‑Quick‑Start" 
+            />
+          </div>
           <h1 className="text-balance mt-4 text-3xl font-semibold text-neutral-950">
             Dein ICT Modell 22 Quick‑Start: In 3 Tagen zur Trading‑Checkliste
           </h1>
-          <ul className="mt-6 space-y-2 text-pretty text-sm text-neutral-700">
-            <li>• Video 1: Die 3 wichtigsten ICT‑Konzepte (Keine 700 Videos!)</li>
-            <li>• Video 2: Das ICT Modell 22 Setup und die FVG‑Einstiegstechnik</li>
-            <li>• Video 3: Dein fertiger Trading‑Plan + Modell 22 Checkliste (PDF)</li>
-          </ul>
           <div className="mt-6 space-y-4">
-            <Card className="border-blue-100 p-4">
+            <GlassCard>
               <div className="overflow-hidden rounded-xl border-4 border-blue-200">
                 <Image
                   src={videoThumbnailSrc}
@@ -36,22 +33,7 @@ export default function LeadMagnetHero() {
                   sizes="100vw"
                 />
               </div>
-            </Card>
-            <Card className="min-w-0 border-transparent p-4 shadow-none">
-              <p className="text-pretty text-xs font-medium text-neutral-500">
-                Bonus (PDF):
-              </p>
-              <div className="mt-3 flex items-center justify-center">
-                <div
-                  className={styles.book}
-                  style={{ ['--cover-url' as string]: `url("${coverMockupSrc}")` }}
-                >
-                  <div className={styles.cover} />
-                </div>
-              </div>
-            </Card>
-            <Card className="border-blue-200 p-6">
-              <h2 className="text-balance text-xl font-semibold text-neutral-950">
+              <h2 className="text-balance text-xl font-semibold text-neutral-950 mt-6">
                 So Sieht Dein Start Aus
               </h2>
               <div className="mt-4 space-y-3 text-sm text-neutral-700">
@@ -74,9 +56,9 @@ export default function LeadMagnetHero() {
                   </p>
                 </div>
               </div>
-            </Card>
+            </GlassCard>
             <div id="lead-magnet-inline-form">
-              <Card className="min-w-0 border-blue-200 p-5">
+              <GlassCard>
                 <p className="text-pretty text-sm font-medium text-neutral-900">
                   Starte Jetzt Kostenlos
                 </p>
@@ -86,37 +68,29 @@ export default function LeadMagnetHero() {
                 <Suspense fallback={null}>
                   <LeadMagnetSignupForm className="mt-4" idPrefix="lead-magnet-inline" />
                 </Suspense>
-              </Card>
-              <div className="mt-3 text-xs text-neutral-500">
-                Versand per E‑Mail. Abmeldung jederzeit möglich.
-              </div>
+              </GlassCard>
             </div>
           </div>
         </div>
-        <div className="hidden lg:grid min-w-0 gap-8 lg:grid-cols-2">
-          <div className="min-w-0">
-            <p className="text-pretty text-sm font-medium text-blue-700">
-              Kostenloser 3‑Tage‑Quick‑Start
-            </p>
+        <div className="hidden lg:grid min-w-0 gap-16 lg:grid-cols-2">
+          <div className="min-w-0 flex flex-col justify-between">
+            <div className="w-fit">
+              <HeroPill 
+                announcement="🚀" 
+                label="Kostenloser 3‑Tage‑Quick‑Start" 
+              />
+            </div>
             <h1 className="text-balance mt-4 text-4xl font-semibold text-neutral-950 sm:text-5xl">
               Dein ICT Modell 22 Quick‑Start: In 3 Tagen zur Trading‑Checkliste
             </h1>
             <p className="text-pretty mt-4 text-lg text-neutral-700">
-              Vergiss die 700+ ICT‑Videos. Wir bringen dich in 3 Tagen direkt zum
+              Vergiss die 700+ ICT‑Videos. Ich bringe dich in 3 Tagen direkt zum
               ICT Modell 22 – dem einfachen Trading‑Setup, das du sofort anwenden
               kannst. Keine unnötige Theorie, nur das, was zählt: Modell,
               Trading‑Plan und Checkliste.
             </p>
-            <ul className="mt-6 space-y-2 text-pretty text-sm text-neutral-700">
-              <li>• Video 1: Die 3 wichtigsten ICT‑Konzepte (Keine 700 Videos!)</li>
-              <li>• Video 2: Das ICT Modell 22 Setup und die FVG‑Einstiegstechnik</li>
-              <li>• Video 3: Dein fertiger Trading‑Plan + Modell 22 Checkliste (PDF)</li>
-            </ul>
-            <div className="mt-8 flex flex-wrap items-center gap-3 text-xs text-neutral-500">
-              <span>Versand per E‑Mail. Abmeldung jederzeit möglich.</span>
-            </div>
-            <div className="mt-8 grid gap-4 lg:grid-cols-[1fr_auto]" id="lead-magnet-inline-form">
-              <Card className="min-w-0 border-blue-200 p-5">
+            <div className="mt-8 max-w-sm" id="lead-magnet-inline-form">
+              <GlassCard>
                 <p className="text-pretty text-sm font-medium text-neutral-900">
                   Starte Jetzt Kostenlos
                 </p>
@@ -126,27 +100,11 @@ export default function LeadMagnetHero() {
                 <Suspense fallback={null}>
                   <LeadMagnetSignupForm className="mt-4" idPrefix="lead-magnet-inline" />
                 </Suspense>
-                <div className="mt-3 text-xs text-neutral-500">
-                  Versand per E‑Mail. Abmeldung jederzeit möglich.
-                </div>
-              </Card>
-              <Card className="min-w-0 border-transparent p-4 shadow-none">
-                <p className="text-pretty text-xs font-medium text-neutral-500">
-                  Bonus (PDF):
-                </p>
-                <div className="mt-3 flex items-center justify-center">
-                  <div
-                    className={styles.book}
-                    style={{ ['--cover-url' as string]: `url("${coverMockupSrc}")` }}
-                  >
-                    <div className={styles.cover} />
-                  </div>
-                </div>
-              </Card>
+              </GlassCard>
             </div>
           </div>
-          <div className="space-y-4 min-w-0">
-            <Card className="border-blue-100 p-4">
+          <div className="min-w-0">
+            <GlassCard>
               <div className="overflow-hidden rounded-xl border-4 border-blue-200">
                 <Image
                   src={videoThumbnailSrc}
@@ -157,9 +115,7 @@ export default function LeadMagnetHero() {
                   sizes="(max-width: 1024px) 100vw, 520px"
                 />
               </div>
-            </Card>
-            <Card className="border-blue-200 p-6 sm:p-8">
-              <h2 className="text-balance text-2xl font-semibold text-neutral-950">
+              <h2 className="text-balance text-2xl font-semibold text-neutral-950 mt-6">
                 So Sieht Dein Start Aus
               </h2>
               <p className="text-pretty mt-3 text-base text-neutral-600">
@@ -186,10 +142,10 @@ export default function LeadMagnetHero() {
                   </p>
                 </div>
               </div>
-            </Card>
+            </GlassCard>
           </div>
         </div>
       </div>
-    </section>
+    </AuroraBackground>
   )
 }
