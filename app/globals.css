@@ -321,4 +321,33 @@
   -webkit-mask-composite: xor;
   mask-composite: exclude;
 }
+
+/* Mobile Performance Optimizations */
+@media (max-width: 1023px), (hover: none) and (pointer: coarse) {
+  /* Disable backdrop-filter on mobile for better performance */
+  .glass-button,
+  .glass-card {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: oklch(from var(--background) l c h / 85%);
+  }
+
+  /* Disable border animations on mobile */
+  .glass-button:after,
+  .glass-card:after {
+    display: none;
+  }
+
+  /* Disable shadow animations on mobile */
+  .glass-button-shadow,
+  .glass-card-shadow {
+    display: none;
+  }
+
+  /* Simplify transitions */
+  .glass-button-wrap,
+  .glass-card-wrap {
+    transition: none;
+  }
+}
   
