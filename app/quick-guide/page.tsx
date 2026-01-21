@@ -1,8 +1,16 @@
+"use client"
+
 import { Suspense } from 'react'
+import dynamic from 'next/dynamic'
 import LeadMagnetHero from '@/components/sections/lead-magnet-hero'
 import LeadMagnetSteps from '@/components/sections/lead-magnet-steps'
 import LeadMagnetBenefits from '@/components/sections/lead-magnet-benefits'
 import LeadMagnetForm from '@/components/sections/lead-magnet-form'
+
+const AnimatedShaderBackground = dynamic(
+  () => import('@/components/ui/animated-shader-background'),
+  { ssr: false }
+)
 
 export default function QuickGuidePage() {
   return (
@@ -15,8 +23,10 @@ export default function QuickGuidePage() {
       </a>
       <main id="main" className="min-h-dvh bg-white text-neutral-950 overflow-x-hidden">
         <LeadMagnetHero />
-        <LeadMagnetSteps />
-        <LeadMagnetBenefits />
+        <AnimatedShaderBackground>
+          <LeadMagnetSteps />
+          <LeadMagnetBenefits />
+        </AnimatedShaderBackground>
         <Suspense fallback={null}>
           <LeadMagnetForm />
         </Suspense>

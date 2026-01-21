@@ -2,6 +2,7 @@ import type { Config } from "tailwindcss";
 import svgToDataUri from "mini-svg-data-uri";
 import animatePlugin from "tailwindcss-animate";
 import plugin from "tailwindcss/plugin";
+import flattenColorPalette from "tailwindcss/lib/util/flattenColorPalette";
 
 const config = {
   darkMode: ["class"],
@@ -76,26 +77,35 @@ const config = {
   					'background-position': '0% 100%'
   				}
   			},
-  			'gradient-x': {
-  				'0%, 100%': {
-  					'background-size': '200% 100%',
-  					'background-position': 'left center'
-  				},
-  				'50%': {
-  					'background-size': '200% 100%',
-  					'background-position': 'right center'
-  				}
-  			},
+		'gradient-x': {
+				'0%, 100%': {
+					'background-size': '200% 100%',
+					'background-position': 'left center'
+				},
+				'50%': {
+					'background-size': '200% 100%',
+					'background-position': 'right center'
+				}
+			},
+			'aurora': {
+				from: {
+					backgroundPosition: '50% 50%, 50% 50%'
+				},
+				to: {
+					backgroundPosition: '350% 50%, 350% 50%'
+				}
+			},
   		},
   		animation: {
   				'toast-progress': 'toast-progress var(--toast-duration, 6s) linear forwards',
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
-  			'shine': 'shine 8s ease-in-out infinite',
-  			'text-shine': 'text-shine 3s linear infinite',
-  			'gradient-xy': 'gradient-xy 3s linear infinite',
-  			'gradient-x': 'gradient-x 3s linear infinite',
-  		}
+		'shine': 'shine 8s ease-in-out infinite',
+			'text-shine': 'text-shine 3s linear infinite',
+			'gradient-xy': 'gradient-xy 3s linear infinite',
+			'gradient-x': 'gradient-x 3s linear infinite',
+			'aurora': 'aurora 60s linear infinite',
+		}
   	}
   },
   plugins: [
@@ -114,6 +124,16 @@ const config = {
         },
         { values: theme('colors') }
       );
+    }),
+    // Plugin für Aurora-Background: Fügt alle Tailwind-Farben als CSS-Variablen hinzu
+    plugin(function ({ addBase, theme }) {
+      const allColors = flattenColorPalette(theme("colors"));
+      const newVars = Object.fromEntries(
+        Object.entries(allColors).map(([key, val]) => [`--${key}`, val])
+      );
+      addBase({
+        ":root": newVars,
+      });
     }),
   ],
 } satisfies Config;
