@@ -5,7 +5,9 @@ import dynamic from 'next/dynamic'
 import LeadMagnetHero from '@/components/sections/lead-magnet-hero'
 import LeadMagnetSteps from '@/components/sections/lead-magnet-steps'
 import LeadMagnetBenefits from '@/components/sections/lead-magnet-benefits'
+import LeadMagnetFAQ from '@/components/sections/lead-magnet-faq'
 import LeadMagnetForm from '@/components/sections/lead-magnet-form'
+import { AuroraBackground } from '@/components/ui/aurora-background'
 
 const AnimatedShaderBackground = dynamic(
   () => import('@/components/ui/animated-shader-background'),
@@ -27,9 +29,12 @@ export default function QuickGuidePage() {
           <LeadMagnetSteps />
           <LeadMagnetBenefits />
         </AnimatedShaderBackground>
-        <Suspense fallback={null}>
-          <LeadMagnetForm />
-        </Suspense>
+        <AuroraBackground className="h-auto min-h-0 overflow-hidden">
+          <Suspense fallback={null}>
+            <LeadMagnetFAQ />
+            <LeadMagnetForm />
+          </Suspense>
+        </AuroraBackground>
       </main>
     </>
   )

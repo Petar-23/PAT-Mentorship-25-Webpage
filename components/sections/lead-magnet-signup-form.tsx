@@ -3,12 +3,14 @@
 import type { ChangeEvent, FormEvent } from 'react'
 import { useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import { Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { HeroPill } from '@/components/ui/hero-pill'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
+import { trackConversion } from '@/components/analytics/google-tag-manager'
 
 type FormState = {
   firstName: string
@@ -128,6 +130,10 @@ export default function LeadMagnetSignupForm({
       setStatusMessage(
         'Geschafft! Bitte prüfe jetzt dein E‑Mail‑Postfach für Video 1.'
       )
+      
+      // Track Conversion für Google Ads
+      trackConversion.leadMagnetSignup()
+      
       toast({
         variant: 'success',
         title: 'Quick‑Start gesichert',
@@ -209,17 +215,26 @@ export default function LeadMagnetSignupForm({
         variant="amber"
         size="sm"
         announcement={
-          <span className="flex items-center gap-0.5">
-            {[1, 2, 3, 4, 5].map(star => (
-              <Star
-                key={star}
-                className="h-3 w-3 fill-amber-500 text-amber-500"
-                aria-hidden="true"
-              />
-            ))}
+          <span className="flex items-center gap-1.5">
+            <Image
+              src="/images/whop-logo.png"
+              alt="Whop"
+              width={16}
+              height={16}
+              className="h-4 w-4"
+            />
+            <span className="flex items-center gap-0.5">
+              {[1, 2, 3, 4, 5].map(star => (
+                <Star
+                  key={star}
+                  className="h-3 w-3 fill-amber-500 text-amber-500"
+                  aria-hidden="true"
+                />
+              ))}
+            </span>
           </span>
         }
-        label="5,0/5 • Whop‑Bewertungen"
+        label="51 Bewertungen"
       />
       <Button
         type="submit"

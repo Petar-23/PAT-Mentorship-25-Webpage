@@ -1,7 +1,7 @@
 // src/components/sections/program-structure.tsx
 'use client'
 
-import { CheckCircle, Users, BrainCircuit, LineChart } from "lucide-react"
+import { CheckCircle, Users, BrainCircuit, LineChart, Calendar } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { CardWithMatrix } from '@/components/ui/card-with-matrix'
 import { GradientCard } from '@/components/ui/gradient-card'
@@ -129,37 +129,43 @@ const supportFeatures = [
 
 export default function ProgramStructure() {
   return (
-    <section className="py-24 sm:py-32 bg-slate-950">
+    <section className="py-12 sm:py-32 bg-slate-950">
       <div className="container mx-auto px-4 max-w-6xl">
-        <div className="text-center mb-20">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+        <div className="text-center mb-8 sm:mb-20">
+          <div className="inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-white/10 ring-1 ring-white/20 mb-3 sm:mb-4">
+            <div className="bg-blue-500/20 text-blue-400 rounded-full p-1.5 sm:p-2 flex items-center justify-center">
+              <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            </div>
+            <span className="text-xs sm:text-sm font-medium text-blue-400">Programmstruktur</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 sm:mb-4">
             Dein Weg zum Trading-Erfolg
           </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+          <p className="text-gray-400 max-w-2xl mx-auto text-sm sm:text-lg">
             Ein strukturierter Ansatz, der deine Fähigkeiten schrittweise aufbaut
           </p>
         </div>
 
         {/* Mobile: Compact Accordions */}
-        <div className="md:hidden space-y-6">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
-            <h3 className="text-lg font-semibold text-white">Programmphasen</h3>
+        <div className="md:hidden space-y-4">
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-3">
+            <h3 className="text-sm font-semibold text-white">Programmphasen</h3>
             <Accordion type="single" collapsible className="mt-2">
               {programPhases.map((phase, index) => (
                 <AccordionItem key={index} value={`phase-${index}`} className="border-slate-800">
-                  <AccordionTrigger className="text-left text-white hover:no-underline">
+                  <AccordionTrigger className="text-left text-white hover:no-underline py-2.5">
                     <div className="flex flex-col text-left">
-                      <span className="text-xs text-blue-400">{phase.duration}</span>
-                      <span className="text-base font-semibold">{phase.phase}</span>
+                      <span className="text-[10px] text-blue-400">{phase.duration}</span>
+                      <span className="text-sm font-semibold">{phase.phase}</span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="text-gray-300">
-                    <p className="text-sm text-gray-400 mb-3">{phase.description}</p>
-                    <ul className="space-y-2">
+                  <AccordionContent className="text-gray-300 pb-2">
+                    <p className="text-xs text-gray-400 mb-2">{phase.description}</p>
+                    <ul className="space-y-1.5">
                       {phase.features.map((feature, featureIndex) => (
-                        <li key={featureIndex} className="flex items-start gap-2">
-                          <CheckCircle className="h-4 w-4 text-green-400 flex-shrink-0 mt-0.5" />
-                          <span className="text-sm text-gray-300">{feature}</span>
+                        <li key={featureIndex} className="flex items-start gap-1.5">
+                          <CheckCircle className="h-3 w-3 text-green-400 flex-shrink-0 mt-0.5" />
+                          <span className="text-xs text-gray-300">{feature}</span>
                         </li>
                       ))}
                     </ul>
@@ -169,44 +175,44 @@ export default function ProgramStructure() {
             </Accordion>
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
-            <h3 className="text-lg font-semibold text-white">Wöchentlicher Ablauf*</h3>
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-3">
+            <h3 className="text-sm font-semibold text-white">Wöchentlicher Ablauf*</h3>
             <Accordion type="single" collapsible className="mt-2">
               {weeklySchedule.map((session, index) => (
                 <AccordionItem key={index} value={`schedule-${index}`} className="border-slate-800">
-                  <AccordionTrigger className="text-left text-white hover:no-underline">
+                  <AccordionTrigger className="text-left text-white hover:no-underline py-2.5">
                     <div className="flex flex-col text-left">
-                      <span className="text-xs text-blue-400">{session.day} • {session.time}</span>
-                      <span className="text-base font-semibold">{session.type}</span>
+                      <span className="text-[10px] text-blue-400">{session.day} • {session.time}</span>
+                      <span className="text-sm font-semibold">{session.type}</span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="text-gray-300">
-                    <p className="text-sm text-gray-400">{session.description}</p>
+                  <AccordionContent className="text-gray-300 pb-2">
+                    <p className="text-xs text-gray-400">{session.description}</p>
                   </AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
-            <p className="mt-3 text-center text-gray-500 text-xs italic">
+            <p className="mt-2 text-center text-gray-500 text-[10px] italic">
               * Zeitplan kann je nach Marktbedingungen und Gruppenbedürfnissen angepasst werden
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
-            <h3 className="text-lg font-semibold text-white">Support-System</h3>
-            <p className="text-sm text-gray-400 mt-1">
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-3">
+            <h3 className="text-sm font-semibold text-white">Support-System</h3>
+            <p className="text-xs text-gray-400 mt-0.5">
               Zugriff auf Community, Indikatoren und Alumni.
             </p>
             <Accordion type="single" collapsible className="mt-2">
               {supportFeatures.map((feature, index) => (
                 <AccordionItem key={index} value={`support-${index}`} className="border-slate-800">
-                  <AccordionTrigger className="text-left text-white hover:no-underline">
-                    <div className="flex items-center gap-3">
-                      <span className={`h-5 w-5 ${feature.iconColor}`}>{feature.icon}</span>
-                      <span className="text-base font-semibold">{feature.title}</span>
+                  <AccordionTrigger className="text-left text-white hover:no-underline py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className={`h-4 w-4 ${feature.iconColor}`}>{feature.icon}</span>
+                      <span className="text-sm font-semibold">{feature.title}</span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="text-gray-300">
-                    <p className="text-sm text-gray-400">{feature.description}</p>
+                  <AccordionContent className="text-gray-300 pb-2">
+                    <p className="text-xs text-gray-400">{feature.description}</p>
                   </AccordionContent>
                 </AccordionItem>
               ))}
