@@ -73,7 +73,7 @@ export default function FinalCTA() {
         <Button
             onClick={handleJoinClick}
             size="lg"
-            className="bg-white text-slate-900 hover:bg-white/90 text-lg px-8 py-6 h-auto group"
+            className="bg-white text-slate-900 hover:bg-white/90 text-sm sm:text-lg px-6 sm:px-8 py-4 sm:py-6 h-auto group"
         >
             {buttonContent}
         </Button>
@@ -81,7 +81,7 @@ export default function FinalCTA() {
         <SignInButton mode="modal" forceRedirectUrl="/dashboard">
             <Button
                 size="lg"
-                className="bg-white text-slate-900 hover:bg-white/90 text-lg px-8 py-6 h-auto group"
+                className="bg-white text-slate-900 hover:bg-white/90 text-sm sm:text-lg px-6 sm:px-8 py-4 sm:py-6 h-auto group"
                 onClick={handleSignInClick}
             >
                 {buttonContent}
@@ -99,7 +99,7 @@ export default function FinalCTA() {
     }
 
     return (
-        <section ref={sectionRef} className="relative py-24 overflow-hidden">
+        <section ref={sectionRef} className="relative py-12 sm:py-24 overflow-hidden">
             {/* Vortex Background */}
             <div className="absolute inset-0 bg-slate-950">
                 {isInView && (
@@ -118,26 +118,32 @@ export default function FinalCTA() {
             
             {/* Content */}
             <div className="container relative z-10 mx-auto px-4 max-w-6xl">
-                <div className="text-center mb-16">
+                <div className="text-center mb-8 sm:mb-16">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
                     >
-                        <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+                        <div className="flex justify-center mb-4 sm:mb-6">
+                            <div className="inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-white/10 ring-1 ring-white/20">
+                                <div className="bg-blue-500/20 text-blue-400 rounded-full px-2 py-0.5 text-xs sm:text-sm">🚀</div>
+                                <span className="text-xs sm:text-sm font-medium text-blue-400">Jetzt starten</span>
+                            </div>
+                        </div>
+                        <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6">
                             Deine Trading-Reise <br />
-                            <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent">
+                            <span className="text-blue-400">
                                 Beginnt im März 2026
                             </span>
                         </h2>
-                        <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+                        <p className="text-sm sm:text-xl text-gray-300 max-w-2xl mx-auto">
                             Werde einer von 100 ambitionierten Tradern und erlebe ein transformatives Jahr 
                             mit Live-Marktanalysen, Echtzeit-Trading und messbarem Wachstum.
                         </p>
                     </motion.div>
-                    <div className="mt-8 flex justify-center">
+                    <div className="mt-6 sm:mt-8 flex justify-center">
                         <div className="max-w-md w-full">
-                            <p className="text-sm text-gray-200 mb-3">
+                            <p className="text-xs sm:text-sm text-gray-200 mb-2 sm:mb-3">
                                 Verbleibende Zeit zur Anmeldung in die Warteliste
                             </p>
                             <Countdown targetDate="2026-03-01T00:00:00+01:00" variant="dark" />
@@ -150,20 +156,23 @@ export default function FinalCTA() {
                         {
                             icon: <Users className="h-8 w-8 text-blue-400 mb-4" />,
                             title: "Begrenzte Plätze",
-                            description: "Nur 100 Trader werden aufgenommen, um eine qualitativ hochwertige Betreuung zu gewährleisten"
+                            description: "Nur 100 Trader werden aufgenommen, um eine qualitativ hochwertige Betreuung zu gewährleisten",
+                            glowColor: "#60A5FA" // blue-400
                         },
                         {
                             icon: <Clock className="h-8 w-8 text-purple-400 mb-4" />,
                             title: "Frühzeitig Sichern",
-                            description: "Die Vergabe der Mentorship-Plätze erfolgt nach dem Prinzip: Wer zuerst kommt, mahlt zuerst."
+                            description: "Die Vergabe der Mentorship-Plätze erfolgt nach dem Prinzip: Wer zuerst kommt, mahlt zuerst.",
+                            glowColor: "#A78BFA" // purple-400
                         },
                         {
                             icon: <Trophy className="h-8 w-8 text-green-400 mb-4" />,
                             title: "Lebenslanger Zugang",
-                            description: "Schließe das Jahr ab und erhalte permanenten Zugriff auf alle Materialien und Aufzeichnungen"
+                            description: "Schließe das Jahr ab und erhalte permanenten Zugriff auf alle Materialien und Aufzeichnungen",
+                            glowColor: "#4ADE80" // green-400
                         }
                     ].map((card, index) => (
-                        <GlowingCard key={index}>
+                        <GlowingCard key={index} glowColor={card.glowColor}>
                             <div className="p-6">
                                 {card.icon}
                                 <h3 className="text-lg font-semibold text-white mb-2">
@@ -178,21 +187,20 @@ export default function FinalCTA() {
                 </div>
 
                 <motion.div
-                    className="text-center mt-8 md:mt-0"
+                    className="text-center mt-6 sm:mt-8 md:mt-0"
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.2 }}
                 >
                     {ctaButton}
                     
-                    <p className="mt-6 text-gray-400">
+                    <p className="mt-4 sm:mt-6 text-xs sm:text-base text-gray-400">
                         Keine Zahlung bis zum Programmstart.
                     </p>
 
-                    <div className="mt-12 backdrop-blur-md bg-white/5 rounded-lg inline-block px-6 py-3 border border-white/10">
-                        <p className="text-white text-sm">
-                            ⚡ Nur die ersten 100 Anmeldungen werden akzeptiert
-                        </p>
+                    <div className="mt-6 sm:mt-12 inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-white/10 ring-1 ring-white/20">
+                        <div className="bg-amber-500/20 text-amber-400 rounded-full px-2 py-0.5 text-xs sm:text-sm">⚡</div>
+                        <span className="text-xs sm:text-sm font-medium text-amber-300">Nur die ersten 100 Anmeldungen werden akzeptiert</span>
                     </div>
                 </motion.div>
             </div>

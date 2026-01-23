@@ -1,8 +1,12 @@
 
 "use client"
 import { Card } from "@/components/ui/card"
-import { Check, X } from "lucide-react"
+import { Check, X, ArrowRight } from "lucide-react"
 import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button"
+import { SignInButton, useUser } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
+import { HeroPill } from "@/components/ui/hero-pill"
 
 interface Feature {
   name: string
@@ -24,32 +28,36 @@ interface MobileFeatureCardProps {
 function MobileFeatureCard({ feature }: MobileFeatureCardProps) {
   return (
     <motion.div
-      className={`p-4 space-y-4 ${feature.highlight ? 'bg-emerald-50/40' : 'bg-white'}`}
-      initial={{ opacity: 0, y: 20 }}
+      className={`p-3 space-y-2.5 ${feature.highlight ? 'bg-emerald-50/40' : 'bg-white'}`}
+      initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
     >
       <div>
-        <p className="font-semibold text-gray-800 mb-2">{feature.name}</p>
-        <p className="text-sm text-gray-700 mb-4">{feature.description}</p>
+        <p className="text-sm font-semibold text-gray-800 mb-1">{feature.name}</p>
+        <p className="text-xs text-gray-600 leading-relaxed">{feature.description}</p>
       </div>
       
       {/* Our Mentorship */}
-      <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
-        <p className="text-sm font-semibold text-emerald-700 mb-2">Meine Mentorship:</p>
-        <span className="inline-flex items-center gap-2 text-gray-900">
-          <Check className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-          <span>{feature.us}</span>
-        </span>
+      <div className="bg-emerald-50 rounded-lg p-2.5 border border-emerald-200">
+        <div className="flex items-center gap-2 mb-1.5">
+          <div className="size-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+            <Check className="h-3 w-3 text-white" />
+          </div>
+          <span className="text-xs font-semibold text-emerald-700">Meine Mentorship</span>
+        </div>
+        <p className="text-xs text-gray-800 pl-7">{feature.us}</p>
       </div>
 
       {/* Other Courses */}
-      <div className="bg-red-50 rounded-lg p-3 border border-red-200">
-        <p className="text-sm font-semibold text-red-700 mb-2">Andere Kurse:</p>
-        <span className="inline-flex items-center gap-2 text-gray-900">
-          {feature.highlight && <X className="h-4 w-4 text-red-500 flex-shrink-0" />}
-          <span>{feature.others}</span>
-        </span>
+      <div className="bg-red-50 rounded-lg p-2.5 border border-red-200">
+        <div className="flex items-center gap-2 mb-1.5">
+          <div className="size-5 rounded-full bg-red-500 flex items-center justify-center shrink-0">
+            <X className="h-3 w-3 text-white" />
+          </div>
+          <span className="text-xs font-semibold text-red-700">Andere Kurse</span>
+        </div>
+        <p className="text-xs text-gray-800 pl-7">{feature.others}</p>
       </div>
     </motion.div>
   )
@@ -132,15 +140,27 @@ const comparisonData: { categories: Category[] } = {
 }
 
 export default function PricingComparison() {
+  const { isSignedIn } = useUser()
+  const router = useRouter()
+
+  const handleClick = () => {
+    if (isSignedIn) {
+      router.push('/dashboard')
+    }
+  }
+
   return (
-    <section className="py-24 bg-white">
+    <section className="py-12 sm:py-24 bg-white">
       <div className="container mx-auto px-4 max-w-6xl">
-        <div className="text-center mb-16">
-          <p className="text-blue-600 font-semibold mb-4">VERGLEICH</p>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+        <div className="text-center mb-8 sm:mb-16">
+          <div className="inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-blue-50 ring-1 ring-blue-200 mb-4 sm:mb-6">
+            <div className="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs sm:text-sm">⚖️</div>
+            <span className="text-xs sm:text-sm font-medium text-blue-700">Vergleich</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-4">
             Warum meine Mentorship?
           </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto text-lg">
+          <p className="text-sm sm:text-lg text-gray-600 max-w-2xl mx-auto">
             Mein Ansatz im Vergleich zu traditionellen Trading-Kursen
           </p>
         </div>
@@ -150,8 +170,8 @@ export default function PricingComparison() {
           <div className="md:hidden divide-y bg-white">
             {comparisonData.categories.map((category, categoryIndex) => (
               <div key={categoryIndex} className="divide-y">
-                <div className="p-4 bg-gray-900">
-                  <p className="font-semibold text-white">{category.name}</p>
+                <div className="p-3 bg-slate-800">
+                  <p className="text-sm font-semibold text-white">{category.name}</p>
                 </div>
                 {category.features.map((feature, featureIndex) => (
                   <MobileFeatureCard key={featureIndex} feature={feature} />
@@ -161,68 +181,101 @@ export default function PricingComparison() {
           </div>
 
           {/* Desktop Version */}
-          <div className="hidden md:block divide-y">
-            <div className="grid grid-cols-12 bg-gray-100 p-6 border-b">
-              <div className="col-span-4">
+          <div className="hidden md:block">
+            {/* Sticky Header */}
+            <div className="grid grid-cols-12 bg-slate-100 p-6 border-b sticky top-0 z-10">
+              <div className="col-span-4 flex items-center">
                 <p className="font-semibold text-gray-900">Features</p>
               </div>
-              <div className="col-span-4 text-center">
-                <p className="font-semibold text-emerald-700">Meine Mentorship</p>
+              <div className="col-span-4 flex justify-center">
+                <HeroPill
+                  variant="emerald"
+                  size="default"
+                  className="py-2 text-sm font-semibold"
+                  announcement={<Check className="h-4 w-4" />}
+                  label="Meine Mentorship"
+                />
               </div>
-              <div className="col-span-4 text-center">
-                <p className="font-semibold text-red-700">Andere Kurse</p>
+              <div className="col-span-4 flex justify-center">
+                <HeroPill
+                  variant="red"
+                  size="default"
+                  className="py-2 text-sm font-semibold"
+                  announcement={<X className="h-4 w-4" />}
+                  label="Andere Kurse"
+                />
               </div>
             </div>
             
-            {comparisonData.categories.map((category, categoryIndex) => (
-              <div key={categoryIndex} className="divide-y">
-                <div className="p-6 bg-gray-900">
-                  <p className="font-semibold text-white">{category.name}</p>
+            <div className="divide-y">
+              {comparisonData.categories.map((category, categoryIndex) => (
+                <div key={categoryIndex} className="divide-y">
+                  <div className="p-6 bg-slate-800">
+                    <p className="font-semibold text-white">{category.name}</p>
+                  </div>
+                  {category.features.map((feature, featureIndex) => (
+                    <motion.div
+                      key={featureIndex}
+                      className="grid grid-cols-12 hover:bg-slate-50 transition-colors"
+                      initial={{ opacity: 0, y: 10 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: featureIndex * 0.05 }}
+                    >
+                      <div className="col-span-4 p-6 flex items-center">
+                        <div>
+                          <p className="font-semibold text-gray-800">{feature.name}</p>
+                          <p className="text-sm text-gray-600 mt-1">{feature.description}</p>
+                        </div>
+                      </div>
+                      {/* Meine Mentorship - grüner Hintergrund */}
+                      <div className="col-span-4 flex items-center justify-center bg-emerald-50/60 border-x border-emerald-100 p-6">
+                        <span className="inline-flex items-center gap-2.5 text-emerald-700 font-semibold text-sm">
+                          <div className="size-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+                            <Check className="h-3.5 w-3.5 text-white" />
+                          </div>
+                          {feature.us}
+                        </span>
+                      </div>
+                      {/* Andere Kurse */}
+                      <div className="col-span-4 flex items-center justify-center p-6">
+                        <span className="inline-flex items-center gap-2.5 text-gray-600 text-sm">
+                          {feature.highlight && (
+                            <div className="size-6 rounded-full bg-red-500 flex items-center justify-center shrink-0">
+                              <X className="h-3.5 w-3.5 text-white" />
+                            </div>
+                          )}
+                          {feature.others}
+                        </span>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
-                {category.features.map((feature, featureIndex) => (
-                  <motion.div
-                    key={featureIndex}
-                    className={`grid grid-cols-12 p-6 hover:bg-emerald-50/40 transition-colors ${
-                      feature.highlight ? 'bg-emerald-50/30' : ''
-                    }`}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: featureIndex * 0.1 }}
-                  >
-                    <div className="col-span-4">
-                      <p className="font-semibold text-gray-800">{feature.name}</p>
-                      <p className="text-sm text-gray-700 mt-1">{feature.description}</p>
-                    </div>
-                    <div className="col-span-4 text-center flex items-center justify-center">
-                      <span className="inline-flex items-center gap-2 text-emerald-700 font-semibold">
-                        <Check className="h-5 w-5 text-emerald-600" />
-                        {feature.us}
-                      </span>
-                    </div>
-                    <div className="col-span-4 text-center flex items-center justify-center">
-                      <span className="inline-flex items-center gap-2 text-gray-900">
-                        {feature.highlight && <X className="h-5 w-5 text-red-500" />}
-                        {feature.others}
-                      </span>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </Card>
 
-        {/* Bottom Note */}
-        <div className="mt-12 text-center">
-          <h3 
-            className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-[linear-gradient(to_right,theme(colors.blue.600),theme(colors.purple.600),theme(colors.blue.600))] animate-text-shine inline-flex"
-            style={{
-              backgroundSize: '200% auto',
-            }}
-          >
-            Wähle eine Lernmethode, die deinen Erfolg ohne hohe Vorabkosten priorisiert
+        {/* Bottom CTA */}
+        <div className="mt-8 sm:mt-12 text-center space-y-6">
+          <h3 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900">
+            Wähle eine Lernmethode, die deinen Erfolg priorisiert
           </h3>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {isSignedIn ? (
+              <Button size="lg" onClick={handleClick} className="gap-2">
+                Jetzt Platz sichern
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            ) : (
+              <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+                <Button size="lg" className="gap-2">
+                  Jetzt Platz sichern
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </SignInButton>
+            )}
+          </div>
         </div>
       </div>
     </section>

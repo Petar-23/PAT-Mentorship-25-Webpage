@@ -34,24 +34,24 @@ function TradingPerformance() {
       rainColor="#10B981"
       gradientColor="rgba(16, 185, 129, 0.2)"
     >
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         {/* Header */}
-        <div className="flex justify-between items-start mb-6">
+        <div className="flex justify-between items-start mb-4 sm:mb-6">
           <div>
-            <p className="text-gray-400 text-sm">Meine aktuelle Statistik</p>
-            <p className="text-gray-500 text-xs mt-1">
+            <p className="text-gray-400 text-xs sm:text-sm">Meine aktuelle Statistik</p>
+            <p className="text-gray-500 text-[10px] sm:text-xs mt-0.5 sm:mt-1">
               FK-Konto mit 2000 USD Max Drawdown
             </p>
           </div>
           <div className="flex flex-col items-end">
-            <span className="text-green-400 text-2xl font-semibold">+{roiPerMonth}%</span>
-            <span className="text-gray-400 text-xs">Ø ROI / Monat</span>
+            <span className="text-green-400 text-xl sm:text-2xl font-semibold">+{roiPerMonth}%</span>
+            <span className="text-gray-400 text-[10px] sm:text-xs">Ø ROI / Monat</span>
           </div>
         </div>
 
         {/* Chart */}
-        <div className="w-full h-[200px] sm:h-[200px] relative">
-          <ResponsiveContainer>
+        <div className="w-full h-[180px] sm:h-[200px] relative">
+          <ResponsiveContainer width="100%" height="100%" minHeight={100}>
             <AreaChart 
               data={processedTradingData}
               margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
@@ -131,13 +131,13 @@ function TradingPerformance() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mt-4 px-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-4 mt-3 sm:mt-4 px-1 sm:px-2">
           <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
-            <span className="text-gray-400 text-xs md:text-sm">Total Return:</span>
-            <span className="text-white font-medium">+{totalReturn}%</span>
+            <span className="text-gray-400 text-[10px] sm:text-xs md:text-sm">Total Return:</span>
+            <span className="text-white text-sm sm:text-base font-medium">+{totalReturn}%</span>
           </div>
           <div className="flex items-center justify-start sm:justify-end">
-            <span className="text-gray-400 text-xs md:text-sm">
+            <span className="text-gray-400 text-[10px] sm:text-xs md:text-sm">
               Live auf YouTube eingeloggt & alle Trades veröffentlicht
             </span>
           </div>
@@ -176,22 +176,27 @@ export default function MentorSection() {
   }, [])
 
   return (
-    <section className="py-16 sm:py-24 bg-slate-950 relative overflow-hidden">
+    <section className="py-12 sm:py-24 bg-slate-950 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950 to-slate-950/20" />
       
       <div className="container mx-auto px-4 max-w-6xl relative z-10">
         {/* Section Header (global, damit Chart & Mentor-Bild oben bündig starten) */}
-        <div className="mb-8">
-          <h4 className="text-blue-400 font-semibold mb-4">DEIN MENTOR</h4>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
+        <div className="mb-5 sm:mb-8 text-center">
+          <div className="inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-white/10 ring-1 ring-white/20 mb-3 sm:mb-4">
+            <div className="bg-blue-500/20 text-blue-400 rounded-full p-1.5 sm:p-2 flex items-center justify-center">
+              <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            </div>
+            <span className="text-xs sm:text-sm font-medium text-blue-400">Dein Mentor</span>
+          </div>
+          <h2 className="text-xl sm:text-3xl md:text-4xl font-bold text-white">
             Petar
           </h2>
         </div>
 
         {/* Mobile Layout */}
-        <div className="lg:hidden space-y-8">
+        <div className="lg:hidden space-y-5">
           <div>
-            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden">
+            <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
               <Image
                 src="/images/mentor_petar.png"
                 alt="Trading Mentor"
@@ -202,7 +207,7 @@ export default function MentorSection() {
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-4">
               <CardWithMatrix
                 icon={<Users className="h-full w-full" />}
                 value="130+"
@@ -218,23 +223,23 @@ export default function MentorSection() {
                 rainColor="#A78BFA"
                 gradientColor="rgba(167, 139, 250, 0.2)"
               >
-                <div className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 text-purple-400">
+                <div className="p-2.5 sm:p-6">
+                  <div className="flex items-center gap-2 sm:gap-4">
+                    <div className="h-6 w-6 sm:h-10 sm:w-10 text-purple-400">
                       <Award className="h-full w-full" />
                     </div>
                     <div>
-                      <p className="text-lg sm:text-2xl font-bold text-white whitespace-nowrap">
+                      <p className="text-sm sm:text-2xl font-bold text-white whitespace-nowrap">
                         2 Jahre
                       </p>
-                      <p className="text-sm text-gray-400">Mentor-Erfahrung</p>
+                      <p className="text-[10px] sm:text-sm text-gray-400">Mentor-Erfahrung</p>
                     </div>
                   </div>
                 </div>
               </CardWithMatrix>
             </div>
 
-            <div className="mt-6">
+            <div className="mt-4">
               <CardWithMatrix
                 icon={
                   <div className="relative h-full w-full">
@@ -253,10 +258,10 @@ export default function MentorSection() {
                 gradientColor="rgba(251, 191, 36, 0.18)"
                 className="lg:min-h-[130px]"
               >
-                <div className="p-6 flex items-center lg:min-h-[130px]">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10">
-                      <div className="relative h-10 w-10">
+                <div className="p-3 sm:p-6 flex items-center lg:min-h-[130px]">
+                  <div className="flex items-center gap-2 sm:gap-4">
+                    <div className="h-8 w-8 sm:h-10 sm:w-10">
+                      <div className="relative h-8 w-8 sm:h-10 sm:w-10">
                         <Image
                           src="/images/whop-logo.png"
                           alt="Whop"
@@ -267,12 +272,12 @@ export default function MentorSection() {
                       </div>
                     </div>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-1 text-amber-400">
+                      <div className="flex items-center gap-0.5 sm:gap-1 text-amber-400">
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className="h-4 w-4 fill-current" />
+                          <Star key={i} className="h-3 w-3 sm:h-4 sm:w-4 fill-current" />
                         ))}
                       </div>
-                      <p className="text-sm text-gray-400 mt-1">
+                      <p className="text-xs sm:text-sm text-gray-400 mt-0.5 sm:mt-1">
                         {whopReviewsError
                           ? 'Whop Reviews aktuell nicht verfügbar'
                           : whopReviewCount == null
@@ -289,24 +294,24 @@ export default function MentorSection() {
           <div>
             <span data-mentor-target="experience" data-mentor-viewport="mobile" />
             <span data-mentor-target="mentees" data-mentor-viewport="mobile" />
-            <p className="text-base sm:text-lg text-gray-300 leading-relaxed mb-4">
+            <p className="text-sm sm:text-lg text-gray-300 leading-relaxed mb-3">
               Ich habe mich intensiv mit dem Trading nach 
               ICT&apos;s Smart Money Konzepten beschäftigt und über 1000 
               Stunden Videomaterial durchgearbeitet. Dazu gehören 
               ICT&apos;s Private Mentorship, die ICT 2025 Lecture Series sowie die Mentorships der Jahre 2022, 2023, 2024 - und vieles mehr.
             </p>
-            <p className="text-base sm:text-lg text-gray-300 leading-relaxed mb-4">
+            <p className="text-sm sm:text-lg text-gray-300 leading-relaxed mb-3">
               Seit Anfang 2024, lehre ich diese Konzepte in meiner eigenen privaten Mentorship. 
               Mittlerweile konnten 130+ Mentees messbare Erfolge erzielen.
             </p>
-            <p className="text-base sm:text-lg text-gray-300 leading-relaxed">
+            <p className="text-sm sm:text-lg text-gray-300 leading-relaxed">
               Ich werbe nicht mit Lifestyle und Luxus, sondern mit echten Trades 
               - schaue dir gerne meinen YouTube Kanal an. Mein Ziel ist es, dir 
               eine nachhaltige Fähigkeit zu vermitteln, mit der du ein stabiles monatliches Einkommen erzielen kannst.
             </p>
           </div>
 
-          <div className="space-y-6 sm:space-y-8">
+          <div className="space-y-4 sm:space-y-8">
             <div data-mentor-target="performance" data-mentor-viewport="mobile">
               <TradingPerformance />
             </div>
@@ -327,18 +332,18 @@ export default function MentorSection() {
                 className="block"
               >
                 <div className="relative">
-                  <div className="flex items-center gap-3 px-5 py-4">
-                    <div className="h-9 w-9 text-green-400">
+                  <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 sm:py-4">
+                    <div className="h-7 w-7 sm:h-9 sm:w-9 text-green-400">
                       <LineChart className="h-full w-full" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-white">Payout Nachweis</p>
-                      <p className="text-xs text-gray-400">Offizieller Topstep X Account</p>
+                      <p className="text-xs sm:text-sm font-semibold text-white">Payout Nachweis</p>
+                      <p className="text-[10px] sm:text-xs text-gray-400">Offizieller Topstep X Account</p>
                     </div>
                   </div>
 
-                  <div className="relative w-full overflow-hidden px-5 pb-4">
-                    <div className="relative w-full h-[130px] sm:h-[150px] md:h-[160px] overflow-hidden rounded-lg">
+                  <div className="relative w-full overflow-hidden px-3 sm:px-5 pb-3 sm:pb-4">
+                    <div className="relative w-full h-[100px] sm:h-[150px] md:h-[160px] overflow-hidden rounded-md sm:rounded-lg">
                       <Image
                         src="/images/ts_payout.png"
                         alt="Topstep Payout Screenshot"
@@ -362,7 +367,7 @@ export default function MentorSection() {
             gradientColor="rgba(96, 165, 250, 0.2)"
             className="overflow-hidden"
           >
-            <div className="relative p-6">
+            <div className="relative p-3 sm:p-6">
               <div className="aspect-[16/8] relative bg-slate-900">
                 <Image
                   src="https://i.ytimg.com/vi/63V_7Ji_omw/hqdefault.jpg"
@@ -377,23 +382,23 @@ export default function MentorSection() {
                   onClick={() => {
                     window.open('https://www.youtube.com/watch?v=63V_7Ji_omw', '_blank')
                   }}
-                  className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center group border-2 border-white/20"
+                  className="absolute inset-0 m-auto w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center group border-2 border-white/20"
                 >
-                  <Play className="h-7 w-7 text-white group-hover:scale-110 transition-transform" />
+                  <Play className="h-5 w-5 sm:h-7 sm:w-7 text-white group-hover:scale-110 transition-transform" />
                 </Button>
               </div>
-              <div className="pt-6">
-                <p className="font-semibold text-white text-lg mb-4">
+              <div className="pt-3 sm:pt-6">
+                <p className="font-semibold text-white text-sm sm:text-lg mb-2 sm:mb-4">
                   Beispiel Lektion aus der PAT Mentorship 2025
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-2 py-1 bg-slate-800 rounded-md text-blue-400 text-sm">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-slate-800 rounded-md text-blue-400 text-[10px] sm:text-sm">
                     Live Ausführung
                   </span>
-                  <span className="px-2 py-1 bg-slate-800 rounded-md text-blue-400 text-sm">
+                  <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-slate-800 rounded-md text-blue-400 text-[10px] sm:text-sm">
                     ICT Modell 22
                   </span>
-                  <span className="px-2 py-1 bg-slate-800 rounded-md text-blue-400 text-sm">
+                  <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-slate-800 rounded-md text-blue-400 text-[10px] sm:text-sm">
                     Lektion
                   </span>
                 </div>

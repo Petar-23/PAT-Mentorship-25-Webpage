@@ -184,6 +184,31 @@ export const trackConversion = {
     })
   },
 
+  // Wenn jemand sich für den Lead Magnet (Quick Guide) anmeldet
+  leadMagnetSignup: () => {
+    const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID
+    // Nutzt eigenes Label falls vorhanden, sonst das Standard-Conversion-Label
+    const conversionLabel = process.env.NEXT_PUBLIC_GOOGLE_ADS_LEAD_CONVERSION_LABEL 
+      ?? process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL
+
+    // Standard Event-Tracking
+    trackEvent('generate_lead', {
+      event_category: 'conversion',
+      event_label: 'quick_guide_signup',
+      value: 0,
+      currency: 'EUR',
+    })
+
+    // Google Ads Conversion Tracking (wenn Label konfiguriert ist)
+    if (googleAdsId && conversionLabel && typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      window.gtag('event', 'conversion', {
+        send_to: `${googleAdsId}/${conversionLabel}`,
+        value: 0,
+        currency: 'EUR',
+      })
+    }
+  },
+
   // Wenn jemand erfolgreich kauft - das ist die wichtigste Conversion!
   purchase: (value?: number) => {
     const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID

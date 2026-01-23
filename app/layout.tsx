@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Sora } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import { Navbar } from '@/components/layout/navbar'
@@ -11,9 +11,23 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/react'
 import { GoogleTagManager } from '@/components/analytics/google-tag-manager'
 import { MicrosoftClarity } from '@/components/analytics/microsoft-clarity'
-import { Suspense } from 'react'
+import { Suspense, lazy } from 'react'
 
-const inter = Inter({ subsets: ['latin'] })
+// Agentation nur in Development laden (ist devDependency)
+const Agentation = process.env.NODE_ENV === 'development' 
+  ? lazy(() => import('agentation').then(mod => ({ default: mod.Agentation })))
+  : () => null
+
+const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-inter',
+})
+
+const sora = Sora({ 
+  subsets: ['latin'],
+  variable: '--font-sora',
+  weight: ['400', '600', '700'],
+})
 
 export const metadata: Metadata = {
   title: 'PAT Mentorship 2026',
@@ -39,7 +53,7 @@ export default function RootLayout({
   return (
     <ClerkProvider afterSignOutUrl={"/"} localization={deDE} signInFallbackRedirectUrl="/dashboard" signUpFallbackRedirectUrl="/dashboard">
       <html lang="en" className="h-full scroll-smooth">
-        <body className={`${inter.className} h-full overflow-x-hidden`}>
+        <body className={`${inter.variable} ${sora.variable} font-sans h-full overflow-x-hidden`}>
           <a
             href="#main-content"
             className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-slate-900 focus:shadow-lg"
@@ -61,6 +75,11 @@ export default function RootLayout({
           <MicrosoftClarity />
           <SpeedInsights />
           <Analytics />
+          {process.env.NODE_ENV === 'development' && (
+            <Suspense fallback={null}>
+              <Agentation />
+            </Suspense>
+          )}
         </body>
       </html>
     </ClerkProvider>

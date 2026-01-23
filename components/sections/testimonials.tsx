@@ -343,7 +343,10 @@ export default function Testimonials() {
     <section className="py-24 bg-white">
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="text-center mb-10">
-          <p className="text-blue-600 font-semibold mb-3">ERFOLGSGESCHICHTEN</p>
+          <div className="inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-blue-50 ring-1 ring-blue-200 mb-4">
+            <div className="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs sm:text-sm">🏆</div>
+            <span className="text-xs sm:text-sm font-medium text-blue-700">Erfolgsgeschichten</span>
+          </div>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
             PAT Trader Erfolgsgeschichten
           </h2>
@@ -507,21 +510,21 @@ function WhopRatingCard({ count, average, isLive }: { count: number | null; aver
       rel="noopener noreferrer"
       className="block"
     >
-      <Card className="p-4 bg-gradient-to-br from-amber-50 to-amber-100/50 border border-amber-200/60 hover:border-amber-300/80 hover:shadow-sm transition">
-        <div className="flex items-start gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <Image src="/images/whop-logo.png" alt="Whop" width={28} height={28} />
+      <Card className="p-2.5 sm:p-4 bg-gradient-to-br from-amber-50 to-amber-100/50 border border-amber-200/60 hover:border-amber-300/80 hover:shadow-sm transition">
+        <div className="flex items-start gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Image src="/images/whop-logo.png" alt="Whop" width={28} height={28} className="h-5 w-5 sm:h-7 sm:w-7 shrink-0" />
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-xs sm:text-sm font-semibold text-gray-900">
                 Whop-Reviews
               </p>
-              <div className="mt-1 flex items-center gap-1 text-amber-500">
+              <div className="mt-0.5 sm:mt-1 flex items-center gap-0.5 sm:gap-1 text-amber-500">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-current" />
+                  <Star key={i} className="h-3 w-3 sm:h-4 sm:w-4 fill-current" />
                 ))}
               </div>
-              <p className="mt-1 text-xs text-gray-600 tabular-nums truncate">
-                {ratingText} von 5 (insgesamt {displayCount} Reviews){isLive ? ' (live)' : ''}
+              <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-gray-600 tabular-nums truncate leading-tight">
+                {ratingText} von 5 ({displayCount} Reviews)
               </p>
             </div>
           </div>
@@ -556,14 +559,14 @@ const StatCard = ({ icon, value, label, color }: {
   }
 
   return (
-    <Card className={`p-4 bg-gradient-to-br ${gradientClasses[color]}`}>
-      <div className="flex items-center gap-4">
-        <div className={`${bgClasses[color]} rounded-lg p-3 text-white`}>
+    <Card className={`p-2.5 sm:p-4 bg-gradient-to-br ${gradientClasses[color]}`}>
+      <div className="flex items-center gap-2 sm:gap-4">
+        <div className={`${bgClasses[color]} rounded-lg p-2 sm:p-3 text-white shrink-0 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-6 sm:[&>svg]:w-6`}>
           {icon}
         </div>
-        <div>
-          <p className={`text-xl font-bold ${textClasses[color]}`}>{value}</p>
-          <p className="text-sm text-gray-600">{label}</p>
+        <div className="min-w-0">
+          <p className={`text-base sm:text-xl font-bold ${textClasses[color]}`}>{value}</p>
+          <p className="text-[10px] sm:text-sm text-gray-600 leading-tight">{label}</p>
         </div>
       </div>
     </Card>

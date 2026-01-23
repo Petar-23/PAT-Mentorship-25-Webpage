@@ -4,13 +4,15 @@ import { useState, useEffect, useRef } from 'react'
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Star, Users, Award, LineChart, BadgeCheck } from "lucide-react"
 import Link from "next/link"
-import { MatrixRain } from "../ui/matrix-rain"
+import { GLSLHills } from "../ui/glsl-hills"
 import { Countdown } from "@/components/ui/countdown"
 import Image from "next/image"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { SignInButton, useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { trackConversion } from '@/components/analytics/google-tag-manager'
+import { HeroPill } from '@/components/ui/hero-pill'
+import { ParticleTextReveal } from '@/components/ui/particle-text-reveal'
 
 export default function Hero() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
@@ -162,34 +164,13 @@ export default function Hero() {
       ref={containerRef}
       className="relative pt-6 pb-12 sm:py-24 md:py-20 lg:py-32 min-h-[85vh] lg:min-h-[65vh] overflow-hidden bg-gradient-to-b from-white to-gray-50"
     >
-       {/* Matrix Background Layer */}
-       {isMobile ? (
-        // Mobile version with static background for better performance
-        <div className="absolute inset-0">
-          <div
-            className="absolute inset-0"
-            style={{
-              background: `radial-gradient(
-                circle 150vw at 50% 50%,
-                rgba(255, 255, 255, 0.7) 0%,
-                rgba(255, 255, 255, 0.92) 45%,
-                rgba(255, 255, 255, 1) 100%
-              )`,
-            }}
-          />
-        </div>
-       ) : (
-        // Desktop version with mouse follow
-        <div 
-          className="absolute inset-0"
-          style={{
-            mask: `radial-gradient(circle 300px at ${mousePosition.x}px ${mousePosition.y}px, white, transparent)`,
-            WebkitMask: `radial-gradient(circle 300px at ${mousePosition.x}px ${mousePosition.y}px, white, transparent)`,
-          }}
-        >
-          {isInView && <MatrixRain color="rgba(128, 128, 128, 0.3)" />}
-        </div>
-       )}
+       {/* GLSL Hills Background Layer */}
+      {!isMobile && isInView && (
+        <GLSLHills
+          speed={0.3}
+          cameraZ={125}
+        />
+      )}
 
       {/* Content */}
       <div className="container mx-auto px-4 relative z-10 h-full">
@@ -198,41 +179,47 @@ export default function Hero() {
               <div className="space-y-8 order-2 lg:order-1">
               
               <div className="hidden lg:flex flex-wrap items-center gap-3">
-                <a
+                <HeroPill
                   href="https://whop.com/price-action-trader-mentorship-24-d9/pat-mentorship-2025/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2.5 text-sm font-semibold text-amber-950 transition-colors bg-amber-50/80 backdrop-blur-sm px-3.5 py-1.5 rounded-full border border-amber-200/70 shadow-sm hover:border-amber-300 hover:bg-amber-50"
-                >
-                  <Image
-                    src="/images/whop-logo.png"
-                    alt="Whop"
-                    width={18}
-                    height={18}
-                    className="h-4.5 w-4.5"
-                  />
-                  <div className="flex items-center gap-0.5">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star key={star} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                  <span className="text-amber-900/80 text-xs">
-                    <span className="font-bold text-amber-950">{whopAvgText}</span>/5 • {whopCount} Bewertungen
-                  </span>
-                </a>
+                  isExternal
+                  variant="amber"
+                  size="sm"
+                  announcement={
+                    <span className="flex items-center gap-1.5">
+                      <Image
+                        src="/images/whop-logo.png"
+                        alt="Whop"
+                        width={16}
+                        height={16}
+                        className="h-4 w-4"
+                      />
+                      <span className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star key={star} className="h-3 w-3 fill-amber-500 text-amber-500" />
+                        ))}
+                      </span>
+                    </span>
+                  }
+                  label={`${whopCount} Bewertungen`}
+                />
 
-                <div className="inline-block">
-                  <span className="inline-flex items-center rounded-full px-4 py-1 text-sm font-medium bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                    Limitiert auf 100 Plätze • Start am 01.03.2026
-                  </span>
-                </div>
+                <HeroPill
+                  variant="blue"
+                  size="sm"
+                  announcement="🚀"
+                  label="Limitiert auf 100 Plätze • Start am 01.03.2026"
+                />
               </div>
               <h1 className="hidden lg:block text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 lg:leading-[1.1]">
                 Dein{" "}
-                <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent">
-                  Live-Mentoring
-                </span>
-                : ICT verstehen, lernen und anwenden
+                {isInView ? (
+                  <ParticleTextReveal text="Live-Mentoring:" fontSize={58} />
+                ) : (
+                  <span className="text-blue-600">
+                    Live-Mentoring:
+                  </span>
+                )}
+                {" "}ICT verstehen, lernen und anwenden
               </h1>
               
               <p className="hidden lg:block text-lg md:text-xl text-gray-600 leading-relaxed max-w-xl">
@@ -297,47 +284,50 @@ export default function Hero() {
 
               <div className="pt-3 hidden lg:block text-left">
                 
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-blue-50 ring-1 ring-blue-200 mb-3">
+                  <div className="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs sm:text-sm">⏰</div>
+                  <span className="text-xs sm:text-sm font-medium text-blue-700">Verbleibende Zeit zur Einschreibung</span>
+                </div>
                 <Countdown targetDate="2026-03-01T00:00:00+01:00" />
-                <p className="text-sm text-gray-700 mt-3">
-                  Verbleibende Zeit zur Einschreibung in die Warteliste
-                </p>
               </div>
             </div>
 
             {/* Right Column - Visual Element */}
             <div className="relative flex items-center justify-center lg:-mt-8 order-1 lg:order-2">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl opacity-10 blur-2xl" />
               <div className="relative w-full max-w-lg mx-auto">
-                <div className="relative overflow-hidden rounded-2xl shadow-xl ring-1 ring-gray-200/60 bg-white aspect-[3/4] sm:aspect-[4/5]">
+                <div className="relative overflow-hidden rounded-2xl shadow-xl ring-1 ring-gray-200/60 bg-white aspect-[2/3] sm:aspect-[4/5]">
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-900/75 via-gray-900/35 to-transparent" />
                   <div className="absolute top-4 left-4 right-4 lg:hidden z-10">
-                    <h1 className="text-[21px] sm:text-2xl font-bold tracking-tight text-gray-900 leading-snug drop-shadow-sm">
-                      Dein{" "}
-                      <span className="bg-gradient-to-b from-purple-400 to-blue-500 bg-clip-text text-transparent">
-                        Live-Mentoring
-                      </span>
-                      : ICT verstehen, lernen und anwenden
-                    </h1>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <span className="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-gray-900 ring-1 ring-white/70">
-                        <Image
-                          src="/images/whop-logo.png"
-                          alt="Whop"
-                          width={16}
-                          height={16}
-                          className="mr-2 h-4 w-4"
-                        />
-                        <span className="mr-2 flex items-center gap-0.5 text-amber-500">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star key={`hero-mobile-star-${i}`} className="h-3.5 w-3.5 fill-current" />
-                          ))}
+                    <HeroPill
+                      href="https://whop.com/price-action-trader-mentorship-24-d9/pat-mentorship-2025/"
+                      isExternal
+                      variant="amber"
+                      size="sm"
+                      announcement={
+                        <span className="flex items-center gap-1.5">
+                          <Image
+                            src="/images/whop-logo.png"
+                            alt="Whop"
+                            width={16}
+                            height={16}
+                            className="h-4 w-4"
+                          />
+                          <span className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star key={`mobile-top-star-${star}`} className="h-3 w-3 fill-amber-500 text-amber-500" />
+                            ))}
+                          </span>
                         </span>
-                        {whopAvgText}/5 • {whopCount} Bewertungen
+                      }
+                      label={`${whopCount} Bewertungen`}
+                    />
+                    <h1 className="mt-2 text-[26px] sm:text-3xl font-bold tracking-tight text-gray-900 leading-snug drop-shadow-sm">
+                      Dein{" "}
+                      <span className="text-blue-600">
+                        Live-Mentoring:
                       </span>
-                      <span className="inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-gray-900 ring-1 ring-white/70">
-                        Limitiert auf 100 Plätze • Start am 01.03.2026
-                      </span>
-                    </div>
+                      {" "}ICT verstehen, lernen und anwenden
+                    </h1>
                   </div>
                   <Image
                     src="/images/mentor-image-2.png"
@@ -347,48 +337,59 @@ export default function Hero() {
                     sizes="(max-width: 1024px) 90vw, 520px"
                     priority
                   />
-                  <div className="absolute bottom-4 left-4 right-4 grid grid-cols-2 gap-2">
+                  <div className="absolute bottom-4 left-4 right-4 grid grid-cols-2 gap-1.5 sm:gap-2">
                     <button
                       type="button"
                       onClick={() => handleScrollToMentorTarget('experience')}
-                      className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs font-semibold text-gray-900 ring-1 ring-white/90 border border-white/60 shadow-[0_8px_24px_rgba(15,23,42,0.2)] backdrop-blur-md hover:bg-white/90 transition"
+                      className="flex items-center gap-1.5 sm:gap-2 rounded-md bg-white px-2 py-2 sm:px-3 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-gray-900 shadow-md hover:bg-gray-50 transition"
                     >
-                      <div className="h-6 w-6 rounded-lg bg-purple-500/15 text-purple-700 flex items-center justify-center">
-                        <Award className="h-3.5 w-3.5" />
+                      <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-md bg-purple-500/15 text-purple-700 flex items-center justify-center shrink-0">
+                        <Award className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                       </div>
-                      2 Jahre Coaching-Erfahrung
+                      2 Jahre Coaching
                     </button>
                     <button
                       type="button"
                       onClick={() => handleScrollToMentorTarget('mentees')}
-                      className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs font-semibold text-gray-900 ring-1 ring-white/90 border border-white/60 shadow-[0_8px_24px_rgba(15,23,42,0.2)] backdrop-blur-md hover:bg-white/90 transition"
+                      className="flex items-center gap-1.5 sm:gap-2 rounded-md bg-white px-2 py-2 sm:px-3 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-gray-900 shadow-md hover:bg-gray-50 transition"
                     >
-                      <div className="h-6 w-6 rounded-lg bg-blue-500/15 text-blue-700 flex items-center justify-center">
-                        <Users className="h-3.5 w-3.5" />
+                      <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-md bg-blue-500/15 text-blue-700 flex items-center justify-center shrink-0">
+                        <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                       </div>
-                      130+ erfolgreiche Absolventen
+                      130+ Absolventen
                     </button>
                     <button
                       type="button"
                       onClick={() => handleScrollToMentorTarget('performance')}
-                      className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs font-semibold text-gray-900 ring-1 ring-white/90 border border-white/60 shadow-[0_8px_24px_rgba(15,23,42,0.2)] backdrop-blur-md hover:bg-white/90 transition"
+                      className="flex items-center gap-1.5 sm:gap-2 rounded-md bg-white px-2 py-2 sm:px-3 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-gray-900 shadow-md hover:bg-gray-50 transition"
                     >
-                      <div className="h-6 w-6 rounded-lg bg-emerald-500/15 text-emerald-700 flex items-center justify-center">
-                        <LineChart className="h-3.5 w-3.5" />
+                      <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-md bg-emerald-500/15 text-emerald-700 flex items-center justify-center shrink-0">
+                        <LineChart className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                       </div>
                       Performance sichtbar
                     </button>
                     <button
                       type="button"
                       onClick={() => handleScrollToMentorTarget('payout')}
-                      className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-2 text-xs font-semibold text-gray-900 ring-1 ring-white/90 border border-white/60 shadow-[0_8px_24px_rgba(15,23,42,0.2)] backdrop-blur-md hover:bg-white/90 transition"
+                      className="flex items-center gap-1.5 sm:gap-2 rounded-md bg-white px-2 py-2 sm:px-3 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-gray-900 shadow-md hover:bg-gray-50 transition"
                     >
-                      <div className="h-6 w-6 rounded-lg bg-amber-500/15 text-amber-700 flex items-center justify-center">
-                        <BadgeCheck className="h-3.5 w-3.5" />
+                      <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-md bg-amber-500/15 text-amber-700 flex items-center justify-center shrink-0">
+                        <BadgeCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                       </div>
                       Payout‑Nachweis
                     </button>
                   </div>
+                </div>
+
+                {/* Limitiert Hero Pill - Mobile only, under the image */}
+                <div className="mt-3 lg:hidden">
+                  <HeroPill
+                    variant="blue"
+                    size="sm"
+                    className="w-full justify-center"
+                    announcement="🚀"
+                    label="Limitiert auf 100 Plätze • Start am 01.03.2026"
+                  />
                 </div>
 
                 <div className="mt-4 lg:hidden text-center">
@@ -398,7 +399,7 @@ export default function Hero() {
                   <Countdown targetDate="2026-03-01T00:00:00+01:00" />
                 </div>
 
-                <div className="mt-4 grid sm:grid-cols-2 gap-3 items-stretch">
+                <div className="mt-2 grid sm:grid-cols-2 gap-3 items-stretch">
                   <a
                     href="https://whop.com/price-action-trader-mentorship-24-d9/pat-mentorship-2025/"
                     target="_blank"
@@ -429,7 +430,7 @@ export default function Hero() {
                     </div>
                   </a>
 
-                  <div className="rounded-xl border bg-white p-4 shadow-sm h-full">
+                  <div className="hidden lg:block rounded-xl border bg-white p-4 shadow-sm h-full">
                     <div className="flex items-center gap-3">
                       <div className="h-7 w-7 rounded-lg bg-emerald-500/15 text-emerald-700 flex items-center justify-center">
                         <BadgeCheck className="h-4 w-4" />
@@ -441,10 +442,6 @@ export default function Hero() {
                     </p>
                   </div>
                 </div>
-                <p className="mt-4 lg:hidden text-base text-gray-600 leading-relaxed">
-                  Ich baue dein Verständnis Schritt für Schritt auf: Theorie, danach Live-Tape-Reading und später echtes Live-Trading.
-                  Du zahlst monatlich und kannst jederzeit kündigen, wenn der Mehrwert nicht passt.
-                </p>
               </div>
             </div>
           </div>

@@ -8,7 +8,7 @@ export default function WaitlistCTA() {
     <section id="waitlist" className="py-20 px-4 md:px-6 bg-white">
       <div className="container mx-auto max-w-6xl">
         <div className="relative">
-          <Card className="relative overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 text-white p-8 md:p-12">
+          <Card className="relative overflow-hidden bg-slate-900 text-white p-8 md:p-12">
             {/* Vortex Background */}
             <div className="absolute inset-0">
               <Vortex

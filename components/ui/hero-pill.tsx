@@ -6,7 +6,7 @@ interface HeroPillProps {
   announcement?: React.ReactNode
   className?: string
   isExternal?: boolean
-  variant?: "blue" | "amber" | "dark"
+  variant?: "blue" | "amber" | "dark" | "emerald" | "red"
   size?: "default" | "sm"
 }
 
@@ -25,6 +25,16 @@ const variantStyles = {
     pill: "bg-white/10 ring-1 ring-white/20",
     badge: "bg-blue-500/20 text-blue-400",
     text: "text-blue-400",
+  },
+  emerald: {
+    pill: "bg-emerald-50 ring-1 ring-emerald-200",
+    badge: "bg-emerald-500 text-white",
+    text: "text-emerald-700",
+  },
+  red: {
+    pill: "bg-red-50 ring-1 ring-red-200",
+    badge: "bg-red-500 text-white",
+    text: "text-red-700",
   },
 }
 
@@ -49,11 +59,14 @@ export function HeroPill({
   const styles = variantStyles[variant]
   const textSize = sizeStyles[size]
 
+  // Check if announcement is an icon (React element) vs text/emoji
+  const isIconAnnouncement = variant === 'emerald' || variant === 'red'
+  
   const content = (
     <>
       <div className={cn(
-        "w-fit rounded-full px-2 py-0.5",
-        "text-center",
+        "rounded-full flex items-center justify-center shrink-0",
+        isIconAnnouncement ? "size-6" : "px-2 py-0.5",
         textSize.text,
         styles.badge
       )}>
