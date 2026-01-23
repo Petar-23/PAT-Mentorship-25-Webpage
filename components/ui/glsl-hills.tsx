@@ -30,7 +30,7 @@ const GLSLHills = ({
     // Plane class
     class Plane {
       uniforms: { time: { type: string; value: number } }
-      mesh: THREE.Mesh
+      mesh: THREE.Points
       time: number
 
       constructor() {
