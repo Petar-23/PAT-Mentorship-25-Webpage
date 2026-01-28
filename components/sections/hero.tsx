@@ -234,13 +234,13 @@ export default function Hero() {
                       size="lg"
                       onClick={handleGetStarted}
                       disabled={isNavigating}
-                      className="w-full flex items-center gap-2 justify-center"
+                      className="w-full flex items-center gap-2 justify-center h-12 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 animate-pulse hover:animate-none font-semibold text-base px-10 py-3"
                     >
                       Sichere dir deinen Platz
-                      <ArrowRight className="h-4 w-4" />
+                      <ArrowRight className="h-5 w-5" />
                     </Button>
                   ) : (
-                    <Button size="lg" className="w-full" onClick={handleScrollToDetails}>
+                    <Button size="lg" className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 font-semibold text-base px-10 py-3" onClick={handleScrollToDetails}>
                       Details erkunden
                     </Button>
                   )}
@@ -248,7 +248,7 @@ export default function Hero() {
                 
                 <div className="w-full sm:w-auto">
                   {isSignedIn ? (
-                    <Button size="lg" variant="outline" className="w-full" onClick={handleScrollToDetails}>
+                    <Button size="lg" variant="outline" className="w-full h-12 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 shadow-md hover:shadow-lg transition-all duration-200 font-semibold text-base px-10 py-3" onClick={handleScrollToDetails}>
                       Mentorship Details
                     </Button>
                   ) : (
@@ -256,11 +256,11 @@ export default function Hero() {
                       <Button 
                         size="lg" 
                         variant="outline"
-                        className="w-full flex items-center gap-2 justify-center"
+                        className="w-full h-12 flex items-center gap-2 justify-center border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white shadow-md hover:shadow-lg transition-all duration-200 font-semibold text-base px-10 py-3 animate-pulse hover:animate-none"
                         onClick={handleSignInClick}
                       >
                         Jetzt Platz sichern
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRight className="h-5 w-5" />
                       </Button>
                     </SignInButton>
                   )}

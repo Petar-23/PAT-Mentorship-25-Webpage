@@ -82,9 +82,9 @@ export async function PATCH(request: NextRequest,{ params }: { params: Promise<{
   
       // 2. Bunny-Videos löschen (parallel, Errors loggen)
       const bunnyDeletes = moduleWithVideos.chapters
-        .flatMap(ch => ch.videos)
-        .filter(v => v.bunnyGuid)
-        .map(async (video) => {
+        .flatMap((ch: any) => ch.videos)
+        .filter((v: any) => v.bunnyGuid)
+        .map(async (video: any) => {
           try {
             await deleteVideo(video.bunnyGuid!)
           } catch (error) {

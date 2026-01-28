@@ -123,9 +123,9 @@ export async function DELETE(
     }
 
     const bunnyGuids = playlist.modules
-      .flatMap((m) => m.chapters.flatMap((c) => c.videos))
-      .map((v) => v.bunnyGuid)
-      .filter((guid): guid is string => Boolean(guid))
+      .flatMap((m: any) => m.chapters.flatMap((c: any) => c.videos))
+      .map((v: any) => v.bunnyGuid)
+      .filter((guid: any): guid is string => Boolean(guid))
 
     // 2) Bunny-Videos löschen (fehlertolerant, wie bei euren Module/Kapitel Deletes)
     await Promise.allSettled(
