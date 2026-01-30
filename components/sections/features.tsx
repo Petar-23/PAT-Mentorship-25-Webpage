@@ -60,7 +60,7 @@ export default function Features() {
           {features.map((feature) => {
             const Icon = feature.icon
             return (
-              <Card key={feature.title} className="border-2 hover:border-blue-500/20 transition-colors">
+              <Card key={feature.title} className="border-2 hover:border-blue-500/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-out">
                 <CardHeader>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="h-12 w-12 rounded-lg bg-blue-50 flex items-center justify-center">
