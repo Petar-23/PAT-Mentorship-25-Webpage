@@ -358,16 +358,6 @@ export function Navbar() {
         <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-gray-300 to-transparent animate-gradient-x" />
       </header>
 
-      <div
-        className={cn(
-          'bg-gray-100 text-gray-600 text-[10px] sm:text-xs md:text-sm px-3 sm:px-4 py-2 border-b border-gray-200 text-center',
-          isQuickGuide && 'hidden md:block'
-        )}
-      >
-        Trading ist riskant und die meisten Daytrader verlieren Geld. Petar&apos;s Ergebnisse sind nicht typisch.
-        Alle Informationen dienen nur Bildungszwecken und stellen keine Anlageberatung oder Kauf-/Verkaufsempfehlungen dar.
-      </div>
-
       {/* Backdrop Overlay */}
       <AnimatePresence>
         {isOpen && (
