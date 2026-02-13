@@ -1,5 +1,6 @@
 'use client'
 
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { useEffect, useState, useRef } from 'react'
 import Script from 'next/script'
 
@@ -218,16 +219,16 @@ export const trackConversion = {
     trackEvent('purchase', {
       event_category: 'conversion',
       event_label: 'subscription_started',
-      value: value ?? 150,
-      currency: 'EUR',
+      value: value ?? MENTORSHIP_CONFIG.price,
+      currency: MENTORSHIP_CONFIG.currency,
     })
 
     // Google Ads Conversion Tracking (wenn Label konfiguriert ist)
     if (googleAdsId && conversionLabel && typeof window !== 'undefined' && typeof window.gtag === 'function') {
       window.gtag('event', 'conversion', {
         send_to: `${googleAdsId}/${conversionLabel}`,
-        value: value ?? 150,
-        currency: 'EUR',
+        value: value ?? MENTORSHIP_CONFIG.price,
+        currency: MENTORSHIP_CONFIG.currency,
       })
     }
   },

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 
 type LeadMagnetCountdownProps = {
   targetDate: string
@@ -54,7 +55,7 @@ export default function LeadMagnetCountdown({
   return (
     <div className={cn('rounded-lg border border-neutral-200 bg-white p-4', className)}>
       <p className="text-pretty text-xs font-medium text-neutral-500">
-        Mentorship‑Start: 01.03.2026
+        Mentorship‑Start: {MENTORSHIP_CONFIG.startDateFormatted}
       </p>
       <div className="mt-2 flex flex-wrap gap-3 text-sm font-semibold text-neutral-900">
         <span>{timeLeft.days} Tage</span>

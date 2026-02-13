@@ -1,5 +1,6 @@
 
 "use client"
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { Card } from "@/components/ui/card"
 import { Check, X, ArrowRight } from "lucide-react"
 import { motion } from "framer-motion"
@@ -70,7 +71,7 @@ const comparisonData: { categories: Category[] } = {
       features: [
         {
           name: "Startkosten",
-          us: "€150/Monat (inkl. MwSt.)",
+          us: MENTORSHIP_CONFIG.priceWithTax,
           others: "€3.000+ vorab",
           highlight: true,
           description: "Niedrige monatliche Zahlungen vs. hohe Vorabinvestition"

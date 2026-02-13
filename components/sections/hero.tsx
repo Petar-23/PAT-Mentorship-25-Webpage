@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation'
 import { trackConversion } from '@/components/analytics/google-tag-manager'
 import { HeroPill } from '@/components/ui/hero-pill'
 import { ParticleTextReveal } from '@/components/ui/particle-text-reveal'
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 
 export default function Hero() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
@@ -207,7 +208,7 @@ export default function Hero() {
                   variant="blue"
                   size="sm"
                   announcement="🚀"
-                  label="Limitiert auf 100 Plätze • Start am 01.03.2026"
+                  label={`Limitiert auf ${MENTORSHIP_CONFIG.maxSpots} Plätze • Start am ${MENTORSHIP_CONFIG.startDateFormatted}`}
                 />
               </div>
               <h1 className="hidden lg:block text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 lg:leading-[1.1]">
@@ -268,7 +269,7 @@ export default function Hero() {
 
               <div className="flex flex-wrap justify-center gap-3 pt-4 lg:pt-3 text-center lg:justify-start lg:text-left">
                 <div className="min-w-[110px] flex-1 sm:flex-initial">
-                  <p className="text-xl lg:text-3xl font-bold text-gray-900">€150</p>
+                  <p className="text-xl lg:text-3xl font-bold text-gray-900">{MENTORSHIP_CONFIG.priceFormatted}</p>
                   <p className="text-xs sm:text-sm text-gray-600">/Monat (inkl. MwSt.)</p>
                 </div>
                 <div className="min-w-[110px] flex-1 sm:flex-initial">
@@ -287,7 +288,7 @@ export default function Hero() {
                   <div className="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs sm:text-sm">⏰</div>
                   <span className="text-xs sm:text-sm font-medium text-blue-700">Verbleibende Zeit zur Einschreibung</span>
                 </div>
-                <Countdown targetDate="2026-03-01T00:00:00+01:00" />
+                <Countdown targetDate={MENTORSHIP_CONFIG.startDate} />
               </div>
             </div>
 
@@ -387,7 +388,7 @@ export default function Hero() {
                     size="sm"
                     className="w-full justify-center"
                     announcement="🚀"
-                    label="Limitiert auf 100 Plätze • Start am 01.03.2026"
+                    label={`Limitiert auf ${MENTORSHIP_CONFIG.maxSpots} Plätze • Start am ${MENTORSHIP_CONFIG.startDateFormatted}`}
                   />
                 </div>
 
@@ -395,7 +396,7 @@ export default function Hero() {
                   <p className="text-xs text-gray-700 mb-2">
                     Verbleibende Zeit zur Einschreibung in die Warteliste
                   </p>
-                  <Countdown targetDate="2026-03-01T00:00:00+01:00" />
+                  <Countdown targetDate={MENTORSHIP_CONFIG.startDate} />
                 </div>
 
                 <div className="mt-2 flex flex-col items-center lg:grid lg:grid-cols-2 gap-3 lg:items-stretch">
