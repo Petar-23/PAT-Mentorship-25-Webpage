@@ -227,7 +227,7 @@ export default function Hero() {
                 Du zahlst monatlich und kannst jederzeit kündigen, wenn der Mehrwert nicht passt.
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-4 pt-2 w-full">
+              <div className="flex flex-col sm:flex-row sm:justify-center lg:justify-start gap-4 pt-2 w-full">
                 <div className="w-full sm:w-auto">
                   {isSignedIn ? (
                     <Button

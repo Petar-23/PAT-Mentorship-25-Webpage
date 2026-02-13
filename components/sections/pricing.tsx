@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button"
 const features = [
   "2 Live-Sessions pro Woche (Di + Do)",
   "Wöchentlicher Marktausblick mit Draw on Liquidity",
+  "Tägliche Reviews am Dienstag und Donnerstag",
   "3-4 vollständige Trading-Modelle mit Trading Plan",
   "Alle Recordings verfügbar solange du dabei bist",
-  "Exklusive Kohorte (max. 100 Trader)",
+  "Exklusive Community (max. 100 Trader)",
 ]
 
 export default function Pricing() {
