@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { CalendarCheck, LockIcon, CircleCheckBig, CreditCard, BookOpen } from 'lucide-react'
+import { CalendarCheck, LockIcon, CircleCheckBig, CreditCard, BookOpen, Ticket } from 'lucide-react'
 import { CheckoutButton } from '@/components/ui/checkout-button'
 import { Button } from '@/components/ui/button'
 import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'
@@ -173,7 +173,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                 Willkommen, {initialData.user.firstName || 'zukünftiger Trader'}!
               </h1>
               <p className="text-lg text-gray-600">
-                Du bist dabei, meiner exklusiven ICT Mentorship 2026 beizutreten.
+                Noch wenige Plätze verfügbar — sichere dir deinen Zugang zur M26.
               </p>
             </motion.div>
           </div>
@@ -181,16 +181,16 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
           {/* Main Card */}
           <Card className="mb-8 shadow-sm border-2">
             <CardContent className="p-8">
-              {/* Payment Highlight Box */}
-              <div className="bg-green-50 border border-green-300 rounded-lg p-4 mb-8">
-                <div className="flex items-center gap-3 text-green-700">
-                  <CalendarCheck className="h-5 w-5 flex-shrink-0" />
-                  <div>
-                    <p className="font-medium">Keine Zahlung bis März 2026</p>
-                    <p className="text-sm text-green-600 mt-1">
-                      Jetzt sichern, erste Zahlung erst ab 01. März 2026
-                    </p>
-                  </div>
+              {/* Urgency Banner */}
+              <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-5 mb-8">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-amber-900 flex items-center justify-center gap-2">
+                    <Ticket className="w-6 h-6 shrink-0" />
+                    Nur noch wenige der 100 Plätze verfügbar
+                  </p>
+                  <p className="text-sm text-amber-700 mt-2">
+                    Die Vergabe erfolgt nach dem Prinzip: Wer zuerst kommt, mahlt zuerst.
+                  </p>
                 </div>
               </div>
 
@@ -201,21 +201,21 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                   <span className="text-xl text-gray-500 ml-2">/Monat</span>
                 </div>
                 <p className="text-sm text-gray-600 mt-2 font-medium">
-                  inkl. gesetzl. MwSt.
+                  inkl. gesetzl. MwSt. · monatlich kündbar
                 </p>
-                <p className="text-sm text-gray-500 mt-1">
-                  Erste Zahlung am 01. März 2026
+                <p className="text-sm text-green-600 mt-1 font-medium">
+                  Keine Zahlung bis 01. März 2026
                 </p>
               </div>
 
               {/* Benefits List */}
               <div className="grid sm:grid-cols-2 gap-4 mb-8">
                 {[
-                  "Live Trading/Coaching Sessions 2-3x wöchentlich",
-                  "Zugang zur privaten Discord-Community",
-                  "Umfassendes Lernmaterial",
-                  "Interaktive Frage & Antwort Sessions",
-                  "Dauerhafter Zugang nach Abschluss",
+                  "2 Live-Sessions pro Woche (Di + Do)",
+                  "Tagesausblick am Dienstag und Donnerstag",
+                  "Wöchentlicher Marktausblick mit Draw on Liquidity",
+                  "3-4 vollständige Trading-Modelle mit Trading Plan",
+                  "Exklusive Community (max. 100 Trader)",
                   "Monatlich kündbar"
                 ].map((benefit, index) => (
                   <motion.div

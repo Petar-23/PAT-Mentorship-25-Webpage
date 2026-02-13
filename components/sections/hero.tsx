@@ -227,7 +227,19 @@ export default function Hero() {
                 Du zahlst monatlich und kannst jederzeit kündigen, wenn der Mehrwert nicht passt.
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-4 pt-2 w-full">
+              <div className="flex flex-col sm:flex-row sm:justify-center lg:justify-start gap-4 pt-2 w-full">
+                <div className="w-full sm:w-auto">
+                  {isSignedIn ? (
+                    <Button size="lg" variant="outline" className="w-full" onClick={handleScrollToDetails}>
+                      Details erkunden
+                    </Button>
+                  ) : (
+                    <Button size="lg" variant="outline" className="w-full" onClick={handleScrollToDetails}>
+                      Details erkunden
+                    </Button>
+                  )}
+                </div>
+                
                 <div className="w-full sm:w-auto">
                   {isSignedIn ? (
                     <Button
@@ -236,30 +248,17 @@ export default function Hero() {
                       disabled={isNavigating}
                       className="w-full flex items-center gap-2 justify-center"
                     >
-                      Sichere dir deinen Platz
+                      Prüfen ob Plätze frei sind
                       <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  ) : (
-                    <Button size="lg" className="w-full" onClick={handleScrollToDetails}>
-                      Details erkunden
-                    </Button>
-                  )}
-                </div>
-                
-                <div className="w-full sm:w-auto">
-                  {isSignedIn ? (
-                    <Button size="lg" variant="outline" className="w-full" onClick={handleScrollToDetails}>
-                      Mentorship Details
                     </Button>
                   ) : (
                     <SignInButton mode="modal" forceRedirectUrl="/dashboard">
                       <Button 
                         size="lg" 
-                        variant="outline"
                         className="w-full flex items-center gap-2 justify-center"
                         onClick={handleSignInClick}
                       >
-                        Jetzt Platz sichern
+                        Prüfen ob Plätze frei sind
                         <ArrowRight className="h-4 w-4" />
                       </Button>
                     </SignInButton>
@@ -399,7 +398,7 @@ export default function Hero() {
                   <Countdown targetDate="2026-03-01T00:00:00+01:00" />
                 </div>
 
-                <div className="mt-2 grid sm:grid-cols-2 gap-3 items-stretch">
+                <div className="mt-2 flex flex-col items-center lg:grid lg:grid-cols-2 gap-3 lg:items-stretch">
                   <a
                     href="https://whop.com/price-action-trader-mentorship-24-d9/pat-mentorship-2025/"
                     target="_blank"
