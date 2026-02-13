@@ -62,7 +62,7 @@ export default function Pricing() {
 
             <div className="pt-4">
               <Button className="w-full" size="lg">
-                Platz sichern
+                Prüfen ob Plätze frei sind
               </Button>
             </div>
           </CardContent>
