@@ -398,7 +398,7 @@ export default function Hero() {
                   <Countdown targetDate="2026-03-01T00:00:00+01:00" />
                 </div>
 
-                <div className="mt-2 grid sm:grid-cols-2 gap-3 items-stretch justify-center">
+                <div className="mt-2 flex flex-col items-center lg:grid lg:grid-cols-2 gap-3 lg:items-stretch">
                   <a
                     href="https://whop.com/price-action-trader-mentorship-24-d9/pat-mentorship-2025/"
                     target="_blank"
