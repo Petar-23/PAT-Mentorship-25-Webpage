@@ -71,7 +71,7 @@ const comparisonData: { categories: Category[] } = {
         {
           name: "Startkosten",
           us: "€150/Monat (inkl. MwSt.)",
-          others: "€3500+ vorab",
+          others: "€3.000+ vorab",
           highlight: true,
           description: "Niedrige monatliche Zahlungen vs. hohe Vorabinvestition"
         },

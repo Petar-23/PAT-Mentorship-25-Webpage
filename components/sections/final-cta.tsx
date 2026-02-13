@@ -50,7 +50,7 @@ export default function FinalCTA() {
 
     const buttonContent = (
         <>
-            <span>Platz jetzt sichern</span>
+            <span>Prüfen ob Plätze frei sind</span>
             <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
         </>
     )

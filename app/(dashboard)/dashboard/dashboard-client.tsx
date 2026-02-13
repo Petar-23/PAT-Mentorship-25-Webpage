@@ -173,7 +173,7 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
                 Willkommen, {initialData.user.firstName || 'zukünftiger Trader'}!
               </h1>
               <p className="text-lg text-gray-600">
-                Du bist dabei, meiner exklusiven ICT Mentorship 2026 beizutreten.
+                Noch wenige Plätze verfügbar — sichere dir deinen Zugang zur M26.
               </p>
             </motion.div>
           </div>
@@ -211,11 +211,11 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               {/* Benefits List */}
               <div className="grid sm:grid-cols-2 gap-4 mb-8">
                 {[
-                  "Live Trading/Coaching Sessions 2-3x wöchentlich",
-                  "Zugang zur privaten Discord-Community",
-                  "Umfassendes Lernmaterial",
-                  "Interaktive Frage & Antwort Sessions",
-                  "Dauerhafter Zugang nach Abschluss",
+                  "2 Live-Sessions pro Woche (Di + Do)",
+                  "Tagesausblick am Dienstag und Donnerstag",
+                  "Wöchentlicher Marktausblick mit Draw on Liquidity",
+                  "3-4 vollständige Trading-Modelle mit Trading Plan",
+                  "Exklusive Community (max. 100 Trader)",
                   "Monatlich kündbar"
                 ].map((benefit, index) => (
                   <motion.div
