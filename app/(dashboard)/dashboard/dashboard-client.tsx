@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { CalendarCheck, LockIcon, CircleCheckBig, CreditCard, BookOpen } from 'lucide-react'
+import { CalendarCheck, LockIcon, CircleCheckBig, CreditCard, BookOpen, Ticket } from 'lucide-react'
 import { CheckoutButton } from '@/components/ui/checkout-button'
 import { Button } from '@/components/ui/button'
 import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'
@@ -184,8 +184,9 @@ export default function DashboardClient({ initialData }: DashboardClientProps) {
               {/* Urgency Banner */}
               <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-5 mb-8">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-amber-900">
-                    🔥 Nur noch wenige der 100 Plätze verfügbar
+                  <p className="text-2xl font-bold text-amber-900 flex items-center justify-center gap-2">
+                    <Ticket className="w-6 h-6 shrink-0" />
+                    Nur noch wenige der 100 Plätze verfügbar
                   </p>
                   <p className="text-sm text-amber-700 mt-2">
                     Die Vergabe erfolgt nach dem Prinzip: Wer zuerst kommt, mahlt zuerst.
