@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { trackConversion } from '@/components/analytics/google-tag-manager'
 import { Countdown } from '@/components/ui/countdown'
 import { ChevronDownIcon } from '@/components/ui/chevron-down'
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 
 export default function HormoziLanding() {
   const { isSignedIn } = useUser()
@@ -68,8 +69,8 @@ export default function HormoziLanding() {
           <div className="mt-4 flex w-full flex-col items-center gap-3">
             {ctaButton}
             <p className="text-xs text-slate-500">
-              150€/Monat · monatlich kündbar ·{" "}
-              <span className="rounded-sm bg-yellow-200 px-1 text-blue-700">max. 100 Plätze</span>
+              {MENTORSHIP_CONFIG.price}€/Monat · monatlich kündbar ·{" "}
+              <span className="rounded-sm bg-yellow-200 px-1 text-blue-700">max. {MENTORSHIP_CONFIG.maxSpots} Plätze</span>
             </p>
           </div>
         </div>
@@ -189,7 +190,7 @@ export default function HormoziLanding() {
             <div className="max-w-sm">
               <p className="text-[11px] text-slate-500">Anmeldung schließt in</p>
               <Countdown
-                targetDate="2026-03-01T00:00:00+01:00"
+                targetDate={MENTORSHIP_CONFIG.startDate}
                 variant="light"
                 className="mt-2 scale-75 sm:scale-90 sm:[&>div]:flex-nowrap"
               />
@@ -216,8 +217,8 @@ export default function HormoziLanding() {
               </SignInButton>
             )}
             <p className="text-xs text-slate-500">
-              150€/Monat · monatlich kündbar ·{" "}
-              <span className="rounded-sm bg-yellow-200 px-1 text-blue-700">max. 100 Plätze</span>
+              {MENTORSHIP_CONFIG.price}€/Monat · monatlich kündbar ·{" "}
+              <span className="rounded-sm bg-yellow-200 px-1 text-blue-700">max. {MENTORSHIP_CONFIG.maxSpots} Plätze</span>
             </p>
           </div>
         </div>

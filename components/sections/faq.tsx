@@ -1,18 +1,19 @@
 "use client"
 
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { motion } from "framer-motion"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 
 const faqs = [
   {
     id: "item-1",
-    question: "Warum startet das Programm im März 2026?",
-    answer: "Der Start am 01.03.2026 ermöglicht es mir, alle Teilnehmer einzusammeln und sicherzustellen, dass alle gemeinsam beginnen, um von Tag eins an eine starke Community aufzubauen. Dies gibt dir auch die Zeit, deinen Platz zu sichern und dich auf das Programm vorzubereiten.",
+    question: `Warum startet das Programm im ${MENTORSHIP_CONFIG.startMonthYear}?`,
+    answer: `Der Start am ${MENTORSHIP_CONFIG.startDateFormatted} ermöglicht es mir, alle Teilnehmer einzusammeln und sicherzustellen, dass alle gemeinsam beginnen, um von Tag eins an eine starke Community aufzubauen. Dies gibt dir auch die Zeit, deinen Platz zu sichern und dich auf das Programm vorzubereiten.`,
   },
   {
     id: "item-2",
     question: "Wie funktioniert das monatliche Abonnement?",
-    answer: "Das Programm kostet 150€ pro Monat (inkl. MwSt.) und du kannst jederzeit kündigen, wenn du nicht zufrieden bist. Dieses flexible Modell gewährleistet hochwertige Betreuung und ermöglicht es dir gleichzeitig, den Wert des Programms monatlich zu evaluieren.",
+    answer: `Das Programm kostet ${MENTORSHIP_CONFIG.price}€ pro Monat (inkl. MwSt.) und du kannst jederzeit kündigen, wenn du nicht zufrieden bist. Dieses flexible Modell gewährleistet hochwertige Betreuung und ermöglicht es dir gleichzeitig, den Wert des Programms monatlich zu evaluieren.`,
   },
   {
     id: "item-3",

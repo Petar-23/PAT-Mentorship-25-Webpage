@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { VortexBackground } from "@/components/ui/vortex-wrapper"
 import { trackConversion } from '@/components/analytics/google-tag-manager'
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 
 export default function CTASection() {
   const { isSignedIn } = useUser()
@@ -74,13 +75,13 @@ export default function CTASection() {
               
               <div className="space-y-3 sm:space-y-6">
                 <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/10">
-                  <p className="text-sm sm:text-base font-medium">🎯 Limitiert auf 100 Plätze</p>
+                  <p className="text-sm sm:text-base font-medium">🎯 Limitiert auf {MENTORSHIP_CONFIG.maxSpots} Plätze</p>
                   <p className="text-xs sm:text-sm opacity-90">
                     Wir halten das Programm exklusiv, um qualitativ hochwertiges Mentoring zu gewährleisten.
                   </p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/10">
-                  <p className="text-sm sm:text-base font-medium">🚀 Start im März 2026</p>
+                  <p className="text-sm sm:text-base font-medium">🚀 Start im {MENTORSHIP_CONFIG.startMonthYear}</p>
                   <p className="text-xs sm:text-sm opacity-90">
                     Die Vergabe der Plätze erfolgt nach dem Prinzip: Wer zuerst kommt, mahlt zuerst.
                   </p>
@@ -88,7 +89,7 @@ export default function CTASection() {
                 <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/10">
                   <p className="text-sm sm:text-base font-medium">💎 Kostenlose Reservierung</p>
                   <p className="text-xs sm:text-sm opacity-90">
-                    Dein Zahlungsmittel wird erst beim Start der Mentorship mit 150€/Monat (inkl. MwSt.) belastet. Du kannst jederzeit kündigen.
+                    Dein Zahlungsmittel wird erst beim Start der Mentorship mit {MENTORSHIP_CONFIG.price}€/Monat (inkl. MwSt.) belastet. Du kannst jederzeit kündigen.
                   </p>
                 </div>
               </div>

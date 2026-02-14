@@ -1,4 +1,5 @@
 'use client'
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Vortex } from "@/components/ui/vortex"
@@ -46,7 +47,7 @@ export default function WaitlistCTA() {
                     </p>
                   </div>
                   <div className="bg-black/10 backdrop-blur-sm rounded-lg p-4">
-                    <p className="font-medium">🚀 Program starts March 2026</p>
+                    <p className="font-medium">🚀 Program starts {MENTORSHIP_CONFIG.startMonthYear}</p>
                     <p className="text-sm opacity-90">
                       Early waitlist members get priority access
                     </p>

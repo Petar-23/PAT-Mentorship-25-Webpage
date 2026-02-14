@@ -1,5 +1,6 @@
 'use client'
 
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { PlayCircle, Users, Calendar, ChartSpline, Trophy, CreditCard } from "lucide-react"
 import { GlowingEffect } from "@/components/ui/glowing-effect"
 
@@ -32,7 +33,7 @@ const features = [
   {
     icon: <CreditCard className="h-4 w-4 sm:h-6 sm:w-6" />,
     title: "Faire Preisgestaltung",
-    description: "€150/Monat (inkl. MwSt.). Monatlich kündbar, keine versteckten Kosten.",
+    description: `${MENTORSHIP_CONFIG.priceWithTax}. Monatlich kündbar, keine versteckten Kosten.`,
   },
 ]
 

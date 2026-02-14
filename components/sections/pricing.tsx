@@ -1,3 +1,4 @@
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { Check } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,7 +9,7 @@ const features = [
   "Tagesausblick am Dienstag und Donnerstag",
   "3-4 vollständige Trading-Modelle mit Trading Plan",
   "Alle Recordings verfügbar solange du dabei bist",
-  "Exklusive Community (max. 100 Trader)",
+  `Exklusive Community (max. ${MENTORSHIP_CONFIG.maxSpots} Trader)`,
 ]
 
 export default function Pricing() {
@@ -28,14 +29,14 @@ export default function Pricing() {
           
           <div className="absolute top-0 right-0 mr-6 -mt-4">
             <span className="inline-flex items-center rounded-full bg-blue-50 px-4 py-1 text-sm font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-              Nur 100 Plätze
+              Nur {MENTORSHIP_CONFIG.maxSpots} Plätze
             </span>
           </div>
           
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">PAT Mentorship</CardTitle>
             <div className="mt-6">
-              <span className="text-5xl font-bold">€150</span>
+              <span className="text-5xl font-bold">{MENTORSHIP_CONFIG.priceFormatted}</span>
               <span className="text-gray-600 text-lg">/Monat</span>
             </div>
             <p className="text-sm text-gray-500 mt-2">monatlich kündbar</p>
