@@ -14,20 +14,12 @@ import { Progress } from '@/components/ui/progress'
 import { auth } from '@clerk/nextjs/server'
 import { ArrowRight, Sparkles } from 'lucide-react'
 import { MentorshipWelcomeName } from '@/components/mentorship/welcome-name'
+import { getSidebarData } from '@/lib/sidebar-data'
 
 type SearchParams = { [key: string]: string | string[] | undefined }
 
 interface PageProps {
   searchParams?: Promise<SearchParams> | undefined
-}
-
-type SidebarKurs = {
-  id: string
-  name: string
-  slug: string
-  description?: string | null
-  iconUrl?: string | null
-  modulesLength: number
 }
 
 type ContinueLearning = {
@@ -53,38 +45,6 @@ type NewContentItem = {
 function clampPercent(value: number) {
   if (!Number.isFinite(value)) return 0
   return Math.max(0, Math.min(100, Math.round(value)))
-}
-
-async function getSidebarData() {
-  const [kurse, savedSetting] = await Promise.all([
-    prisma.playlist.findMany({
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        iconUrl: true,
-        _count: { select: { modules: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.adminSetting.findUnique({
-      where: { key: 'sidebarOrder' },
-    }),
-  ])
-
-  const savedSidebarOrder: string[] | null = savedSetting ? (savedSetting.value as string[]) : null
-
-  const kurseForSidebar: SidebarKurs[] = kurse.map((kurs) => ({
-    id: kurs.id,
-    name: kurs.name,
-    slug: kurs.slug,
-    description: kurs.description ?? null,
-    iconUrl: kurs.iconUrl ?? null,
-    modulesLength: kurs._count.modules,
-  }))
-
-  return { kurseForSidebar, savedSidebarOrder }
 }
 
 async function getContinueLearning(userId: string | null, isAdmin: boolean): Promise<ContinueLearning> {
