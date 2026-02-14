@@ -11,6 +11,7 @@ import { useUser, SignInButton } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { trackConversion } from '@/components/analytics/google-tag-manager'
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 
 export default function FinalCTA() {
     const { isSignedIn } = useUser()
@@ -133,11 +134,11 @@ export default function FinalCTA() {
                         <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6">
                             Deine Trading-Reise <br />
                             <span className="text-blue-400">
-                                Beginnt im März 2026
+                                Beginnt im {MENTORSHIP_CONFIG.startMonthYear}
                             </span>
                         </h2>
                         <p className="text-sm sm:text-xl text-gray-300 max-w-2xl mx-auto">
-                            Werde einer von 100 ambitionierten Tradern und erlebe ein transformatives Jahr 
+                            Werde einer von {MENTORSHIP_CONFIG.maxSpots} ambitionierten Tradern und erlebe ein transformatives Jahr 
                             mit Live-Marktanalysen, Echtzeit-Trading und messbarem Wachstum.
                         </p>
                     </motion.div>
@@ -146,7 +147,7 @@ export default function FinalCTA() {
                             <p className="text-xs sm:text-sm text-gray-200 mb-2 sm:mb-3">
                                 Verbleibende Zeit zur Anmeldung in die Warteliste
                             </p>
-                            <Countdown targetDate="2026-03-01T00:00:00+01:00" variant="dark" />
+                            <Countdown targetDate={MENTORSHIP_CONFIG.startDate} variant="dark" />
                         </div>
                     </div>
                 </div>
@@ -156,7 +157,7 @@ export default function FinalCTA() {
                         {
                             icon: <Users className="h-8 w-8 text-blue-400 mb-4" />,
                             title: "Begrenzte Plätze",
-                            description: "Nur 100 Trader werden aufgenommen, um eine qualitativ hochwertige Betreuung zu gewährleisten",
+                            description: `Nur ${MENTORSHIP_CONFIG.maxSpots} Trader werden aufgenommen, um eine qualitativ hochwertige Betreuung zu gewährleisten`,
                             glowColor: "#60A5FA" // blue-400
                         },
                         {
@@ -200,7 +201,7 @@ export default function FinalCTA() {
 
                     <div className="mt-6 sm:mt-12 inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-white/10 ring-1 ring-white/20">
                         <div className="bg-amber-500/20 text-amber-400 rounded-full px-2 py-0.5 text-xs sm:text-sm">⚡</div>
-                        <span className="text-xs sm:text-sm font-medium text-amber-300">Nur die ersten 100 Anmeldungen werden akzeptiert</span>
+                        <span className="text-xs sm:text-sm font-medium text-amber-300">Nur die ersten {MENTORSHIP_CONFIG.maxSpots} Anmeldungen werden akzeptiert</span>
                     </div>
                 </motion.div>
             </div>

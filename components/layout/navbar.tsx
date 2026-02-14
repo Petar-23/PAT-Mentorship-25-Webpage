@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { Menu, X, Home, Settings, Notebook, Gauge } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 
 export function Navbar() {
   const { user, isSignedIn } = useUser()
@@ -163,12 +164,12 @@ export function Navbar() {
                             variant="outline"
                             className="flex items-center gap-3 bg-gray-900 hover:bg-gray-800 text-gray-300 border-gray-700 cursor-not-allowed px-3 py-1 leading-tight"
                             disabled
-                            title="Mentorship startet ab 01.03.2026"
+                            title={`Mentorship startet ab ${MENTORSHIP_CONFIG.startDateFormatted}`}
                           >
                             <Notebook className="h-5 w-5" />
                             <div className="flex flex-col items-start gap-0">
                               <span className="text-sm">Mentorship</span>
-                              <span className="text-[10px] text-gray-400 mb-1">Start 01.03.2026</span>
+                              <span className="text-[10px] text-gray-400 mb-1">Start {MENTORSHIP_CONFIG.startDateFormatted}</span>
                             </div>
                           </Button>
                         ) : (
@@ -297,12 +298,12 @@ export function Navbar() {
                               variant="outline"
                               className="w-full flex items-center gap-3 bg-gray-900 hover:bg-gray-800 text-gray-300 border-gray-700 cursor-not-allowed px-3 py-1 leading-tight"
                               disabled
-                              title="Mentorship startet ab 01.03.2026"
+                              title={`Mentorship startet ab ${MENTORSHIP_CONFIG.startDateFormatted}`}
                             >
                               <Notebook className="h-5 w-5" />
                               <div className="flex flex-col items-start gap-0">
                                 <span className="text-sm">Mentorship</span>
-                                <span className="text-[10px] text-gray-400 mb-1">Start 01.03.2026</span>
+                                <span className="text-[10px] text-gray-400 mb-1">Start {MENTORSHIP_CONFIG.startDateFormatted}</span>
                               </div>
                             </Button>
                           ) : (
