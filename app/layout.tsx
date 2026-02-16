@@ -66,6 +66,9 @@ export const metadata: Metadata = {
     description: 'Live-Mentoring für Trading nach ICT Smart Money Konzepten. 130+ erfolgreiche Absolventen.',
     images: ['/images/pat-banner.jpeg'],
   },
+  verification: {
+    google: 'A8fxOO5cODNTVq9Gc-qoq97pX1rLML0uwLXhFV6o58g',
+  },
   robots: {
     index: true,
     follow: true,
