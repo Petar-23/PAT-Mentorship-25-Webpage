@@ -1,0 +1,13 @@
+# robots.txt — PAT Mentorship Website
+# https://price-action-trader.de
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /(dashboard)/
+Disallow: /sign-in/
+Disallow: /mentorship/create
+Disallow: /courses/create
+Disallow: /owner
+
+Sitemap: https://price-action-trader.de/sitemap.xml
