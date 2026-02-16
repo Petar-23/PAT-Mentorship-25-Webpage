@@ -11,6 +11,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/react'
 import { GoogleTagManager } from '@/components/analytics/google-tag-manager'
 import { MicrosoftClarity } from '@/components/analytics/microsoft-clarity'
+import { JsonLd } from '@/components/seo/json-ld'
 import { Suspense, lazy } from 'react'
 
 // Agentation nur in Development laden (ist devDependency)
@@ -30,14 +31,57 @@ const sora = Sora({
 })
 
 export const metadata: Metadata = {
-  title: 'PAT Mentorship 2026',
-  description: 'Lerne Trading nach ICT Konzepten, Live und auf Deutsch',
-  keywords: ['mentorship', 'trading', 'day trading', 'professional development', 'ICT'],
+  metadataBase: new URL('https://price-action-trader.de'),
+  title: {
+    default: 'PAT Mentorship 2026 | Trading nach ICT Konzepten lernen — Live & auf Deutsch',
+    template: '%s | PAT Mentorship',
+  },
+  description: 'Lerne Trading nach ICT Smart Money Konzepten im Live-Mentoring. 2-3 Sessions pro Woche, auf Deutsch. 130+ erfolgreiche Absolventen. Monatlich kündbar.',
+  keywords: ['ICT Trading', 'Smart Money Concept', 'Price Action Trading', 'Trading Mentoring Deutsch', 'Live Trading lernen', 'ICT auf Deutsch', 'Trading Ausbildung'],
+  authors: [{ name: 'Petar', url: 'https://price-action-trader.de' }],
+  creator: 'Price Action Trader',
+  publisher: 'Price Action Trader',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'de_DE',
+    url: 'https://price-action-trader.de',
+    siteName: 'Price Action Trader',
+    title: 'PAT Mentorship 2026 | ICT Trading Live & auf Deutsch',
+    description: 'Lerne Trading nach ICT Smart Money Konzepten im Live-Mentoring. 2-3 Sessions/Woche, deutschsprachig, monatlich kündbar.',
+    images: [
+      {
+        url: '/images/pat-banner.jpeg',
+        width: 1200,
+        height: 630,
+        alt: 'PAT Mentorship 2026 — Live Trading Mentoring nach ICT Konzepten',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'PAT Mentorship 2026 | ICT Trading Live & auf Deutsch',
+    description: 'Live-Mentoring für Trading nach ICT Smart Money Konzepten. 130+ erfolgreiche Absolventen.',
+    images: ['/images/pat-banner.jpeg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon.ico',
     apple: '/favicon.ico',
-  }
+  },
 }
 
 export const viewport: Viewport = {
@@ -52,7 +96,10 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider afterSignOutUrl={"/"} localization={deDE} signInFallbackRedirectUrl="/dashboard" signUpFallbackRedirectUrl="/dashboard">
-      <html lang="en" className="h-full scroll-smooth">
+      <html lang="de" className="h-full scroll-smooth">
+        <head>
+          <JsonLd />
+        </head>
         <body className={`${inter.variable} ${sora.variable} font-sans h-full overflow-x-hidden`}>
           <a
             href="#main-content"
