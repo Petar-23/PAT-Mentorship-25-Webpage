@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { MDXRemote } from 'next-mdx-remote/rsc'
+import { evaluate } from '@mdx-js/mdx'
+import * as jsxRuntime from 'react/jsx-runtime'
 import { getAllSlugs, getPostBySlug, formatDateDE } from '@/lib/blog'
-import { useMDXComponents, customComponents } from '@/components/blog/mdx-components'
+import { useMDXComponents } from '@/components/blog/mdx-components'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -67,6 +68,13 @@ export default async function BlogPostPage({ params }: PageProps) {
 
   const toc = extractTOC(post.content)
   const components = useMDXComponents()
+
+  // Compile and evaluate MDX using React 19's JSX runtime directly
+  const { default: MDXContent } = await evaluate(post.content, {
+    ...jsxRuntime,
+    baseUrl: import.meta.url,
+    useMDXComponents: () => components,
+  })
 
   const articleJsonLd = {
     '@context': 'https://schema.org',
@@ -139,7 +147,7 @@ export default async function BlogPostPage({ params }: PageProps) {
           <div className="flex gap-10">
             {/* Main Content */}
             <div className="min-w-0 flex-1">
-              <MDXRemote source={post.content} components={components} />
+              <MDXContent />
             </div>
 
             {/* TOC Sidebar */}
