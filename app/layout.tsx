@@ -31,14 +31,14 @@ const sora = Sora({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://price-action-trader.de'),
+  metadataBase: new URL('https://www.price-action-trader.de'),
   title: {
     default: 'PAT Mentorship 2026 | Trading nach ICT Konzepten lernen — Live & auf Deutsch',
     template: '%s | PAT Mentorship',
   },
   description: 'Lerne Trading nach ICT Smart Money Konzepten im Live-Mentoring. 2-3 Sessions pro Woche, auf Deutsch. 130+ erfolgreiche Absolventen. Monatlich kündbar.',
   keywords: ['ICT Trading', 'Smart Money Concept', 'Price Action Trading', 'Trading Mentoring Deutsch', 'Live Trading lernen', 'ICT auf Deutsch', 'Trading Ausbildung'],
-  authors: [{ name: 'Petar', url: 'https://price-action-trader.de' }],
+  authors: [{ name: 'Petar', url: 'https://www.price-action-trader.de' }],
   creator: 'Price Action Trader',
   publisher: 'Price Action Trader',
   alternates: {
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'de_DE',
-    url: 'https://price-action-trader.de',
+    url: 'https://www.price-action-trader.de',
     siteName: 'Price Action Trader',
     title: 'PAT Mentorship 2026 | ICT Trading Live & auf Deutsch',
     description: 'Lerne Trading nach ICT Smart Money Konzepten im Live-Mentoring. 2-3 Sessions/Woche, deutschsprachig, monatlich kündbar.',
