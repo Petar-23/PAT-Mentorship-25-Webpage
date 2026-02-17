@@ -1,0 +1,228 @@
+---
+title: "Order Blocks erklärt: So traden Institutionen wirklich"
+description: "Order Blocks erklärt: Wie der IPDA Algorithmus Preiszonen markiert, wie du Bullish & Bearish OBs erkennst und mit Change in State of Delivery Entry findest."
+date: "2026-02-17"
+author: "Petar"
+tags: ["Order Blocks", "ICT Trading", "Smart Money"]
+image: "/images/blog/bullish-ob-validierung.png"
+keywords: ["Order Block Trading", "Order Block erklärt", "ICT Order Block", "Bullish Order Block", "Bearish Order Block", "Order Block deutsch", "Mean Threshold"]
+draft: false
+---
+
+Du hast den Begriff Order Block schon hundertmal gehört. Auf YouTube, in Trading-Gruppen, in irgendeinem Telegram-Kanal. Und trotzdem — die meisten Trader verstehen nicht, was ein Order Block wirklich ist. Sie malen Rechtecke auf den Chart, hoffen auf eine Reaktion und wundern sich, warum der Preis einfach durchrauscht.
+
+Das Problem? Sie behandeln Order Blocks wie Support und Resistance mit neuem Namen. Sind sie aber nicht. Nicht mal annähernd.
+
+In diesem Artikel zeige ich dir, was Order Blocks tatsächlich sind, wie du sie korrekt identifizierst, wann sie valide sind — und vor allem: wie du damit einen Entry findest, der Hand und Fuß hat. Wenn du [ICT Trading](/blog/ict-trading-erklaert) ernst nimmst, führt an diesem Konzept kein Weg vorbei.
+
+---
+
+## Was ist ein Order Block?
+
+Vergiss alles, was du über "institutionelle Käufer und Verkäufer" gehört hast. Der Preis wird nicht durch Kauf- und Verkaufsdruck bewegt. Er wird durch den **IPDA** gesteuert — den Interbank Price Delivery Algorithmus.
+
+Klingt abstrakt? Ist es anfangs auch. Aber stell dir den IPDA wie ein Betriebssystem vor, das den Preis von A nach B liefert. Dabei hinterlässt der Algorithmus Spuren im Chart. Fingerabdrücke. Und genau das sind Order Blocks.
+
+Ein Order Block ist die letzte Kerze (oder Kerzengruppe) in eine Richtung, bevor der Preis aggressiv in die Gegenrichtung dreht. Der Algorithmus hat an dieser Stelle den Preis "gebucht" — und Smart Money erkennt diese Zonen, um sich zu positionieren.
+
+Das Ding ist: Order Blocks existieren nicht isoliert. Sie sind Teil eines größeren Frameworks — der **PD Arrays** (Premium/Discount Arrays). Jeder OB sitzt in einem Kontext. An einem Higher-Timeframe PD Array. Nach einem Liquidity Sweep. Innerhalb einer Makrozeit. Ohne diesen Kontext ist ein OB nur ein buntes Rechteck auf deinem Chart.
+
+Und es gibt nicht nur *den einen* Order Block. ICT lehrt eine komplette Order Block Theorie mit mehreren Varianten: den klassischen OB, den Propulsion Block, den Mitigation Block, den Rejection Block und den Breaker Block. Jeder hat seine eigene Logik. Dazu später mehr.
+
+---
+
+## Bullish Order Block: Erkennung und Bestätigung
+
+Jetzt wird's konkret. Ein **Bullish Order Block** ist die tiefste Down-Close-Kerze (oder Kerzengruppe) nahe einem HTF PD Array — also einer Support-Zone auf dem höheren Timeframe.
+
+Die ICT-Definition ist klar: Die Kerze mit dem größten Body (Open zu Close) und einem bearishen Close, die am nächsten an einem Support-Level liegt. Keine Wicks. Nur Bodies.
+
+Hast du mehrere bearishe Kerzen hintereinander? Dann blendest du sie zusammen. Das höchste Open der ersten Kerze bis zum tiefsten Close der letzten Kerze — das ist dein Order Block. Aber dazu kommen wir noch im Detail.
+
+Entscheidend ist: Der OB entsteht typischerweise, wenn Liquidität abgegriffen wird. Der Preis fällt unter ein altes Low, nimmt die Stop-Losses mit, und genau dort — an einem HTF PD Array — formiert sich der Order Block.
+
+Und er muss in einer **Makrozeit** entstehen. 10 Minuten vor bis 10 Minuten nach jeder vollen Stunde. 9:50 bis 10:10. 10:50 bis 11:10. Ohne Makro-Timing? Finger weg.
+
+![Bullish Order Block — Validierung am Support Level](/images/blog/bullish-ob-validierung.png)
+
+### Die Bestätigungs-Sequenz
+
+Hier passieren die meisten Fehler. Ein OB allein ist noch kein Trade. Du brauchst eine klare Sequenz, bevor du auch nur daran denkst, eine Position zu eröffnen:
+
+**Schritt 1:** Der OB formiert sich an einem HTF PD Array. Der Preis hat Liquidität abgegriffen, du siehst die bearishe Kerze (oder Kerzengruppe) am Support.
+
+**Schritt 2:** **Change in State of Delivery (CiSoD).** Der Preis handelt durch den Opening Price des Order Blocks. Er muss dort nicht schließen — es reicht, wenn er den Level durchhandelt. Das zeigt dir: Der Algorithmus hat die Richtung gewechselt.
+
+**Schritt 3:** **Market Structure Shift (MSS).** Der Algorithmus schließt oberhalb eines Swing Highs. Das bestätigt den Richtungswechsel auf Struktur-Ebene.
+
+**Schritt 4:** Pullback zurück zum OB. Der Preis kommt zurück zum Opening Price des Order Blocks — und genau da ist dein Entry.
+
+Dein Stop Loss? Unterhalb des OB-Lows. Standard-ICT-Empfehlung. Sauber, klar, kein Rätselraten.
+
+![Bullish Order Block — Entry nach Displacement](/images/blog/bullish-ob-entry.png)
+
+<Callout type="warning">
+Der Entry ist IMMER am Opening Price des Order Blocks. Nicht bei 50%, nicht am Mean Threshold. Der Mean Threshold ist die Invalidierungs-Linie — nicht der Einstiegspunkt. Das ist einer der häufigsten Fehler im Order Block Trading.
+</Callout>
+
+---
+
+## Bearish Order Block: Das Spiegelbild
+
+Alles, was du gerade über den Bullish OB gelernt hast? Dreh es um.
+
+Ein **Bearish Order Block** ist die letzte Up-Close-Kerze (oder Kerzengruppe) mit der größten Body-Range nahe einem HTF PD Array — einer Resistance-Zone. Bei mehreren aufeinanderfolgenden bullishen Kerzen: Tiefstes Open bis höchstes Close. Nur Bodies, keine Wicks.
+
+Die Bestätigungs-Sequenz läuft spiegelverkehrt: CiSoD nach unten (Preis handelt durch den Opening Price des Bearish OB), MSS unterhalb eines Swing Lows, Pullback zurück zum OB Opening Price — Entry.
+
+Aber jetzt kommt etwas, das viele übersehen:
+
+<Callout type="info">
+Wenn dein HTF-Bias bullisch ist, sind Bearish Order Blocks **keine Short-Einstiege**. Sie sind Gewinnmitnahme-Level. Du nutzt sie, um Longs zu schließen — nicht, um dagegen zu traden. Wer in einem bullischen Markt an Bearish OBs shortet, stellt sich gegen den Algorithmus. Das geht selten gut.
+</Callout>
+
+---
+
+## Mean Threshold — Die Invalidierungs-Linie
+
+Der Mean Threshold ist der 50%-Level des Order Blocks. Gemessen von Open zu Close. Nicht von Wick zu Wick — nur die Bodies zählen.
+
+Und hier ist die Regel, die du dir tätowieren solltest:
+
+Bei einem Bullish OB darf der Preis **nicht unterhalb** des Mean Threshold schließen. Passiert das? OB invalidiert. Fertig. Kein "Vielleicht kommt er ja zurück". Kein "Das war nur ein Wick". Wenn eine Kerze unterhalb der 50%-Linie *schließt*, ist der Order Block tot.
+
+Umgekehrt beim Bearish OB: Kein Close oberhalb des Mean Threshold.
+
+Kurzes Durchstechen? Kein Problem. Wicks dürfen die Linie berühren, sogar kurz durchstoßen. Aber ein Close jenseits der Linie — das war's.
+
+Jetzt der Fehler, den ich bei gefühlt jedem zweiten Retail-Trader sehe: **Sie nutzen den Mean Threshold als Entry.** "Der OB ist bei 1.0850, der Mean Threshold bei 1.0840 — ich steige bei 1.0840 ein." Nein. Nein, nein, nein.
+
+Der Mean Threshold ist eine Invalidierungs-Linie. Nicht mehr, nicht weniger. Dein Entry liegt am Opening Price des OBs. Immer. Wenn du beim Mean Threshold einsteigst, hast du keinen logischen Stop Loss mehr — denn der OB ist bei einem Close darunter bereits kaputt.
+
+---
+
+## Makro-Timing: Wann Order Blocks entstehen müssen
+
+Das hier ist ein Filter, der 80% der schlechten Trades eliminiert. Order Blocks müssen in **Makrozeiten** entstehen. Das bedeutet: 10 Minuten vor bis 10 Minuten nach jeder vollen Stunde.
+
+9:50–10:10. 10:50–11:10. 13:50–14:10. Und so weiter.
+
+Warum? Weil der IPDA in diesen Zeitfenstern aktiv den Preis repositioniert. Außerhalb der Makros passiert oft nichts als Noise — Ranging, Accumulation, bedeutungslose Kerzen.
+
+Ein Order Block, der um 10:23 entsteht? Deutlich geringere Zuverlässigkeit. Einer, der exakt um 9:55 formiert wird, an einem HTF PD Array, nach einem Liquidity Sweep? Das ist ein Setup.
+
+Klingt wie ein kleines Detail. Ist es aber nicht. Makro-Timing ist der Unterschied zwischen einem Trader, der ständig ausgestoppt wird, und einem, der wartet, bis der Algorithmus ihm die Tür aufhält.
+
+---
+
+## Consecutive Candles: OBs blenden und schneiden
+
+Nicht jeder Order Block besteht aus einer einzigen Kerze. Oft siehst du zwei, drei, manchmal vier bearishe Kerzen am Stück, bevor der Preis dreht. Was dann?
+
+**Blenden.** Du fasst die Kerzen zu einem einzigen OB zusammen. Bei drei bearishen Kerzen am Support: Nimm das höchste Open (typischerweise die erste Kerze) und das tiefste Close (die letzte Kerze). Nur Bodies. Das ist dein geblendeter Order Block.
+
+ICT sagt es klar: Zwei Down-Candles in Folge — du musst sie blenden. Bei drei oder mehr gilt dasselbe Prinzip.
+
+Dann berechnest du den Mean Threshold dieses geblendeten OBs. 50% von Open zu Close. Das ist deine Invalidierungs-Linie.
+
+Und jetzt wird's spannend: **Schneiden.** Wenn innerhalb des OBs eine Imbalance liegt — ein Fair Value Gap oder eine Volume Imbalance — und diese Imbalance unterhalb des Mean Threshold sitzt, kannst du den OB dort schneiden. Alles unterhalb der Imbalance fällt weg. Der OB wird kleiner, präziser, und dein Risk-Reward verbessert sich.
+
+Das ist kein Anfänger-Konzept. Aber wenn du es verstehst, verfeinert es deine Entries enorm.
+
+---
+
+## Multi-Timeframe: HTF zu LTF transponieren
+
+Order Blocks sind fraktal. Sie existieren auf jedem Timeframe. Aber nicht jeder OB auf jedem Timeframe ist gleich relevant.
+
+Die Hierarchie: Monthly → Weekly → Daily → H4. Dein Directional Bias kommt immer vom höheren Timeframe. Wenn der Monthly bullisch ist, der Weekly bullisch, der Daily bullisch — dann suchst du Bullish Order Blocks. Punkt.
+
+Die HTF PD Arrays definieren, *wo* OBs relevant sind. Ein 15-Minuten OB mitten im Nirgendwo? Egal. Ein 15-Minuten OB am Weekly Discount Array? Jetzt reden wir.
+
+So funktioniert das Transponieren: Du identifizierst den 15-Minuten OB und seinen Opening Price. Dann gehst du auf den 1-Minuten Chart und suchst dort den exakten Point of Interest. Wenn der Preis innerhalb einer Makrozeit an diesen transponierten POI kommt, suchst du auf dem 15-Sekunden oder 1-Minuten Chart einen neuen, frischen OB für deinen Entry.
+
+Das Ergebnis? Extrem enge Stop Losses. Deutlich besseres Risk-Reward. Aber du brauchst den [ICT Trading](/blog/ict-trading-erklaert) Kontext dafür — ohne Verständnis der HTF-Hierarchie ist Transponieren reines Glücksspiel.
+
+---
+
+## Order Block vs. Support & Resistance
+
+"Ist ein Order Block nicht einfach Support und Resistance mit neuem Namen?"
+
+Nein. Und diese Frage zeigt genau das Missverständnis.
+
+**Support & Resistance** ist historisch. Ein Level, an dem der Preis in der Vergangenheit reagiert hat. Es ist neutral — es sagt dir nicht, ob der Preis bounced oder durchbricht. Und es hat keine Invalidierungsregel. Wann ist ein Support "gebrochen"? Bei einem Wick darunter? Bei einem Close? Bei zwei Closes? Niemand weiß das so genau.
+
+**Order Blocks** sind etwas komplett anderes. Sie sind der Fingerabdruck des IPDA. Sie sind richtungsspezifisch — ein Bullish OB ist bullisch, ein Bearish OB ist bearisch. Sie sind bias-abhängig — in einem bullischen Markt tradest du keine Bearish OBs als Short-Einstiege. Und sie haben eine knallharte Invalidierungsregel: Close jenseits des Mean Threshold = tot.
+
+Dazu kommt der Kontext. Ein OB braucht ein HTF PD Array, eine Makrozeit, einen Liquidity Sweep, eine Bestätigungs-Sequenz. Support braucht... einen Strich auf dem Chart.
+
+---
+
+## Die Order Block Familie
+
+Der klassische Order Block ist nur der Anfang. ICT lehrt eine ganze Familie von Block-Varianten. Hier ein kurzer Überblick:
+
+**Order Block** — Der Klassiker. Entsteht an HTF PD Arrays, bei Liquidity Sweeps, in Makrozeiten. Alles, was wir bisher besprochen haben.
+
+**Propulsion Block** — Ein OB, der innerhalb eines bestehenden Moves entsteht und den Trend weiter antreibt. Wie eine Raketenstufe, die mitten im Flug zündet.
+
+**Rejection Block** — Fokussiert sich auf die Wicks statt auf die Bodies. Zeigt dir, wo der Algorithmus Preis abgelehnt hat.
+
+**Mitigation Block** — Ein zuvor genutzter OB, der erneut angelaufen wird. Der Algorithmus "mitigiert" die offene Position.
+
+**Breaker Block** — Hier wird es richtig interessant. Wenn ein Order Block invalidiert wird — der Preis schließt durch den Mean Threshold — dreht sich seine Rolle. Aus einem Bullish OB wird ein Bearish Breaker. Der Algorithmus nutzt die Zone jetzt in die entgegengesetzte Richtung.
+
+Jeder dieser Typen verdient einen eigenen Artikel. Für jetzt reicht es zu wissen: Die Order Block Theorie ist kein einzelnes Konzept. Sie ist ein ganzes System.
+
+---
+
+## Typische Fehler beim Order Block Trading
+
+Nach über 130 Mentorship-Absolventen kenne ich die Fehler, die immer wieder auftauchen. Hier die häufigsten:
+
+❌ **Entry beim Mean Threshold statt beim Opening Price.** Der Mean Threshold ist die Invalidierungs-Linie. Dein Entry ist am Opening Price. Immer.
+
+❌ **OBs außerhalb der Makrozeiten handeln.** Wenn der OB nicht in einer Makrozeit entstanden ist, hat er deutlich weniger Aussagekraft. Geduld ist hier keine Option, sondern Pflicht.
+
+❌ **Gegen den HTF-Bias traden.** Bearish OBs in einem bullischen Markt shorten? Du stellst dich vor einen Zug. Bearish OBs sind dann Gewinnmitnahme-Level, keine Short-Entries.
+
+❌ **Wicks statt Bodies messen.** Für den Mean Threshold und das Blending zählen nur die Bodies. Open zu Close. Wicks sind irrelevant.
+
+❌ **Keinen Change in State of Delivery abwarten.** Du siehst einen OB an einem PD Array und springst sofort rein? Ohne CiSoD, ohne MSS? Das ist kein Trading, das ist Raten.
+
+❌ **"Institutionen kaufen hier" denken.** Institutionen machen gar nichts. Der IPDA-Algorithmus liefert den Preis. Wenn du in Kauf-/Verkaufsdruck denkst, verstehst du das Framework nicht.
+
+❌ **OBs nicht invalidieren.** Der Preis schließt durch den Mean Threshold und du hältst den Trade trotzdem? Das ist Hope-Trading. Der OB ist kaputt. Raus.
+
+---
+
+## FAQ
+
+### Was ist ein Order Block beim Trading?
+
+Ein Order Block ist die letzte Kerze (oder Kerzengruppe) in eine Richtung, bevor der Preis aggressiv dreht. Er markiert eine Zone, an der der IPDA-Algorithmus den Preis repositioniert hat. Trader nutzen Order Blocks als präzise Entry-Zonen mit klaren Invalidierungsregeln.
+
+### Was ist der IPDA Algorithmus?
+
+IPDA steht für Interbank Price Delivery Algorithmus. In der ICT-Theorie ist der IPDA das System, das den Preis im Markt liefert — unabhängig von klassischem Angebot und Nachfrage. Er steuert, wann und wo Liquidität abgegriffen wird und hinterlässt dabei erkennbare Muster wie Order Blocks.
+
+### Was ist der Mean Threshold?
+
+Der Mean Threshold ist der 50%-Level eines Order Blocks, gemessen von Open zu Close (nur Bodies, keine Wicks). Er dient als Invalidierungs-Linie: Schließt der Preis jenseits des Mean Threshold, gilt der Order Block als ungültig. Er ist *kein* Entry-Level.
+
+### Was ist ein Change in State of Delivery?
+
+Ein Change in State of Delivery (CiSoD) liegt vor, wenn der Preis durch den Opening Price eines Order Blocks handelt. Er muss dort nicht schließen — das bloße Durchhandeln reicht. CiSoD zeigt an, dass der Algorithmus die Lieferrichtung des Preises gewechselt hat.
+
+### Was ist der Unterschied zwischen Order Block und Support?
+
+Support basiert auf historischen Preisreaktionen und ist richtungsneutral. Ein Order Block ist ein algorithmischer Fingerabdruck — richtungsspezifisch, bias-abhängig, mit klaren Invalidierungsregeln (Mean Threshold). OBs brauchen zusätzlich Kontext: HTF PD Arrays, Makro-Timing, Liquidity Sweeps und eine Bestätigungs-Sequenz.
+
+### Was sind Makrozeiten im Trading?
+
+Makrozeiten sind die Zeitfenster 10 Minuten vor bis 10 Minuten nach jeder vollen Stunde (z.B. 9:50–10:10, 10:50–11:10). In diesen Fenstern ist der IPDA-Algorithmus besonders aktiv. Order Blocks, die in Makrozeiten entstehen, haben eine deutlich höhere Zuverlässigkeit als solche außerhalb dieser Fenster.
+
+---
+
+<CTABanner />
