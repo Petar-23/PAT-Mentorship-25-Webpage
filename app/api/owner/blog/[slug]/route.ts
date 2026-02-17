@@ -25,10 +25,9 @@ async function githubAPI(endpoint: string, options: RequestInit = {}) {
 }
 
 async function checkAdmin() {
-  const { userId, has } = await auth()
+  const { userId, orgRole } = await auth()
   if (!userId) return false
-  const isAdmin = await has({ permission: 'org:admin:access' })
-  return isAdmin
+  return orgRole === 'org:admin'
 }
 
 interface RouteParams {
