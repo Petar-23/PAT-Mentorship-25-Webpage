@@ -7,7 +7,7 @@ import {
   SiX, 
   SiDiscord 
 } from '@icons-pack/react-simple-icons'
-import { Cookie, LineChart } from "lucide-react"
+import { Cookie, LineChart, BookOpen } from "lucide-react"
 import { useCookieSettings } from "@/lib/cookie-settings"
 
 export function Footer() {
@@ -19,6 +19,12 @@ export function Footer() {
       href: "/tools/equity-calculator",
       description: "Berechne die optimale Kontraktgröße basierend auf deinem Kapital",
       icon: LineChart
+    },
+    {
+      title: "Blog",
+      href: "/blog",
+      description: "Trading-Wissen, ICT Konzepte und Smart Money Strategien auf Deutsch",
+      icon: BookOpen
     }
   ]
 
@@ -114,7 +120,7 @@ export function Footer() {
             {/* Tools Section */}
             <div className="mb-8">
               <h3 className="font-semibold text-white mb-4">
-                Kostenlose Tools
+                Ressourcen
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {toolLinks.map((link, index) => (
