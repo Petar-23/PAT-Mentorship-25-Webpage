@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 interface BlogEditorProps {
   slug?: string
@@ -89,10 +90,55 @@ export default function BlogEditor({ slug, initialContent = '', initialSha, isNe
   const [newSlug, setNewSlug] = useState(slug || '')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const updateFm = useCallback((key: keyof Frontmatter, value: string | boolean) => {
     setFm(prev => ({ ...prev, [key]: value }))
+  }, [])
+
+  const handleImageUpload = async (file: File) => {
+    setUploading(true)
+    setMessage(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const res = await fetch('/api/owner/blog/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      updateFm('image', data.path)
+      setMessage({ type: 'success', text: `Bild hochgeladen: ${data.fileName}` })
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Upload fehlgeschlagen' })
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    const file = e.dataTransfer.files[0]
+    if (file && file.type.startsWith('image/')) {
+      handleImageUpload(file)
+    }
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(true)
+  }, [])
+
+  const handleDragLeave = useCallback(() => {
+    setDragOver(false)
   }, [])
 
   const handleSave = async () => {
@@ -247,17 +293,58 @@ export default function BlogEditor({ slug, initialContent = '', initialSha, isNe
           />
         </div>
 
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-400">Bild-Pfad</label>
-          <input
-            type="text"
-            value={fm.image}
-            onChange={(e) => updateFm('image', e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-          />
+        <div className="md:col-span-2">
+          <label className="mb-1.5 block text-sm font-medium text-gray-400">Artikelbild</label>
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onClick={() => fileInputRef.current?.click()}
+            className={`relative cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition ${
+              dragOver
+                ? 'border-orange-500 bg-orange-500/10'
+                : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+            }`}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleImageUpload(file)
+              }}
+            />
+            {fm.image && fm.image !== '/images/pat-banner.jpeg' ? (
+              <div className="flex items-center gap-4">
+                <div className="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg bg-slate-900">
+                  <Image src={fm.image} alt="Artikelbild" fill className="object-cover" sizes="112px" />
+                </div>
+                <div className="min-w-0 text-left">
+                  <p className="truncate text-sm text-white">{fm.image}</p>
+                  <p className="text-xs text-gray-500">Klicken oder Bild hierher ziehen zum Ändern</p>
+                </div>
+              </div>
+            ) : (
+              <div className="py-4">
+                {uploading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
+                    <span className="text-sm text-gray-400">Wird hochgeladen...</span>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-400">Bild hierher ziehen oder klicken</p>
+                    <p className="mt-1 text-xs text-gray-500">JPEG, PNG, WebP, GIF — max. 5 MB</p>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-end">
+        <div className="flex items-end md:col-span-2">
           <label className="flex cursor-pointer items-center gap-3">
             <input
               type="checkbox"

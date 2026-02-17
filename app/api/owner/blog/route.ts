@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server'
+import { auth, clerkClient } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
 const GITHUB_TOKEN = process.env.GITHUB_BLOG_TOKEN
@@ -25,9 +25,11 @@ async function githubAPI(endpoint: string, options: RequestInit = {}) {
 }
 
 async function checkAdmin() {
-  const { userId, orgRole } = await auth()
+  const { userId } = await auth()
   if (!userId) return false
-  return orgRole === 'org:admin'
+  const client = await clerkClient()
+  const { data: memberships } = await client.users.getOrganizationMembershipList({ userId })
+  return memberships.some((m) => m.role === 'org:admin')
 }
 
 // GET — List all blog posts from GitHub
