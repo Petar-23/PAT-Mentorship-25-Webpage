@@ -44,7 +44,13 @@ export async function GET() {
   }
 
   try {
-    const files = await githubAPI(`/contents/${CONTENT_PATH}?ref=${BRANCH}`)
+    let files: Array<{ name: string; sha: string; path: string }>
+    try {
+      files = await githubAPI(`/contents/${CONTENT_PATH}?ref=${BRANCH}`)
+    } catch {
+      // Directory doesn't exist yet (e.g. first deploy) — return empty list
+      return NextResponse.json({ posts: [] })
+    }
     const mdxFiles = files.filter((f: { name: string }) => f.name.endsWith('.mdx'))
 
     const posts = await Promise.all(
