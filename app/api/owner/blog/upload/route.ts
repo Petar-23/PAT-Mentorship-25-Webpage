@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 const GITHUB_TOKEN = process.env.GITHUB_BLOG_TOKEN
 const REPO_OWNER = 'Petar-23'
 const REPO_NAME = 'PAT-Mentorship-25-Webpage'
-const BRANCH = 'dev'
+const BRANCH = process.env.VERCEL_GIT_COMMIT_REF || 'dev'
 
 async function checkAdmin() {
   const { userId } = await auth()
