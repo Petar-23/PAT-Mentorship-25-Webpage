@@ -7,7 +7,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { Menu, X, Home, Settings, Notebook, Gauge } from 'lucide-react'
+import { Menu, X, Home, Settings, Notebook, Gauge, PenLine } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
@@ -206,6 +206,17 @@ export function Navbar() {
                   {isAdmin && (
                     <Button
                       variant="outline"
+                      onClick={() => handleNavigation('/owner/blog')}
+                      disabled={isNavigating}
+                      className="flex items-center gap-2"
+                    >
+                      <PenLine className="h-4 w-4" />
+                      <span>Blog</span>
+                    </Button>
+                  )}
+                  {isAdmin && (
+                    <Button
+                      variant="outline"
                       onClick={() => handleNavigation('/owner')}
                       disabled={isNavigating}
                       className="flex items-center gap-2"
@@ -337,6 +348,17 @@ export function Navbar() {
                       </>
                     ) : null}
                     
+                    {isAdmin && (
+                      <Button
+                        variant="outline"
+                        onClick={() => handleNavigation('/owner/blog')}
+                        disabled={isNavigating}
+                        className="w-full flex items-center justify-center gap-2"
+                      >
+                        <PenLine className="h-4 w-4" />
+                        <span>Blog</span>
+                      </Button>
+                    )}
                     {isAdmin && (
                       <Button
                         variant="outline"
