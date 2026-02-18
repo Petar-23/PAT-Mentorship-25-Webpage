@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/Sidebar'
 import { ModulDetailClient } from '@/components/modul-detail-client'
 import { getIsAdmin } from '@/lib/authz'
 import { auth } from '@clerk/nextjs/server'
+import { getSidebarData } from '@/lib/sidebar-data'
 
 type SearchParams = { [key: string]: string | string[] | undefined }
 
@@ -22,33 +23,8 @@ export default async function MentorshipModulPage({
   const resolvedParams = await searchParams
   const requestedVideoId = typeof resolvedParams.video === 'string' ? resolvedParams.video : undefined
 
-  // Sidebar-Daten – schlank: nur Count statt ganze Module laden
-  const [kurseRaw, savedSetting] = await Promise.all([
-    prisma.playlist.findMany({
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        iconUrl: true,
-        _count: { select: { modules: true } },
-      },
-    }),
-    prisma.adminSetting.findUnique({
-      where: { key: 'sidebarOrder' },
-    }),
-  ])
-
-  const kurseForSidebar = kurseRaw.map((k) => ({
-    id: k.id,
-    name: k.name,
-    slug: k.slug,
-    description: k.description ?? null,
-    iconUrl: k.iconUrl ?? null,
-    modulesLength: k._count.modules,
-  }))
-
-  const savedSidebarOrder: string[] | null = savedSetting ? (savedSetting.value as string[]) : null
+  // Sidebar-Daten — shared cached helper (deduplicated across routes per request)
+  const { kurseForSidebar, savedSidebarOrder } = await getSidebarData()
 
   // Modul laden
   const modul = await prisma.module.findUnique({

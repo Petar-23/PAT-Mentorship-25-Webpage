@@ -4,7 +4,17 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import dynamic from 'next/dynamic'
-import { VideoPlayer } from './video-player'
+const VideoPlayer = dynamic(
+  () => import('./video-player').then((mod) => mod.VideoPlayer),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 flex flex-col max-w-7xl">
+        <div className="aspect-video bg-black/90 rounded-2xl overflow-hidden animate-pulse" />
+      </div>
+    ),
+  }
+)
 import { useToast } from '@/hooks/use-toast'
 import { Sidebar } from './Sidebar'
 import { Button } from '@/components/ui/button'

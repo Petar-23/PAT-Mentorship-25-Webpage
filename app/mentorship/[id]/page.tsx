@@ -8,6 +8,7 @@ import { ModuleGridClient } from '@/components/module-grid-client'
 import { getIsAdmin } from '@/lib/authz'
 import { MobileCoursesDrawer } from '@/components/mobile-courses-drawer'
 import { auth } from '@clerk/nextjs/server'
+import { getSidebarData } from '@/lib/sidebar-data'
 
 
 interface Props {
@@ -24,33 +25,8 @@ export default async function DynamicCoursePage({ params }: Props) {
   const isAdmin = await getIsAdmin()
   const { userId } = await auth()
 
-  // Sidebar-Daten (für beide Pfade) – schlank: nur Count statt ganze Module laden
-  const [kurseRaw, savedSetting] = await Promise.all([
-    prisma.playlist.findMany({
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        iconUrl: true,
-        _count: { select: { modules: true } },
-      },
-    }),
-    prisma.adminSetting.findUnique({
-      where: { key: 'sidebarOrder' },
-    }),
-  ])
-
-  const kurseForSidebar = kurseRaw.map((k) => ({
-    id: k.id,
-    name: k.name,
-    slug: k.slug,
-    description: k.description ?? null,
-    iconUrl: k.iconUrl ?? null,
-    modulesLength: k._count.modules,
-  }))
-
-  const savedSidebarOrder: string[] | null = savedSetting ? (savedSetting.value as string[]) : null
+  // Sidebar-Daten — shared cached helper (deduplicated across routes per request)
+  const { kurseForSidebar, savedSidebarOrder } = await getSidebarData()
 
   // Erst prüfen: Ist das ID eine Playlist (Kurs)?
   const kurs = await prisma.playlist.findUnique({
