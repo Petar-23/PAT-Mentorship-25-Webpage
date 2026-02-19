@@ -359,13 +359,6 @@ export default function Testimonials() {
 
         {PAT_MEETUP_VIDEO_ID ? (
           <div className="mb-8">
-            <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 ring-1 ring-blue-200">
-              <span className="text-sm font-medium text-blue-700">🎥 Community Meetup</span>
-            </div>
-            <h3 className="text-xl sm:text-2xl font-semibold text-gray-900">So fühlt sich PAT live an</h3>
-            <p className="mt-1 mb-4 text-sm sm:text-base text-gray-600">
-              Einblicke vom PAT Community Meetup — echte Menschen, echte Ergebnisse.
-            </p>
             <LazyYouTubeEmbed
               videoId={PAT_MEETUP_VIDEO_ID}
               title="PAT Community Meetup"
