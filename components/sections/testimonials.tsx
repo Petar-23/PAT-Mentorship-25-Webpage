@@ -9,8 +9,10 @@ import { TrendingUp, Receipt, ChartCandlestick, Star } from "lucide-react"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { TestimonialModal } from "../ui/testimonial-modal"
 import { TestimonialCard } from "../ui/testimonial-card"
+import { LazyYouTubeEmbed } from "../ui/lazy-youtube-embed"
 
 const WHOP_REVIEWS_URL = "https://whop.com/price-action-trader-mentorship-24-d9/pat-mentorship-2025/"
+const PAT_MEETUP_VIDEO_ID = process.env.NEXT_PUBLIC_PAT_MEETUP_VIDEO_ID?.trim()
 
 type Testimonial = {
   quote: string
@@ -354,6 +356,22 @@ export default function Testimonials() {
             Höre die Meinung von erfolgreichen Mentorship Absolventen
           </p>
         </div>
+
+        {PAT_MEETUP_VIDEO_ID ? (
+          <div className="mb-8">
+            <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 ring-1 ring-blue-200">
+              <span className="text-sm font-medium text-blue-700">🎥 Community Meetup</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-semibold text-gray-900">So fühlt sich PAT live an</h3>
+            <p className="mt-1 mb-4 text-sm sm:text-base text-gray-600">
+              Einblicke vom PAT Community Meetup — echte Menschen, echte Ergebnisse.
+            </p>
+            <LazyYouTubeEmbed
+              videoId={PAT_MEETUP_VIDEO_ID}
+              title="PAT Community Meetup"
+            />
+          </div>
+        ) : null}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-12">
             <StatCard
