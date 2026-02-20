@@ -67,11 +67,10 @@ export function LazyYouTubeEmbed({ videoId, title, className }: LazyYouTubeEmbed
                 <p className="px-4 text-center text-sm sm:text-base opacity-90">Video-Vorschau derzeit nicht verfügbar</p>
               </div>
             )}
-            <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/25" />
-            <span className="absolute inset-0 flex items-center justify-center">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/35 bg-white/20 px-4 py-2 text-sm font-semibold text-white shadow-sm backdrop-blur-[3px] transition-transform group-hover:scale-105">
-                <Play className="h-4 w-4 fill-current" aria-hidden="true" />
-                Video abspielen
+            <div className="absolute inset-0 bg-black/12 transition-colors group-hover:bg-black/18" />
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <span className="inline-flex h-14 w-14 translate-y-[14%] items-center justify-center rounded-full border border-white/45 bg-white/18 text-white shadow-md backdrop-blur-[3px] transition-transform group-hover:scale-105 sm:h-16 sm:w-16">
+                <Play className="h-6 w-6 fill-current sm:h-7 sm:w-7" aria-hidden="true" />
               </span>
             </span>
           </button>
