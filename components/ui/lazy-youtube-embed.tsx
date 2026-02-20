@@ -69,7 +69,7 @@ export function LazyYouTubeEmbed({ videoId, title, className }: LazyYouTubeEmbed
             )}
             <div className="absolute inset-0 bg-black/12 transition-colors group-hover:bg-black/18" />
             <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <span className="inline-flex h-14 w-14 translate-y-[14%] items-center justify-center rounded-full border border-white/45 bg-white/18 text-white shadow-md backdrop-blur-[3px] transition-transform group-hover:scale-105 sm:h-16 sm:w-16">
+              <span className="inline-flex h-14 w-14 translate-y-[30%] items-center justify-center rounded-full border border-white/45 bg-white/18 text-white shadow-md backdrop-blur-[3px] transition-transform group-hover:scale-105 sm:h-16 sm:w-16">
                 <Play className="h-6 w-6 fill-current sm:h-7 sm:w-7" aria-hidden="true" />
               </span>
             </span>
