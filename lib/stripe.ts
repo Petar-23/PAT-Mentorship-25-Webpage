@@ -176,19 +176,52 @@ async function writeSubscriptionToDb(params: {
   }
 }
 
+// PayPal-Check: Hat der User einen aktiven PayPal-Subscriber-Eintrag?
+async function checkPayPalAccess(userId: string): Promise<SubscriptionSnapshot | null> {
+  try {
+    const paypalSub = await prisma.payPalSubscriber.findUnique({
+      where: { userId },
+      select: { status: true },
+    })
+
+    if (paypalSub?.status === 'ACTIVE') {
+      return {
+        hasActiveSubscription: true,
+        subscriptionDetails: {
+          status: 'active',
+          startDate: PROGRAM_START_DATE.toISOString(),
+          isPending: false,
+          isCanceled: false,
+          cancelAt: null,
+          currentPeriodEnd: null,
+        },
+      }
+    }
+  } catch (error) {
+    console.error('Error checking PayPal access:', error)
+  }
+  return null
+}
+
 export async function getSubscriptionSnapshot(
   userId: string,
-  options: { retryCount?: number; checkForRecentCheckout?: boolean } = {}
+  options: { retryCount?: number; checkForRecentCheckout?: boolean; email?: string } = {}
 ): Promise<SubscriptionSnapshot> {
+  // Schneller PayPal-Check vor allem anderen (fuer M24-Subscriber).
+  const paypalResult = await checkPayPalAccess(userId)
+  if (paypalResult) return paypalResult
+
   const requiredPriceIds = getAccessPriceIdsFromEnv()
   const maxRetries = Math.max(1, options.retryCount ?? 1)
   const checkForRecentCheckout = options.checkForRecentCheckout === true
+  const email = options.email
 
   const db = await readSubscriptionFromDb(userId)
   if (db) {
     // Wenn wir schon sicher wissen, dass es kein Abo gibt, wollen wir NICHT jedes Mal Stripe abfragen.
     // Ausnahme: direkt nach Checkout (success=true) erlauben wir Retries zu Stripe.
-    if (db.status === 'none' && !checkForRecentCheckout) {
+    // Ausnahme 2: Email vorhanden → wir koennten den User noch per Email bei Stripe finden (M25-Migration).
+    if (db.status === 'none' && !checkForRecentCheckout && !email) {
       return { hasActiveSubscription: false, subscriptionDetails: null }
     }
 
@@ -218,9 +251,10 @@ export async function getSubscriptionSnapshot(
   }
 
   // Wichtig für Stabilität (verhindert 504 Timeouts in z. B. /api/mentorship-status):
-  // Wenn noch kein DB-Record existiert und wir NICHT direkt aus dem Checkout zurückkommen,
+  // Wenn noch kein DB-Record existiert und wir NICHT direkt aus dem Checkout zurückkommen
+  // UND keine Email zum Nachschlagen vorhanden ist,
   // behandeln wir den User sofort als "kein Abo" und vermeiden langsame Stripe-Lookups.
-  if (!db && !checkForRecentCheckout) {
+  if (!db && !checkForRecentCheckout && !email) {
     return { hasActiveSubscription: false, subscriptionDetails: null }
   }
 
@@ -228,9 +262,36 @@ export async function getSubscriptionSnapshot(
   // Bei "recent checkout" erlauben wir ein paar Retries, weil Stripe manchmal verzögert ist.
   for (let i = 0; i < maxRetries; i++) {
     try {
-      const customers = await stripe.customers.search({
+      let customers = await stripe.customers.search({
         query: `metadata['userId']:'${userId}'`,
       })
+
+      // Email-Fallback (M25-Migration): Falls kein Customer per metadata.userId gefunden,
+      // versuchen wir es per Email (gleicher Pattern wie in createCustomerPortalSession).
+      if (!customers.data.length && email) {
+        const emailCustomers = await stripe.customers.search({
+          query: `email:'${email}'`,
+        })
+
+        const liveEmailCustomers = emailCustomers.data
+          .filter((c) => !('deleted' in c && c.deleted))
+          .sort((a, b) => b.created - a.created)
+
+        if (liveEmailCustomers.length > 0) {
+          const picked = liveEmailCustomers[0]
+          // Best-effort: Link the Stripe customer to the app user for future lookups.
+          try {
+            if (picked.metadata?.userId !== userId) {
+              await stripe.customers.update(picked.id, {
+                metadata: { ...(picked.metadata ?? {}), userId },
+              })
+            }
+          } catch (linkError) {
+            console.error('Failed to auto-link Stripe customer via email fallback:', linkError)
+          }
+          customers = { ...emailCustomers, data: liveEmailCustomers }
+        }
+      }
 
       if (!customers.data.length) {
         await writeSubscriptionToDb({
@@ -371,8 +432,8 @@ export async function getSubscriptionSnapshot(
   return { hasActiveSubscription: false, subscriptionDetails: null }
 }
 
-export async function hasActiveSubscription(userId: string): Promise<boolean> {
-  const snapshot = await getSubscriptionSnapshot(userId, { retryCount: 1 })
+export async function hasActiveSubscription(userId: string, email?: string): Promise<boolean> {
+  const snapshot = await getSubscriptionSnapshot(userId, { retryCount: 1, email })
   return snapshot.hasActiveSubscription
 }
 

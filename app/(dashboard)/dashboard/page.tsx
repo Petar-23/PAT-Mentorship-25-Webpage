@@ -23,9 +23,11 @@ export default async function DashboardPage({
   const resolvedParams = await searchParams
   const checkForRecentCheckout = resolvedParams?.success === 'true'
 
+  const email = user.primaryEmailAddress?.emailAddress
   const snapshot = await getSubscriptionSnapshot(userId, {
     retryCount: checkForRecentCheckout ? 5 : 3,
     checkForRecentCheckout,
+    email: email ?? undefined,
   })
 
   const initialData = {
