@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { AlertCircle, Download, RefreshCw } from 'lucide-react'
+import { OnboardingVideoAdminCard } from '@/components/dashboard/onboarding-video-admin-card'
 
 type MentorshipEventType = 'signup' | 'churn' | 'cancel_scheduled'
 
@@ -296,6 +297,9 @@ export default function AdminDashboardV2() {
           ))}
         </select>
       </div>
+
+
+      <OnboardingVideoAdminCard />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
