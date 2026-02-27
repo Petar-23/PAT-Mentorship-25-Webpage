@@ -299,8 +299,6 @@ export default function AdminDashboardV2() {
       </div>
 
 
-      <OnboardingVideoAdminCard />
-
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
         <Card>
@@ -552,6 +550,10 @@ export default function AdminDashboardV2() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Onboarding Video Settings (bewusst ganz unten) */}
+      <OnboardingVideoAdminCard />
+
     </div>
   )
 }

@@ -179,98 +179,101 @@ export function OnboardingVideoAdminCard() {
   }
 
   return (
-    <Card className="mt-6 border-orange-500/30 bg-orange-50/40">
+    <Card className="mt-6">
       <CardHeader>
         <CardTitle>Onboarding-Video Willkommenskachel (M26)</CardTitle>
         <CardDescription>
-          Setze hier das Bunny-Video für die Kachel im Mentorship-Dashboard. Ablaufdatum:{' '}
-          <span className="font-medium text-foreground">{formatDateTime(expiresAt)}</span>
+          Upload setzt das Video automatisch. Die GUID ist optional, falls du ein bestehendes Bunny-Video manuell
+          verknüpfen willst. Ablaufdatum: <span className="font-medium text-foreground">{formatDateTime(expiresAt)}</span>
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent>
         {isLoading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
             Einstellungen werden geladen…
           </div>
         ) : (
-          <>
-            <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
-              <Input
-                value={draftVideoId}
-                onChange={(event) => setDraftVideoId(event.target.value)}
-                placeholder="Bunny Video GUID eingeben"
-                disabled={isSaving || isUploading}
-              />
+          <div className="grid gap-4 lg:grid-cols-[1fr_320px] lg:items-start">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
+                  <UploadCloud className="h-4 w-4" />
+                  Bunny Upload starten
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    disabled={isSaving || isUploading}
+                    onChange={(event) => {
+                      const selectedFile = event.target.files?.[0] ?? null
+                      void handleFileUpload(selectedFile)
+                      event.currentTarget.value = ''
+                    }}
+                  />
+                </label>
 
-              <Button onClick={handleSave} disabled={isSaving || isUploading}>
-                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Speichern
-              </Button>
+                {isUploading ? (
+                  <span className="text-sm text-muted-foreground">Upload läuft: {uploadProgress.toFixed(0)}%</span>
+                ) : null}
 
-              <Button
-                variant="outline"
-                onClick={handleClear}
-                disabled={isSaving || isUploading || !videoId}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Entfernen
-              </Button>
-            </div>
+                <span className="text-xs text-muted-foreground">Letztes Update: {formatDateTime(updatedAt)}</span>
+              </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
-                <UploadCloud className="h-4 w-4" />
-                Bunny Upload starten
-                <input
-                  type="file"
-                  accept="video/*"
-                  className="hidden"
+              <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
+                <Input
+                  value={draftVideoId}
+                  onChange={(event) => setDraftVideoId(event.target.value)}
+                  placeholder="Bunny Video GUID (optional)"
                   disabled={isSaving || isUploading}
-                  onChange={(event) => {
-                    const selectedFile = event.target.files?.[0] ?? null
-                    void handleFileUpload(selectedFile)
-                    event.currentTarget.value = ''
-                  }}
                 />
-              </label>
 
-              {isUploading ? (
-                <span className="text-sm text-muted-foreground">Upload läuft: {uploadProgress.toFixed(0)}%</span>
+                <Button onClick={handleSave} disabled={isSaving || isUploading}>
+                  {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  Speichern
+                </Button>
+
+                <Button variant="outline" onClick={handleClear} disabled={isSaving || isUploading || !videoId}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Entfernen
+                </Button>
+              </div>
+
+              {status ? (
+                <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>{status}</span>
+                  </div>
+                </div>
               ) : null}
 
-              <span className="text-xs text-muted-foreground">Letztes Update: {formatDateTime(updatedAt)}</span>
+              {error ? (
+                <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+              ) : null}
             </div>
 
-            {status ? (
-              <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>{status}</span>
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Aktuelle Vorschau</p>
+              {embedUrl ? (
+                <div className="max-w-sm overflow-hidden rounded-lg border border-border bg-black aspect-video">
+                  <iframe
+                    src={embedUrl}
+                    title="Onboarding Video Preview"
+                    className="h-full w-full"
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                    allowFullScreen
+                    loading="lazy"
+                  />
                 </div>
-              </div>
-            ) : null}
-
-            {error ? (
-              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
-            ) : null}
-
-            {embedUrl ? (
-              <div className="overflow-hidden rounded-lg border border-border bg-black aspect-video">
-                <iframe
-                  src={embedUrl}
-                  title="Onboarding Video Preview"
-                  className="h-full w-full"
-                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
-                  allowFullScreen
-                  loading="lazy"
-                />
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Aktuell ist kein Onboarding-Video gesetzt.</p>
-            )}
-          </>
+              ) : (
+                <div className="flex h-[180px] max-w-sm items-center justify-center rounded-lg border border-dashed border-border px-4 text-sm text-muted-foreground">
+                  Kein Onboarding-Video gesetzt.
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

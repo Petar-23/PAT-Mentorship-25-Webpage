@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getOnboardingDismissStorageKey, getOnboardingEmbedUrl } from '@/lib/onboarding-video'
-import { CalendarDays, X } from 'lucide-react'
+import { CalendarDays, CheckCircle2, RotateCcw, X } from 'lucide-react'
 
 type OnboardingWelcomeCardProps = {
   videoId: string
@@ -34,12 +34,31 @@ export function OnboardingWelcomeCard({ videoId, expiresAtLabel }: OnboardingWel
     setIsDismissed(true)
   }
 
+  const handleRestore = () => {
+    try {
+      window.localStorage.removeItem(storageKey)
+    } catch {
+      // ignore storage errors
+    }
+    setIsDismissed(false)
+  }
+
   if (isDismissed) {
-    return null
+    return (
+      <Card className="md:col-span-2 xl:col-span-3 min-[1800px]:col-span-4">
+        <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">Onboarding-Video ausgeblendet.</p>
+          <Button type="button" variant="outline" size="sm" onClick={handleRestore} className="w-full sm:w-auto">
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Wieder einblenden
+          </Button>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
-    <Card className="md:col-span-2 xl:col-span-3 min-[1800px]:col-span-4 border-orange-500/30 bg-orange-50/40">
+    <Card className="md:col-span-2 xl:col-span-3 min-[1800px]:col-span-4">
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -78,13 +97,28 @@ export function OnboardingWelcomeCard({ videoId, expiresAtLabel }: OnboardingWel
             />
           </div>
 
-          <div className="space-y-3 self-center">
-            <p className="text-sm text-muted-foreground">
-              Schau dir dieses kurze Onboarding an, damit du direkt weißt, wie du die Plattform optimal nutzt und
-              was dich im ersten Stream erwartet.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Die Kachel verschwindet automatisch am <span className="font-medium text-foreground">{expiresAtLabel}</span>.
+          <div className="space-y-4 self-center">
+            <div className="rounded-md border border-border bg-muted/30 p-3">
+              <p className="text-sm font-semibold text-foreground">In wenigen Minuten startklar</p>
+              <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
+                  <span>So findest du sofort die wichtigsten Module und deinen nächsten Schritt.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
+                  <span>Du bekommst den Ablauf für den Kickoff-Stream und die ersten Aufgaben.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
+                  <span>Ideal, wenn du ohne Rumklicken direkt produktiv starten willst.</span>
+                </li>
+              </ul>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Hinweis: Diese Kachel verschwindet automatisch am{' '}
+              <span className="font-medium text-foreground">{expiresAtLabel}</span>.
             </p>
           </div>
         </div>
