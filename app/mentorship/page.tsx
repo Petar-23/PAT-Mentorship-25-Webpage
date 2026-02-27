@@ -14,7 +14,10 @@ import { Progress } from '@/components/ui/progress'
 import { auth } from '@clerk/nextjs/server'
 import { ArrowRight, Sparkles } from 'lucide-react'
 import { MentorshipWelcomeName } from '@/components/mentorship/welcome-name'
+import { OnboardingWelcomeCard } from '@/components/mentorship/onboarding-welcome-card'
 import { getSidebarData } from '@/lib/sidebar-data'
+import { ONBOARDING_VIDEO_SETTING_KEY, parseOnboardingVideoSetting } from '@/lib/onboarding-video'
+import { getOnboardingVideoExpiryDate, isOnboardingVideoExpired } from '@/lib/onboarding-video-expiry'
 
 type SearchParams = { [key: string]: string | string[] | undefined }
 
@@ -40,6 +43,10 @@ type NewContentItem = {
   moduleId: string
   moduleName: string
   courseName: string | null
+}
+
+function formatOnboardingExpiryLabel(date: Date): string {
+  return new Intl.DateTimeFormat('de-DE', { dateStyle: 'long' }).format(date)
 }
 
 function clampPercent(value: number) {
@@ -184,6 +191,17 @@ async function getNewContent(limit: number): Promise<NewContentItem[]> {
   }))
 }
 
+
+async function getOnboardingVideoId(): Promise<string | null> {
+  const setting = await prisma.adminSetting.findUnique({
+    where: { key: ONBOARDING_VIDEO_SETTING_KEY },
+    select: { value: true },
+  })
+
+  const parsed = parseOnboardingVideoSetting(setting?.value)
+  return parsed.videoId
+}
+
 export default async function MentorshipDashboard({ searchParams = Promise.resolve({}) }: PageProps) {
   const isAdmin = await getIsAdmin()
   const { userId } = await auth()
@@ -192,10 +210,14 @@ export default async function MentorshipDashboard({ searchParams = Promise.resol
   const create = typeof resolvedParams.create === 'string' ? resolvedParams.create : undefined
   const openCreateCourseModal = create === '1' || create === 'true'
 
-  const [{ kurseForSidebar, savedSidebarOrder }, continueLearning, newContent] = await Promise.all([
+  const onboardingExpired = isOnboardingVideoExpired()
+  const onboardingExpiryLabel = formatOnboardingExpiryLabel(getOnboardingVideoExpiryDate())
+
+  const [{ kurseForSidebar, savedSidebarOrder }, continueLearning, newContent, onboardingVideoId] = await Promise.all([
     getSidebarData(),
     getContinueLearning(userId ?? null, isAdmin),
     getNewContent(3),
+    onboardingExpired ? Promise.resolve(null) : getOnboardingVideoId(),
   ])
 
   return (
@@ -230,6 +252,16 @@ export default async function MentorshipDashboard({ searchParams = Promise.resol
               </p>
             </div>
           </div>
+
+          {!onboardingExpired && onboardingVideoId ? (
+            <div className="mb-6">
+              <OnboardingWelcomeCard
+                key={onboardingVideoId}
+                videoId={onboardingVideoId}
+                expiresAtLabel={onboardingExpiryLabel}
+              />
+            </div>
+          ) : null}
 
           <div className="grid w-full grid-cols-1 md:grid-cols-2 xl:grid-cols-3 min-[1800px]:grid-cols-4 gap-6 auto-rows-fr">
             {/* Weiterlernen */}
