@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Pencil, Check, X, UserPlus } from 'lucide-react'
 
 type PayPalSubscriber = {
   id: string
@@ -45,6 +47,14 @@ export default function PayPalAdminPage() {
 
   const [subscribers, setSubscribers] = useState<PayPalSubscriber[]>([])
   const [loadingSubs, setLoadingSubs] = useState(true)
+
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editUserId, setEditUserId] = useState('')
+  const [editEmail, setEditEmail] = useState('')
+  const [editStatus, setEditStatus] = useState('')
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isLoaded) return
@@ -117,6 +127,50 @@ export default function PayPalAdminPage() {
       setError('Netzwerkfehler. Bitte versuche es erneut.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  function startEdit(sub: PayPalSubscriber) {
+    setEditingId(sub.id)
+    setEditUserId(sub.userId || '')
+    setEditEmail(sub.paypalEmail)
+    setEditStatus(sub.status)
+    setEditError(null)
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditError(null)
+  }
+
+  async function saveEdit(subId: string) {
+    setEditSaving(true)
+    setEditError(null)
+
+    try {
+      const res = await fetch('/api/admin/paypal-subscribers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: subId,
+          userId: editUserId.trim() || null,
+          paypalEmail: editEmail.trim(),
+          status: editStatus,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        setEditError(data.error || 'Speichern fehlgeschlagen')
+        return
+      }
+
+      setEditingId(null)
+      fetchSubscribers()
+    } catch {
+      setEditError('Netzwerkfehler')
+    } finally {
+      setEditSaving(false)
     }
   }
 
@@ -315,8 +369,9 @@ export default function PayPalAdminPage() {
                     <th className="pb-2 pr-4">Subscription ID</th>
                     <th className="pb-2 pr-4">Email</th>
                     <th className="pb-2 pr-4">Status</th>
+                    <th className="pb-2 pr-4">User ID</th>
                     <th className="pb-2 pr-4">Claimed</th>
-                    <th className="pb-2">Importiert am</th>
+                    <th className="pb-2">Aktion</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -328,33 +383,121 @@ export default function PayPalAdminPage() {
                       <td className="py-2 pr-4 font-mono text-xs">
                         {sub.paypalSubscriptionId}
                       </td>
-                      <td className="py-2 pr-4">{sub.paypalEmail}</td>
-                      <td className="py-2 pr-4">
-                        <span
-                          className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                            sub.status === 'ACTIVE'
-                              ? 'bg-green-100 text-green-700'
-                              : sub.status === 'CANCELLED'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-neutral-100 text-neutral-600'
-                          }`}
-                        >
-                          {sub.status}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-4">
-                        {sub.claimedAt ? (
-                          <span className="text-green-600">
-                            ✓{' '}
-                            {new Date(sub.claimedAt).toLocaleDateString('de-DE')}
-                          </span>
-                        ) : (
-                          <span className="text-neutral-400">—</span>
-                        )}
-                      </td>
-                      <td className="py-2 text-neutral-400">
-                        {new Date(sub.createdAt).toLocaleDateString('de-DE')}
-                      </td>
+
+                      {editingId === sub.id ? (
+                        <>
+                          <td className="py-2 pr-4">
+                            <Input
+                              value={editEmail}
+                              onChange={(e) => setEditEmail(e.target.value)}
+                              className="h-7 text-xs"
+                              placeholder="PayPal Email"
+                            />
+                          </td>
+                          <td className="py-2 pr-4">
+                            <select
+                              value={editStatus}
+                              onChange={(e) => setEditStatus(e.target.value)}
+                              className="h-7 rounded border border-neutral-200 px-2 text-xs"
+                            >
+                              <option value="ACTIVE">ACTIVE</option>
+                              <option value="CANCELLED">CANCELLED</option>
+                              <option value="SUSPENDED">SUSPENDED</option>
+                              <option value="EXPIRED">EXPIRED</option>
+                            </select>
+                          </td>
+                          <td className="py-2 pr-4">
+                            <Input
+                              value={editUserId}
+                              onChange={(e) => setEditUserId(e.target.value)}
+                              className="h-7 font-mono text-xs"
+                              placeholder="user_..."
+                            />
+                          </td>
+                          <td className="py-2 pr-4 text-xs text-neutral-400">
+                            {sub.claimedAt
+                              ? new Date(sub.claimedAt).toLocaleDateString('de-DE')
+                              : '—'}
+                          </td>
+                          <td className="py-2">
+                            <div className="flex items-center gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => saveEdit(sub.id)}
+                                disabled={editSaving}
+                                className="h-7 w-7 p-0"
+                              >
+                                <Check className="h-4 w-4 text-green-600" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={cancelEdit}
+                                disabled={editSaving}
+                                className="h-7 w-7 p-0"
+                              >
+                                <X className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                            {editError && (
+                              <p className="mt-1 text-[10px] text-red-500">{editError}</p>
+                            )}
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="py-2 pr-4">{sub.paypalEmail}</td>
+                          <td className="py-2 pr-4">
+                            <span
+                              className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                                sub.status === 'ACTIVE'
+                                  ? 'bg-green-100 text-green-700'
+                                  : sub.status === 'CANCELLED'
+                                    ? 'bg-red-100 text-red-700'
+                                    : 'bg-neutral-100 text-neutral-600'
+                              }`}
+                            >
+                              {sub.status}
+                            </span>
+                          </td>
+                          <td className="py-2 pr-4">
+                            {sub.userId ? (
+                              <span className="font-mono text-xs text-neutral-600">
+                                {sub.userId.slice(0, 20)}…
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-xs text-neutral-400">
+                                <UserPlus className="h-3 w-3" />
+                                Nicht zugewiesen
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2 pr-4">
+                            {sub.claimedAt ? (
+                              <span className="text-green-600">
+                                ✓{' '}
+                                {new Date(sub.claimedAt).toLocaleDateString('de-DE')}
+                              </span>
+                            ) : (
+                              <span className="text-neutral-400">—</span>
+                            )}
+                          </td>
+                          <td className="py-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => startEdit(sub)}
+                              className="h-7 w-7 p-0"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>
