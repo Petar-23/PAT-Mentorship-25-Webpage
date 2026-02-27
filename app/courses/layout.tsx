@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { auth } from '@clerk/nextjs/server'
+import { auth, currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { hasActiveSubscription } from '@/lib/stripe'
 import { getIsAdmin } from '@/lib/authz'
@@ -14,7 +14,11 @@ export default async function CoursesLayout({ children }: { children: ReactNode 
   // Admin darf immer rein (für Content-Management)
   const isAdmin = await getIsAdmin()
 
-  const allowed = isAdmin || (await hasActiveSubscription(userId))
+  // Email fuer Stripe-Fallback (M25-Migration)
+  const user = await currentUser()
+  const email = user?.primaryEmailAddress?.emailAddress
+
+  const allowed = isAdmin || (await hasActiveSubscription(userId, email ?? undefined))
 
   if (!allowed) {
     redirect('/dashboard?paywall=courses')

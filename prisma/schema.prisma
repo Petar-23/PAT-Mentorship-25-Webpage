@@ -104,6 +104,7 @@ model UserSubscription {
 
   stripeCustomerId     String?
   stripeSubscriptionId String?
+  paypalSubscriptionId String?  // Falls Zugang ueber PayPal statt Stripe
 
   status              String
   cancelAtPeriodEnd   Boolean  @default(false)
@@ -116,4 +117,35 @@ model UserSubscription {
 
   @@index([stripeCustomerId])
   @@index([stripeSubscriptionId])
+}
+
+model LeadMagnetSubscriber {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  firstName   String?
+  source      String?
+  referrer    String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmTerm     String?
+  utmContent  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// PayPal-Subscriber (M24-Sonderfall): vom Admin importierte PayPal-Abos.
+// User koennen ihren PayPal-Account ueber die Claim-Seite verknuepfen.
+model PayPalSubscriber {
+  id                    String    @id @default(uuid())
+  paypalSubscriptionId  String    @unique
+  paypalEmail           String
+  status                String    // ACTIVE, CANCELLED, SUSPENDED, EXPIRED
+  userId                String?   @unique  // Clerk User ID (gesetzt nach Claim)
+  claimedAt             DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([paypalEmail])
+  @@index([userId])
 }
