@@ -53,35 +53,63 @@ export function OnboardingWelcomeCard({ videoId, expiresAtLabel }: OnboardingWel
 
   return (
     <Card>
-      <CardHeader className="pb-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <CardTitle className="text-xl sm:text-2xl">Willkommen in der PAT Mentorship 2026</CardTitle>
-            <CardDescription className="mt-2 flex items-center gap-2 text-sm">
-              <CalendarDays className="h-4 w-4" />
-              Kickoff-Stream am 03.03.2026 um 15:00 CET
-            </CardDescription>
-          </div>
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleToggle}
-            className="shrink-0"
-            aria-label={isDismissed ? 'Onboarding-Kachel einblenden' : 'Onboarding-Kachel ausblenden'}
-          >
-            {isDismissed ? 'Einblenden' : 'Ausblenden'}
-            <motion.span
-              className="ml-1 inline-flex"
-              animate={{ rotate: isDismissed ? 0 : 180 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
+      <div className={isDismissed ? 'px-4 py-3 sm:px-6' : ''}>
+        {isDismissed ? (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              <CalendarDays className="mr-1.5 inline h-4 w-4 align-text-bottom" />
+              Kickoff-Stream am 03.03.2026 um 15:00 CET auf Discord — Kachel verschwindet am {expiresAtLabel}
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleToggle}
+              className="shrink-0"
+              aria-label="Onboarding-Kachel einblenden"
             >
-              <ChevronDown className="h-4 w-4" />
-            </motion.span>
-          </Button>
-        </div>
-      </CardHeader>
+              Einblenden
+              <motion.span
+                className="ml-1 inline-flex"
+                animate={{ rotate: 0 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+              >
+                <ChevronDown className="h-4 w-4" />
+              </motion.span>
+            </Button>
+          </div>
+        ) : (
+          <CardHeader className="pb-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle className="text-xl sm:text-2xl">Willkommen in der PAT Mentorship 2026</CardTitle>
+                <CardDescription className="mt-2 flex items-center gap-2 text-sm">
+                  <CalendarDays className="h-4 w-4" />
+                  Kickoff-Stream am 03.03.2026 um 15:00 CET auf Discord
+                </CardDescription>
+              </div>
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleToggle}
+                className="shrink-0"
+                aria-label="Onboarding-Kachel ausblenden"
+              >
+                Ausblenden
+                <motion.span
+                  className="ml-1 inline-flex"
+                  animate={{ rotate: 180 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </motion.span>
+              </Button>
+            </div>
+          </CardHeader>
+        )}
+      </div>
 
       <motion.div
         initial={false}
