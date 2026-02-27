@@ -127,9 +127,9 @@ export async function PATCH(req: NextRequest) {
     // If a userId was assigned, also update UserSubscription
     if (userId && updateData.userId) {
       await prisma.userSubscription.upsert({
-        where: { clerkUserId: userId },
+        where: { userId },
         create: {
-          clerkUserId: userId,
+          userId,
           paypalSubscriptionId: existing.paypalSubscriptionId,
           status: 'active',
         },
