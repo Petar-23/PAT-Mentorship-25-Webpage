@@ -253,15 +253,17 @@ export default async function MentorshipDashboard({ searchParams = Promise.resol
             </div>
           </div>
 
-          <div className="grid w-full grid-cols-1 md:grid-cols-2 xl:grid-cols-3 min-[1800px]:grid-cols-4 gap-6 auto-rows-fr">
-            {!onboardingExpired && onboardingVideoId ? (
+          {!onboardingExpired && onboardingVideoId ? (
+            <div className="mb-6">
               <OnboardingWelcomeCard
                 key={onboardingVideoId}
                 videoId={onboardingVideoId}
                 expiresAtLabel={onboardingExpiryLabel}
               />
-            ) : null}
+            </div>
+          ) : null}
 
+          <div className="grid w-full grid-cols-1 md:grid-cols-2 xl:grid-cols-3 min-[1800px]:grid-cols-4 gap-6 auto-rows-fr">
             {/* Weiterlernen */}
             <Card className="md:col-span-2 xl:col-span-2 min-[1800px]:col-span-2">
               <CardHeader>

@@ -45,7 +45,7 @@ export function OnboardingWelcomeCard({ videoId, expiresAtLabel }: OnboardingWel
 
   if (isDismissed) {
     return (
-      <Card className="md:col-span-2 xl:col-span-3 min-[1800px]:col-span-4">
+      <Card>
         <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">Onboarding-Video ausgeblendet.</p>
           <Button type="button" variant="outline" size="sm" onClick={handleRestore} className="w-full sm:w-auto">
@@ -58,7 +58,7 @@ export function OnboardingWelcomeCard({ videoId, expiresAtLabel }: OnboardingWel
   }
 
   return (
-    <Card className="md:col-span-2 xl:col-span-3 min-[1800px]:col-span-4">
+    <Card>
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between gap-3">
           <div>
