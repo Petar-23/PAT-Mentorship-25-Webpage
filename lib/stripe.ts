@@ -552,9 +552,14 @@ export async function createCheckoutSession(userId: string, userEmail: string) {
       },
     })
 
-    // Trial-End-Datum: 01.03.2026 00:00 UTC
-    const trialEndDate = new Date('2026-03-01T00:00:00+01:00')
-    const trialEndUnix = Math.floor(trialEndDate.getTime() / 1000)
+    // M26 launch: 01.03.2026. Pre-launch signups get a short free trial until
+    // 48h from now (Stripe minimum). After launch, no trial — charge immediately.
+    const now = new Date()
+    const launchDate = new Date('2026-03-01T00:00:00+01:00')
+    const minTrialEnd = new Date(now.getTime() + 48 * 60 * 60 * 1000 + 60_000) // 48h + 1min buffer
+
+    // Only add trial if we're still before launch AND the minimum trial end is reasonable
+    const useTrialEnd = now < launchDate ? Math.floor(minTrialEnd.getTime() / 1000) : undefined
 
     const session = await stripe.checkout.sessions.create({
       customer: customer.id,
@@ -575,10 +580,10 @@ export async function createCheckoutSession(userId: string, userEmail: string) {
         },
       ],
       subscription_data: {
-        trial_end: trialEndUnix, // Trial bis genau 01.03.2026 – erste Belastung erst dann
+        ...(useTrialEnd ? { trial_end: useTrialEnd } : {}),
         metadata: {
           userId: userId,
-          signupType: "pre_launch_2026"
+          signupType: now < launchDate ? "pre_launch_2026" : "launch_2026"
         }
       },
       success_url: `${baseUrl}/dashboard?success=true`,
