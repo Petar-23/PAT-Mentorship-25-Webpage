@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { auth } from '@clerk/nextjs/server'
+import { auth, currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { hasActiveSubscription } from '@/lib/stripe'
 import { getIsAdmin, isMentorshipAccessible } from '@/lib/authz'
@@ -11,9 +11,14 @@ export default async function CoursesLayout({ children }: { children: ReactNode 
     redirect('/sign-in')
   }
 
+  // Email fuer Stripe-Fallback (M25-Migration): Falls kein DB-Record existiert,
+  // sucht hasActiveSubscription per Email nach dem Stripe-Kunden.
+  const user = await currentUser()
+  const email = user?.primaryEmailAddress?.emailAddress
+
   // Performance/UX: Erst Subscription prüfen (meist DB-fast) und nur im "kein Abo" Fall
   // noch den Admin-Check gegen Clerk machen.
-  const hasSub = await hasActiveSubscription(userId)
+  const hasSub = await hasActiveSubscription(userId, email ?? undefined)
   const isAdmin = await getIsAdmin()
   const mentorshipAccessible = isMentorshipAccessible()
 
