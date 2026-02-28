@@ -1,7 +1,19 @@
 'use client';
 
 import type { DataLayer, ThemeColors } from '../types';
-import { LayerIcon } from './AnimatedIcon';
+import { Swords, Flame, Cable, Shield, Radiation, Ship, Plane, Users, Building2 } from 'lucide-react';
+
+const LAYER_ICONS: Record<string, typeof Swords> = {
+  conflicts: Swords,
+  disasters: Flame,
+  cables: Cable,
+  military: Shield,
+  nuclear: Radiation,
+  ships: Ship,
+  aircraft: Plane,
+  protests: Users,
+  infrastructure: Building2,
+};
 
 interface Props {
   layers: DataLayer[];
@@ -91,14 +103,17 @@ export function LayerPanel({ layers, onToggle, theme, onClose }: Props) {
             }} />
 
             {/* Icon + Name */}
-            <div>
-              <span style={{ fontSize: 12, marginRight: 6 }}>{layer.icon}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {(() => {
+                const Icon = LAYER_ICONS[layer.id];
+                return Icon ? <Icon size={13} color={layer.enabled ? layer.color : theme.overlay0} strokeWidth={2} /> : null;
+              })()}
               <span style={{
                 fontSize: 11,
                 color: layer.enabled ? theme.text : theme.overlay0,
                 letterSpacing: '0.3px',
               }}>
-                <LayerIcon layerId={layer.id} theme={theme} /> {layer.name}
+                {layer.name}
               </span>
             </div>
 
