@@ -73,22 +73,22 @@ export interface ThemeColors {
 }
 
 export const SEVERITY_LABELS: Record<number, string> = {
-  4: '🔴 CRITICAL',
-  3: '🟠 HIGH',
-  2: '🟡 MEDIUM',
-  1: '⚪ LOW',
+  4: 'CRITICAL',
+  3: 'HIGH',
+  2: 'MEDIUM',
+  1: 'LOW',
 };
 
 export const CATEGORY_ICONS: Record<string, string> = {
-  conflict: '⚔️',
-  economic: '📊',
-  'natural-disaster': '🌋',
-  political: '🏛️',
-  health: '🏥',
+  conflict: 'conflict',
+  economic: 'economic',
+  'natural-disaster': 'disaster',
+  political: 'political',
+  health: 'health',
 };
 
 export const IMPACT_LABELS: Record<number, string> = {
-  3: '🔴',
-  2: '🟠',
-  1: '🟡',
+  3: 'HIGH',
+  2: 'MED',
+  1: 'LOW',
 };

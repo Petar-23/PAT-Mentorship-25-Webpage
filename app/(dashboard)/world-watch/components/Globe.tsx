@@ -13,15 +13,14 @@ interface Props {
   theme: ThemeColors;
 }
 
-type GlobeInstance = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: (...args: any[]) => any;
-};
-
 export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const globeRef = useRef<GlobeInstance | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const globeRef = useRef<any>(null);
   const colors = severityColors(theme);
+
+  // Filter: only geopolitical events on the globe (no economic)
+  const geoEvents = events.filter(e => e.category !== 'economic');
 
   const initGlobe = useCallback(async () => {
     if (!containerRef.current || globeRef.current) return;
@@ -30,15 +29,6 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
     const GlobeGL = (await import('globe.gl')).default as any;
     const globe = GlobeGL({ animateIn: true })(containerRef.current);
 
-    // Get all layer points (non-event layers)
-    const militaryPoints = layers.filter(l => l.id === 'military' && l.enabled).flatMap(l => l.points || []);
-    const nuclearPoints = layers.filter(l => l.id === 'nuclear' && l.enabled).flatMap(l => l.points || []);
-    const shipPoints = layers.filter(l => l.id === 'ships' && l.enabled).flatMap(l => l.points || []);
-    const aircraftPoints = layers.filter(l => l.id === 'aircraft' && l.enabled).flatMap(l => l.points || []);
-    const protestPoints = layers.filter(l => l.id === 'protests' && l.enabled).flatMap(l => l.points || []);
-    const infraPoints = layers.filter(l => l.id === 'infrastructure' && l.enabled).flatMap(l => l.points || []);
-    const allLayerPoints = [...militaryPoints, ...nuclearPoints, ...shipPoints, ...aircraftPoints, ...protestPoints, ...infraPoints];
-
     const cableArcs = layers.filter(l => l.id === 'cables' && l.enabled).flatMap(l => l.arcs || []);
 
     globe
@@ -46,41 +36,34 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
       .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
       .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
       .showAtmosphere(true)
-      .atmosphereColor(theme.blue)
-      .atmosphereAltitude(0.15)
-      // Event points
-      .pointsData(events)
+      .atmosphereColor('#ffffff')
+      .atmosphereAltitude(0.12)
+      // Event points — spheres (default Globe.gl renders spheres with higher resolution)
+      .pointsData(geoEvents)
       .pointLat('lat')
       .pointLng('lng')
-      .pointAltitude((d: GeoEvent) => d.severity === 4 ? 0.12 : d.severity === 3 ? 0.08 : 0.04)
-      .pointRadius((d: GeoEvent) => d.severity === 4 ? 0.6 : d.severity === 3 ? 0.45 : 0.3)
+      .pointAltitude((d: GeoEvent) => d.severity === 4 ? 0.06 : d.severity === 3 ? 0.04 : 0.02)
+      .pointRadius((d: GeoEvent) => d.severity === 4 ? 0.35 : d.severity === 3 ? 0.25 : 0.18)
       .pointColor((d: GeoEvent) => colors[d.severity])
-      .pointResolution(12)
+      .pointResolution(32) // Higher = rounder spheres
       .onPointClick((point: GeoEvent) => onSelect(point))
-      // Rings on critical events
-      .ringsData(events.filter(e => e.severity >= 3))
+      // Pulse rings on critical events
+      .ringsData(geoEvents.filter(e => e.severity >= 3))
       .ringLat('lat')
       .ringLng('lng')
-      .ringMaxRadius((d: GeoEvent) => d.severity === 4 ? 4 : 2.5)
-      .ringPropagationSpeed(1.5)
-      .ringRepeatPeriod((d: GeoEvent) => d.severity === 4 ? 800 : 1200)
-      .ringColor(() => () => theme.red + '50')
-      // Country labels for critical events
-      .labelsData(events.filter(e => e.severity >= 3))
+      .ringMaxRadius((d: GeoEvent) => d.severity === 4 ? 3 : 2)
+      .ringPropagationSpeed(1.2)
+      .ringRepeatPeriod((d: GeoEvent) => d.severity === 4 ? 900 : 1400)
+      .ringColor(() => () => theme.red + '40')
+      // Country labels
+      .labelsData(geoEvents.filter(e => e.severity >= 3))
       .labelLat('lat')
       .labelLng('lng')
       .labelText('country')
-      .labelSize(0.8)
-      .labelDotRadius(0.3)
-      .labelColor(() => theme.text + 'cc')
+      .labelSize(0.7)
+      .labelDotRadius(0.2)
+      .labelColor(() => '#ffffff99')
       .labelAltitude(0.01)
-      // Custom layer points (military, nuclear, ships, etc.)
-      .customLayerData(allLayerPoints)
-      .customThreeObject(() => {
-        const THREE = (globe as GlobeInstance).__threeObj;
-        if (!THREE) return null;
-        return null; // Use default
-      })
       // Undersea cables as arcs
       .arcsData(cableArcs)
       .arcStartLat('startLat')
@@ -88,14 +71,14 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
       .arcEndLat('endLat')
       .arcEndLng('endLng')
       .arcColor('color')
-      .arcAltitude(0.3)
-      .arcStroke(0.5)
+      .arcAltitude(0.15)
+      .arcStroke(0.3)
       .arcDashLength(0.4)
       .arcDashGap(0.2)
-      .arcDashAnimateTime(3000);
+      .arcDashAnimateTime(4000);
 
     globe.controls().autoRotate = true;
-    globe.controls().autoRotateSpeed = 0.4;
+    globe.controls().autoRotateSpeed = 0.3;
     globe.controls().addEventListener('start', () => {
       globe.controls().autoRotate = false;
     });
@@ -135,6 +118,7 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
         background: theme.base,
         overflow: 'hidden',
         position: 'relative',
+        filter: 'grayscale(0.85) contrast(1.2) brightness(0.9)',
       }}
     />
   );

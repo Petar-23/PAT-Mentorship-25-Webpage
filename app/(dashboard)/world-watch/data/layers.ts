@@ -182,17 +182,17 @@ const infrastructure: LayerPoint[] = [
 // ─── LAYER DEFINITIONS ───────────────────────────────────────────────────────
 export const defaultLayers: DataLayer[] = [
   {
-    id: 'conflicts', name: 'Conflicts', icon: '⚔️', enabled: true,
+    id: 'conflicts', name: 'Conflicts', icon: 'swords', enabled: true,
     type: 'points', color: '#f38ba8',
     points: [],  // populated from mockEvents by component
   },
   {
-    id: 'disasters', name: 'Natural Disasters', icon: '🌋', enabled: true,
+    id: 'disasters', name: 'Natural Disasters', icon: 'flame', enabled: true,
     type: 'points', color: '#fab387',
     points: [],  // populated from mockEvents by component
   },
   {
-    id: 'cables', name: 'Undersea Cables', icon: '🔌', enabled: false,
+    id: 'cables', name: 'Undersea Cables', icon: 'cable', enabled: false,
     type: 'arcs', color: '#89b4fa',
     arcs: underseaCables,
   },
@@ -202,17 +202,17 @@ export const defaultLayers: DataLayer[] = [
     points: militaryBases,
   },
   {
-    id: 'nuclear', name: 'Nuclear Facilities', icon: '☢️', enabled: false,
+    id: 'nuclear', name: 'Nuclear Facilities', icon: 'radiation', enabled: false,
     type: 'points', color: '#f9e2af',
     points: nuclearFacilities,
   },
   {
-    id: 'ships', name: 'Ship Tracking', icon: '🚢', enabled: false,
+    id: 'ships', name: 'Ship Tracking', icon: 'ship', enabled: false,
     type: 'points', color: '#a6e3a1',
     points: shipPositions,
   },
   {
-    id: 'aircraft', name: 'Plane Tracking', icon: '✈️', enabled: false,
+    id: 'aircraft', name: 'Plane Tracking', icon: 'plane', enabled: false,
     type: 'points', color: '#89b4fa',
     points: aircraftPositions,
   },

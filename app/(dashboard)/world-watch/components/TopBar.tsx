@@ -52,7 +52,7 @@ export function TopBar({ theme, currentTheme, setCurrentTheme }: Props) {
     }}>
       {/* Left: Back + Title */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Link href="/dashboard" style={{
+        <Link href="/mentorship" style={{
           color: theme.overlay0,
           textDecoration: 'none',
           fontSize: 11,
@@ -70,7 +70,7 @@ export function TopBar({ theme, currentTheme, setCurrentTheme }: Props) {
             (e.currentTarget as HTMLAnchorElement).style.color = theme.overlay0;
           }}
         >
-          ← DASHBOARD
+          ← MENTORSHIP
         </Link>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

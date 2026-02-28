@@ -2,8 +2,8 @@
 
 import type { GeoEvent, ThemeColors } from '../types';
 import { SEVERITY_LABELS } from '../types';
-import { CategoryIcon } from './AnimatedIcon';
 import { severityColors } from '../styles/themes';
+import { Swords, BarChart3, Mountain, Globe2, Activity, MapPin } from 'lucide-react';
 
 interface Props {
   event: GeoEvent;
@@ -11,6 +11,14 @@ interface Props {
   onClick: () => void;
   theme: ThemeColors;
 }
+
+const CATEGORY_ICON: Record<string, typeof Swords> = {
+  'conflict': Swords,
+  'economic': BarChart3,
+  'natural-disaster': Mountain,
+  'political': Globe2,
+  'health': Activity,
+};
 
 function getTimeAgo(timestamp: string): string {
   const diff = Date.now() - new Date(timestamp).getTime();
@@ -25,6 +33,7 @@ export function EventCard({ event, isSelected, onClick, theme }: Props) {
   const colors = severityColors(theme);
   const sevColor = colors[event.severity];
   const age = getTimeAgo(event.timestamp);
+  const CatIcon = CATEGORY_ICON[event.category] || Globe2;
 
   return (
     <div
@@ -37,12 +46,8 @@ export function EventCard({ event, isSelected, onClick, theme }: Props) {
         borderBottom: `1px solid ${theme.surface0}`,
         transition: 'background 0.15s',
       }}
-      onMouseEnter={e => {
-        if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = theme.surface0 + '88';
-      }}
-      onMouseLeave={e => {
-        if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'transparent';
-      }}
+      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = `${theme.surface0}88`; }}
+      onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
         <span style={{ fontSize: 10, color: sevColor, fontWeight: 700, letterSpacing: '1px' }}>
@@ -50,16 +55,19 @@ export function EventCard({ event, isSelected, onClick, theme }: Props) {
         </span>
         <span style={{ fontSize: 10, color: theme.overlay0 }}>{age}</span>
       </div>
-      <div style={{ fontSize: 12, fontWeight: 600, color: theme.text, marginBottom: 4, lineHeight: 1.4 }}>
-        <><CategoryIcon category={event.category} theme={theme} /> {event.title}</>
+      <div style={{ fontSize: 12, fontWeight: 600, color: theme.text, marginBottom: 4, lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <CatIcon size={13} color={theme.subtext0} strokeWidth={2} />
+        {event.title}
       </div>
       {isSelected && (
         <div style={{ fontSize: 11, color: theme.subtext0, marginBottom: 6, lineHeight: 1.5 }}>
           {event.description}
         </div>
       )}
-      <div style={{ display: 'flex', gap: 12, fontSize: 10, color: theme.overlay0 }}>
-        <span>📍 {event.country}</span>
+      <div style={{ display: 'flex', gap: 12, fontSize: 10, color: theme.overlay0, alignItems: 'center' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <MapPin size={10} strokeWidth={2} /> {event.country}
+        </span>
         <span>via {event.source}</span>
       </div>
     </div>

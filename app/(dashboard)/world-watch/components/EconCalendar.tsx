@@ -3,8 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { EconCalendarEntry, ThemeColors } from '../types';
 import { mockCalendar } from '../data/mockCalendar';
-import { ImpactIcon } from './AnimatedIcon';
-import { AlertTriangle, TrendingUp, Minus } from 'lucide-react';
+import { FolderOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Props {
   theme: ThemeColors;
@@ -21,34 +20,36 @@ const TIMEZONES = [
   { label: 'UTC', zone: 'UTC' },
 ];
 
-const IMPACT_FILTERS = ['ALL', 'HIGH', 'MEDIUM', 'LOW'];
-
-// ImpactIcon imported from AnimatedIcon
+function ImpactFolder({ impact, theme }: { impact: number; theme: ThemeColors }) {
+  const color = impact === 3 ? theme.red : impact === 2 ? theme.peach : theme.yellow;
+  return <FolderOpen size={14} color={color} strokeWidth={2} />;
+}
 
 function formatTime(isoStr: string, tz: string): string {
   return new Date(isoStr).toLocaleTimeString('en-US', {
-    timeZone: tz,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
+    timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: true,
   });
 }
 
-function formatDate(isoStr: string, tz: string): string {
-  return new Date(isoStr).toLocaleDateString('en-US', {
-    timeZone: tz,
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
+function getWeekDays(baseDate: Date): Date[] {
+  const d = new Date(baseDate);
+  const day = d.getDay();
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - ((day + 6) % 7));
+  monday.setHours(0, 0, 0, 0);
+  return Array.from({ length: 5 }, (_, i) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + i);
+    return date;
   });
 }
 
-function isToday(isoStr: string): boolean {
-  return new Date(isoStr).toDateString() === new Date().toDateString();
+function formatDayHeader(d: Date): string {
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-function isPast(isoStr: string): boolean {
-  return new Date(isoStr) < new Date();
+function isSameDay(a: Date, b: Date): boolean {
+  return a.toDateString() === b.toDateString();
 }
 
 function getTzFromStorage(): string {
@@ -60,11 +61,25 @@ export function EconCalendar({ theme }: Props) {
   const [currencyFilter, setCurrencyFilter] = useState('ALL');
   const [impactFilter, setImpactFilter] = useState('ALL');
   const [timezone, setTimezone] = useState('America/New_York');
+  const [weekOffset, setWeekOffset] = useState(0);
 
   useEffect(() => { setTimezone(getTzFromStorage()); }, []);
   useEffect(() => {
     if (typeof window !== 'undefined') localStorage.setItem('ww-calendar-tz', timezone);
   }, [timezone]);
+
+  const weekDays = useMemo(() => {
+    const base = new Date();
+    base.setDate(base.getDate() + weekOffset * 7);
+    return getWeekDays(base);
+  }, [weekOffset]);
+
+  const weekLabel = useMemo(() => {
+    const start = weekDays[0];
+    const end = weekDays[4];
+    const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return `${fmt(start)} - ${fmt(end)}`;
+  }, [weekDays]);
 
   const filtered = useMemo(() => {
     return mockCalendar.filter(entry => {
@@ -76,16 +91,6 @@ export function EconCalendar({ theme }: Props) {
     });
   }, [currencyFilter, impactFilter]);
 
-  const grouped = useMemo(() => {
-    const groups: Record<string, EconCalendarEntry[]> = {};
-    filtered.forEach(entry => {
-      const dateKey = formatDate(entry.time, timezone);
-      if (!groups[dateKey]) groups[dateKey] = [];
-      groups[dateKey].push(entry);
-    });
-    return groups;
-  }, [filtered, timezone]);
-
   const selectStyle = {
     background: theme.surface0,
     color: theme.subtext0,
@@ -94,7 +99,6 @@ export function EconCalendar({ theme }: Props) {
     padding: '3px 6px',
     fontFamily: 'inherit',
     cursor: 'pointer',
-    letterSpacing: '0.5px',
     borderRadius: 0,
   };
 
@@ -104,29 +108,36 @@ export function EconCalendar({ theme }: Props) {
     color: theme.overlay0,
     letterSpacing: '1.5px',
     padding: '6px 8px',
-    borderBottom: `1px solid ${theme.surface0}`,
+    borderBottom: `1px solid ${theme.surface1}`,
     textAlign: 'left' as const,
     whiteSpace: 'nowrap' as const,
   };
 
+  const today = new Date();
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: theme.base }}>
-      {/* Filters */}
+      {/* Week navigator + Filters */}
       <div style={{
         padding: '8px 12px',
         borderBottom: `1px solid ${theme.surface0}`,
-        display: 'flex',
-        gap: 8,
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        flexShrink: 0,
+        display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0,
       }}>
-        <span style={{ fontSize: 10, color: theme.overlay0, letterSpacing: '1px' }}>FILTER:</span>
+        <button onClick={() => setWeekOffset(w => w - 1)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
+          <ChevronLeft size={14} color={theme.subtext0} />
+        </button>
+        <span style={{ fontSize: 11, fontWeight: 700, color: theme.text, letterSpacing: '0.5px', minWidth: 130, textAlign: 'center' }}>
+          {weekLabel}
+        </span>
+        <button onClick={() => setWeekOffset(w => w + 1)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
+          <ChevronRight size={14} color={theme.subtext0} />
+        </button>
+        <span style={{ width: 1, height: 16, background: theme.surface1, margin: '0 4px' }} />
         <select value={currencyFilter} onChange={e => setCurrencyFilter(e.target.value)} style={selectStyle}>
           {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
         <select value={impactFilter} onChange={e => setImpactFilter(e.target.value)} style={selectStyle}>
-          {IMPACT_FILTERS.map(i => <option key={i} value={i}>{i}</option>)}
+          {['ALL', 'HIGH', 'MEDIUM', 'LOW'].map(i => <option key={i} value={i}>{i}</option>)}
         </select>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: 10, color: theme.overlay0 }}>TZ:</span>
@@ -136,94 +147,110 @@ export function EconCalendar({ theme }: Props) {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table header */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+        <thead>
+          <tr style={{ background: theme.surface0 }}>
+            <th style={{ ...thStyle, width: 80 }}>DATE</th>
+            <th style={{ ...thStyle, width: 70 }}>TIME</th>
+            <th style={{ ...thStyle, width: 50 }}>CCY</th>
+            <th style={{ ...thStyle, width: 30 }}>IMP</th>
+            <th style={thStyle}>EVENT</th>
+            <th style={{ ...thStyle, width: 70, textAlign: 'right' }}>FORECAST</th>
+            <th style={{ ...thStyle, width: 70, textAlign: 'right' }}>PREV</th>
+            <th style={{ ...thStyle, width: 70, textAlign: 'right' }}>ACTUAL</th>
+          </tr>
+        </thead>
+      </table>
+
+      {/* Scrollable body with full 5-day week */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {Object.entries(grouped).map(([dateStr, entries]) => (
-          <div key={dateStr}>
-            <div style={{
-              padding: '5px 12px',
-              background: theme.surface0,
-              fontSize: 10,
-              fontWeight: 700,
-              color: theme.subtext0,
-              letterSpacing: '1.5px',
-              borderBottom: `1px solid ${theme.surface1}`,
-            }}>
-              {dateStr.toUpperCase()}
-              {entries.some(e => isToday(e.time)) && (
-                <span style={{
-                  marginLeft: 8, fontSize: 8,
-                  background: theme.blue, color: theme.crust,
-                  padding: '1px 5px', letterSpacing: '1px',
-                }}>TODAY</span>
-              )}
-            </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>TIME</th>
-                  <th style={thStyle}>CCY</th>
-                  <th style={thStyle}>IMP</th>
-                  <th style={{ ...thStyle, width: '100%' }}>EVENT</th>
-                  <th style={thStyle}>FORECAST</th>
-                  <th style={thStyle}>PREV</th>
-                  <th style={thStyle}>ACTUAL</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map(entry => {
-                  const past = isPast(entry.time);
-                  const today = isToday(entry.time);
-                  return (
-                    <tr key={entry.id} style={{
-                      background: today ? theme.surface0 + '44' : 'transparent',
-                      opacity: past ? 0.5 : 1,
+        {weekDays.map(day => {
+          const dayEntries = filtered.filter(e => isSameDay(new Date(e.time), day));
+          const isToday = isSameDay(day, today);
+          const isPast = day < today && !isToday;
+
+          return (
+            <div key={day.toISOString()}>
+              {/* Day row */}
+              {dayEntries.length === 0 ? (
+                <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                  <tbody>
+                    <tr style={{
                       borderBottom: `1px solid ${theme.surface0}`,
+                      opacity: isPast ? 0.4 : 1,
                     }}>
-                      <td style={{ padding: '7px 8px', fontSize: 11, color: today ? theme.yellow : theme.subtext0, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                        {formatTime(entry.time, timezone)}
+                      <td style={{ width: 80, padding: '10px 8px', fontSize: 11, fontWeight: 700, color: isToday ? theme.yellow : theme.subtext0, verticalAlign: 'top' }}>
+                        {formatDayHeader(day)}
+                        {isToday && <span style={{ display: 'block', fontSize: 8, color: theme.blue, marginTop: 2 }}>TODAY</span>}
                       </td>
-                      <td style={{ padding: '7px 8px', fontSize: 11, fontWeight: 700, color: entry.currency === 'USD' ? theme.blue : entry.currency === 'EUR' ? theme.peach : theme.text, whiteSpace: 'nowrap' }}>
-                        {entry.currency}
-                      </td>
-                      <td style={{ padding: '7px 8px' }}>
-                        <ImpactIcon impact={entry.impact} theme={theme} />
-                      </td>
-                      <td style={{ padding: '7px 8px', fontSize: 11, color: theme.text, fontWeight: entry.impact === 3 ? 600 : 400 }}>
-                        {entry.event}
-                      </td>
-                      <td style={{ padding: '7px 8px', fontSize: 11, color: theme.subtext0, whiteSpace: 'nowrap', textAlign: 'right' }}>
-                        {entry.forecast || '-'}
-                      </td>
-                      <td style={{ padding: '7px 8px', fontSize: 11, color: theme.overlay0, whiteSpace: 'nowrap', textAlign: 'right' }}>
-                        {entry.previous || '-'}
-                      </td>
-                      <td style={{ padding: '7px 8px', fontSize: 11, fontWeight: 700, color: entry.actual ? theme.green : theme.overlay0, whiteSpace: 'nowrap', textAlign: 'right' }}>
-                        {entry.actual || (past ? '—' : '')}
+                      <td colSpan={7} style={{ padding: '10px 8px', fontSize: 11, color: theme.overlay0, fontStyle: 'italic' }}>
+                        No events scheduled
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ))}
+                  </tbody>
+                </table>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                  <tbody>
+                    {dayEntries.map((entry, idx) => {
+                      const entryPast = new Date(entry.time) < today;
+                      return (
+                        <tr key={entry.id} style={{
+                          borderBottom: `1px solid ${theme.surface0}`,
+                          background: isToday ? theme.surface0 + '33' : 'transparent',
+                          opacity: entryPast ? 0.5 : 1,
+                        }}>
+                          <td style={{ width: 80, padding: '7px 8px', fontSize: 11, fontWeight: 700, color: isToday ? theme.yellow : theme.subtext0, verticalAlign: 'top' }}>
+                            {idx === 0 && (
+                              <>
+                                {formatDayHeader(day)}
+                                {isToday && <span style={{ display: 'block', fontSize: 8, color: theme.blue, marginTop: 2 }}>TODAY</span>}
+                              </>
+                            )}
+                          </td>
+                          <td style={{ width: 70, padding: '7px 8px', fontSize: 11, color: theme.subtext0, fontVariantNumeric: 'tabular-nums' }}>
+                            {formatTime(entry.time, timezone)}
+                          </td>
+                          <td style={{ width: 50, padding: '7px 8px', fontSize: 11, fontWeight: 700, color: entry.currency === 'USD' ? theme.blue : entry.currency === 'EUR' ? theme.peach : theme.text }}>
+                            {entry.currency}
+                          </td>
+                          <td style={{ width: 30, padding: '7px 8px' }}>
+                            <ImpactFolder impact={entry.impact} theme={theme} />
+                          </td>
+                          <td style={{ padding: '7px 8px', fontSize: 11, color: theme.text, fontWeight: entry.impact === 3 ? 600 : 400 }}>
+                            {entry.event}
+                          </td>
+                          <td style={{ width: 70, padding: '7px 8px', fontSize: 11, color: theme.subtext0, textAlign: 'right' }}>
+                            {entry.forecast || '-'}
+                          </td>
+                          <td style={{ width: 70, padding: '7px 8px', fontSize: 11, color: theme.overlay0, textAlign: 'right' }}>
+                            {entry.previous || '-'}
+                          </td>
+                          <td style={{ width: 70, padding: '7px 8px', fontSize: 11, fontWeight: 700, color: entry.actual ? theme.green : theme.overlay0, textAlign: 'right' }}>
+                            {entry.actual || (entryPast ? '-' : '')}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Footer */}
       <div style={{
-        padding: '6px 12px',
-        borderTop: `1px solid ${theme.surface0}`,
-        fontSize: 9, color: theme.overlay0,
-        display: 'flex', justifyContent: 'space-between', flexShrink: 0,
+        padding: '6px 12px', borderTop: `1px solid ${theme.surface0}`,
+        fontSize: 9, color: theme.overlay0, display: 'flex', justifyContent: 'space-between', flexShrink: 0,
       }}>
         <span>Source: Economic Calendars</span>
-        <span>
-          <AlertTriangle size={10} color={theme.red} style={{ display: 'inline', verticalAlign: 'middle' }} /> High
-          &nbsp;&nbsp;
-          <TrendingUp size={10} color={theme.peach} style={{ display: 'inline', verticalAlign: 'middle' }} /> Medium
-          &nbsp;&nbsp;
-          <Minus size={10} color={theme.overlay0} style={{ display: 'inline', verticalAlign: 'middle' }} /> Low
+        <span style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <span><FolderOpen size={9} color={theme.red} style={{ verticalAlign: 'middle' }} /> High</span>
+          <span><FolderOpen size={9} color={theme.peach} style={{ verticalAlign: 'middle' }} /> Medium</span>
+          <span><FolderOpen size={9} color={theme.yellow} style={{ verticalAlign: 'middle' }} /> Low</span>
         </span>
       </div>
     </div>

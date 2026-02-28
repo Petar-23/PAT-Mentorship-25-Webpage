@@ -154,25 +154,6 @@ export default function WorldWatchClient() {
           z-index: 100;
         }
 
-        
-        /* Subtle icon animations — triggered on hover only */
-        @keyframes wwIconPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.6; transform: scale(1.1); }
-        }
-        @keyframes wwIconShake {
-          0%, 100% { transform: rotate(0deg); }
-          25% { transform: rotate(-3deg); }
-          75% { transform: rotate(3deg); }
-        }
-        @keyframes wwIconBounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-2px); }
-        }
-        .ww-icon-pulse { animation: wwIconPulse 0.8s ease-in-out; }
-        .ww-icon-shake { animation: wwIconShake 0.4s ease-in-out; }
-        .ww-icon-bounce { animation: wwIconBounce 0.3s ease-out; }
-
         /* Scrollbar styling */
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
