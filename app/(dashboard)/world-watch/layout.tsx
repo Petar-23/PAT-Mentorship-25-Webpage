@@ -1,11 +1,12 @@
-// World Watch — Minimal layout (no PAT nav/header — standalone terminal UI)
+import { GeistPixelSquare } from 'geist/font/pixel';
+
 export default function WorldWatchLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ margin: 0, padding: 0, overflow: 'hidden' }}>
+    <div className={GeistPixelSquare.className} style={{ margin: 0, padding: 0, overflow: 'hidden' }}>
       {children}
     </div>
   );

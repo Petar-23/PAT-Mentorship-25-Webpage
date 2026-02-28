@@ -135,10 +135,13 @@ export default function WorldWatchClient() {
           to { transform: rotate(360deg); }
         }
 
-        /* CRT scanlines overlay */
-        .ww-scanlines::after {
+        /* CRT scanlines overlay — content area only, not header */
+        .ww-content-area {
+          position: relative;
+        }
+        .ww-content-area::after {
           content: '';
-          position: fixed;
+          position: absolute;
           top: 0; left: 0; right: 0; bottom: 0;
           background: repeating-linear-gradient(
             0deg,
@@ -148,7 +151,7 @@ export default function WorldWatchClient() {
             rgba(0,0,0,0.03) 4px
           );
           pointer-events: none;
-          z-index: 9999;
+          z-index: 100;
         }
 
         /* Scrollbar styling */
@@ -160,7 +163,7 @@ export default function WorldWatchClient() {
         select option { background: ${theme.mantle}; color: ${theme.text}; }
       `}</style>
 
-      <div className="ww-root ww-scanlines" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="ww-root" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         {/* Top Bar */}
         <TopBar
           theme={theme}
@@ -260,7 +263,7 @@ export default function WorldWatchClient() {
         </div>
 
         {/* Main Content */}
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+        <div className="ww-content-area" style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
           {/* Globe View */}
           {activeView === 'globe' && (
             <>
