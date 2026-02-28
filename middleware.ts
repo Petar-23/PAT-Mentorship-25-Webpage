@@ -8,6 +8,7 @@ const isAuthRequiredRoute = createRouteMatcher([
   '/courses(.*)',
   '/mentorship(.*)',
   '/owner(.*)',
+  '/world-watch(.*)',
 ])
 
 export default clerkMiddleware(async (auth, req) => {
