@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { EconCalendarEntry, ThemeColors } from '../types';
 import { mockCalendar } from '../data/mockCalendar';
+import { ImpactIcon } from './AnimatedIcon';
 import { AlertTriangle, TrendingUp, Minus } from 'lucide-react';
 
 interface Props {
@@ -22,13 +23,7 @@ const TIMEZONES = [
 
 const IMPACT_FILTERS = ['ALL', 'HIGH', 'MEDIUM', 'LOW'];
 
-function ImpactIcon({ impact, theme }: { impact: number; theme: ThemeColors }) {
-  const size = 14;
-  const style = { display: 'inline-flex', alignItems: 'center' };
-  if (impact === 3) return <span style={style}><AlertTriangle size={size} color={theme.red} strokeWidth={2.5} /></span>;
-  if (impact === 2) return <span style={style}><TrendingUp size={size} color={theme.peach} strokeWidth={2} /></span>;
-  return <span style={style}><Minus size={size} color={theme.overlay0} strokeWidth={2} /></span>;
-}
+// ImpactIcon imported from AnimatedIcon
 
 function formatTime(isoStr: string, tz: string): string {
   return new Date(isoStr).toLocaleTimeString('en-US', {

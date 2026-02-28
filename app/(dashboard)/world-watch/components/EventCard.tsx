@@ -1,7 +1,8 @@
 'use client';
 
 import type { GeoEvent, ThemeColors } from '../types';
-import { SEVERITY_LABELS, CATEGORY_ICONS } from '../types';
+import { SEVERITY_LABELS } from '../types';
+import { CategoryIcon } from './AnimatedIcon';
 import { severityColors } from '../styles/themes';
 
 interface Props {
@@ -50,7 +51,7 @@ export function EventCard({ event, isSelected, onClick, theme }: Props) {
         <span style={{ fontSize: 10, color: theme.overlay0 }}>{age}</span>
       </div>
       <div style={{ fontSize: 12, fontWeight: 600, color: theme.text, marginBottom: 4, lineHeight: 1.4 }}>
-        {CATEGORY_ICONS[event.category]} {event.title}
+        <><CategoryIcon category={event.category} theme={theme} /> {event.title}</>
       </div>
       {isSelected && (
         <div style={{ fontSize: 11, color: theme.subtext0, marginBottom: 6, lineHeight: 1.5 }}>

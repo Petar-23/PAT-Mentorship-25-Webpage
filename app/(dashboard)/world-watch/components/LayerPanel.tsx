@@ -1,6 +1,7 @@
 'use client';
 
 import type { DataLayer, ThemeColors } from '../types';
+import { LayerIcon } from './AnimatedIcon';
 
 interface Props {
   layers: DataLayer[];
@@ -97,7 +98,7 @@ export function LayerPanel({ layers, onToggle, theme, onClose }: Props) {
                 color: layer.enabled ? theme.text : theme.overlay0,
                 letterSpacing: '0.3px',
               }}>
-                {layer.name}
+                <LayerIcon layerId={layer.id} theme={theme} /> {layer.name}
               </span>
             </div>
 
