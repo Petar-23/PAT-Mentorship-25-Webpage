@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { GeoEvent, DataLayer, Theme } from './types';
 import { mockEvents } from './data/mockEvents';
 import { defaultLayers } from './data/layers';
@@ -130,10 +130,29 @@ export default function WorldWatchClient() {
 
   const activeLayerCount = layers.filter(l => l.enabled).length;
 
+  // Map layer IDs to event categories
+  const LAYER_CATEGORY_MAP: Record<string, string[]> = {
+    'conflicts': ['conflict'],
+    'disasters': ['natural-disaster'],
+  };
+
+  // Filter events by enabled layers
+  const layerFilteredEvents = useMemo(() => {
+    return liveEvents.filter(event => {
+      for (const [layerId, categories] of Object.entries(LAYER_CATEGORY_MAP)) {
+        if (categories.includes(event.category)) {
+          const layer = layers.find(l => l.id === layerId);
+          return layer ? layer.enabled : true;
+        }
+      }
+      return true;
+    });
+  }, [liveEvents, layers]);
+
   // Filter events for Globe based on severity selection
   const filteredEvents = severityFilter.size > 0
-    ? liveEvents.filter(e => severityFilter.has(e.severity))
-    : liveEvents;
+    ? layerFilteredEvents.filter(e => severityFilter.has(e.severity))
+    : layerFilteredEvents;
 
   const wrapperStyle: React.CSSProperties = {
     display: 'flex',
@@ -230,6 +249,16 @@ export default function WorldWatchClient() {
         ::-webkit-scrollbar-thumb:hover { background: ${theme.overlay0}; }
 
         select option { background: ${theme.mantle}; color: ${theme.text}; }
+
+        .ww-marker-popup .mapboxgl-popup-content {
+          background: transparent !important;
+          padding: 0 !important;
+          box-shadow: none !important;
+          border-radius: 0 !important;
+        }
+        .ww-marker-popup .mapboxgl-popup-tip {
+          display: none !important;
+        }
       `}</style>
 
       <div className="ww-root" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -422,7 +451,7 @@ export default function WorldWatchClient() {
                 zIndex: 50,
               }}>
                 <Sidebar
-                  events={liveEvents}
+                  events={layerFilteredEvents}
                   selectedId={selectedId}
                   onSelect={handleSelectEvent}
                   theme={theme}
@@ -442,7 +471,7 @@ export default function WorldWatchClient() {
         </div>
 
         {/* Bottom Ticker */}
-        <Ticker events={liveEvents} theme={theme} />
+        <Ticker events={layerFilteredEvents} theme={theme} />
 
         {/* Status Bar */}
         <div style={{

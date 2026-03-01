@@ -10,9 +10,15 @@ export async function GET() {
     ];
 
     const results = await Promise.all(
-      urls.map(url =>
-        fetch(url, { next: { revalidate: 900 } }).then(r => r.json())
-      )
+      urls.map(async url => {
+        try {
+          const res = await fetch(url, { next: { revalidate: 900 } });
+          if (!res.ok) return [];
+          return await res.json();
+        } catch {
+          return [];
+        }
+      })
     );
 
     const events = results.flat().map((e: any, i: number) => ({

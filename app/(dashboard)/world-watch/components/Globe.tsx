@@ -366,8 +366,48 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       }, 50);
     });
 
-    map.on('mouseenter', 'event-circles', () => { map.getCanvas().style.cursor = 'pointer'; });
-    map.on('mouseleave', 'event-circles', () => { map.getCanvas().style.cursor = ''; });
+    // Hover popup
+    const popup = new mapboxgl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      maxWidth: '280px',
+      className: 'ww-marker-popup',
+    });
+
+    map.on('mouseenter', 'event-circles', (e) => {
+      map.getCanvas().style.cursor = 'pointer';
+      if (!e.features || !e.features[0]) return;
+      const props = e.features[0].properties;
+      const coords = (e.features[0].geometry as any).coordinates.slice() as [number, number];
+      const severity = props?.severity || 1;
+      const sevLabel = severity === 4 ? 'CRITICAL' : severity === 3 ? 'HIGH' : severity === 2 ? 'MEDIUM' : 'LOW';
+      const sevColor = colors[severity] || '#cdd6f4';
+      popup.setLngLat(coords).setHTML(`
+        <div style="
+          background: ${theme.mantle};
+          border: 1px solid ${theme.surface0};
+          border-left: 3px solid ${sevColor};
+          padding: 8px 10px;
+          font-family: inherit;
+          max-width: 260px;
+        ">
+          <div style="font-size: 10px; font-weight: 700; color: ${sevColor}; letter-spacing: 1px; margin-bottom: 4px;">
+            ${sevLabel}
+          </div>
+          <div style="font-size: 12px; font-weight: 600; color: ${theme.text}; margin-bottom: 4px; line-height: 1.3;">
+            ${props?.title || 'Unknown Event'}
+          </div>
+          <div style="font-size: 10px; color: ${theme.overlay0};">
+            📍 ${props?.country || 'Unknown'}
+          </div>
+        </div>
+      `).addTo(map);
+    });
+
+    map.on('mouseleave', 'event-circles', () => {
+      map.getCanvas().style.cursor = '';
+      popup.remove();
+    });
 
     // Stop rotation on user interaction (no auto-resume)
     map.on('mousedown', stopRotation);

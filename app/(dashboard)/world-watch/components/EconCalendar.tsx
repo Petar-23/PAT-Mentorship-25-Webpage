@@ -72,6 +72,27 @@ export function EconCalendar({ theme }: Props) {
       .catch(() => setLoading(false));
   }, []);
 
+  // Auto-detect week with data if current week has no events
+  useEffect(() => {
+    if (calendarData.length === 0) return;
+    const now = new Date();
+    const currentWeek = getWeekDays(now);
+    const weekEnd = new Date(currentWeek[4].getTime() + 86400000);
+    const hasCurrentWeekEvents = calendarData.some(e => {
+      const d = new Date(e.time);
+      return d >= currentWeek[0] && d <= weekEnd;
+    });
+    if (!hasCurrentWeekEvents) {
+      const latestEvent = calendarData[calendarData.length - 1];
+      if (latestEvent) {
+        const eventDate = new Date(latestEvent.time);
+        const diffMs = eventDate.getTime() - now.getTime();
+        const diffWeeks = Math.round(diffMs / (7 * 86400000));
+        setWeekOffset(diffWeeks);
+      }
+    }
+  }, [calendarData]);
+
   useEffect(() => { setTimezone(getTzFromStorage()); }, []);
   useEffect(() => {
     if (typeof window !== 'undefined') localStorage.setItem('ww-calendar-tz', timezone);
