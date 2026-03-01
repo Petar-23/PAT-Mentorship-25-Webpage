@@ -75,6 +75,21 @@ export interface ThemeColors {
   teal: string;
 }
 
+export interface NewsItem {
+  id: string;
+  title: string;
+  link: string;
+  pubDate: string;
+  description: string;
+  source: string;
+  category: string;
+  region: string;
+  priority: number;
+  lat: number | null;
+  lng: number | null;
+  country: string;
+}
+
 export const SEVERITY_LABELS: Record<number, string> = {
   4: 'CRITICAL',
   3: 'HIGH',

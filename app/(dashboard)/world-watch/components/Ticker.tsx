@@ -1,15 +1,16 @@
 'use client';
 
-import type { GeoEvent, ThemeColors } from '../types';
+import type { GeoEvent, NewsItem, ThemeColors } from '../types';
 import { SEVERITY_LABELS } from '../types';
 import { severityColors } from '../styles/themes';
 
 interface Props {
   events: GeoEvent[];
   theme: ThemeColors;
+  newsItems?: NewsItem[];
 }
 
-export function Ticker({ events, theme }: Props) {
+export function Ticker({ events, theme, newsItems = [] }: Props) {
   const colors = severityColors(theme);
   const sorted = [...events].sort((a, b) =>
     new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -18,11 +19,20 @@ export function Ticker({ events, theme }: Props) {
   // Only show severity >= 2 in ticker to avoid clutter, max 20 items
   const tickerEvents = sorted.filter(e => e.severity >= 2).slice(0, 20);
 
+  // High-priority news headlines for ticker
+  const newsHeadlines = newsItems.filter(n => n.priority >= 3).slice(0, 10);
+
+  type TickerItem = { kind: 'event'; e: GeoEvent } | { kind: 'news'; n: NewsItem };
+  const combined: TickerItem[] = [
+    ...tickerEvents.map(e => ({ kind: 'event' as const, e })),
+    ...newsHeadlines.map(n => ({ kind: 'news' as const, n })),
+  ];
+
   // Double for seamless loop
-  const items = [...tickerEvents, ...tickerEvents];
+  const items = [...combined, ...combined];
 
   // Duration scales with content: ~8s per event, minimum 60s
-  const duration = Math.max(60, tickerEvents.length * 8);
+  const duration = Math.max(60, combined.length * 8);
 
   return (
     <div style={{
@@ -61,17 +71,29 @@ export function Ticker({ events, theme }: Props) {
         animation: `wwTicker ${duration}s linear infinite`,
         fontSize: 12,
       }}>
-        {items.map((e, i) => (
-          <span key={`${e.id}-${i}`}>
-            <span style={{ color: colors[e.severity], fontWeight: 600 }}>
-              {SEVERITY_LABELS[e.severity]}
+        {items.map((item, i) =>
+          item.kind === 'news' ? (
+            <span key={`news-${item.n.id}-${i}`}>
+              <span style={{ color: theme.blue, fontWeight: 600 }}>📰 INTEL</span>
+              {' '}
+              <span style={{ color: theme.subtext0, fontSize: 10 }}>[{item.n.source.slice(0, 18)}]</span>
+              {' '}
+              <span style={{ color: theme.text }}>{item.n.title}</span>
+              {item.n.country && <span style={{ color: theme.overlay0 }}> — {item.n.country}</span>}
+              <span style={{ color: theme.surface1, margin: '0 16px' }}>///</span>
             </span>
-            {' '}
-            <span style={{ color: theme.text }}>{e.title}</span>
-            <span style={{ color: theme.overlay0 }}> — {e.country}</span>
-            <span style={{ color: theme.surface1, margin: '0 16px' }}>///</span>
-          </span>
-        ))}
+          ) : (
+            <span key={`ev-${item.e.id}-${i}`}>
+              <span style={{ color: colors[item.e.severity], fontWeight: 600 }}>
+                {SEVERITY_LABELS[item.e.severity]}
+              </span>
+              {' '}
+              <span style={{ color: theme.text }}>{item.e.title}</span>
+              <span style={{ color: theme.overlay0 }}> — {item.e.country}</span>
+              <span style={{ color: theme.surface1, margin: '0 16px' }}>///</span>
+            </span>
+          )
+        )}
       </div>
     </div>
   );

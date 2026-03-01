@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import type { GeoEvent, DataLayer, Theme } from './types';
+import type { GeoEvent, DataLayer, Theme, NewsItem } from './types';
 import { defaultLayers } from './data/layers';
 import { themes, getThemeFromStorage, setThemeToStorage } from './styles/themes';
 import { TopBar } from './components/TopBar';
@@ -70,6 +70,7 @@ export default function WorldWatchClient() {
   const [isRotating, setIsRotating] = useState(true);
   const globeRef = useRef<GlobeHandle>(null);
   const [liveEvents, setLiveEvents] = useState<GeoEvent[]>([]);
+  const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const aircraftDataRef = useRef<Map<string, AircraftInfo>>(new Map());
 
   const theme = themes[currentTheme];
@@ -98,6 +99,19 @@ export default function WorldWatchClient() {
       for (const ev of all) deduped.set(ev.id, ev);
       setLiveEvents(Array.from(deduped.values()));
     });
+  }, []);
+
+  // Fetch RSS news feed every 15 minutes
+  useEffect(() => {
+    const fetchNews = () => {
+      fetch('/api/world-watch/news')
+        .then(r => r.json())
+        .then(data => { setNewsItems(data.items || []); })
+        .catch(() => {});
+    };
+    fetchNews();
+    const interval = setInterval(fetchNews, 15 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   // Load theme from localStorage on mount
@@ -692,6 +706,7 @@ export default function WorldWatchClient() {
                   theme={theme}
                   severityFilter={severityFilter}
                   onToggleSeverity={handleToggleSeverity}
+                  newsItems={newsItems}
                 />
               </div>
             </>
@@ -706,7 +721,7 @@ export default function WorldWatchClient() {
         </div>
 
         {/* Bottom Ticker */}
-        <Ticker events={layerFilteredEvents} theme={theme} />
+        <Ticker events={layerFilteredEvents} theme={theme} newsItems={newsItems} />
 
         {/* Status Bar */}
         <div style={{

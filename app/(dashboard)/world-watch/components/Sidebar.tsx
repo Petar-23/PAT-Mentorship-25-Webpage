@@ -1,6 +1,6 @@
 'use client';
 
-import type { GeoEvent, ThemeColors } from '../types';
+import type { GeoEvent, NewsItem, ThemeColors } from '../types';
 import { EventCard } from './EventCard';
 import { severityColors } from '../styles/themes';
 
@@ -11,6 +11,7 @@ interface Props {
   theme: ThemeColors;
   severityFilter: Set<number>;
   onToggleSeverity: (sev: number) => void;
+  newsItems?: NewsItem[];
 }
 
 interface FilterBadgeProps {
@@ -56,7 +57,24 @@ function FilterBadge({ label, count, color, active, onClick, theme }: FilterBadg
   );
 }
 
-export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, onToggleSeverity }: Props) {
+function formatTimeAgo(dateStr: string): string {
+  if (!dateStr) return '';
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  if (isNaN(then)) return '';
+  const diffMin = Math.floor((now - then) / 60000);
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `${diffH}h ago`;
+  return `${Math.floor(diffH / 24)}d ago`;
+}
+
+type FeedItem =
+  | { type: 'event'; event: GeoEvent }
+  | { type: 'news'; news: NewsItem };
+
+export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, onToggleSeverity, newsItems = [] }: Props) {
   const colors = severityColors(theme);
 
   const hasFilter = severityFilter.size > 0;
@@ -64,9 +82,22 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
     ? events.filter(e => severityFilter.has(e.severity))
     : events;
 
-  const sorted = [...filtered].sort((a, b) => {
-    if (b.severity !== a.severity) return b.severity - a.severity;
-    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+  // Build unified feed: events + news, sorted by time
+  const feed: FeedItem[] = [
+    ...filtered.map(e => ({ type: 'event' as const, event: e })),
+    ...newsItems.map(n => ({ type: 'news' as const, news: n })),
+  ].sort((a, b) => {
+    const timeA = a.type === 'event'
+      ? new Date(a.event.timestamp || 0).getTime()
+      : new Date(a.news.pubDate || 0).getTime();
+    const timeB = b.type === 'event'
+      ? new Date(b.event.timestamp || 0).getTime()
+      : new Date(b.news.pubDate || 0).getTime();
+    // Events by severity first if same time bucket
+    if (Math.abs(timeB - timeA) < 60000 && a.type === 'event' && b.type === 'event') {
+      return b.event.severity - a.event.severity;
+    }
+    return timeB - timeA;
   });
 
   const critCount = events.filter(e => e.severity === 4).length;
@@ -95,11 +126,17 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
           letterSpacing: '2px', marginBottom: 8,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
-          <span>HOTWIRE</span>
+          <span>
+            HOTWIRE
+            {newsItems.length > 0 && (
+              <span style={{ fontSize: 10, color: theme.blue, marginLeft: 8, letterSpacing: '1px', fontWeight: 500 }}>
+                · {newsItems.length} INTEL
+              </span>
+            )}
+          </span>
           {hasFilter && (
             <button
               onClick={() => {
-                // Clear all — toggle each active one off
                 severityFilter.forEach(s => onToggleSeverity(s));
               }}
               style={{
@@ -132,22 +169,65 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
         </div>
       </div>
 
-      {/* Event List */}
+      {/* Feed */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {sorted.length === 0 ? (
+        {feed.length === 0 ? (
           <div style={{ padding: 20, textAlign: 'center', fontSize: 13, color: theme.overlay0 }}>
             No events matching filter
           </div>
         ) : (
-          sorted.map(ev => (
-            <EventCard
-              key={ev.id}
-              event={ev}
-              isSelected={selectedId === ev.id}
-              onClick={() => onSelect(ev)}
-              theme={theme}
-            />
-          ))
+          feed.map((item, idx) =>
+            item.type === 'news' ? (
+              <div
+                key={item.news.id}
+                onClick={() => window.open(item.news.link, '_blank')}
+                style={{
+                  padding: '8px 12px',
+                  borderLeft: `3px solid ${theme.blue}`,
+                  background: `${theme.surface0}44`,
+                  borderRadius: '0 4px 4px 0',
+                  marginBottom: '2px',
+                  cursor: 'pointer',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = `${theme.blue}18`; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = `${theme.surface0}44`; }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <span style={{ fontSize: 10 }}>📰</span>
+                  <span style={{
+                    fontSize: 9, padding: '1px 5px',
+                    background: `${theme.blue}22`,
+                    border: `1px solid ${theme.blue}33`,
+                    borderRadius: 3, color: theme.blue,
+                    fontWeight: 600, letterSpacing: '0.5px',
+                    maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {item.news.source.slice(0, 24)}
+                  </span>
+                  <span style={{ fontSize: 9, color: theme.overlay0, marginLeft: 'auto', flexShrink: 0 }}>
+                    {formatTimeAgo(item.news.pubDate)}
+                  </span>
+                </div>
+                <div style={{ fontSize: 11, color: theme.text, lineHeight: '1.3' }}>
+                  {item.news.title}
+                </div>
+                {item.news.country && (
+                  <div style={{ fontSize: 9, color: theme.overlay0, marginTop: 2 }}>
+                    📍 {item.news.country} · {item.news.category}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <EventCard
+                key={item.event.id}
+                event={item.event}
+                isSelected={selectedId === item.event.id}
+                onClick={() => onSelect(item.event)}
+                theme={theme}
+              />
+            )
+          )
         )}
       </div>
 
@@ -161,8 +241,8 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
         justifyContent: 'space-between',
         flexShrink: 0,
       }}>
-        <span>Reuters · Bloomberg · AP · WHO · USGS</span>
-        <span>{sorted.length} / {events.length}</span>
+        <span>Reuters · BBC · Defense One · Crisis Group</span>
+        <span>{filtered.length} events · {newsItems.length} intel</span>
       </div>
     </div>
   );
