@@ -490,20 +490,80 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     } catch (_) {}
   }, [focusCounter]); // eslint-disable-line
 
-  // Toggle data layer visibility when layers prop changes
+  // Sync data layers: create sources/layers if missing, update data, toggle visibility
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;
+    if (!map.isStyleLoaded()) return;
+
     for (const layer of layers) {
+      const sourceId = `layer-${layer.id}`;
       const circleId = `layer-${layer.id}-circles`;
       const labelId = `layer-${layer.id}-labels`;
       const lineId = `layer-${layer.id}-lines`;
       const visibility = layer.enabled ? 'visible' : 'none';
-      try {
-        if (map.getLayer(circleId)) map.setLayoutProperty(circleId, 'visibility', visibility);
-        if (map.getLayer(labelId)) map.setLayoutProperty(labelId, 'visibility', visibility);
-        if (map.getLayer(lineId)) map.setLayoutProperty(lineId, 'visibility', visibility);
-      } catch (_) {}
+
+      if (layer.type === 'points') {
+        const features = (layer.points || []).map(p => ({
+          type: 'Feature' as const,
+          geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
+          properties: { label: p.label, subLabel: p.subLabel || '', color: p.color },
+        }));
+        const geojson = { type: 'FeatureCollection' as const, features };
+
+        const existing = map.getSource(sourceId) as mapboxgl.GeoJSONSource | undefined;
+        if (existing) {
+          // Update existing source data
+          existing.setData(geojson);
+        } else if (features.length > 0) {
+          // Create source + layers for first time
+          map.addSource(sourceId, { type: 'geojson', data: geojson });
+          map.addLayer({
+            id: circleId, type: 'circle', source: sourceId,
+            paint: {
+              'circle-radius': 4,
+              'circle-color': ['get', 'color'],
+              'circle-opacity': 0.7,
+              'circle-stroke-width': 1,
+              'circle-stroke-color': ['get', 'color'],
+              'circle-stroke-opacity': 0.3,
+            },
+          });
+          map.addLayer({
+            id: labelId, type: 'symbol', source: sourceId, minzoom: 3,
+            layout: {
+              'text-field': ['get', 'label'], 'text-size': 10,
+              'text-offset': [0, 1.2], 'text-anchor': 'top',
+              'text-allow-overlap': false,
+              'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+            },
+            paint: { 'text-color': '#cdd6f4', 'text-halo-color': '#11111b', 'text-halo-width': 1 },
+          });
+        }
+
+        // Toggle visibility
+        try {
+          if (map.getLayer(circleId)) map.setLayoutProperty(circleId, 'visibility', visibility);
+          if (map.getLayer(labelId)) map.setLayoutProperty(labelId, 'visibility', visibility);
+        } catch (_) {}
+      }
+
+      if (layer.type === 'arcs') {
+        const features = (layer.arcs || []).map(a => ({
+          type: 'Feature' as const,
+          geometry: { type: 'LineString' as const, coordinates: [[a.startLng, a.startLat], [a.endLng, a.endLat]] },
+          properties: { label: a.label, color: a.color },
+        }));
+
+        const existing = map.getSource(sourceId) as mapboxgl.GeoJSONSource | undefined;
+        if (existing) {
+          existing.setData({ type: 'FeatureCollection', features });
+        }
+
+        try {
+          if (map.getLayer(lineId)) map.setLayoutProperty(lineId, 'visibility', visibility);
+        } catch (_) {}
+      }
     }
   }, [layers]); // eslint-disable-line
 

@@ -153,24 +153,9 @@ export default function WorldWatchClient() {
 
   const activeLayerCount = layers.filter(l => l.enabled).length;
 
-  // Map layer IDs to event categories
-  const LAYER_CATEGORY_MAP: Record<string, string[]> = {
-    'conflicts': ['conflict'],
-    'disasters': ['natural-disaster'],
-  };
-
-  // Filter events by enabled layers
-  const layerFilteredEvents = useMemo(() => {
-    return liveEvents.filter(event => {
-      for (const [layerId, categories] of Object.entries(LAYER_CATEGORY_MAP)) {
-        if (categories.includes(event.category)) {
-          const layer = layers.find(l => l.id === layerId);
-          return layer ? layer.enabled : true;
-        }
-      }
-      return true;
-    });
-  }, [liveEvents, layers]);
+  // Live events always show in HOTWIRE — layer toggles only affect static overlays (military, cables, etc.)
+  // and the event DOTS on the Globe, not the feed itself
+  const layerFilteredEvents = liveEvents;
 
   // Filter events for Globe based on severity selection
   const filteredEvents = severityFilter.size > 0
