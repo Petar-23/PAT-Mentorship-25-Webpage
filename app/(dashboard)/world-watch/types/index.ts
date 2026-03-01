@@ -52,7 +52,7 @@ export interface DataLayer {
   color: string;
 }
 
-export type Theme = 'mocha' | 'latte' | 'bloomberg';
+export type Theme = 'gotham' | 'mocha' | 'latte' | 'bloomberg';
 
 export interface ThemeColors {
   base: string;

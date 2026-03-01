@@ -13,17 +13,40 @@ interface Props {
   theme: ThemeColors;
 }
 
+// Convert a color texture to grayscale at runtime via canvas
+function grayscaleTexture(url: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(url); return; }
+      ctx.filter = 'grayscale(100%) contrast(130%) brightness(60%)';
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => resolve(url);
+    img.src = url.startsWith('//') ? `https:${url}` : url;
+  });
+}
+
 export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const globeRef = useRef<any>(null);
   const colors = severityColors(theme);
 
-  // Filter: only geopolitical events on the globe (no economic)
+  // Only geopolitical events on the globe (no economic)
   const geoEvents = events.filter(e => e.category !== 'economic');
 
   const initGlobe = useCallback(async () => {
     if (!containerRef.current || globeRef.current) return;
+
+    // Prepare grayscale earth texture (colored markers stay unaffected)
+    const grayEarth = await grayscaleTexture('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const GlobeGL = (await import('globe.gl')).default as any;
@@ -33,19 +56,19 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
 
     globe
       .backgroundColor('rgba(0,0,0,0)')
-      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+      .globeImageUrl(grayEarth)
       .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
       .showAtmosphere(true)
       .atmosphereColor('#ffffff')
       .atmosphereAltitude(0.12)
-      // Event points — spheres (default Globe.gl renders spheres with higher resolution)
+      // Event points as SPHERES (high resolution = round, not cylindrical)
       .pointsData(geoEvents)
       .pointLat('lat')
       .pointLng('lng')
-      .pointAltitude((d: GeoEvent) => d.severity === 4 ? 0.06 : d.severity === 3 ? 0.04 : 0.02)
-      .pointRadius((d: GeoEvent) => d.severity === 4 ? 0.35 : d.severity === 3 ? 0.25 : 0.18)
+      .pointAltitude(0.01)
+      .pointRadius((d: GeoEvent) => d.severity === 4 ? 0.5 : d.severity === 3 ? 0.35 : 0.2)
       .pointColor((d: GeoEvent) => colors[d.severity])
-      .pointResolution(32) // Higher = rounder spheres
+      .pointResolution(64)
       .onPointClick((point: GeoEvent) => onSelect(point))
       // Pulse rings on critical events
       .ringsData(geoEvents.filter(e => e.severity >= 3))
@@ -115,10 +138,9 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
       ref={containerRef}
       style={{
         flex: 1,
-        background: theme.base,
+        background: theme.crust,
         overflow: 'hidden',
         position: 'relative',
-        filter: 'grayscale(0.85) contrast(1.2) brightness(0.9)',
       }}
     />
   );

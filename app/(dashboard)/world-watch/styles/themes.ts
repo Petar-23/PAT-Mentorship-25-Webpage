@@ -1,6 +1,24 @@
 import type { Theme, ThemeColors } from '../types';
 
 export const themes: Record<Theme, ThemeColors> = {
+  gotham: {
+    // Palantir Gotham-inspired — deep navy, electric blue accents
+    base: '#0d1117',
+    mantle: '#090c10',
+    crust: '#060810',
+    surface0: '#161b22',
+    surface1: '#21262d',
+    text: '#e6edf3',
+    subtext0: '#8b949e',
+    overlay0: '#484f58',
+    red: '#f85149',
+    peach: '#d29922',
+    yellow: '#e3b341',
+    green: '#3fb950',
+    blue: '#58a6ff',
+    mauve: '#bc8cff',
+    teal: '#39d2c0',
+  },
   mocha: {
     base: '#1e1e2e',
     mantle: '#181825',
@@ -62,8 +80,8 @@ export const severityColors = (theme: ThemeColors): Record<number, string> => ({
 });
 
 export const getThemeFromStorage = (): Theme => {
-  if (typeof window === 'undefined') return 'mocha';
-  return (localStorage.getItem('ww-theme') as Theme) || 'mocha';
+  if (typeof window === 'undefined') return 'gotham';
+  return (localStorage.getItem('ww-theme') as Theme) || 'gotham';
 };
 
 export const setThemeToStorage = (theme: Theme): void => {

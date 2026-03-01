@@ -32,6 +32,7 @@ export function TopBar({ theme, currentTheme, setCurrentTheme }: Props) {
   }) ?? '';
 
   const themeOptions: { value: Theme; label: string }[] = [
+    { value: 'gotham', label: 'Gotham' },
     { value: 'mocha', label: 'Catppuccin Mocha' },
     { value: 'latte', label: 'Catppuccin Latte' },
     { value: 'bloomberg', label: 'Bloomberg Green' },
