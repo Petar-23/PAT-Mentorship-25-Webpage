@@ -29,7 +29,7 @@ function GlobeLoader() {
       gap: 12,
       background: '#1e1e2e',
       color: '#89b4fa',
-      fontSize: 12,
+      fontSize: 13,
       letterSpacing: '2px',
     }}>
       <div style={{
@@ -92,7 +92,7 @@ export default function WorldWatchClient() {
     flexDirection: 'column',
     height: '100vh',
     width: '100vw',
-    fontFamily: '"Geist Mono", "Fira Code", "Cascadia Code", monospace',
+    fontFamily: 'var(--font-geist-pixel-line), ui-monospace, monospace',
     background: theme.base,
     color: theme.text,
     overflow: 'hidden',
@@ -103,7 +103,7 @@ export default function WorldWatchClient() {
     background: active ? theme.blue + '22' : 'transparent',
     border: `1px solid ${active ? theme.blue : theme.surface1}`,
     color: active ? theme.blue : theme.subtext0,
-    fontSize: 10,
+    fontSize: 13,
     padding: '4px 10px',
     cursor: 'pointer',
     fontFamily: 'inherit',
@@ -115,17 +115,9 @@ export default function WorldWatchClient() {
     <div style={wrapperStyle}>
       {/* Global Styles for World Watch */}
       <style>{`
-        @font-face {
-          font-family: 'Geist Pixel Fallback';
-          src: url('/fonts/GeistPixel-Line.woff2') format('woff2');
-          font-weight: 500;
-          font-style: normal;
-          font-display: swap;
-        }
-
         .ww-root {
-          font-family: var(--font-geist-pixel-line), 'Geist Pixel Fallback', ui-monospace, 'SFMono-Regular', monospace !important;
-          font-size: 13px;
+          font-family: var(--font-geist-pixel-line), ui-monospace, 'SFMono-Regular', monospace !important;
+          font-size: 14px;
           line-height: 1.5;
         }
 
@@ -217,7 +209,7 @@ export default function WorldWatchClient() {
                 background: 'transparent',
                 border: `1px solid ${theme.surface0}`,
                 color: theme.overlay0,
-                fontSize: 9,
+                fontSize: 10,
                 padding: '3px 7px',
                 cursor: 'pointer',
                 fontFamily: 'inherit',
@@ -333,7 +325,7 @@ export default function WorldWatchClient() {
           alignItems: 'center',
           padding: '0 12px',
           gap: 16,
-          fontSize: 9,
+          fontSize: 10,
           color: theme.overlay0,
           letterSpacing: '0.5px',
           flexShrink: 0,
