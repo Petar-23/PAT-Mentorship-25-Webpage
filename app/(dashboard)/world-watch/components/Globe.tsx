@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
-import * as THREE from 'three';
+import { useEffect, useRef } from 'react';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import type { GeoEvent, DataLayer, ThemeColors } from '../types';
 import { severityColors } from '../styles/themes';
+
+mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
 interface Props {
   events: GeoEvent[];
@@ -14,165 +17,233 @@ interface Props {
   theme: ThemeColors;
 }
 
-// Convert color texture to grayscale at runtime via canvas
-function grayscaleTexture(url: string): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { resolve(url); return; }
-      ctx.filter = 'grayscale(80%) brightness(70%) contrast(120%)';
-      ctx.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
-    };
-    img.onerror = () => resolve(url);
-    img.src = url.startsWith('//') ? `https:${url}` : url;
-  });
-}
+const COUNTRY_NAME_MAP: Record<string, string> = {
+  'USA': 'United States',
+  'UK': 'United Kingdom',
+  'South Korea': 'Republic of Korea',
+};
 
 export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const globeRef = useRef<any>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
   const colors = severityColors(theme);
 
   // Only geopolitical events on the globe (no economic)
   const geoEvents = events.filter(e => e.category !== 'economic');
 
-  const initGlobe = useCallback(async () => {
-    if (!containerRef.current || globeRef.current) return;
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
 
-    const grayEarth = await grayscaleTexture('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const GlobeGL = (await import('globe.gl')).default as any;
-    const globe = GlobeGL({ animateIn: true })(containerRef.current);
-
-    const cableArcs = layers.filter(l => l.id === 'cables' && l.enabled).flatMap(l => l.arcs || []);
-
-    globe
-      .backgroundColor('rgba(0,0,0,0)')
-      .globeImageUrl(grayEarth)
-      .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
-      .showAtmosphere(true)
-      .atmosphereColor('#ffffff')
-      .atmosphereAltitude(0.12)
-      // Event markers — cylinders with minimal height (rounded cap look)
-      .pointsData(geoEvents)
-      .pointLat('lat')
-      .pointLng('lng')
-      .pointAltitude(0.005)
-      .pointRadius((d: GeoEvent) => d.severity === 4 ? 0.6 : d.severity === 3 ? 0.4 : 0.25)
-      .pointColor((d: GeoEvent) => colors[d.severity])
-      .pointResolution(64)
-      .onPointClick((point: GeoEvent) => onSelect(point))
-      // Pulse rings on critical events
-      .ringsData(geoEvents.filter(e => e.severity >= 3))
-      .ringLat('lat')
-      .ringLng('lng')
-      .ringMaxRadius((d: GeoEvent) => d.severity === 4 ? 3 : 2)
-      .ringPropagationSpeed(1.2)
-      .ringRepeatPeriod((d: GeoEvent) => d.severity === 4 ? 900 : 1400)
-      .ringColor(() => () => theme.red + '40')
-      // Country labels — larger font
-      .labelsData(geoEvents.filter(e => e.severity >= 3))
-      .labelLat('lat')
-      .labelLng('lng')
-      .labelText('country')
-      .labelSize(1.4)
-      .labelDotRadius(0)
-      .labelColor(() => '#ffffffcc')
-      .labelAltitude(0.015)
-      // Undersea cables as arcs
-      .arcsData(cableArcs)
-      .arcStartLat('startLat')
-      .arcStartLng('startLng')
-      .arcEndLat('endLat')
-      .arcEndLng('endLng')
-      .arcColor('color')
-      .arcAltitude(0.15)
-      .arcStroke(0.3)
-      .arcDashLength(0.4)
-      .arcDashGap(0.2)
-      .arcDashAnimateTime(4000);
-
-    globe.controls().autoRotate = true;
-    globe.controls().autoRotateSpeed = 0.3;
-    let autoRotateTimer: ReturnType<typeof setTimeout> | null = null;
-    globe.controls().addEventListener('start', () => {
-      globe.controls().autoRotate = false;
-      if (autoRotateTimer) clearTimeout(autoRotateTimer);
+    const map = new mapboxgl.Map({
+      container: containerRef.current,
+      style: 'mapbox://styles/mapbox/dark-v11',
+      // @ts-ignore globe projection (mapbox-gl v3)
+      projection: 'globe',
+      center: [20, 30],
+      zoom: 1.8,
+      attributionControl: false,
+      antialias: true,
     });
-    globe.controls().addEventListener('end', () => {
-      if (autoRotateTimer) clearTimeout(autoRotateTimer);
-      autoRotateTimer = setTimeout(() => {
-        globe.controls().autoRotate = true;
-      }, 1000);
+
+    mapRef.current = map;
+
+    map.on('style.load', () => {
+      // Globe atmosphere
+      // @ts-ignore setFog (mapbox-gl v3)
+      map.setFog({
+        color: 'rgb(15, 15, 25)',
+        'high-color': 'rgb(30, 30, 60)',
+        'horizon-blend': 0.08,
+        'space-color': 'rgb(10, 10, 20)',
+        'star-intensity': 0.6,
+      });
+
+      // Events GeoJSON source
+      map.addSource('events', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: geoEvents.map(ev => ({
+            type: 'Feature' as const,
+            geometry: {
+              type: 'Point' as const,
+              coordinates: [ev.lng, ev.lat],
+            },
+            properties: {
+              id: ev.id,
+              severity: ev.severity,
+              title: ev.title,
+              country: ev.country,
+              category: ev.category,
+            },
+          })),
+        },
+      });
+
+      // Pulse layer (behind main dots)
+      map.addLayer({
+        id: 'event-pulse',
+        type: 'circle',
+        source: 'events',
+        filter: ['>=', ['get', 'severity'], 3],
+        paint: {
+          'circle-radius': ['match', ['get', 'severity'], 4, 20, 15],
+          'circle-color': ['match', ['get', 'severity'], 4, colors[4], colors[3]],
+          'circle-opacity': 0.15,
+        },
+      });
+
+      // Main event circles
+      map.addLayer({
+        id: 'event-circles',
+        type: 'circle',
+        source: 'events',
+        paint: {
+          'circle-radius': ['match', ['get', 'severity'], 4, 10, 3, 7, 2, 5, 3],
+          'circle-color': ['match', ['get', 'severity'], 4, colors[4], 3, colors[3], 2, colors[2], colors[1]],
+          'circle-opacity': 0.85,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': ['match', ['get', 'severity'], 4, colors[4], 3, colors[3], 2, colors[2], colors[1]],
+          'circle-stroke-opacity': 0.4,
+        },
+      });
+
+      // Country boundaries
+      map.addSource('country-boundaries', {
+        type: 'vector',
+        url: 'mapbox://mapbox.country-boundaries-v1',
+      });
+
+      map.addLayer({
+        id: 'country-highlight-fill',
+        type: 'fill',
+        source: 'country-boundaries',
+        'source-layer': 'country_boundaries',
+        paint: {
+          'fill-color': colors[4],
+          'fill-opacity': 0.1,
+        },
+        filter: ['==', 'name_en', ''],
+      });
+
+      map.addLayer({
+        id: 'country-highlight-line',
+        type: 'line',
+        source: 'country-boundaries',
+        'source-layer': 'country_boundaries',
+        paint: {
+          'line-color': colors[4],
+          'line-width': 2,
+          'line-opacity': 0.6,
+        },
+        filter: ['==', 'name_en', ''],
+      });
+
+      // Country labels
+      map.addLayer({
+        id: 'event-labels',
+        type: 'symbol',
+        source: 'events',
+        filter: ['>=', ['get', 'severity'], 3],
+        layout: {
+          'text-field': ['get', 'country'],
+          'text-size': 12,
+          'text-offset': [0, 1.5],
+          'text-anchor': 'top',
+          'text-allow-overlap': false,
+        },
+        paint: {
+          'text-color': '#ffffffcc',
+          'text-halo-color': '#000000',
+          'text-halo-width': 1,
+        },
+      });
     });
-    globe.pointOfView({ lat: 30, lng: 20, altitude: 2.2 });
 
-    // Starfield
-    // Stars placed on a distant sphere (radius 400-600) — always behind the globe
-    const starCount = 2000;
-    const starGeometry = new THREE.BufferGeometry();
-    const starPositions = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount; i++) {
-      const radius = 400 + Math.random() * 200;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      starPositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-      starPositions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-      starPositions[i * 3 + 2] = radius * Math.cos(phi);
-    }
-    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-    const starMaterial = new THREE.PointsMaterial({
-      color: 0xffffff,
-      size: 0.5,
-      transparent: true,
-      opacity: 0.6,
-      sizeAttenuation: true,
-    });
-    const stars = new THREE.Points(starGeometry, starMaterial);
-    globe.scene().add(stars);
-
-    globeRef.current = globe;
-
-    const handleResize = () => {
-      if (containerRef.current) {
-        globe.width(containerRef.current.clientWidth);
-        globe.height(containerRef.current.clientHeight);
+    // Click handler
+    map.on('click', 'event-circles', (e) => {
+      if (e.features && e.features[0]) {
+        const id = e.features[0].properties?.id;
+        const event = events.find(ev => ev.id === id);
+        if (event) onSelect(event);
       }
-    };
-    window.addEventListener('resize', handleResize);
-    handleResize();
+    });
 
-    return () => window.removeEventListener('resize', handleResize);
+    map.on('mouseenter', 'event-circles', () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', 'event-circles', () => {
+      map.getCanvas().style.cursor = '';
+    });
+
+    // Auto-rotation
+    let rotateInterval: ReturnType<typeof setInterval> | null = null;
+    let resumeTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    function startRotation() {
+      if (rotateInterval) return;
+      rotateInterval = setInterval(() => {
+        const center = map.getCenter();
+        center.lng += 0.03;
+        map.setCenter(center);
+      }, 16);
+    }
+
+    function stopRotation() {
+      if (rotateInterval) {
+        clearInterval(rotateInterval);
+        rotateInterval = null;
+      }
+      if (resumeTimeout) clearTimeout(resumeTimeout);
+      resumeTimeout = setTimeout(startRotation, 2000);
+    }
+
+    map.on('mousedown', stopRotation);
+    map.on('touchstart', stopRotation);
+    map.on('wheel', stopRotation);
+
+    map.on('load', startRotation);
+
+    return () => {
+      if (rotateInterval) clearInterval(rotateInterval);
+      if (resumeTimeout) clearTimeout(resumeTimeout);
+      map.remove();
+      mapRef.current = null;
+    };
   }, []); // eslint-disable-line
 
-  useEffect(() => { initGlobe(); }, [initGlobe]);
-
+  // Focus event effect
   useEffect(() => {
-    if (focusEvent && globeRef.current) {
-      globeRef.current.controls().autoRotate = false;
-      globeRef.current.pointOfView(
-        { lat: focusEvent.lat, lng: focusEvent.lng, altitude: 1.5 },
-        1000
-      );
+    if (!mapRef.current || !focusEvent) return;
+    const map = mapRef.current;
+
+    map.flyTo({
+      center: [focusEvent.lng, focusEvent.lat],
+      zoom: 4,
+      duration: 1500,
+      essential: true,
+    });
+
+    const countryName = COUNTRY_NAME_MAP[focusEvent.country] || focusEvent.country;
+    const sevColor = colors[focusEvent.severity];
+
+    if (map.getLayer('country-highlight-fill')) {
+      map.setFilter('country-highlight-fill', ['==', 'name_en', countryName]);
+      map.setPaintProperty('country-highlight-fill', 'fill-color', sevColor);
     }
-  }, [focusEvent]);
+    if (map.getLayer('country-highlight-line')) {
+      map.setFilter('country-highlight-line', ['==', 'name_en', countryName]);
+      map.setPaintProperty('country-highlight-line', 'line-color', sevColor);
+    }
+  }, [focusEvent]); // eslint-disable-line
 
   return (
     <div
       ref={containerRef}
       style={{
         flex: 1,
-        background: theme.crust,
-        overflow: 'hidden',
-        position: 'relative',
+        width: '100%',
+        height: '100%',
       }}
     />
   );
