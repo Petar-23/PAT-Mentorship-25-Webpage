@@ -84,6 +84,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
   const pipelineClickPopupRef = useRef<mapboxgl.Popup | null>(null);
   const disasterPopupRef = useRef<mapboxgl.Popup | null>(null);
   const newsPopupRef = useRef<mapboxgl.Popup | null>(null);
+  const conflictPopupRef = useRef<mapboxgl.Popup | null>(null);
   const pulseIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const colors = severityColors(theme);
 
@@ -359,6 +360,56 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             'text-opacity': 0.8,
           },
         } as any);
+      }
+
+      // ─── CONFLICT ZONE CLICK POPUP ────────────────────────────────────
+      conflictPopupRef.current = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        maxWidth: '320px',
+        className: 'ww-marker-popup',
+      });
+      const conflictPopup = conflictPopupRef.current;
+
+      for (const conflict of ACTIVE_CONFLICTS) {
+        map.on('click', `conflict-fill-${conflict.id}`, (e: any) => {
+          markerClicked = true;
+          const statusLabel = conflict.status === 'active-war' ? '🔴 ACTIVE WAR'
+            : conflict.status === 'escalating' ? '🟠 ESCALATING'
+            : conflict.status === 'ceasefire' ? '🟡 CEASEFIRE' : '⚪ FROZEN';
+          const partiesHtml = conflict.parties.map(p =>
+            `<span style="font-size: 9px; padding: 1px 5px; background: ${conflict.color}15; border: 1px solid ${conflict.color}33; border-radius: 3px; color: ${theme.subtext0};">${p}</span>`
+          ).join(' ');
+          const hotspotsHtml = (conflict.hotspots || []).map(h =>
+            `<span style="font-size: 9px; color: ${theme.overlay0};">• ${h.label} (${h.type})</span>`
+          ).join('<br/>');
+
+          conflictPopup
+            .setLngLat(e.lngLat)
+            .setHTML(`
+              <div style="font-family: inherit; max-width: 300px; padding: 10px; background: ${theme.mantle}dd; backdrop-filter: blur(8px); border: 1px solid ${conflict.color}44; border-radius: 6px;">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                  <span style="font-size: 14px;">⚔</span>
+                  <span style="font-size: 13px; font-weight: 700; color: ${conflict.color};">${conflict.name}</span>
+                </div>
+                <div style="font-size: 10px; color: ${theme.subtext0}; margin-bottom: 6px;">
+                  ${statusLabel} · Since ${conflict.startDate} · ${conflict.region}
+                </div>
+                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;">
+                  ${partiesHtml}
+                </div>
+                ${hotspotsHtml ? `<div style="margin-top: 4px; padding-top: 4px; border-top: 1px solid ${theme.surface0};">${hotspotsHtml}</div>` : ''}
+              </div>
+            `)
+            .addTo(map);
+        });
+
+        map.on('mouseenter', `conflict-fill-${conflict.id}`, () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', `conflict-fill-${conflict.id}`, () => {
+          map.getCanvas().style.cursor = '';
+        });
       }
 
       // News popup (created once, reused via selectedNews prop)
@@ -1568,6 +1619,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         }
         // Dismiss other popups
         shipPopup.remove();
+        conflictPopupRef.current?.remove();
         disasterPopup.remove();
         basePopup.remove();
         nucPopup.remove();
@@ -2039,8 +2091,13 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     const desc = (selectedNews.description || '').slice(0, 200);
     const descTrunc = selectedNews.description && selectedNews.description.length > 200 ? '...' : '';
 
+    // Offset popup so it doesn't cover the conflict zone center
+    // Shift north-east by ~2° lat and ~3° lng depending on zoom
+    const offsetLat = selectedNews.lat + 2.5;
+    const offsetLng = selectedNews.lng + 4.0;
+
     newsPopup
-      .setLngLat([selectedNews.lng, selectedNews.lat])
+      .setLngLat([offsetLng, offsetLat])
       .setHTML(`
         <div style="font-family: inherit; max-width: 280px; padding: 10px; background: ${theme.mantle}dd; backdrop-filter: blur(8px); border: 1px solid ${theme.surface0}; border-radius: 6px;">
           <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;">

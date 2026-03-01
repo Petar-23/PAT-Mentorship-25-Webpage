@@ -57,22 +57,27 @@ function getTzFromStorage(): string {
   return localStorage.getItem('ww-calendar-tz') || 'America/New_York';
 }
 
-/* ─── Smooth line chart across weekdays ─── */
-function WeekLineChart({ weekDays, filtered, theme }: { weekDays: Date[]; filtered: EconCalendarEntry[]; theme: ThemeColors }) {
+/* ─── Standalone line chart with day labels below ─── */
+function WeekChartSection({ weekDays, filtered, theme, today }: { weekDays: Date[]; filtered: EconCalendarEntry[]; theme: ThemeColors; today: Date }) {
   const counts = weekDays.map(day => filtered.filter(e => isSameDay(new Date(e.time), day)).length);
   const maxCount = Math.max(...counts, 1);
-  const W = 100; // viewBox width percentage per slot
-  const H = 50;  // viewBox height
-  const padY = 6;
-  const slotW = W / (counts.length - 1 || 1);
+
+  // SVG dimensions
+  const W = 400;
+  const H = 80;
+  const padX = 40; // left/right padding so dots align with day columns
+  const padTop = 12;
+  const padBot = 4;
+  const chartH = H - padTop - padBot;
+  const slotW = (W - padX * 2) / (counts.length - 1 || 1);
 
   const points = counts.map((c, i) => {
-    const x = i * slotW;
-    const y = H - padY - (c / maxCount) * (H - padY * 2);
+    const x = padX + i * slotW;
+    const y = padTop + chartH - (c / maxCount) * chartH;
     return { x, y, count: c };
   });
 
-  // Build smooth cubic bezier path
+  // Smooth cubic bezier
   let pathD = `M ${points[0].x} ${points[0].y}`;
   for (let i = 1; i < points.length; i++) {
     const prev = points[i - 1];
@@ -82,25 +87,60 @@ function WeekLineChart({ weekDays, filtered, theme }: { weekDays: Date[]; filter
     pathD += ` C ${cpx1} ${prev.y}, ${cpx2} ${curr.y}, ${curr.x} ${curr.y}`;
   }
 
-  // Area fill path (close to bottom)
   const areaD = pathD + ` L ${points[points.length - 1].x} ${H} L ${points[0].x} ${H} Z`;
-
   const gradId = 'week-line-grad';
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: '100%', height: 48, display: 'block' }}>
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={theme.teal} stopOpacity={0.35} />
-          <stop offset="100%" stopColor={theme.teal} stopOpacity={0} />
-        </linearGradient>
-      </defs>
-      <path d={areaD} fill={`url(#${gradId})`} />
-      <path d={pathD} fill="none" stroke={theme.teal} strokeWidth={0.8} strokeLinecap="round" />
-      {points.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={1.2} fill={theme.teal} />
-      ))}
-    </svg>
+    <div style={{ flexShrink: 0, borderBottom: `1px solid ${theme.surface1}`, background: theme.mantle }}>
+      {/* Chart */}
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: '100%', height: 80, display: 'block' }}>
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={theme.teal} stopOpacity={0.3} />
+            <stop offset="100%" stopColor={theme.teal} stopOpacity={0.02} />
+          </linearGradient>
+        </defs>
+        <path d={areaD} fill={`url(#${gradId})`} />
+        <path d={pathD} fill="none" stroke={theme.teal} strokeWidth={1.2} strokeLinecap="round" />
+        {points.map((p, i) => {
+          const isToday = isSameDay(weekDays[i], today);
+          return (
+            <g key={i}>
+              {/* Dot */}
+              <circle cx={p.x} cy={p.y} r={isToday ? 4 : 3} fill={isToday ? theme.blue : theme.teal} stroke={theme.mantle} strokeWidth={1.5} />
+              {/* Count label above dot */}
+              <text x={p.x} y={p.y - 8} textAnchor="middle" fontSize={9} fontWeight={700} fill={isToday ? theme.blue : theme.teal}>
+                {p.count}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      {/* Day labels row below chart */}
+      <div style={{ display: 'flex', gap: 0 }}>
+        {weekDays.map((day, i) => {
+          const isToday = isSameDay(day, today);
+          const dayName = day.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+          const dayNum = day.getDate();
+          return (
+            <div key={day.toISOString()} style={{
+              flex: 1,
+              padding: '6px 0 8px',
+              textAlign: 'center',
+              borderBottom: isToday ? `2px solid ${theme.blue}` : '2px solid transparent',
+              background: isToday ? theme.surface0 + '33' : 'transparent',
+            }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: isToday ? theme.blue : theme.overlay0, letterSpacing: '1.5px' }}>
+                {dayName}
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: isToday ? theme.blue : theme.text }}>
+                {dayNum}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -267,48 +307,8 @@ export function EconCalendar({ theme }: Props) {
         </div>
       </div>
 
-      {/* Weekday tabs with line chart overlay */}
-      <div style={{ position: 'relative', flexShrink: 0 }}>
-        {/* Line chart background */}
-        <div style={{ position: 'absolute', inset: 0, zIndex: 0, padding: '0 calc(10% - 4px)', pointerEvents: 'none' }}>
-          <WeekLineChart weekDays={weekDays} filtered={filtered} theme={theme} />
-        </div>
-        {/* Day columns on top */}
-        <div style={{
-          display: 'flex',
-          gap: 0,
-          borderBottom: `1px solid ${theme.surface1}`,
-          background: 'transparent',
-          position: 'relative',
-          zIndex: 1,
-        }}>
-          {weekDays.map(day => {
-            const isToday = isSameDay(day, today);
-            const dayName = day.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
-            const dayNum = day.getDate();
-            const dayEvents = filtered.filter(e => isSameDay(new Date(e.time), day));
-            return (
-              <div key={day.toISOString()} style={{
-                flex: 1,
-                padding: '8px 0',
-                textAlign: 'center',
-                borderBottom: isToday ? `2px solid ${theme.blue}` : '2px solid transparent',
-                background: isToday ? theme.surface0 + '33' : 'transparent',
-              }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: isToday ? theme.blue : theme.overlay0, letterSpacing: '1.5px' }}>
-                  {dayName}
-                </div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: isToday ? theme.blue : theme.text }}>
-                  {dayNum}
-                </div>
-                <div style={{ fontSize: 9, color: theme.overlay0 }}>
-                  {dayEvents.length > 0 ? `${dayEvents.length} events` : '—'}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {/* Line chart + weekday tabs (standalone section) */}
+      <WeekChartSection weekDays={weekDays} filtered={filtered} theme={theme} today={today} />
 
       {/* Column header */}
       <div style={{
