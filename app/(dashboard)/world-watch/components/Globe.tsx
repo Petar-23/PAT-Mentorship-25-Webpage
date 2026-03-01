@@ -1035,7 +1035,11 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;
-    if (!map.isStyleLoaded()) return;
+
+    const doSync = () => {
+      if (!map.isStyleLoaded()) return false;
+
+    console.log('[OPTICON] doSync running, layers:', layers.map(l => `${l.id}:${l.enabled?'ON':'off'}:${l.type}:${l.points?.length||0}pts`).join(', '));
 
     // Handle submarine cables visibility (custom Mapbox source, not generic)
     const cableLayer = layers.find(l => l.id === 'cables');
@@ -1068,6 +1072,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       const visibility = layer.enabled ? 'visible' : 'none';
 
       if (layer.type === 'points') {
+        console.log(`[OPTICON] Processing points layer "${layer.id}": ${layer.points?.length || 0} points, enabled=${layer.enabled}`);
         const features = (layer.points || []).map(p => ({
           type: 'Feature' as const,
           geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
@@ -1081,10 +1086,12 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         const geojson = { type: 'FeatureCollection' as const, features };
 
         const existing = map.getSource(sourceId) as mapboxgl.GeoJSONSource | undefined;
+        console.log(`[OPTICON] Layer "${layer.id}": existing=${!!existing}, features=${features.length}, vis=${visibility}`);
         if (existing) {
           existing.setData(geojson);
         } else if (features.length > 0) {
           // Create source + layers (works regardless of initial enabled state)
+          console.log(`[OPTICON] Creating source+layers for "${layer.id}" with ${features.length} features`);
           map.addSource(sourceId, { type: 'geojson', data: geojson });
           map.addLayer({
             id: circleId, type: 'circle', source: sourceId,
@@ -1160,6 +1167,17 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           if (map.getLayer(lineId)) map.setLayoutProperty(lineId, 'visibility', visibility);
         } catch (_) {}
       }
+    }
+
+      return true; // sync succeeded
+    }; // end doSync
+
+    // Try immediately, retry on idle if style not ready
+    if (!doSync()) {
+      console.log('[OPTICON] Layer sync deferred — waiting for style');
+      const handler = () => { if (doSync()) map.off('idle', handler); };
+      map.on('idle', handler);
+      return () => { map.off('idle', handler); };
     }
   }, [layers]); // eslint-disable-line
 
