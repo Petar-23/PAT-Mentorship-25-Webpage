@@ -289,6 +289,78 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         } as any);
       }
 
+      // ─── CONFLICT HOTSPOT MARKERS (pulse dots at chokepoints/frontlines) ───
+      const hotspotFeatures: any[] = [];
+      for (const conflict of ACTIVE_CONFLICTS) {
+        if (!conflict.hotspots) continue;
+        for (const hs of conflict.hotspots) {
+          hotspotFeatures.push({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [hs.lng, hs.lat] },
+            properties: { label: hs.label, color: conflict.color, type: hs.type, conflictId: conflict.id },
+          });
+        }
+      }
+
+      if (hotspotFeatures.length > 0) {
+        map.addSource('conflict-hotspots', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: hotspotFeatures },
+        });
+
+        // Pulse ring layers (3 rings, same pattern as military/nuclear/disaster pulses)
+        for (let ring = 1; ring <= 3; ring++) {
+          map.addLayer({
+            id: `conflict-hotspot-pulse-${ring}`,
+            type: 'circle',
+            source: 'conflict-hotspots',
+            paint: {
+              'circle-radius': 6,
+              'circle-color': 'transparent',
+              'circle-stroke-width': 2,
+              'circle-stroke-color': ['get', 'color'],
+              'circle-stroke-opacity': 0.4,
+            },
+          });
+        }
+
+        // Core dot
+        map.addLayer({
+          id: 'conflict-hotspot-dots',
+          type: 'circle',
+          source: 'conflict-hotspots',
+          paint: {
+            'circle-radius': 4,
+            'circle-color': ['get', 'color'],
+            'circle-opacity': 0.9,
+            'circle-stroke-width': 1,
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-opacity': 0.5,
+          },
+        });
+
+        // Label
+        map.addLayer({
+          id: 'conflict-hotspot-labels',
+          type: 'symbol',
+          source: 'conflict-hotspots',
+          minzoom: 4,
+          layout: {
+            'text-field': ['get', 'label'],
+            'text-size': 9,
+            'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+            'text-offset': [0, 1.4],
+            'text-allow-overlap': false,
+          },
+          paint: {
+            'text-color': ['get', 'color'],
+            'text-halo-color': theme.crust,
+            'text-halo-width': 1,
+            'text-opacity': 0.8,
+          },
+        } as any);
+      }
+
       // News popup (created once, reused via selectedNews prop)
       newsPopupRef.current = new mapboxgl.Popup({
         closeButton: false,
@@ -696,7 +768,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             { phase: (t + 0.33) % 1, maxR: 20, maxO: 0.3 },
             { phase: (t + 0.66) % 1, maxR: 20, maxO: 0.2 },
           ];
-          const categories = ['military', 'nuclear', 'disaster'];
+          const categories = ['military', 'nuclear', 'disaster', 'conflict-hotspot'];
           for (const cat of categories) {
             for (let i = 0; i < 3; i++) {
               const layerId = `${cat}-pulse-${i + 1}`;
@@ -1929,6 +2001,12 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           if (map.getLayer(`conflict-label-${conflict.id}`)) map.setLayoutProperty(`conflict-label-${conflict.id}`, 'visibility', visibility);
         } catch (_) {}
       }
+      // Hotspot markers + pulse
+      try {
+        for (const id of ['conflict-hotspot-dots', 'conflict-hotspot-labels', 'conflict-hotspot-pulse-1', 'conflict-hotspot-pulse-2', 'conflict-hotspot-pulse-3']) {
+          if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visibility);
+        }
+      } catch (_) {}
       return true;
     };
     if (!tryUpdate()) {

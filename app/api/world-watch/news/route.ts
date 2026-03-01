@@ -65,9 +65,14 @@ const COUNTRY_CENTROIDS: Record<string, [number, number]> = {
   'japan': [36.2, 138.3],
   'turkey': [39.9, 32.9],
   'egypt': [26.8, 30.8],
-  'saudi': [23.9, 45.1],
+  'saudi': [23.9, 45.1], 'saudi arabia': [23.9, 45.1],
   'lebanon': [33.9, 35.5],
   'jordan': [30.6, 36.2],
+  'dubai': [25.2, 55.3], 'abu dhabi': [24.5, 54.7],
+  'bahrain': [26.1, 50.5], 'qatar': [25.3, 51.2], 'doha': [25.3, 51.5],
+  'kuwait': [29.4, 47.9], 'oman': [23.6, 58.5],
+  'strait of hormuz': [26.5, 56.3], 'hormuz': [26.5, 56.3],
+  'persian gulf': [26.0, 52.0], 'gulf states': [25.0, 53.0],
   'mexico': [23.6, -102.6],
   'venezuela': [6.4, -66.6],
   'colombia': [4.6, -74.3],
@@ -106,32 +111,89 @@ const COUNTRY_CENTROIDS: Record<string, [number, number]> = {
   'tehran': [35.69, 51.39],
 };
 
-// conflict keyword matching (keep in sync with data/conflicts.ts)
-const CONFLICT_KEYWORDS: Record<string, string[]> = {
-  'ru-ua': ['ukraine', 'ukrainian', 'kyiv', 'donbas', 'donetsk', 'crimea', 'kherson', 'zelensky', 'russian invasion', 'kursk', 'bakhmut'],
-  'il-ps': ['israel', 'gaza', 'hamas', 'hezbollah', 'netanyahu', 'idf', 'west bank', 'palestinian', 'rafah', 'ceasefire gaza', 'lebanese', 'lebanon war'],
-  'ir-us': ['iran', 'tehran', 'irgc', 'strait of hormuz', 'houthi', 'red sea', 'proxy war', 'nuclear iran', 'sanctions iran'],
-  'sudan': ['sudan', 'khartoum', 'darfur', 'rsf', 'hemeti'],
-  'myanmar': ['myanmar', 'burma', 'junta', 'naypyidaw'],
-  'sahel': ['sahel', 'mali', 'burkina faso', 'niger coup', 'boko haram'],
-  'taiwan-strait': ['taiwan', 'taipei', 'taiwan strait', 'south china sea', 'pla navy'],
+// Weighted conflict keywords — weight = importance of this keyword for identifying the conflict
+// Higher weight = stronger signal. Title matches get 2× bonus.
+const CONFLICT_KEYWORDS: Record<string, { kw: string; weight: number }[]> = {
+  'ru-ua': [
+    { kw: 'ukraine', weight: 5 }, { kw: 'ukrainian', weight: 5 }, { kw: 'kyiv', weight: 5 },
+    { kw: 'zelensky', weight: 5 }, { kw: 'zelenskyy', weight: 5 },
+    { kw: 'donbas', weight: 4 }, { kw: 'donetsk', weight: 4 }, { kw: 'luhansk', weight: 4 },
+    { kw: 'crimea', weight: 4 }, { kw: 'kherson', weight: 4 }, { kw: 'kharkiv', weight: 4 },
+    { kw: 'bakhmut', weight: 4 }, { kw: 'avdiivka', weight: 4 }, { kw: 'kursk', weight: 3 },
+    { kw: 'russian invasion', weight: 4 }, { kw: 'russian troops', weight: 3 },
+  ],
+  'il-ps': [
+    { kw: 'gaza', weight: 6 }, { kw: 'hamas', weight: 5 }, { kw: 'palestinian', weight: 4 },
+    { kw: 'west bank', weight: 5 }, { kw: 'rafah', weight: 5 }, { kw: 'netanyahu', weight: 3 },
+    { kw: 'idf', weight: 3 }, { kw: 'ceasefire gaza', weight: 6 },
+    { kw: 'hezbollah', weight: 3 }, { kw: 'hostage', weight: 2 },
+    // "israel" alone is WEAK for this conflict — Iran articles also mention Israel
+    { kw: 'israel', weight: 1 }, { kw: 'israeli', weight: 1 },
+  ],
+  'ir-us': [
+    { kw: 'iran', weight: 6 }, { kw: 'iranian', weight: 6 }, { kw: 'tehran', weight: 5 },
+    { kw: 'irgc', weight: 6 }, { kw: 'revolutionary guard', weight: 5 },
+    { kw: 'strait of hormuz', weight: 6 }, { kw: 'hormuz', weight: 5 },
+    { kw: 'persian gulf', weight: 4 }, { kw: 'houthi', weight: 4 }, { kw: 'red sea', weight: 3 },
+    { kw: 'axis of resistance', weight: 5 }, { kw: 'proxy war', weight: 3 },
+    { kw: 'nuclear iran', weight: 5 }, { kw: 'sanctions iran', weight: 4 },
+    // Gulf states being attacked = Iran conflict, not Gaza
+    { kw: 'dubai', weight: 3 }, { kw: 'abu dhabi', weight: 3 }, { kw: 'bahrain', weight: 3 },
+    { kw: 'qatar', weight: 2 }, { kw: 'gcc', weight: 3 }, { kw: 'gulf states', weight: 3 },
+    { kw: 'iran attack', weight: 6 }, { kw: 'iran strikes', weight: 6 },
+    { kw: 'iran fires', weight: 6 }, { kw: 'iran missile', weight: 5 },
+    { kw: 'iran drone', weight: 5 }, { kw: 'iranian missile', weight: 5 },
+    { kw: 'iranian drone', weight: 5 },
+  ],
+  'sudan': [
+    { kw: 'sudan', weight: 6 }, { kw: 'sudanese', weight: 5 }, { kw: 'khartoum', weight: 5 },
+    { kw: 'darfur', weight: 5 }, { kw: 'rsf', weight: 5 }, { kw: 'rapid support forces', weight: 5 },
+    { kw: 'hemeti', weight: 5 },
+  ],
+  'myanmar': [
+    { kw: 'myanmar', weight: 6 }, { kw: 'burma', weight: 5 }, { kw: 'junta', weight: 3 },
+    { kw: 'naypyidaw', weight: 5 }, { kw: 'rohingya', weight: 4 },
+  ],
+  'sahel': [
+    { kw: 'sahel', weight: 6 }, { kw: 'mali', weight: 4 }, { kw: 'burkina faso', weight: 5 },
+    { kw: 'boko haram', weight: 5 }, { kw: 'isis sahel', weight: 5 }, { kw: 'wagner africa', weight: 4 },
+    { kw: 'jnim', weight: 5 },
+  ],
+  'taiwan-strait': [
+    { kw: 'taiwan', weight: 6 }, { kw: 'taiwanese', weight: 5 }, { kw: 'taipei', weight: 5 },
+    { kw: 'taiwan strait', weight: 6 }, { kw: 'south china sea', weight: 3 },
+    { kw: 'pla navy', weight: 4 }, { kw: 'one china', weight: 3 },
+  ],
 };
 
 function matchConflict(title: string, description: string): string | null {
-  const text = (title + ' ' + description).toLowerCase();
-  let bestId: string | null = null;
-  let bestScore = 0;
+  const titleLow = title.toLowerCase();
+  const descLow = description.toLowerCase();
+  const scores: Record<string, number> = {};
+
   for (const [id, keywords] of Object.entries(CONFLICT_KEYWORDS)) {
     let score = 0;
-    for (const kw of keywords) {
-      if (text.includes(kw)) score++;
+    for (const { kw, weight } of keywords) {
+      // Title match = 2× weight (title is the strongest signal)
+      if (titleLow.includes(kw)) score += weight * 2;
+      // Description match = 1× weight
+      else if (descLow.includes(kw)) score += weight;
     }
+    if (score > 0) scores[id] = score;
+  }
+
+  // Find the winner
+  let bestId: string | null = null;
+  let bestScore = 0;
+  for (const [id, score] of Object.entries(scores)) {
     if (score > bestScore) {
       bestScore = score;
       bestId = id;
     }
   }
-  return bestScore >= 1 ? bestId : null;
+
+  // Minimum threshold: need at least 3 weighted points to match
+  return bestScore >= 3 ? bestId : null;
 }
 
 function geocodeTitle(title: string, description?: string): { lat: number; lng: number; country: string } | null {

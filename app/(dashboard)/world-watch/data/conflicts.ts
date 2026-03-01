@@ -1,3 +1,10 @@
+export interface ConflictHotspot {
+  label: string;
+  lat: number;
+  lng: number;
+  type: 'chokepoint' | 'frontline' | 'target';
+}
+
 export interface ActiveConflict {
   id: string;
   name: string;
@@ -13,6 +20,7 @@ export interface ActiveConflict {
   keywords: string[];
   color: string;
   severity: 'critical' | 'high' | 'medium';
+  hotspots?: ConflictHotspot[];
 }
 
 export const ACTIVE_CONFLICTS: ActiveConflict[] = [
@@ -36,6 +44,11 @@ export const ACTIVE_CONFLICTS: ActiveConflict[] = [
     keywords: ['ukraine', 'ukrainian', 'kyiv', 'kiev', 'donbas', 'donetsk', 'luhansk', 'crimea', 'kherson', 'zaporizhzhia', 'odesa', 'kharkiv', 'zelensky', 'zelenskyy', 'russian invasion', 'bakhmut', 'avdiivka', 'kursk'],
     color: '#89b4fa',
     severity: 'critical',
+    hotspots: [
+      { label: 'DONBAS FRONT', lat: 48.0, lng: 37.8, type: 'frontline' },
+      { label: 'CRIMEA', lat: 45.3, lng: 34.1, type: 'frontline' },
+      { label: 'KURSK', lat: 51.7, lng: 36.2, type: 'frontline' },
+    ],
   },
   {
     id: 'il-ps',
@@ -60,24 +73,32 @@ export const ACTIVE_CONFLICTS: ActiveConflict[] = [
   },
   {
     id: 'ir-us',
-    name: 'Iran-US/Israel Tensions',
+    name: 'Iran-US/Israel War',
     shortName: 'IRAN',
-    parties: ['Iran', 'United States', 'Israel'],
-    status: 'escalating',
+    parties: ['Iran', 'United States', 'Israel', 'GCC'],
+    status: 'active-war',
     region: 'Middle East / Persian Gulf',
     startDate: '2024-01-01',
-    lat: 32.4,
-    lng: 53.7,
+    lat: 29.0,
+    lng: 52.0,
     zoom: 5,
+    // Extended bounds: Iran + Gulf States + Strait of Hormuz + Red Sea corridor
     bounds: [
-      [40.0, 44.0],
+      [40.0, 36.0],
       [40.0, 63.5],
-      [25.0, 63.5],
-      [25.0, 44.0],
+      [12.0, 63.5],
+      [12.0, 36.0],
     ],
-    keywords: ['iran', 'iranian', 'tehran', 'irgc', 'strait of hormuz', 'persian gulf', 'houthi', 'red sea', 'proxy war', 'nuclear iran', 'sanctions iran', 'axis of resistance'],
+    keywords: ['iran', 'iranian', 'tehran', 'irgc', 'strait of hormuz', 'hormuz', 'persian gulf', 'houthi', 'red sea', 'proxy war', 'nuclear iran', 'sanctions iran', 'axis of resistance', 'dubai', 'abu dhabi', 'bahrain', 'gcc', 'gulf states'],
     color: '#fab387',
-    severity: 'high',
+    severity: 'critical',
+    hotspots: [
+      { label: 'STRAIT OF HORMUZ', lat: 26.56, lng: 56.25, type: 'chokepoint' },
+      { label: 'BAB EL-MANDEB', lat: 12.6, lng: 43.3, type: 'chokepoint' },
+      { label: 'DUBAI', lat: 25.2, lng: 55.3, type: 'target' },
+      { label: 'ABU DHABI', lat: 24.5, lng: 54.7, type: 'target' },
+      { label: 'TEHRAN', lat: 35.69, lng: 51.39, type: 'frontline' },
+    ],
   },
   {
     id: 'sudan',
