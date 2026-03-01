@@ -138,6 +138,8 @@ export default function WorldWatchClient() {
             region: f.region,
             status: f.status,
             type: f.type,
+            shipType: f.shipType || '',
+            sidc: f.sidc || 'SFSPCLCC--',
             composition: (f.composition || []).join(', '),
             notes: f.notes || '',
           },

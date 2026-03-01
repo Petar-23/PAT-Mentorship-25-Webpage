@@ -5,6 +5,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import type { GeoEvent, DataLayer, ThemeColors } from '../types';
 import { severityColors } from '../styles/themes';
+import ms from 'milsymbol';
 
 export interface AircraftInfo {
   icao24: string;
@@ -839,12 +840,19 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       let meta: Record<string, any> = {};
       try { meta = JSON.parse(props?.meta || '{}'); } catch (_) {}
 
-      const flagEmoji = meta.flagship ? '' : '';
       const compositionLines = meta.composition
         ? meta.composition.split(', ').map((s: string) => `<div style="font-size: 9px; color: ${theme.overlay0}; padding: 1px 0;">› ${s}</div>`).join('')
         : '';
 
       const color = props?.color || theme.blue;
+
+      // Generate NATO milsymbol SVG
+      let natoSvg = '';
+      try {
+        const sidc = meta.sidc || 'SFSPCLCC--';
+        const sym = new ms.Symbol(sidc, { size: 40, frame: true, fill: true });
+        natoSvg = sym.asSVG();
+      } catch (_) {}
 
       shipPopup.setLngLat(coords).setHTML(`
         <div style="
@@ -856,16 +864,17 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           font-family: ui-monospace, monospace;
           min-width: 220px;
         ">
+          ${natoSvg ? `<div style="text-align: center; margin-bottom: 8px;">${natoSvg}</div>` : ''}
           <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
             <span style="font-size: 18px;">${meta.countryFlag || '🚢'}</span>
             <div>
               <div style="font-size: 11px; font-weight: 700; color: ${color}; letter-spacing: 0.5px;">${props?.label || ''}</div>
-              <div style="font-size: 9px; color: ${theme.overlay0}; margin-top: 1px;">${meta.type?.replace(/-/g, ' ').toUpperCase() || 'NAVAL UNIT'}</div>
+              <div style="font-size: 9px; color: ${theme.overlay0}; margin-top: 1px;">${meta.shipType || meta.type?.replace(/-/g, ' ').toUpperCase() || 'NAVAL UNIT'}</div>
             </div>
           </div>
           <div style="border-top: 1px solid ${theme.surface0}; padding-top: 6px; margin-bottom: 4px;">
             <div style="font-size: 10px; color: ${theme.subtext0}; margin-bottom: 2px;">⚓ ${meta.flagship || ''}</div>
-            <div style="font-size: 10px; color: ${theme.overlay0};">📍 ${meta.region || ''}</div>
+            <div style="font-size: 10px; color: ${theme.overlay0};">📍 ${meta.region || ''} — ${meta.status || ''}</div>
           </div>
           <div style="
             display: inline-block;
