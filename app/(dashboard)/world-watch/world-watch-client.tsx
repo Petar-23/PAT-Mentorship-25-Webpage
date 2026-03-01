@@ -125,19 +125,37 @@ export default function WorldWatchClient() {
     setThemeToStorage(currentTheme);
   }, [currentTheme]);
 
-  // Load nuclear facilities from static JSON (195 worldwide plants)
+  // Load nuclear facilities from static JSON (237: power plants + enrichment + weapons labs)
   useEffect(() => {
     fetch('/data/nuclear-facilities.json')
       .then(r => r.json())
-      .then((data: Array<{ name: string; country: string; countryCode: string; lat: number; lng: number; capacityMW: number }>) => {
-        const points = data.map((f, i) => ({
-          id: `nf-json-${i}`,
-          lat: f.lat,
-          lng: f.lng,
-          label: f.name,
-          subLabel: `${f.country} · ${f.capacityMW ? f.capacityMW + ' MW' : 'Unknown capacity'}`,
-          color: '#f9e2af',
-        }));
+      .then((data: Array<{ name: string; country: string; countryCode: string; lat: number; lng: number; capacityMW?: number; type?: string; operator?: string }>) => {
+        const TYPE_COLORS: Record<string, string> = {
+          'power-plant': '#f9e2af',  // yellow — civilian
+          'enrichment': '#fab387',   // peach — sensitive
+          'weapons-lab': '#f38ba8',  // red — military
+        };
+        const TYPE_LABELS: Record<string, string> = {
+          'power-plant': 'Power Plant',
+          'enrichment': 'Enrichment Facility',
+          'weapons-lab': 'Weapons Lab / Test Site',
+        };
+        const points = data.map((f, i) => {
+          const facilityType = f.type || 'power-plant';
+          const color = TYPE_COLORS[facilityType] || '#f9e2af';
+          const typeLabel = TYPE_LABELS[facilityType] || 'Nuclear Facility';
+          const capacity = f.capacityMW ? ` · ${f.capacityMW} MW` : '';
+          const operator = f.operator ? ` · ${f.operator}` : '';
+          return {
+            id: `nf-json-${i}`,
+            lat: f.lat,
+            lng: f.lng,
+            label: f.name,
+            subLabel: `${typeLabel} · ${f.country}${capacity}${operator}`,
+            color,
+            meta: { facilityType, operator: f.operator || '', capacityMW: f.capacityMW || 0 },
+          };
+        });
         setLayers(prev => prev.map(l =>
           l.id === 'nuclear' ? { ...l, points } : l
         ));

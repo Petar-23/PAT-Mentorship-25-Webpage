@@ -1492,20 +1492,32 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       const label = props?.label || '';
       const subLabel = props?.subLabel || '';
       const color = props?.color || '#f9e2af';
-      const affiliation = color === '#f38ba8' ? 'SH' : color === '#89b4fa' ? 'SF' : 'SN';
+
+      // Determine facility type from color: yellow=power-plant, peach=enrichment, red=weapons-lab
+      const facilityType = color === '#f38ba8' ? 'weapons-lab' : color === '#fab387' ? 'enrichment' : 'power-plant';
+      const typeIcon = facilityType === 'weapons-lab' ? '⚠' : facilityType === 'enrichment' ? '⚛' : '☢';
+      const typeLabel = facilityType === 'weapons-lab' ? 'WEAPONS LAB / TEST SITE' : facilityType === 'enrichment' ? 'ENRICHMENT FACILITY' : 'POWER PLANT';
+
+      // NATO symbol: hostile if weapons-lab in adversary countries, neutral for enrichment, friendly for power-plant
+      const affiliation = facilityType === 'weapons-lab' ? 'SN' : facilityType === 'enrichment' ? 'SN' : 'SF';
       const sidc = `${affiliation}GPII-----`;
       let natoSvg = '';
       try { const sym = new ms.Symbol(sidc, { size: 30, frame: true, fill: true }); natoSvg = sym.asSVG(); } catch (_) {}
-      const wikiSearchName = `${label} nuclear power plant`;
-      const wikiTitle = label.replace(/\s/g, '_');
-      const wikiUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(label.replace(/\s/g, '_') + '_nuclear_power_plant')}`;
+
+      // Wiki search varies by type
+      const wikiSuffix = facilityType === 'enrichment' ? '' : facilityType === 'weapons-lab' ? '' : ' nuclear power plant';
+      const wikiSearchName = `${label}${wikiSuffix}`;
+      const wikiUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(label.replace(/\s/g, '_'))}`;
       const popupId = `nuc-popup-${Date.now()}`;
 
       nucPopup.setLngLat(coords).setHTML(`
         <div style="background:${theme.mantle}ee;border:1px solid ${color}55;border-radius:6px;padding:10px 12px;backdrop-filter:blur(12px);font-family:ui-monospace,monospace;min-width:220px;">
           ${natoSvg ? `<div style="text-align:center;margin-bottom:6px;">${natoSvg}</div>` : ''}
           <img id="${popupId}-img" style="width:100%;max-height:100px;object-fit:cover;border-radius:4px;margin-bottom:6px;display:none;" />
-          <div style="font-size:11px;font-weight:700;color:${color};letter-spacing:0.5px;margin-bottom:3px;">☢ ${label}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="font-size:11px;font-weight:700;color:${color};letter-spacing:0.5px;">${typeIcon} ${label}</span>
+          </div>
+          <div style="display:inline-block;font-size:8px;padding:1px 5px;background:${color}22;border:1px solid ${color}44;border-radius:3px;color:${color};font-weight:700;letter-spacing:0.8px;margin-bottom:4px;">${typeLabel}</div>
           <div style="font-size:10px;color:${theme.subtext0};margin-bottom:4px;">${subLabel}</div>
           <div style="border-top:1px solid ${theme.surface0};padding-top:6px;font-size:9px;">
             <a href="${wikiUrl}" target="_blank" style="color:${color};text-decoration:none;opacity:0.8;">Wikipedia ↗</a>
