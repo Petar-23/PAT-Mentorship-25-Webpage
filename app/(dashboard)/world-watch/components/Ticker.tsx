@@ -15,8 +15,14 @@ export function Ticker({ events, theme }: Props) {
     new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
 
-  // Double the events for seamless loop
-  const items = [...sorted, ...sorted];
+  // Only show severity >= 2 in ticker to avoid clutter, max 20 items
+  const tickerEvents = sorted.filter(e => e.severity >= 2).slice(0, 20);
+
+  // Double for seamless loop
+  const items = [...tickerEvents, ...tickerEvents];
+
+  // Duration scales with content: ~8s per event, minimum 60s
+  const duration = Math.max(60, tickerEvents.length * 8);
 
   return (
     <div style={{
@@ -52,7 +58,7 @@ export function Ticker({ events, theme }: Props) {
         display: 'flex',
         alignItems: 'center',
         whiteSpace: 'nowrap',
-        animation: 'wwTicker 120s linear infinite',
+        animation: `wwTicker ${duration}s linear infinite`,
         fontSize: 12,
       }}>
         {items.map((e, i) => (
