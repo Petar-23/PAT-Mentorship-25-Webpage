@@ -116,7 +116,7 @@ export default function WorldWatchClient() {
       {/* Global Styles for World Watch */}
       <style>{`
         @font-face {
-          font-family: 'Geist Pixel';
+          font-family: 'Geist Pixel Fallback';
           src: url('/fonts/GeistPixel-Line.woff2') format('woff2');
           font-weight: 500;
           font-style: normal;
@@ -124,13 +124,18 @@ export default function WorldWatchClient() {
         }
 
         .ww-root {
-          font-family: 'Geist Pixel', 'Geist Mono', ui-monospace, monospace !important;
+          font-family: var(--font-geist-pixel-line), 'Geist Pixel Fallback', ui-monospace, 'SFMono-Regular', monospace !important;
           font-size: 13px;
+          line-height: 1.5;
         }
 
         .ww-root *, .ww-root *::before, .ww-root *::after {
           box-sizing: border-box;
-          font-family: inherit;
+          font-family: inherit !important;
+        }
+
+        .ww-root select, .ww-root button, .ww-root input {
+          font-family: inherit !important;
         }
 
         @keyframes wwBlink {

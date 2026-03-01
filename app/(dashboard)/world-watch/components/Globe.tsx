@@ -60,29 +60,15 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
       .showAtmosphere(true)
       .atmosphereColor('#ffffff')
       .atmosphereAltitude(0.12)
-      // Use HTML elements for FLAT DOT markers (not pointsData which renders cylinders)
-      .htmlElementsData(geoEvents)
-      .htmlLat('lat')
-      .htmlLng('lng')
-      .htmlAltitude(0.01)
-      .htmlElement((d: GeoEvent) => {
-        const color = colors[d.severity];
-        const size = d.severity === 4 ? 16 : d.severity === 3 ? 12 : 8;
-        const el = document.createElement('div');
-        el.style.width = `${size}px`;
-        el.style.height = `${size}px`;
-        el.style.borderRadius = '50%';
-        el.style.background = color;
-        el.style.boxShadow = `0 0 ${size}px ${color}88, 0 0 ${size * 2}px ${color}44`;
-        el.style.border = `1.5px solid ${color}`;
-        el.style.cursor = 'pointer';
-        el.style.transition = 'transform 0.2s';
-        el.title = d.title;
-        el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.4)'; });
-        el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
-        el.addEventListener('click', () => onSelect(d));
-        return el;
-      })
+      // Event markers — cylinders with minimal height (rounded cap look)
+      .pointsData(geoEvents)
+      .pointLat('lat')
+      .pointLng('lng')
+      .pointAltitude(0.005)
+      .pointRadius((d: GeoEvent) => d.severity === 4 ? 0.6 : d.severity === 3 ? 0.4 : 0.25)
+      .pointColor((d: GeoEvent) => colors[d.severity])
+      .pointResolution(64)
+      .onPointClick((point: GeoEvent) => onSelect(point))
       // Pulse rings on critical events
       .ringsData(geoEvents.filter(e => e.severity >= 3))
       .ringLat('lat')
@@ -91,14 +77,14 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
       .ringPropagationSpeed(1.2)
       .ringRepeatPeriod((d: GeoEvent) => d.severity === 4 ? 900 : 1400)
       .ringColor(() => () => theme.red + '40')
-      // Country labels
+      // Country labels — larger font
       .labelsData(geoEvents.filter(e => e.severity >= 3))
       .labelLat('lat')
       .labelLng('lng')
       .labelText('country')
-      .labelSize(0.7)
-      .labelDotRadius(0)
-      .labelColor(() => '#ffffffbb')
+      .labelSize(1.4)
+      .labelDotRadius(0.3)
+      .labelColor(() => '#ffffffcc')
       .labelAltitude(0.015)
       // Undersea cables as arcs
       .arcsData(cableArcs)
