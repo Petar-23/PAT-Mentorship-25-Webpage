@@ -59,7 +59,7 @@ function getTzFromStorage(): string {
 
 export function EconCalendar({ theme }: Props) {
   const [currencyFilter, setCurrencyFilter] = useState('USD');
-  const [impactFilter, setImpactFilter] = useState<Set<string>>(new Set(['HIGH', 'MEDIUM']));
+  const [impactFilter, setImpactFilter] = useState<string[]>(['HIGH', 'MEDIUM']);
   const [timezone, setTimezone] = useState('America/New_York');
   const [weekOffset, setWeekOffset] = useState(0);
   const [calendarData, setCalendarData] = useState<EconCalendarEntry[]>([]);
@@ -113,13 +113,10 @@ export function EconCalendar({ theme }: Props) {
 
   const handleToggleImpact = useCallback((level: string) => {
     setImpactFilter(prev => {
-      const next = new Set(prev);
-      if (next.has(level)) {
-        next.delete(level);
-      } else {
-        next.add(level);
+      if (prev.includes(level)) {
+        return prev.filter(l => l !== level);
       }
-      return next;
+      return [...prev, level];
     });
   }, []);
 
@@ -127,9 +124,9 @@ export function EconCalendar({ theme }: Props) {
     return calendarData.filter(entry => {
       if (currencyFilter !== 'ALL' && entry.currency !== currencyFilter) return false;
       // If no impact filters selected, show all
-      if (impactFilter.size === 0) return true;
+      if (impactFilter.length === 0) return true;
       const level = entry.impact === 3 ? 'HIGH' : entry.impact === 2 ? 'MEDIUM' : 'LOW';
-      return impactFilter.has(level);
+      return impactFilter.includes(level);
     });
   }, [currencyFilter, impactFilter, calendarData]);
 
@@ -169,7 +166,7 @@ export function EconCalendar({ theme }: Props) {
         </select>
         {/* Impact multi-select badges */}
         {(['HIGH', 'MEDIUM', 'LOW'] as const).map(level => {
-          const active = impactFilter.has(level);
+          const active = impactFilter.includes(level);
           const color = level === 'HIGH' ? theme.red : level === 'MEDIUM' ? theme.peach : theme.yellow;
           return (
             <button

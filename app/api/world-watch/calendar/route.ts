@@ -25,7 +25,7 @@ export async function GET() {
       id: `ff-${i}`,
       time: e.date,
       currency: e.country,
-      impact: e.impact === 'High' ? 3 : e.impact === 'Medium' ? 2 : e.impact === 'Low' ? 1 : 0,
+      impact: e.impact === 'High' ? 3 : e.impact === 'Medium' ? 2 : (e.impact === 'Low' || e.impact === 'Holiday' || e.impact === 'Non-Economic') ? 1 : 0,
       event: e.title,
       forecast: e.forecast || '',
       previous: e.previous || '',
