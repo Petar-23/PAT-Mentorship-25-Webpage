@@ -48,41 +48,78 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
     mapRef.current = map;
 
     map.on('style.load', () => {
-      // FLIR/thermal atmosphere — near-black space
+      // Catppuccin-tinted atmosphere with muted starfield
       // @ts-ignore setFog (mapbox-gl v3)
       map.setFog({
-        color: '#080810',
-        'high-color': '#0c0c18',
-        'horizon-blend': 0.04,
-        'space-color': '#060610',
-        'star-intensity': 0.04,
+        color: theme.crust,
+        'high-color': theme.mantle,
+        'horizon-blend': 0.06,
+        'space-color': theme.crust,
+        'star-intensity': 0.15,
       });
 
-      // FLIR look: strip labels, darken water, brighten land borders
+      // FLIR/tactical look with Catppuccin slate shades
       const style = map.getStyle();
       if (style?.layers) {
         for (const layer of style.layers) {
-          // Remove all text labels (country names, city names, ocean names)
+          // Remove all default labels except our custom ones
           if (layer.type === 'symbol') {
             map.setLayoutProperty(layer.id, 'visibility', 'none');
           }
-          // Darken water
+          // Water: very dark Catppuccin crust
           if (layer.id.includes('water') && layer.type === 'fill') {
-            try { map.setPaintProperty(layer.id, 'fill-color', '#080810'); } catch (_) {}
+            try { map.setPaintProperty(layer.id, 'fill-color', '#11111b'); } catch (_) {}
           }
-          // Subtle land
-          if (layer.id.includes('land') && layer.type === 'fill') {
-            try { map.setPaintProperty(layer.id, 'fill-color', '#141420'); } catch (_) {}
-          }
-          // Dim admin boundaries to subtle glow lines
+          // Country borders: thin dashed Catppuccin subtext
           if (layer.id.includes('admin') && layer.type === 'line') {
             try {
-              map.setPaintProperty(layer.id, 'line-color', '#2a2a40');
-              map.setPaintProperty(layer.id, 'line-opacity', 0.5);
+              map.setPaintProperty(layer.id, 'line-color', '#585b70');
+              map.setPaintProperty(layer.id, 'line-opacity', 0.45);
+              map.setPaintProperty(layer.id, 'line-width', 0.6);
+              map.setPaintProperty(layer.id, 'line-dasharray', [3, 2]);
             } catch (_) {}
           }
         }
       }
+
+      // Variation in landmass shading — Catppuccin slate/surface palette
+      // Use a fill-extrusion or override the land with continent-scale variation
+      // Override the single land fill with a data-driven expression
+      try {
+        const landLayers = style?.layers?.filter((l: { id: string; type: string }) =>
+          l.id.includes('land') && l.type === 'fill'
+        ) || [];
+        for (const layer of landLayers) {
+          // Use latitude-based shading for natural variation
+          // Northern regions slightly lighter, equatorial slightly different
+          map.setPaintProperty(layer.id, 'fill-color', [
+            'interpolate', ['linear'], ['zoom'],
+            0, '#1e1e2e',  // Catppuccin base at low zoom
+            3, '#181825',  // Catppuccin mantle at mid zoom
+            6, '#1e1e2e',  // base again at higher zoom
+          ]);
+        }
+      } catch (_) {}
+
+      // Add a continent-scale variation layer using built-in landuse
+      // This gives different shades for forests, urban, etc.
+      try {
+        const landuseLayer = style?.layers?.find((l: { id: string }) => l.id.includes('landuse'));
+        if (landuseLayer) {
+          map.setPaintProperty(landuseLayer.id, 'fill-color', [
+            'match', ['get', 'class'],
+            'park', '#1a1a2e',
+            'glacier', '#2a2a3e',
+            'pitch', '#161628',
+            'sand', '#1c1c30',
+            'hospital', '#1e1e32',
+            'school', '#1a1a2c',
+            'industrial', '#16162a',
+            '#1e1e2e',  // default
+          ]);
+          map.setPaintProperty(landuseLayer.id, 'fill-opacity', 0.8);
+        }
+      } catch (_) {}
 
       // Events GeoJSON source
       map.addSource('events', {
@@ -165,14 +202,47 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
         filter: ['==', 'name_en', ''],
       });
 
-      // No text labels on globe — FLIR clean look
+      // Country labels only where events exist
+      map.addLayer({
+        id: 'event-labels',
+        type: 'symbol',
+        source: 'events',
+        filter: ['>=', ['get', 'severity'], 3],
+        layout: {
+          'text-field': ['get', 'country'],
+          'text-size': 11,
+          'text-offset': [0, 1.8],
+          'text-anchor': 'top',
+          'text-allow-overlap': false,
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+        },
+        paint: {
+          'text-color': '#cdd6f4',
+          'text-halo-color': '#11111b',
+          'text-halo-width': 1.5,
+        },
+      });
     });
 
-    // Click handler
-    // Click on empty space clears country highlight
-    map.on('click', (e) => {
-      const features = map.queryRenderedFeatures(e.point, { layers: ['event-circles'] });
-      if (!features || features.length === 0) {
+    // Click handlers — marker click highlights, empty click clears
+    let markerClicked = false;
+
+    map.on('click', 'event-circles', (e) => {
+      markerClicked = true;
+      if (e.features && e.features[0]) {
+        const id = e.features[0].properties?.id;
+        const event = events.find(ev => ev.id === id);
+        if (event) onSelect(event);
+      }
+    });
+
+    map.on('click', () => {
+      // Defer so marker click fires first
+      setTimeout(() => {
+        if (markerClicked) {
+          markerClicked = false;
+          return;
+        }
         // Clicked empty space — clear highlights
         if (map.getLayer('country-highlight-fill')) {
           map.setFilter('country-highlight-fill', ['==', 'name_en', '']);
@@ -180,15 +250,7 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
         if (map.getLayer('country-highlight-line')) {
           map.setFilter('country-highlight-line', ['==', 'name_en', '']);
         }
-      }
-    });
-
-    map.on('click', 'event-circles', (e) => {
-      if (e.features && e.features[0]) {
-        const id = e.features[0].properties?.id;
-        const event = events.find(ev => ev.id === id);
-        if (event) onSelect(event);
-      }
+      }, 50);
     });
 
     map.on('mouseenter', 'event-circles', () => {
