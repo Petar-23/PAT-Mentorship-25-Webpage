@@ -175,19 +175,84 @@ export default function WorldWatchClient() {
   // Fetch FR24 military aircraft feed (proxied server-side to avoid CORS)
   useEffect(() => {
     // Military ICAO hex ranges (3fc-3fe REMOVED: catches German civilian ultralights D-M*)
-    const MIL_HEX = ['ae', 'af', '43c', '43d', '43e', '43f'];
-    const MIL_CS = ['RCH','REACH','DUKE','EVAC','IRON','GIANT','COBRA','VIPER','SAM','SPAR',
+    // Safe hex ranges only: ae/af = USAF, 43c-43f = RAF, 73 = Iran (almost all mil), 74 = Iraq (small block)
+    const MIL_HEX = ['ae', 'af', '43c', '43d', '43e', '43f', '73', '74'];
+    const MIL_CS = [
+      // USAF
+      'RCH','REACH','DUKE','EVAC','IRON','GIANT','COBRA','VIPER','SAM','SPAR',
       'EXEC','DARK','GHOST','MANTA','SHARK','FAMUS','BALL','ROCKY','OUTLW','REAPER','FORGE',
+      'FORTE','JAKE','LAGR',
+      // Canada
       'CFC','CANAF','CANFORCE','RCAF',
-      'GAF','GAFM','GERMAN'];  // Luftwaffe by callsign only
+      // Germany Luftwaffe
+      'GAF','GAFM','GERMAN',
+      // UK RAF
+      'ASCOT','TARTN',
+      // France
+      'FAF','CTM',
+      // Russia (hostile)
+      'RRR','RFF','RSD',
+      // Iran
+      'IRIAF','IRGC',
+      // Iraq
+      'IQA',
+      // China
+      'CCA','CHH','CXA',
+      // Pakistan
+      'PAF',
+      // NATO
+      'NATO','NCHO',
+      // Turkey
+      'TURAF',
+      // Japan
+      'JASDF',
+      // South Korea
+      'ROKAF',
+      // Australia (callsign only — 7c hex too broad)
+      'RAAF',
+      // India (callsign only)
+      'IAF',
+    ];
 
     function getAirForceInfo(icao24: string, callsign: string): { color: string; airForce: string } {
       const hex = icao24.toLowerCase();
       const cs = callsign.toUpperCase();
+      // US Military
       if (hex.startsWith('ae') || hex.startsWith('af')) return { color: '#89b4fa', airForce: 'USAF' };
-      if (hex.startsWith('43c') || hex.startsWith('43d') || hex.startsWith('43e') || hex.startsWith('43f')) return { color: '#cba6f7', airForce: 'RAF' };
-      if (cs.startsWith('GAF') || cs.startsWith('GERMAN')) return { color: '#f9e2af', airForce: 'Luftwaffe' };
-      if (cs.startsWith('CFC') || cs.startsWith('CANAF') || cs.startsWith('RCAF')) return { color: '#94e2d5', airForce: 'RCAF' };
+      if (['FORTE','JAKE','LAGR'].some(p => cs.startsWith(p))) return { color: '#89b4fa', airForce: 'USAF' };
+      // UK RAF
+      if (['43c','43d','43e','43f'].some(p => hex.startsWith(p))) return { color: '#cba6f7', airForce: 'RAF' };
+      if (['ASCOT','TARTN'].some(p => cs.startsWith(p))) return { color: '#cba6f7', airForce: 'RAF' };
+      // Germany Luftwaffe
+      if (cs.startsWith('GAF') || cs.startsWith('GAFM') || cs.startsWith('GERMAN')) return { color: '#f9e2af', airForce: 'Luftwaffe' };
+      // Canada RCAF
+      if (['CFC','CANAF','CANFORCE','RCAF'].some(p => cs.startsWith(p))) return { color: '#94e2d5', airForce: 'RCAF' };
+      // France
+      if (cs.startsWith('FAF') || cs.startsWith('CTM')) return { color: '#74c7ec', airForce: 'Armée de l\'Air' };
+      // Russia (hostile)
+      if (['RRR','RFF','RSD'].some(p => cs.startsWith(p))) return { color: '#f38ba8', airForce: 'VKS (Russia)' };
+      // Iran (hostile)
+      if (hex.startsWith('73')) return { color: '#f38ba8', airForce: 'IRIAF (Iran)' };
+      if (['IRIAF','IRGC'].some(p => cs.startsWith(p))) return { color: '#f38ba8', airForce: 'IRIAF (Iran)' };
+      // Iraq
+      if (hex.startsWith('74')) return { color: '#fab387', airForce: 'IqAF (Iraq)' };
+      if (cs.startsWith('IQA')) return { color: '#fab387', airForce: 'IqAF (Iraq)' };
+      // China (hostile)
+      if (['CCA','CHH','CXA'].some(p => cs.startsWith(p))) return { color: '#f38ba8', airForce: 'PLAAF (China)' };
+      // Pakistan
+      if (cs.startsWith('PAF')) return { color: '#fab387', airForce: 'PAF (Pakistan)' };
+      // NATO
+      if (['NATO','NCHO'].some(p => cs.startsWith(p))) return { color: '#74c7ec', airForce: 'NATO' };
+      // Turkey
+      if (cs.startsWith('TURAF')) return { color: '#f9e2af', airForce: 'TurAF' };
+      // Japan
+      if (cs.startsWith('JASDF')) return { color: '#94e2d5', airForce: 'JASDF' };
+      // South Korea
+      if (cs.startsWith('ROKAF')) return { color: '#94e2d5', airForce: 'ROKAF' };
+      // Australia
+      if (cs.startsWith('RAAF')) return { color: '#94e2d5', airForce: 'RAAF' };
+      // India
+      if (cs.startsWith('IAF')) return { color: '#a6e3a1', airForce: 'IAF (India)' };
       return { color: '#a6adc8', airForce: 'Military' };
     }
 

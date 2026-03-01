@@ -695,11 +695,34 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     }
 
     function getAirForceLabel(airForce: string): string {
-      if (airForce === 'USAF') return '🇺🇸 USAF';
-      if (airForce === 'RAF') return '🇬🇧 RAF';
-      if (airForce === 'Luftwaffe') return '🇩🇪 Luftwaffe';
-      if (airForce === 'RCAF') return '🇨🇦 RCAF';
-      return `${airForce || 'Military'}`;
+      const labels: Record<string, string> = {
+        'USAF': '🇺🇸 USAF',
+        'RAF': '🇬🇧 RAF',
+        'Luftwaffe': '🇩🇪 Luftwaffe',
+        'RCAF': '🇨🇦 RCAF',
+        'Armée de l\'Air': '🇫🇷 Armée de l\'Air',
+        'VKS (Russia)': '🇷🇺 VKS (Russia)',
+        'IRIAF (Iran)': '🇮🇷 IRIAF (Iran)',
+        'IqAF (Iraq)': '🇮🇶 IqAF (Iraq)',
+        'PLAAF (China)': '🇨🇳 PLAAF (China)',
+        'PAF (Pakistan)': '🇵🇰 PAF (Pakistan)',
+        'NATO': '🔷 NATO',
+        'TurAF': '🇹🇷 TurAF',
+        'JASDF': '🇯🇵 JASDF',
+        'ROKAF': '🇰🇷 ROKAF',
+        'RAAF': '🇦🇺 RAAF',
+        'IAF (India)': '🇮🇳 IAF (India)',
+      };
+      return labels[airForce] || `${airForce || 'Military'}`;
+    }
+
+    function getAircraftSIDC(airForce: string): string {
+      const hostile = ['VKS (Russia)', 'IRIAF (Iran)', 'PLAAF (China)'];
+      const neutral = ['IqAF (Iraq)', 'PAF (Pakistan)', 'Military'];
+      if (hostile.includes(airForce)) return 'SHAPCF----';
+      if (neutral.includes(airForce)) return 'SNAPCF----';
+      if (airForce && !neutral.includes(airForce)) return 'SFAPCF----';
+      return 'SUAPCF----';
     }
 
     // Hover: only change cursor (no popup on hover anymore)
@@ -742,6 +765,14 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       const popupId = `ac-popup-${icao}`;
       const fr24Link = `https://www.flightradar24.com/${callsign.toLowerCase()}`;
 
+      // Generate NATO milsymbol for aircraft
+      let acNatoSvg = '';
+      try {
+        const acSidc = getAircraftSIDC(airForce);
+        const acSym = new ms.Symbol(acSidc, { size: 30, frame: true, fill: true });
+        acNatoSvg = acSym.asSVG();
+      } catch (_) {}
+
       acPopup.setLngLat(coords).setHTML(`
         <div id="${popupId}" style="
           background: ${theme.mantle}dd;
@@ -753,6 +784,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           font-family: inherit;
           width: 270px;
         ">
+          ${acNatoSvg ? `<div style="text-align: center; margin-bottom: 6px;">${acNatoSvg}</div>` : ''}
           <div id="${popupId}-img" style="margin-bottom: 6px;"></div>
           <div style="font-size: 11px; font-weight: 700; color: ${acColor}; letter-spacing: 1px; margin-bottom: 3px;">
             ✈ ${callsign}
@@ -829,9 +861,9 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     // ─── SHIPS CLICK POPUP ────────────────────────────────────────────────────
     // Ships use dedicated ship-icons symbol layer (not generic circles)
     const shipPopup = new mapboxgl.Popup({
-      closeButton: true,
+      closeButton: false,
       closeOnClick: false,
-      maxWidth: '280px',
+      maxWidth: '300px',
       className: 'ww-marker-popup',
     });
 
@@ -861,6 +893,9 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         natoSvg = sym.asSVG();
       } catch (_) {}
 
+      const shipImageUrl = meta.imageUrl || '';
+      const shipWikiUrl = meta.wikiUrl || `https://en.wikipedia.org/wiki/${encodeURIComponent((meta.flagship || props?.label || '').replace(/\s/g, '_'))}`;
+
       shipPopup.setLngLat(coords).setHTML(`
         <div style="
           background: ${theme.mantle}ee;
@@ -869,9 +904,10 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           padding: 10px 12px;
           backdrop-filter: blur(12px);
           font-family: ui-monospace, monospace;
-          min-width: 220px;
+          min-width: 240px;
         ">
           ${natoSvg ? `<div style="text-align: center; margin-bottom: 8px;">${natoSvg}</div>` : ''}
+          ${shipImageUrl ? `<img src="${shipImageUrl}" onerror="this.style.display='none'" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; border: 1px solid ${color}33;" />` : ''}
           <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
             <span style="font-size: 18px;">${meta.countryFlag || '🚢'}</span>
             <div>
@@ -901,6 +937,10 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             ${compositionLines}
           </div>` : ''}
           ${meta.notes ? `<div style="margin-top: 4px; font-size: 9px; color: ${theme.subtext0}; font-style: italic;">${meta.notes}</div>` : ''}
+          <div style="margin-top: 8px; border-top: 1px solid ${theme.surface0}; padding-top: 6px; display: flex; gap: 8px; font-size: 9px;">
+            <a href="${shipWikiUrl}" target="_blank" style="color: ${color}; text-decoration: none; opacity: 0.8;">Wikipedia ↗</a>
+            <a href="https://news.usni.org/category/fleet-tracker" target="_blank" style="color: ${theme.overlay0}; text-decoration: none; opacity: 0.8;">USNI Fleet ↗</a>
+          </div>
         </div>
       `).addTo(map);
     });
