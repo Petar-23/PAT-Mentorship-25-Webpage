@@ -70,7 +70,7 @@ export default function WorldWatchClient() {
   const [isRotating, setIsRotating] = useState(true);
   const globeRef = useRef<GlobeHandle>(null);
   const [liveEvents, setLiveEvents] = useState<GeoEvent[]>([]);
-  const [aircraftTracks, setAircraftTracks] = useState<any[]>([]);
+  // Aircraft tracks are now fetched on-demand by Globe (hover/click)
 
   const theme = themes[currentTheme];
 
@@ -131,7 +131,7 @@ export default function WorldWatchClient() {
               })),
             };
           }));
-          setAircraftTracks(aircraft.filter((ac: any) => ac.track?.length > 1));
+          // Tracks fetched on-demand by Globe on hover/click
         })
         .catch(() => {});
     };
@@ -420,7 +420,7 @@ export default function WorldWatchClient() {
                 focusCounter={focusCounter}
                 theme={theme}
                 onRotationChange={setIsRotating}
-                aircraftTracks={aircraftTracks}
+                
               />
 
               {/* Left Sidebar Widgets — floating cards */}

@@ -23,7 +23,6 @@ interface Props {
   focusCounter: number; // increments on every select to force re-trigger
   theme: ThemeColors;
   onRotationChange?: (rotating: boolean) => void;
-  aircraftTracks?: any[];
 }
 
 const COUNTRY_NAME_MAP: Record<string, string> = {
@@ -36,7 +35,7 @@ const DEFAULT_CENTER: [number, number] = [20, 30];
 const DEFAULT_ZOOM = 1.8;
 
 export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
-  { events, layers, onSelect, focusEvent, focusCounter, theme, onRotationChange, aircraftTracks = [] },
+  { events, layers, onSelect, focusEvent, focusCounter, theme, onRotationChange },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -343,21 +342,133 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         },
       });
 
-      // Aircraft flight tracks
-      map.addSource('aircraft-tracks', {
+      // ─── AIRCRAFT SYSTEM ──────────────────────────────────────────────
+
+      // Load aircraft icon
+      const img = new Image(24, 24);
+      img.onload = () => {
+        if (!map.hasImage('aircraft-icon')) {
+          map.addImage('aircraft-icon', img, { sdf: true });
+        }
+      };
+      img.src = '/icons/aircraft.svg';
+
+      // Aircraft positions source (populated by live OpenSky data via layers)
+      map.addSource('aircraft-live', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
       });
+
+      // Aircraft icons (rotated by heading)
       map.addLayer({
-        id: 'aircraft-tracks-solid',
+        id: 'aircraft-icons',
+        type: 'symbol',
+        source: 'aircraft-live',
+        layout: {
+          'icon-image': 'aircraft-icon',
+          'icon-size': 0.8,
+          'icon-rotate': ['get', 'heading'],
+          'icon-rotation-alignment': 'map',
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+        },
+        paint: {
+          'icon-color': ['get', 'color'],
+          'icon-opacity': 0.9,
+        },
+      });
+
+      // Aircraft callsign labels (zoom >= 4)
+      map.addLayer({
+        id: 'aircraft-labels',
+        type: 'symbol',
+        source: 'aircraft-live',
+        minzoom: 4,
+        layout: {
+          'text-field': ['get', 'callsign'],
+          'text-size': 9,
+          'text-offset': [0, 1.5],
+          'text-anchor': 'top',
+          'text-allow-overlap': false,
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+        },
+        paint: {
+          'text-color': '#89b4fa',
+          'text-halo-color': '#11111b',
+          'text-halo-width': 1,
+        },
+      });
+
+      // Aircraft track source (for hover/click route display)
+      map.addSource('aircraft-track-line', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+
+      // Solid line: takeoff → current position (completed path)
+      map.addLayer({
+        id: 'aircraft-track-solid',
         type: 'line',
-        source: 'aircraft-tracks',
+        source: 'aircraft-track-line',
+        filter: ['==', ['get', 'segment'], 'completed'],
         paint: {
           'line-color': '#89b4fa',
           'line-width': 1.5,
-          'line-opacity': 0.6,
+          'line-opacity': 0.7,
         },
         layout: { 'line-cap': 'round' },
+      });
+
+      // Dashed line: current position → projected destination
+      map.addLayer({
+        id: 'aircraft-track-dashed',
+        type: 'line',
+        source: 'aircraft-track-line',
+        filter: ['==', ['get', 'segment'], 'projected'],
+        paint: {
+          'line-color': '#89b4fa',
+          'line-width': 1,
+          'line-opacity': 0.4,
+          'line-dasharray': [4, 4],
+        },
+        layout: { 'line-cap': 'round' },
+      });
+
+      // Takeoff dot
+      map.addSource('aircraft-endpoints', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+
+      map.addLayer({
+        id: 'aircraft-endpoints-dots',
+        type: 'circle',
+        source: 'aircraft-endpoints',
+        paint: {
+          'circle-radius': 4,
+          'circle-color': '#89b4fa',
+          'circle-opacity': 0.8,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#11111b',
+        },
+      });
+
+      map.addLayer({
+        id: 'aircraft-endpoints-labels',
+        type: 'symbol',
+        source: 'aircraft-endpoints',
+        layout: {
+          'text-field': ['get', 'label'],
+          'text-size': 9,
+          'text-offset': [0, 1.2],
+          'text-anchor': 'top',
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+        },
+        paint: {
+          'text-color': '#89b4fa',
+          'text-halo-color': '#11111b',
+          'text-halo-width': 1,
+        },
       });
     });
 
@@ -428,6 +539,168 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     map.on('mouseleave', 'event-circles', () => {
       map.getCanvas().style.cursor = '';
       popup.remove();
+    });
+
+    // ─── AIRCRAFT INTERACTION ──────────────────────────────────────────
+    let pinnedAircraft: string | null = null;
+    let hoverTrackAbort: AbortController | null = null;
+
+    const acPopup = new mapboxgl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      maxWidth: '300px',
+      className: 'ww-marker-popup',
+    });
+
+    function clearAircraftRoute() {
+      try {
+        const trackSrc = map.getSource('aircraft-track-line') as mapboxgl.GeoJSONSource | undefined;
+        const endSrc = map.getSource('aircraft-endpoints') as mapboxgl.GeoJSONSource | undefined;
+        if (trackSrc) trackSrc.setData({ type: 'FeatureCollection', features: [] });
+        if (endSrc) endSrc.setData({ type: 'FeatureCollection', features: [] });
+      } catch (_) {}
+    }
+
+    function showAircraftRoute(track: [number, number][], acLng: number, acLat: number, heading: number) {
+      try {
+        const trackSrc = map.getSource('aircraft-track-line') as mapboxgl.GeoJSONSource | undefined;
+        const endSrc = map.getSource('aircraft-endpoints') as mapboxgl.GeoJSONSource | undefined;
+        if (!trackSrc || !endSrc) return;
+
+        const features: any[] = [];
+
+        // Solid line: completed path (track history)
+        if (track.length >= 2) {
+          features.push({
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: track },
+            properties: { segment: 'completed' },
+          });
+        }
+
+        // Dashed line: projected path (heading extrapolation ~500km)
+        const projDist = 5; // ~5 degrees ≈ 500km
+        const hdgRad = (heading * Math.PI) / 180;
+        const projLng = acLng + Math.sin(hdgRad) * projDist;
+        const projLat = acLat + Math.cos(hdgRad) * projDist;
+        features.push({
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: [[acLng, acLat], [projLng, projLat]] },
+          properties: { segment: 'projected' },
+        });
+
+        trackSrc.setData({ type: 'FeatureCollection', features });
+
+        // Endpoints: takeoff + projected destination
+        const endpoints: any[] = [];
+        if (track.length >= 2) {
+          endpoints.push({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: track[0] },
+            properties: { label: 'TAKEOFF' },
+          });
+        }
+        endpoints.push({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [projLng, projLat] },
+          properties: { label: 'PROJECTED' },
+        });
+        endSrc.setData({ type: 'FeatureCollection', features: endpoints });
+      } catch (_) {}
+    }
+
+    async function fetchAndShowTrack(icao24: string, acLng: number, acLat: number, heading: number) {
+      if (hoverTrackAbort) hoverTrackAbort.abort();
+      hoverTrackAbort = new AbortController();
+      try {
+        const res = await fetch(`/api/world-watch/opensky-track?icao24=${icao24}`, {
+          signal: hoverTrackAbort.signal,
+        });
+        const data = await res.json();
+        if (data.track?.length >= 2) {
+          showAircraftRoute(data.track, acLng, acLat, heading);
+        } else {
+          // No track available, show just projected line
+          showAircraftRoute([], acLng, acLat, heading);
+        }
+      } catch (_) {
+        showAircraftRoute([], acLng, acLat, heading);
+      }
+    }
+
+    map.on('mouseenter', 'aircraft-icons', (e) => {
+      map.getCanvas().style.cursor = 'pointer';
+      if (!e.features || !e.features[0]) return;
+      const props = e.features[0].properties;
+      const coords = (e.features[0].geometry as any).coordinates.slice() as [number, number];
+
+      acPopup.setLngLat(coords).setHTML(`
+        <div style="
+          background: ${theme.mantle};
+          border: 1px solid ${theme.surface0};
+          border-left: 3px solid #89b4fa;
+          padding: 8px 10px;
+          font-family: inherit;
+          max-width: 280px;
+        ">
+          <div style="font-size: 10px; font-weight: 700; color: #89b4fa; letter-spacing: 1px; margin-bottom: 4px;">
+            ✈ ${props?.callsign || 'UNKNOWN'}
+          </div>
+          <div style="font-size: 11px; color: ${theme.text}; margin-bottom: 2px;">
+            ${props?.country || 'Unknown'} Military
+          </div>
+          <div style="font-size: 10px; color: ${theme.overlay0}; display: flex; gap: 8px;">
+            <span>FL${Math.round((props?.altitude || 0) / 30.48)}</span>
+            <span>${props?.velocity || 0} kt</span>
+            <span>HDG ${props?.heading || 0}°</span>
+          </div>
+        </div>
+      `).addTo(map);
+
+      // Show track on hover (unless pinned to different aircraft)
+      if (!pinnedAircraft) {
+        fetchAndShowTrack(props?.icao24, coords[0], coords[1], props?.heading || 0);
+      }
+    });
+
+    map.on('mouseleave', 'aircraft-icons', () => {
+      map.getCanvas().style.cursor = '';
+      acPopup.remove();
+      // Clear route on mouse leave (unless pinned)
+      if (!pinnedAircraft) {
+        if (hoverTrackAbort) hoverTrackAbort.abort();
+        clearAircraftRoute();
+      }
+    });
+
+    // Click aircraft: pin route
+    map.on('click', 'aircraft-icons', (e) => {
+      markerClicked = true;
+      stopRotation();
+      if (!e.features || !e.features[0]) return;
+      const props = e.features[0].properties;
+      const coords = (e.features[0].geometry as any).coordinates.slice() as [number, number];
+      const icao = props?.icao24;
+
+      if (pinnedAircraft === icao) {
+        // Unpin
+        pinnedAircraft = null;
+        clearAircraftRoute();
+      } else {
+        pinnedAircraft = icao;
+        fetchAndShowTrack(icao, coords[0], coords[1], props?.heading || 0);
+      }
+    });
+
+    // Click empty space: also unpin aircraft
+    map.on('click', () => {
+      setTimeout(() => {
+        if (markerClicked) return;
+        if (pinnedAircraft) {
+          pinnedAircraft = null;
+          clearAircraftRoute();
+        }
+      }, 60);
     });
 
     // Stop rotation on user interaction (no auto-resume)
@@ -567,26 +840,56 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     }
   }, [layers]); // eslint-disable-line
 
-  // Update aircraft flight tracks when data changes
+  // Update aircraft-live source when aircraft layer points change
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;
-    const source = map.getSource('aircraft-tracks') as mapboxgl.GeoJSONSource | undefined;
+    if (!map.isStyleLoaded()) return;
+
+    const acLayer = layers.find(l => l.id === 'aircraft');
+    if (!acLayer) return;
+
+    const source = map.getSource('aircraft-live') as mapboxgl.GeoJSONSource | undefined;
     if (!source) return;
-    source.setData({
-      type: 'FeatureCollection',
-      features: aircraftTracks
-        .filter((ac: any) => ac.track?.length > 1)
-        .map((ac: any) => ({
-          type: 'Feature' as const,
-          geometry: {
-            type: 'LineString' as const,
-            coordinates: ac.track,
-          },
-          properties: { callsign: ac.callsign, country: ac.country },
-        })),
+
+    const features = (acLayer.points || []).map(p => {
+      // Parse subLabel for altitude/velocity/heading
+      const parts = (p.subLabel || '').split(' | ');
+      const altStr = parts.find(s => s.startsWith('FL'));
+      const velStr = parts.find(s => s.endsWith('kt'));
+      const hdgStr = parts.find(s => s.startsWith('HDG'));
+      const altitude = altStr ? parseInt(altStr.replace('FL', '')) * 30.48 : 0;
+      const velocity = velStr ? parseInt(velStr) : 0;
+      const heading = hdgStr ? parseInt(hdgStr.replace('HDG ', '').replace('°', '')) : 0;
+
+      return {
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
+        properties: {
+          icao24: p.id.replace('ac-', ''),
+          callsign: p.label,
+          country: (p.subLabel || '').split(' | ')[0] || 'Unknown',
+          altitude,
+          velocity,
+          heading,
+          color: p.color,
+        },
+      };
     });
-  }, [aircraftTracks]);
+
+    source.setData({ type: 'FeatureCollection', features });
+
+    // Toggle aircraft layer visibility
+    const visibility = acLayer.enabled ? 'visible' : 'none';
+    try {
+      if (map.getLayer('aircraft-icons')) map.setLayoutProperty('aircraft-icons', 'visibility', visibility);
+      if (map.getLayer('aircraft-labels')) map.setLayoutProperty('aircraft-labels', 'visibility', visibility);
+      if (map.getLayer('aircraft-track-solid')) map.setLayoutProperty('aircraft-track-solid', 'visibility', visibility);
+      if (map.getLayer('aircraft-track-dashed')) map.setLayoutProperty('aircraft-track-dashed', 'visibility', visibility);
+      if (map.getLayer('aircraft-endpoints-dots')) map.setLayoutProperty('aircraft-endpoints-dots', 'visibility', visibility);
+      if (map.getLayer('aircraft-endpoints-labels')) map.setLayoutProperty('aircraft-endpoints-labels', 'visibility', visibility);
+    } catch (_) {}
+  }, [layers]); // eslint-disable-line
 
   return (
     <div
