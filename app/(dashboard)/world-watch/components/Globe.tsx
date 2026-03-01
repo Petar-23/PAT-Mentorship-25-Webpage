@@ -234,6 +234,93 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         filter: ['==', 'name_en', ''],
       });
 
+      // Render data layers
+      for (const layer of layers) {
+        if (!layer.enabled) continue;
+        if (layer.type === 'points' && layer.points && layer.points.length > 0) {
+          const sourceId = `layer-${layer.id}`;
+          const layerId = `layer-${layer.id}-circles`;
+          const labelLayerId = `layer-${layer.id}-labels`;
+
+          map.addSource(sourceId, {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: layer.points.map(p => ({
+                type: 'Feature' as const,
+                geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
+                properties: { label: p.label, subLabel: p.subLabel || '', color: p.color },
+              })),
+            },
+          });
+
+          map.addLayer({
+            id: layerId,
+            type: 'circle',
+            source: sourceId,
+            paint: {
+              'circle-radius': 4,
+              'circle-color': ['get', 'color'],
+              'circle-opacity': 0.7,
+              'circle-stroke-width': 1,
+              'circle-stroke-color': ['get', 'color'],
+              'circle-stroke-opacity': 0.3,
+            },
+          });
+
+          map.addLayer({
+            id: labelLayerId,
+            type: 'symbol',
+            source: sourceId,
+            minzoom: 3,
+            layout: {
+              'text-field': ['get', 'label'],
+              'text-size': 10,
+              'text-offset': [0, 1.2],
+              'text-anchor': 'top',
+              'text-allow-overlap': false,
+              'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+            },
+            paint: {
+              'text-color': '#cdd6f4',
+              'text-halo-color': '#11111b',
+              'text-halo-width': 1,
+            },
+          });
+        }
+
+        if (layer.type === 'arcs' && layer.arcs && layer.arcs.length > 0) {
+          const sourceId = `layer-${layer.id}`;
+          const layerId = `layer-${layer.id}-lines`;
+
+          map.addSource(sourceId, {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: layer.arcs.map(a => ({
+                type: 'Feature' as const,
+                geometry: { type: 'LineString' as const, coordinates: [[a.startLng, a.startLat], [a.endLng, a.endLat]] },
+                properties: { label: a.label, color: a.color },
+              })),
+            },
+          });
+
+          map.addLayer({
+            id: layerId,
+            type: 'line',
+            source: sourceId,
+            paint: {
+              'line-color': ['get', 'color'],
+              'line-width': 1.5,
+              'line-opacity': 0.5,
+            },
+            layout: {
+              'line-cap': 'round',
+            },
+          });
+        }
+      }
+
       // Event country labels
       map.addLayer({
         id: 'event-labels',
@@ -341,6 +428,23 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       }
     } catch (_) {}
   }, [focusCounter]); // eslint-disable-line
+
+  // Toggle data layer visibility when layers prop changes
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    for (const layer of layers) {
+      const circleId = `layer-${layer.id}-circles`;
+      const labelId = `layer-${layer.id}-labels`;
+      const lineId = `layer-${layer.id}-lines`;
+      const visibility = layer.enabled ? 'visible' : 'none';
+      try {
+        if (map.getLayer(circleId)) map.setLayoutProperty(circleId, 'visibility', visibility);
+        if (map.getLayer(labelId)) map.setLayoutProperty(labelId, 'visibility', visibility);
+        if (map.getLayer(lineId)) map.setLayoutProperty(lineId, 'visibility', visibility);
+      } catch (_) {}
+    }
+  }, [layers]); // eslint-disable-line
 
   return (
     <div
