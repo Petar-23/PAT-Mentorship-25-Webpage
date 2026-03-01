@@ -568,7 +568,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       } catch (_) {}
     }
 
-    function showAircraftRoute(track: [number, number][], acLng: number, acLat: number, heading: number) {
+    function showAircraftRoute(track: [number, number][], acLng: number, acLat: number, _heading: number) {
       try {
         const trackSrc = map.getSource('aircraft-track-line') as mapboxgl.GeoJSONSource | undefined;
         const endSrc = map.getSource('aircraft-endpoints') as mapboxgl.GeoJSONSource | undefined;
@@ -576,7 +576,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
 
         const features: any[] = [];
 
-        // Solid line: completed path (track history)
+        // Solid line: completed path (track history from takeoff to current position)
         if (track.length >= 2) {
           features.push({
             type: 'Feature',
@@ -585,33 +585,17 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           });
         }
 
-        // Dashed line: projected path (heading extrapolation ~500km)
-        const projDist = 5; // ~5 degrees ≈ 500km
-        const hdgRad = (heading * Math.PI) / 180;
-        const projLng = acLng + Math.sin(hdgRad) * projDist;
-        const projLat = acLat + Math.cos(hdgRad) * projDist;
-        features.push({
-          type: 'Feature',
-          geometry: { type: 'LineString', coordinates: [[acLng, acLat], [projLng, projLat]] },
-          properties: { segment: 'projected' },
-        });
-
         trackSrc.setData({ type: 'FeatureCollection', features });
 
-        // Endpoints: takeoff + projected destination
+        // Endpoint: takeoff origin
         const endpoints: any[] = [];
         if (track.length >= 2) {
           endpoints.push({
             type: 'Feature',
             geometry: { type: 'Point', coordinates: track[0] },
-            properties: { label: 'TAKEOFF' },
+            properties: { label: 'ORIGIN' },
           });
         }
-        endpoints.push({
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [projLng, projLat] },
-          properties: { label: 'PROJECTED' },
-        });
         endSrc.setData({ type: 'FeatureCollection', features: endpoints });
       } catch (_) {}
     }
@@ -620,14 +604,17 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       if (hoverTrackAbort) hoverTrackAbort.abort();
       hoverTrackAbort = new AbortController();
       try {
-        const res = await fetch(`/api/world-watch/opensky-track?icao24=${icao24}`, {
-          signal: hoverTrackAbort.signal,
-        });
+        // Fetch track directly from OpenSky (Vercel API route gets rate-limited)
+        const res = await fetch(
+          `https://opensky-network.org/api/tracks/all?icao24=${encodeURIComponent(icao24)}&time=0`,
+          { signal: hoverTrackAbort.signal }
+        );
+        if (!res.ok) { showAircraftRoute([], acLng, acLat, heading); return; }
         const data = await res.json();
-        if (data.track?.length >= 2) {
-          showAircraftRoute(data.track, acLng, acLat, heading);
+        const track = (data.path || []).map((p: any) => [p[2], p[1]] as [number, number]);
+        if (track.length >= 2) {
+          showAircraftRoute(track, acLng, acLat, heading);
         } else {
-          // No track available, show just projected line
           showAircraftRoute([], acLng, acLat, heading);
         }
       } catch (_) {
@@ -668,6 +655,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             <span>HDG ${props?.heading || 0}°</span>
             <span>${Math.round((props?.altitude || 0))}m</span>
           </div>
+          <a href="https://opensky-network.org/aircraft-profile?icao24=${icao}" target="_blank" rel="noopener" style="font-size: 9px; color: ${theme.blue}; text-decoration: none; margin-top: 4px; display: block;">🔗 OpenSky Profile ↗</a>
         </div>
       `).addTo(map);
 

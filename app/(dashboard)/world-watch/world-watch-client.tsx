@@ -112,9 +112,11 @@ export default function WorldWatchClient() {
 
   // Fetch OpenSky military aircraft — direct client-side fetch (Vercel serverless gets rate-limited)
   useEffect(() => {
-    const MIL_HEX = ['ae', 'af', '43c', '43d', '43e', '43f', '3fc', '3fd', '3fe', 'c0'];
+    // Tight military ICAO hex ranges (c0 is ALL of Canada civil — removed!)
+    const MIL_HEX = ['ae', 'af', '43c', '43d', '43e', '43f', '3fc', '3fd', '3fe'];
     const MIL_CS = ['RCH','REACH','DUKE','EVAC','IRON','GIANT','COBRA','VIPER','SAM','SPAR',
-      'EXEC','DARK','GHOST','MANTA','SHARK','GAF','NAF','FAMUS','BALL','ROCKY','OUTLW','REAPER','FORGE'];
+      'EXEC','DARK','GHOST','MANTA','SHARK','GAF','NAF','FAMUS','BALL','ROCKY','OUTLW','REAPER','FORGE',
+      'CFC','CANAF','CANFORCE','RCAF'];
 
     const fetchAircraft = () => {
       fetch('https://opensky-network.org/api/states/all')
@@ -168,7 +170,7 @@ export default function WorldWatchClient() {
                   lng: ac.lng,
                   label: ac.callsign,
                   subLabel: `${ac.country} | FL${Math.round(ac.altitude / 30.48)} | ${ac.velocity}kt | HDG ${ac.heading}°`,
-                  color: ac.country === 'United States' ? '#89b4fa' : ac.country === 'United Kingdom' ? '#a6e3a1' : '#f38ba8',
+                  color: '#89b4fa', // uniform blue for all military
                 })),
               };
             }));
