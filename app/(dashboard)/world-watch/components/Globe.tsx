@@ -56,6 +56,16 @@ const COUNTRY_NAME_MAP: Record<string, string> = {
 const DEFAULT_CENTER: [number, number] = [20, 30];
 const DEFAULT_ZOOM = 1.8;
 
+function getDisasterType(title: string, category: string): string {
+  const t = (title + ' ' + category).toLowerCase();
+  if (t.includes('wildfire') || t.includes('fire') || t.includes('blaze') || t.includes('burn')) return 'fire';
+  if (t.includes('earthquake') || t.includes('seismic') || t.includes('quake') || t.includes('tremor')) return 'earthquake';
+  if (t.includes('volcano') || t.includes('eruption') || t.includes('volcanic') || t.includes('lava')) return 'volcano';
+  if (t.includes('storm') || t.includes('typhoon') || t.includes('hurricane') || t.includes('cyclone') || t.includes('tornado') || t.includes('flood') || t.includes('severe weather')) return 'storm';
+  if (t.includes('conflict') || t.includes('protest') || t.includes('attack') || t.includes('military') || t.includes('war')) return 'conflict';
+  return 'default';
+}
+
 export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
   { events, layers, onSelect, focusEvent, focusCounter, theme, onRotationChange, aircraftDataRef },
   ref
@@ -223,7 +233,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           features: geoEvents.map(ev => ({
             type: 'Feature' as const,
             geometry: { type: 'Point' as const, coordinates: [ev.lng, ev.lat] },
-            properties: { id: ev.id, severity: ev.severity, title: ev.title, country: ev.country, category: ev.category, sourceUrl: ev.sourceUrl || '' },
+            properties: { id: ev.id, severity: ev.severity, title: ev.title, country: ev.country, category: ev.category, sourceUrl: ev.sourceUrl || '', disasterType: getDisasterType(ev.title, ev.category) },
           })),
         },
       });
@@ -241,20 +251,29 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         },
       });
 
-      // Main event circles
+      // Main event icons (symbol layer with disaster-type-specific icons)
       map.addLayer({
-        id: 'event-circles',
-        type: 'circle',
+        id: 'event-icons',
+        type: 'symbol',
         source: 'events',
-        paint: {
-          'circle-radius': ['match', ['get', 'severity'], 4, 10, 3, 7, 2, 5, 3],
-          'circle-color': ['match', ['get', 'severity'], 4, colors[4], 3, colors[3], 2, colors[2], colors[1]],
-          'circle-opacity': 0.85,
-          'circle-stroke-width': 2,
-          'circle-stroke-color': ['match', ['get', 'severity'], 4, colors[4], 3, colors[3], 2, colors[2], colors[1]],
-          'circle-stroke-opacity': 0.4,
+        layout: {
+          'icon-image': [
+            'match', ['get', 'disasterType'],
+            'fire', 'disaster-fire',
+            'storm', 'disaster-storm',
+            'earthquake', 'disaster-earthquake',
+            'volcano', 'disaster-volcano',
+            'disaster-default',
+          ],
+          'icon-size': ['match', ['get', 'severity'], 4, 0.9, 3, 0.75, 0.6],
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
         },
-      });
+        paint: {
+          'icon-color': ['match', ['get', 'severity'], 4, colors[4], 3, colors[3], 2, colors[2], colors[1]],
+          'icon-opacity': 0.9,
+        },
+      } as any);
 
       // Country boundaries for highlighting
       map.addSource('country-boundaries', {
@@ -451,7 +470,27 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       nuclearImgEl.onerror = () => URL.revokeObjectURL(nuclearUrl);
       nuclearImgEl.src = nuclearUrl;
 
-      // ─── DISASTER PULSE RINGS (on events source, behind event-circles) ────
+      // ─── DISASTER ICONS ───────────────────────────────────────────────────
+      const disasterIcons: Record<string, string> = {
+        'disaster-fire': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67z"/></svg>`,
+        'disaster-storm': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M14.5 17c0 1.65-1.35 3-3 3s-3-1.35-3-3h2c0 .55.45 1 1 1s1-.45 1-1-.45-1-1-1H2v-2h9.5c1.65 0 3 1.35 3 3zM19 6.5C19 4.57 17.43 3 15.5 3S12 4.57 12 6.5h2c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5S16.33 8 15.5 8H2v2h13.5c1.93 0 3.5-1.57 3.5-3.5zM18.5 11H2v2h16.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5h-2c0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5-1.57-3.5-3.5-3.5z"/></svg>`,
+        'disaster-earthquake': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M2 11h3.17l1.83-5 2.83 10 2.17-7 1.83 4 1.17-2h7v2h-6.17l-1.83 2-1.83-4-2.17 7-2.83-10-1.17 3H2z"/></svg>`,
+        'disaster-volcano': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M2 22h20L14 8V5h1V3h-2V1h-2v2H9v2h1v3L2 22zm5.5-2L12 12.5 16.5 20h-9z"/></svg>`,
+        'disaster-default': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>`,
+      };
+      for (const [name, svgStr] of Object.entries(disasterIcons)) {
+        const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const img = new Image(24, 24);
+        img.onload = () => {
+          if (!map.hasImage(name)) map.addImage(name, img, { sdf: true });
+          URL.revokeObjectURL(url);
+        };
+        img.onerror = () => URL.revokeObjectURL(url);
+        img.src = url;
+      }
+
+      // ─── DISASTER PULSE RINGS (on events source, behind event-icons) ────
       for (let i = 1; i <= 3; i++) {
         map.addLayer({
           id: `disaster-pulse-${i}`,
@@ -464,7 +503,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             'circle-color': 'transparent',
             'circle-opacity': 0,
             'circle-stroke-width': 1.5,
-            'circle-stroke-color': '#fab387',
+            'circle-stroke-color': ['match', ['get', 'severity'], 4, colors[4], 3, colors[3], 2, colors[2], colors[1]],
             'circle-stroke-opacity': 0,
           },
         } as any, 'event-pulse');
@@ -486,7 +525,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             'circle-color': 'transparent',
             'circle-opacity': 0,
             'circle-stroke-width': 1.5,
-            'circle-stroke-color': '#89b4fa',
+            'circle-stroke-color': ['get', 'color'],
             'circle-stroke-opacity': 0,
           },
         } as any);
@@ -537,7 +576,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             'circle-color': 'transparent',
             'circle-opacity': 0,
             'circle-stroke-width': 1.5,
-            'circle-stroke-color': '#f9e2af',
+            'circle-stroke-color': ['get', 'color'],
             'circle-stroke-opacity': 0,
           },
         } as any);
@@ -741,7 +780,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     });
     disasterPopupRef.current = disasterPopup;
 
-    map.on('click', 'event-circles', (e) => {
+    map.on('click', 'event-icons', (e) => {
       markerClicked = true;
       stopRotation();
       if (!e.features?.[0]) return;
@@ -800,7 +839,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     });
     hoverPopupRef.current = popup;
 
-    map.on('mouseenter', 'event-circles', (e) => {
+    map.on('mouseenter', 'event-icons', (e) => {
       map.getCanvas().style.cursor = 'pointer';
       if (!e.features || !e.features[0]) return;
       const props = e.features[0].properties;
@@ -833,7 +872,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       `).addTo(map);
     });
 
-    map.on('mouseleave', 'event-circles', () => {
+    map.on('mouseleave', 'event-icons', () => {
       map.getCanvas().style.cursor = '';
       popup.remove();
     });
@@ -1250,7 +1289,9 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       const sidc = `${affiliation}GPII-----`;
       let natoSvg = '';
       try { const sym = new ms.Symbol(sidc, { size: 30, frame: true, fill: true }); natoSvg = sym.asSVG(); } catch (_) {}
+      const wikiSearchName = `${label} nuclear power plant`;
       const wikiTitle = label.replace(/\s/g, '_');
+      const wikiUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(label.replace(/\s/g, '_') + '_nuclear_power_plant')}`;
       const popupId = `nuc-popup-${Date.now()}`;
 
       nucPopup.setLngLat(coords).setHTML(`
@@ -1260,12 +1301,12 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           <div style="font-size:11px;font-weight:700;color:${color};letter-spacing:0.5px;margin-bottom:3px;">☢ ${label}</div>
           <div style="font-size:10px;color:${theme.subtext0};margin-bottom:4px;">${subLabel}</div>
           <div style="border-top:1px solid ${theme.surface0};padding-top:6px;font-size:9px;">
-            <a href="https://en.wikipedia.org/wiki/${encodeURIComponent(wikiTitle)}" target="_blank" style="color:${color};text-decoration:none;opacity:0.8;">Wikipedia ↗</a>
+            <a href="${wikiUrl}" target="_blank" style="color:${color};text-decoration:none;opacity:0.8;">Wikipedia ↗</a>
           </div>
         </div>
       `).addTo(map);
 
-      fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`)
+      fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiSearchName.replace(/\s/g, '_'))}`)
         .then(r => r.json())
         .then((d: any) => {
           const imgEl = document.getElementById(`${popupId}-img`) as HTMLImageElement | null;
@@ -1405,7 +1446,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       features: geoEvents.map(ev => ({
         type: 'Feature' as const,
         geometry: { type: 'Point' as const, coordinates: [ev.lng, ev.lat] },
-        properties: { id: ev.id, severity: ev.severity, title: ev.title, country: ev.country, category: ev.category, sourceUrl: ev.sourceUrl || '' },
+        properties: { id: ev.id, severity: ev.severity, title: ev.title, country: ev.country, category: ev.category, sourceUrl: ev.sourceUrl || '', disasterType: getDisasterType(ev.title, ev.category) },
       })),
     });
   }, [events]); // eslint-disable-line
