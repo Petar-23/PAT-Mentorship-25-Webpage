@@ -75,7 +75,7 @@ export function TopBar({ theme, currentTheme, setCurrentTheme }: Props) {
         </Link>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 16, fontWeight: 700, color: theme.text, letterSpacing: '3px' }}>
+          <span style={{ fontSize: 28, fontWeight: 700, color: theme.text, letterSpacing: '6px' }}>
             WORLD WATCH
           </span>
           <span style={{

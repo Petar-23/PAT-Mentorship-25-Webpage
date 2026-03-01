@@ -101,8 +101,16 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
 
     globe.controls().autoRotate = true;
     globe.controls().autoRotateSpeed = 0.3;
+    let autoRotateTimer: ReturnType<typeof setTimeout> | null = null;
     globe.controls().addEventListener('start', () => {
       globe.controls().autoRotate = false;
+      if (autoRotateTimer) clearTimeout(autoRotateTimer);
+    });
+    globe.controls().addEventListener('end', () => {
+      if (autoRotateTimer) clearTimeout(autoRotateTimer);
+      autoRotateTimer = setTimeout(() => {
+        globe.controls().autoRotate = true;
+      }, 1000);
     });
     globe.pointOfView({ lat: 30, lng: 20, altitude: 2.2 });
 

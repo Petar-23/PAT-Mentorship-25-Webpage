@@ -80,8 +80,8 @@ export const severityColors = (theme: ThemeColors): Record<number, string> => ({
 });
 
 export const getThemeFromStorage = (): Theme => {
-  if (typeof window === 'undefined') return 'gotham';
-  return (localStorage.getItem('ww-theme') as Theme) || 'gotham';
+  if (typeof window === 'undefined') return 'mocha';
+  return (localStorage.getItem('ww-theme') as Theme) || 'mocha';
 };
 
 export const setThemeToStorage = (theme: Theme): void => {
