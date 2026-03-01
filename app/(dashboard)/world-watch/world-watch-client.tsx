@@ -86,15 +86,25 @@ export default function WorldWatchClient() {
     });
   }, []);
 
-  // Fetch live earthquake data on mount
+  // Fetch live data from all sources on mount
   useEffect(() => {
-    fetch('/api/world-watch/earthquakes')
-      .then(r => r.json())
-      .then((quakes: GeoEvent[]) => {
-        const nonQuake = mockEvents.filter(e => e.category !== 'natural-disaster');
-        setLiveEvents([...nonQuake, ...quakes]);
-      })
-      .catch(() => {});
+    Promise.all([
+      fetch('/api/world-watch/earthquakes').then(r => r.json()).catch(() => []),
+      fetch('/api/world-watch/gdelt').then(r => r.json()).catch(() => []),
+      fetch('/api/world-watch/eonet').then(r => r.json()).catch(() => []),
+    ]).then(([quakes, gdelt, eonet]: [GeoEvent[], GeoEvent[], GeoEvent[]]) => {
+      // Keep mock events that don't overlap with real data categories
+      const mockNonOverlap = mockEvents.filter(
+        e => e.category !== 'natural-disaster' && !e.id.startsWith('usgs-')
+      );
+      // Merge all sources, dedupe by id
+      const all = [...mockNonOverlap, ...quakes, ...gdelt, ...eonet];
+      const deduped = new Map<string, GeoEvent>();
+      for (const ev of all) {
+        deduped.set(ev.id, ev);
+      }
+      setLiveEvents(Array.from(deduped.values()));
+    });
   }, []);
 
   // Load theme from localStorage on mount
