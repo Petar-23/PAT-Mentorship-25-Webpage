@@ -1,11 +1,11 @@
 'use client';
 
 import type { DataLayer, ThemeColors } from '../types';
-import { Swords, Flame, Cable, Shield, Radiation, Ship, Plane, Users, Building2 } from 'lucide-react';
+import { Swords, Mountain, Cable, Shield, Radiation, Ship, Plane, Users, Building2 } from 'lucide-react';
 
 const LAYER_ICONS: Record<string, typeof Swords> = {
   conflicts: Swords,
-  disasters: Flame,
+  disasters: Mountain,
   cables: Cable,
   military: Shield,
   nuclear: Radiation,
