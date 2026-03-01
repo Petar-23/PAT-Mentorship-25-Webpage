@@ -54,21 +54,25 @@ export function TopBar({ theme, currentTheme, setCurrentTheme }: Props) {
       {/* Left: Back + Title */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <Link href="/mentorship" style={{
-          color: theme.overlay0,
+          color: theme.text,
           textDecoration: 'none',
-          fontSize: 11,
+          fontSize: 12,
+          fontWeight: 600,
           border: `1px solid ${theme.surface1}`,
-          padding: '3px 8px',
-          fontFamily: 'inherit',
+          background: theme.surface0,
+          padding: '5px 12px',
           letterSpacing: '0.5px',
+          transition: 'all 0.15s',
         }}
           onMouseEnter={e => {
             (e.currentTarget as HTMLAnchorElement).style.borderColor = theme.blue;
             (e.currentTarget as HTMLAnchorElement).style.color = theme.blue;
+            (e.currentTarget as HTMLAnchorElement).style.background = theme.surface1;
           }}
           onMouseLeave={e => {
             (e.currentTarget as HTMLAnchorElement).style.borderColor = theme.surface1;
-            (e.currentTarget as HTMLAnchorElement).style.color = theme.overlay0;
+            (e.currentTarget as HTMLAnchorElement).style.color = theme.text;
+            (e.currentTarget as HTMLAnchorElement).style.background = theme.surface0;
           }}
         >
           ← MENTORSHIP
