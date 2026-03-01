@@ -28,7 +28,7 @@ function isSameDay(a: Date, b: Date): boolean {
 export function MiniCalendar({ theme }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   const [currency, setCurrency] = useState('USD');
-  const [impact, setImpact] = useState('ALL');
+  const [impactFilter, setImpactFilter] = useState<string[]>(['HIGH', 'MEDIUM']);
   const [calendarData, setCalendarData] = useState<EconCalendarEntry[]>([]);
 
   useEffect(() => {
@@ -51,13 +51,23 @@ export function MiniCalendar({ theme }: Props) {
     return getWeekDays(base);
   }, []);
 
+  const handleToggleImpact = (level: string) => {
+    setImpactFilter(prev => {
+      if (prev.includes(level)) return prev.filter(l => l !== level);
+      return [...prev, level];
+    });
+  };
+
   const filtered = useMemo(() => {
     return calendarData.filter(e => {
       if (currency !== 'ALL' && e.currency !== currency) return false;
-      if (impact !== 'ALL' && String(e.impact) !== impact) return false;
+      if (impactFilter.length > 0) {
+        const level = e.impact === 3 ? 'HIGH' : e.impact === 2 ? 'MEDIUM' : 'LOW';
+        if (!impactFilter.includes(level)) return false;
+      }
       return true;
     });
-  }, [currency, impact, calendarData]);
+  }, [currency, impactFilter, calendarData]);
 
   const impactColor = (imp: 1 | 2 | 3) => {
     if (imp === 3) return theme.red;
@@ -139,12 +149,12 @@ export function MiniCalendar({ theme }: Props) {
             ))}
           </select>
           <div style={{ display: 'flex', gap: 3 }} onClick={e => e.stopPropagation()}>
-            {([['3', 'H', theme.red], ['2', 'M', theme.peach], ['1', 'L', theme.yellow]] as const).map(([val, label, color]) => {
-              const active = impact === 'ALL' || impact === val;
+            {([['HIGH', 'H', theme.red], ['MEDIUM', 'M', theme.peach], ['LOW', 'L', theme.yellow]] as const).map(([level, label, color]) => {
+              const active = impactFilter.includes(level);
               return (
                 <button
-                  key={val}
-                  onClick={() => setImpact(prev => prev === val ? 'ALL' : val)}
+                  key={level}
+                  onClick={() => handleToggleImpact(level)}
                   style={{
                     background: active ? color + '22' : 'transparent',
                     border: active ? `1px solid ${color}` : `1px solid ${theme.surface1}`,
@@ -220,20 +230,20 @@ export function MiniCalendar({ theme }: Props) {
                       }}
                     >
                       <span style={{
-                        fontSize: 11, color: theme.subtext0, width: 42,
+                        fontSize: 10, color: theme.subtext0, width: 42,
                         fontVariantNumeric: 'tabular-nums', flexShrink: 0,
                       }}>
                         {formatTime(entry.time)}
                       </span>
                       <span style={{
-                        fontSize: 11, fontWeight: 700, width: 30,
+                        fontSize: 10, fontWeight: 700, width: 30,
                         color: entry.currency === 'USD' ? theme.blue : theme.text, flexShrink: 0,
                       }}>
                         {entry.currency}
                       </span>
-                      <FolderOpen size={12} color={impactColor(entry.impact)} style={{ flexShrink: 0 }} />
+                      <FolderOpen size={10} color={impactColor(entry.impact)} style={{ flexShrink: 0 }} />
                       <span style={{
-                        fontSize: 11, color: theme.text, flex: 1,
+                        fontSize: 12, color: theme.text, flex: 1,
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                       }}>
                         {entry.event}

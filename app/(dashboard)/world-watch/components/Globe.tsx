@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import type { GeoEvent, DataLayer, ThemeColors } from '../types';
@@ -23,56 +23,8 @@ export interface AircraftInfo {
   airForceColor: string;
 }
 
-// Common military airfield names
-const AIRPORT_NAMES: Record<string, string> = {
-  MHZ: 'RAF Mildenhall', BZZ: 'RAF Brize Norton', BFS: 'Belfast Intl',
-  RMS: 'Ramstein AB', SPM: 'Spangdahlem AB', FRA: 'Frankfurt',
-  LKZ: 'Łask AB', OST: 'Ostend', KEF: 'Keflavik',
-  ADW: 'Andrews AFB', DOV: 'Dover AFB', NGU: 'Norfolk NAS',
-  HAM: 'Hamburg', SNN: 'Shannon', PIK: 'Glasgow Prestwick',
-  GKE: 'Geilenkirchen NATO', FFD: 'RAF Fairford', QLA: 'RAF Odiham',
-  MPN: 'RAF Mount Pleasant', STN: 'Stansted', LHR: 'Heathrow',
-  EDI: 'Edinburgh', WIE: 'Wiesbaden AAF', FKB: 'Baden-Baden',
-  SZW: 'Schwerin-Parchim',
-  AKT: 'RAF Akrotiri', BLV: 'Scott AFB', GAN: 'Gan Island',
-  JIB: 'Camp Lemonnier', NAP: 'Naples NATO', TER: 'Lajes Field',
-  EIN: 'Eindhoven RNLAF', NUQ: 'Moffett Field', CHS: 'Charleston AFB',
-  AVB: 'Aviano AB', RKE: 'Roskilde',
-};
-
-// Airport coordinates [lng, lat] for route visualization
-const AIRPORT_COORDS: Record<string, [number, number]> = {
-  MHZ: [0.4864, 52.3612], BZZ: [-1.5836, 51.7500], RMS: [7.6003, 49.4369],
-  SPM: [6.6925, 49.9726], LKZ: [19.1792, 51.5517], KEF: [-22.6056, 63.9850],
-  ADW: [-76.8669, 38.8108], DOV: [-75.4660, 39.1301], NGU: [-76.2893, 36.9376],
-  BFS: [-6.2158, 54.6575], OST: [2.8622, 51.1989], FRA: [8.5706, 50.0333],
-  HAM: [9.9882, 53.6304], SNN: [-8.9248, 52.7020], PIK: [-4.5868, 55.5094],
-  GKE: [6.0425, 50.9608], FFD: [-1.7899, 51.6822], QLA: [-0.8461, 51.1872],
-  MPN: [-59.2275, -51.8220], STN: [0.2350, 51.8860], LHR: [-0.4543, 51.4700],
-  EDI: [-3.3725, 55.9508], WIE: [8.3254, 50.0498], FKB: [8.0805, 48.7794],
-  SZW: [11.7833, 53.4222],
-  // Active mil origins/destinations from FR24
-  AKT: [33.9439, 34.5904], // Akrotiri RAF Base, Cyprus
-  BLV: [-89.8352, 38.5452], // Scott AFB / MidAmerica, IL
-  GAN: [73.1556, -0.6933], // Addu Atoll / Gan, Maldives
-  JIB: [43.1594, 11.5473], // Djibouti-Ambouli (Camp Lemonnier)
-  NAP: [14.2908, 40.8860], // Naples Capodichino (NATO)
-  TER: [-27.0908, 38.7618], // Lajes Field, Azores (USAF)
-  BLQ: [11.2888, 44.5354], // Bologna
-  CRK: [-8.4811, 51.8413], // Cork
-  EIN: [5.3745, 51.4501], // Eindhoven (RNLAF)
-  CVT: [-1.4797, 52.3693], // Coventry
-  NUQ: [-122.0493, 37.4161], // Moffett Federal, CA
-  CHS: [-80.0405, 32.8987], // Charleston AFB, SC
-  RKE: [12.1314, 55.5853], // Roskilde, Denmark
-  RAK: [-8.0363, 31.6069], // Marrakech
-  SIG: [-66.0981, 18.4568], // Isla Grande, Puerto Rico
-  JBK: [-118.1517, 33.8017], // Long Beach (USCG)
-  TSF: [12.1944, 45.6484], // Treviso (Aviano nearby)
-  AVB: [12.5964, 46.0319], // Aviano AB, Italy
-  INC: [-85.3952, 41.5339], // Grissom ARB, IN
-  GUS: [-86.1521, 40.6481], // Grissom ARB alt
-};
+// Airport data loaded from /data/airports.json (6072 airports)
+// Format: { IATA: [lng, lat, name], ... }
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
@@ -112,7 +64,18 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
   const rotateRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isRotatingRef = useRef(true);
   const hoverPopupRef = useRef<mapboxgl.Popup | null>(null);
+  const airportRef = useRef<Record<string, [number, number, string]>>({});
   const colors = severityColors(theme);
+
+  // Load full airport database (6072 airports) on mount
+  useEffect(() => {
+    fetch('/data/airports.json')
+      .then(r => r.json())
+      .then((data: Record<string, [number, number, string]>) => {
+        airportRef.current = data;
+      })
+      .catch(() => {});
+  }, []);
 
   const geoEvents = events.filter(e => e.category !== 'economic');
 
@@ -641,8 +604,10 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         const trackFeatures: any[] = [];
         const endpointFeatures: any[] = [];
 
-        const originCoords = originIata ? AIRPORT_COORDS[originIata] : undefined;
-        const destCoords = destIata ? AIRPORT_COORDS[destIata] : undefined;
+        const originData = originIata ? airportRef.current[originIata] : undefined;
+        const destData = destIata ? airportRef.current[destIata] : undefined;
+        const originCoords: [number, number] | undefined = originData ? [originData[0], originData[1]] : undefined;
+        const destCoords: [number, number] | undefined = destData ? [destData[0], destData[1]] : undefined;
 
         // Solid line: origin → current aircraft position
         if (originCoords) {
@@ -651,7 +616,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             geometry: { type: 'LineString', coordinates: [originCoords, [acLng, acLat]] },
             properties: { segment: 'completed' },
           });
-          const originName = AIRPORT_NAMES[originIata] || originIata;
+          const originName = originData?.[2] || originIata;
           endpointFeatures.push({
             type: 'Feature',
             geometry: { type: 'Point', coordinates: originCoords },
@@ -666,7 +631,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             geometry: { type: 'LineString', coordinates: [[acLng, acLat], destCoords] },
             properties: { segment: 'planned' },
           });
-          const destName = AIRPORT_NAMES[destIata] || destIata;
+          const destName = destData?.[2] || destIata;
           endpointFeatures.push({
             type: 'Feature',
             geometry: { type: 'Point', coordinates: destCoords },
@@ -727,8 +692,8 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       const airForce = acInfo?.airForce || 'Military';
       const airForceLabel = getAirForceLabel(airForce);
 
-      const originName = origin ? (AIRPORT_NAMES[origin] || origin) : '';
-      const destName = destination ? (AIRPORT_NAMES[destination] || destination) : '';
+      const originName = origin ? (airportRef.current[origin]?.[2] || origin) : '';
+      const destName = destination ? (airportRef.current[destination]?.[2] || destination) : '';
 
       pinnedAircraft = icao;
 

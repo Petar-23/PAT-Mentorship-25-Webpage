@@ -232,15 +232,14 @@ export default function WorldWatchClient() {
 
   const activeLayerCount = layers.filter(l => l.enabled).length;
 
-  // HOTWIRE always shows all events
-  const layerFilteredEvents = liveEvents;
-
-  // Globe events respect layer toggles (conflicts/disasters can be hidden on map)
+  // Layer → category mapping
   const LAYER_CATEGORY_MAP: Record<string, string[]> = {
     'conflicts': ['conflict', 'political', 'health'],
     'disasters': ['natural-disaster'],
   };
-  const globeFilteredEvents = useMemo(() => {
+
+  // HOTWIRE respects layer toggles (same as globe dots)
+  const layerFilteredEvents = useMemo(() => {
     return liveEvents.filter(event => {
       for (const [layerId, categories] of Object.entries(LAYER_CATEGORY_MAP)) {
         if (categories.includes(event.category)) {
@@ -251,6 +250,9 @@ export default function WorldWatchClient() {
       return true;
     });
   }, [liveEvents, layers]);
+
+  // Globe events also respect layer toggles (same logic)
+  const globeFilteredEvents = layerFilteredEvents;
 
   // Filter events for Globe based on severity selection + layer toggles
   const filteredEvents = severityFilter.size > 0
