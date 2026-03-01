@@ -78,15 +78,16 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     resetView: () => {
       if (!mapRef.current) return;
       const map = mapRef.current;
-      // Stop rotation first (don't fight the flyTo)
+      // Stop rotation during flyTo
       stopRotation();
       // Clear highlights
       try {
         if (map.getLayer('country-highlight-fill')) map.setFilter('country-highlight-fill', ['==', 'name_en', '']);
         if (map.getLayer('country-highlight-line')) map.setFilter('country-highlight-line', ['==', 'name_en', '']);
       } catch (_) {}
-      // Fly to default view (rotation stays off — user starts manually)
+      // Fly to default, start rotation after animation completes
       map.flyTo({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM, duration: 1500, essential: true });
+      map.once('moveend', () => { startRotation(); });
     },
     get isRotating() { return isRotatingRef.current; },
   }), [startRotation, stopRotation]);
@@ -108,12 +109,12 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     mapRef.current = map;
 
     map.on('style.load', () => {
-      // Catppuccin atmosphere — blue-tinted halo, visible stars
+      // Catppuccin atmosphere — subtle blue-tinted halo
       // @ts-ignore setFog (mapbox-gl v3)
       map.setFog({
-        color: '#2a2a40',
-        'high-color': '#363652',
-        'horizon-blend': 0.10,
+        color: '#1e1e30',
+        'high-color': '#252538',
+        'horizon-blend': 0.05,
         'space-color': '#141423',
         'star-intensity': 0.25,
       });
@@ -295,6 +296,22 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       mapRef.current = null;
     };
   }, []); // eslint-disable-line
+
+  // Update events source when filter changes
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    const source = map.getSource('events') as mapboxgl.GeoJSONSource | undefined;
+    if (!source) return;
+    source.setData({
+      type: 'FeatureCollection',
+      features: geoEvents.map(ev => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [ev.lng, ev.lat] },
+        properties: { id: ev.id, severity: ev.severity, title: ev.title, country: ev.country, category: ev.category },
+      })),
+    });
+  }, [events]); // eslint-disable-line
 
   // Focus event — triggered by focusCounter to allow re-selecting same event
   useEffect(() => {

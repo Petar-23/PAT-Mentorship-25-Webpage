@@ -32,7 +32,17 @@ export function MiniCalendar({ theme }: Props) {
   const [impact, setImpact] = useState('ALL');
 
   const today = new Date();
-  const weekDays = useMemo(() => getWeekDays(today), []);
+  // On weekends (Sat=6, Sun=0), show next week
+  const weekDays = useMemo(() => {
+    const base = new Date(today);
+    const dow = base.getDay();
+    if (dow === 0 || dow === 6) {
+      // Jump to next Monday
+      const daysToMon = dow === 0 ? 1 : 2;
+      base.setDate(base.getDate() + daysToMon);
+    }
+    return getWeekDays(base);
+  }, []);
 
   const filtered = useMemo(() => {
     return mockCalendar.filter(e => {
