@@ -1618,11 +1618,13 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     map.on('click', () => {
       setTimeout(() => {
         if (markerClicked) { markerClicked = false; return; }
-        // Clear country highlight
-        try {
-          if (map.getLayer('country-highlight-fill')) map.setFilter('country-highlight-fill', ['==', 'name_en', '']);
-          if (map.getLayer('country-highlight-line')) map.setFilter('country-highlight-line', ['==', 'name_en', '']);
-        } catch (_) {}
+        // Clear country highlight — but keep it if a conflict event is still selected (permanent warzone highlight)
+        if (focusEvent?.category !== 'conflict') {
+          try {
+            if (map.getLayer('country-highlight-fill')) map.setFilter('country-highlight-fill', ['==', 'name_en', '']);
+            if (map.getLayer('country-highlight-line')) map.setFilter('country-highlight-line', ['==', 'name_en', '']);
+          } catch (_) {}
+        }
         // Dismiss aircraft popup/route
         if (pinnedAircraft) {
           pinnedAircraft = null;
@@ -1701,6 +1703,42 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       }
     } catch (_) {}
   }, [focusCounter]); // eslint-disable-line
+
+  // Permanent country highlight — stays visible as long as a conflict event is selected
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const applyHighlight = () => {
+      if (focusEvent?.category === 'conflict') {
+        const countryName = COUNTRY_NAME_MAP[focusEvent.country] || focusEvent.country;
+        const sevColor = colors[focusEvent.severity];
+        try {
+          if (map.getLayer('country-highlight-fill')) {
+            map.setFilter('country-highlight-fill', ['==', 'name_en', countryName]);
+            map.setPaintProperty('country-highlight-fill', 'fill-color', sevColor);
+            map.setPaintProperty('country-highlight-fill', 'fill-opacity', 0.10);
+          }
+          if (map.getLayer('country-highlight-line')) {
+            map.setFilter('country-highlight-line', ['==', 'name_en', countryName]);
+            map.setPaintProperty('country-highlight-line', 'line-color', sevColor);
+            map.setPaintProperty('country-highlight-line', 'line-opacity', 0.5);
+          }
+        } catch (_) {}
+      } else {
+        try {
+          if (map.getLayer('country-highlight-fill')) map.setFilter('country-highlight-fill', ['==', 'name_en', '']);
+          if (map.getLayer('country-highlight-line')) map.setFilter('country-highlight-line', ['==', 'name_en', '']);
+        } catch (_) {}
+      }
+    };
+
+    if (map.isStyleLoaded()) {
+      applyHighlight();
+    } else {
+      map.once('style.load', applyHighlight);
+    }
+  }, [focusEvent]); // eslint-disable-line
 
   // Sync data layers: create sources/layers if missing, update data, toggle visibility
   useEffect(() => {

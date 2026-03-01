@@ -90,32 +90,44 @@ function WeekChartSection({ weekDays, filtered, theme, today }: { weekDays: Date
   const areaD = pathD + ` L ${points[points.length - 1].x} ${H} L ${points[0].x} ${H} Z`;
   const gradId = 'week-line-grad';
 
+  // Compute per-point percentage positions for HTML overlay (avoids SVG text distortion)
+  const pointPcts = points.map(p => ({
+    xPct: (p.x / W) * 100,
+    yPct: (p.y / H) * 100,
+    count: p.count,
+  }));
+
   return (
     <div style={{ flexShrink: 0, borderBottom: `1px solid ${theme.surface1}`, background: theme.mantle }}>
-      {/* Chart */}
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: '100%', height: 80, display: 'block' }}>
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={theme.teal} stopOpacity={0.3} />
-            <stop offset="100%" stopColor={theme.teal} stopOpacity={0.02} />
-          </linearGradient>
-        </defs>
-        <path d={areaD} fill={`url(#${gradId})`} />
-        <path d={pathD} fill="none" stroke={theme.teal} strokeWidth={1.2} strokeLinecap="round" />
-        {points.map((p, i) => {
+      {/* Chart — SVG handles paths/area only; dots+labels are HTML overlays to avoid distortion */}
+      <div style={{ position: 'relative', width: '100%', height: 80 }}>
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: '100%', height: 80, display: 'block' }}>
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={theme.teal} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={theme.teal} stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          <path d={areaD} fill={`url(#${gradId})`} />
+          <path d={pathD} fill="none" stroke={theme.teal} strokeWidth={1.2} strokeLinecap="round" />
+        </svg>
+        {/* Dots + count labels as HTML overlay — immune to preserveAspectRatio distortion */}
+        {pointPcts.map((p, i) => {
           const isToday = isSameDay(weekDays[i], today);
+          const dotSize = isToday ? 8 : 6;
+          const color = isToday ? theme.blue : theme.teal;
           return (
-            <g key={i}>
-              {/* Dot */}
-              <circle cx={p.x} cy={p.y} r={isToday ? 4 : 3} fill={isToday ? theme.blue : theme.teal} stroke={theme.mantle} strokeWidth={1.5} />
-              {/* Count label above dot */}
-              <text x={p.x} y={p.y - 8} textAnchor="middle" fontSize={9} fontWeight={700} fill={isToday ? theme.blue : theme.teal}>
-                {p.count}
-              </text>
-            </g>
+            <div key={i} style={{ position: 'absolute', left: `${p.xPct}%`, top: `${p.yPct}%`, transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'none' }}>
+              {p.count > 0 && (
+                <div style={{ fontSize: 9, fontWeight: 700, color, lineHeight: 1, marginBottom: 2, whiteSpace: 'nowrap' }}>
+                  {p.count}
+                </div>
+              )}
+              <div style={{ width: dotSize, height: dotSize, borderRadius: '50%', background: color, border: `1.5px solid ${theme.mantle}`, flexShrink: 0 }} />
+            </div>
           );
         })}
-      </svg>
+      </div>
       {/* Day labels row below chart */}
       <div style={{ display: 'flex', gap: 0 }}>
         {weekDays.map((day, i) => {
