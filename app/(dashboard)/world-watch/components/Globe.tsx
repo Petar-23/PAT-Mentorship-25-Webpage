@@ -77,16 +77,16 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     },
     resetView: () => {
       if (!mapRef.current) return;
-      // Clear highlights
       const map = mapRef.current;
+      // Stop rotation first (don't fight the flyTo)
+      stopRotation();
+      // Clear highlights
       try {
         if (map.getLayer('country-highlight-fill')) map.setFilter('country-highlight-fill', ['==', 'name_en', '']);
         if (map.getLayer('country-highlight-line')) map.setFilter('country-highlight-line', ['==', 'name_en', '']);
       } catch (_) {}
-      // Fly to default
+      // Fly to default view (rotation stays off — user starts manually)
       map.flyTo({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM, duration: 1500, essential: true });
-      // Resume rotation
-      startRotation();
     },
     get isRotating() { return isRotatingRef.current; },
   }), [startRotation, stopRotation]);
@@ -108,14 +108,14 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     mapRef.current = map;
 
     map.on('style.load', () => {
-      // Catppuccin atmosphere — subtle blue-tinted halo
+      // Catppuccin atmosphere — blue-tinted halo, visible stars
       // @ts-ignore setFog (mapbox-gl v3)
       map.setFog({
-        color: '#313244',      // surface0 with slight warmth
-        'high-color': '#45475a88', // surface1 semi-transparent
-        'horizon-blend': 0.08,
-        'space-color': theme.crust,
-        'star-intensity': 0.15,
+        color: '#2a2a40',
+        'high-color': '#363652',
+        'horizon-blend': 0.10,
+        'space-color': '#141423',
+        'star-intensity': 0.25,
       });
 
       // FLIR/tactical look with Catppuccin slate shades
