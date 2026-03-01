@@ -274,92 +274,9 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         filter: ['==', 'name_en', ''],
       });
 
-      // Render data layers
-      for (const layer of layers) {
-        if (!layer.enabled) continue;
-        if (layer.type === 'points' && layer.points && layer.points.length > 0) {
-          const sourceId = `layer-${layer.id}`;
-          const layerId = `layer-${layer.id}-circles`;
-          const labelLayerId = `layer-${layer.id}-labels`;
-
-          map.addSource(sourceId, {
-            type: 'geojson',
-            data: {
-              type: 'FeatureCollection',
-              features: layer.points.map(p => ({
-                type: 'Feature' as const,
-                geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
-                properties: { label: p.label, subLabel: p.subLabel || '', color: p.color },
-              })),
-            },
-          });
-
-          map.addLayer({
-            id: layerId,
-            type: 'circle',
-            source: sourceId,
-            paint: {
-              'circle-radius': 4,
-              'circle-color': ['get', 'color'],
-              'circle-opacity': 0.7,
-              'circle-stroke-width': 1,
-              'circle-stroke-color': ['get', 'color'],
-              'circle-stroke-opacity': 0.3,
-            },
-          });
-
-          map.addLayer({
-            id: labelLayerId,
-            type: 'symbol',
-            source: sourceId,
-            minzoom: 3,
-            layout: {
-              'text-field': ['get', 'label'],
-              'text-size': 10,
-              'text-offset': [0, 1.2],
-              'text-anchor': 'top',
-              'text-allow-overlap': false,
-              'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
-            },
-            paint: {
-              'text-color': '#cdd6f4',
-              'text-halo-color': '#11111b',
-              'text-halo-width': 1,
-            },
-          });
-        }
-
-        if (layer.type === 'arcs' && layer.arcs && layer.arcs.length > 0) {
-          const sourceId = `layer-${layer.id}`;
-          const layerId = `layer-${layer.id}-lines`;
-
-          map.addSource(sourceId, {
-            type: 'geojson',
-            data: {
-              type: 'FeatureCollection',
-              features: layer.arcs.map(a => ({
-                type: 'Feature' as const,
-                geometry: { type: 'LineString' as const, coordinates: [[a.startLng, a.startLat], [a.endLng, a.endLat]] },
-                properties: { label: a.label, color: a.color },
-              })),
-            },
-          });
-
-          map.addLayer({
-            id: layerId,
-            type: 'line',
-            source: sourceId,
-            paint: {
-              'line-color': ['get', 'color'],
-              'line-width': 1.5,
-              'line-opacity': 0.5,
-            },
-            layout: {
-              'line-cap': 'round',
-            },
-          });
-        }
-      }
+      // NOTE: Generic data layers (points/arcs) are created/managed entirely
+      // by the layers-sync useEffect below. Do NOT create them here in style.load
+      // because layers may be disabled at load time and would be skipped.
 
       // Event country labels
       map.addLayer({
@@ -1125,25 +1042,26 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
 
         const existing = map.getSource(sourceId) as mapboxgl.GeoJSONSource | undefined;
         if (existing) {
-          // Update existing source data
           existing.setData(geojson);
-        } else if (features.length > 0 || layer.points?.length) {
-          // Create source + layers when data arrives (even on later renders)
+        } else if (features.length > 0) {
+          // Create source + layers (works regardless of initial enabled state)
           map.addSource(sourceId, { type: 'geojson', data: geojson });
           map.addLayer({
             id: circleId, type: 'circle', source: sourceId,
+            layout: { visibility },
             paint: {
-              'circle-radius': 4,
+              'circle-radius': 5,
               'circle-color': ['get', 'color'],
-              'circle-opacity': 0.7,
-              'circle-stroke-width': 1,
+              'circle-opacity': 0.8,
+              'circle-stroke-width': 1.5,
               'circle-stroke-color': ['get', 'color'],
-              'circle-stroke-opacity': 0.3,
+              'circle-stroke-opacity': 0.4,
             },
           });
           map.addLayer({
             id: labelId, type: 'symbol', source: sourceId, minzoom: 3,
             layout: {
+              visibility,
               'text-field': ['get', 'label'], 'text-size': 10,
               'text-offset': [0, 1.2], 'text-anchor': 'top',
               'text-allow-overlap': false,
@@ -1151,10 +1069,8 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             },
             paint: { 'text-color': '#cdd6f4', 'text-halo-color': '#11111b', 'text-halo-width': 1 },
           });
-        }
 
-        // Add hover popup for newly created circle layer (only once per layer)
-        if (!map.getSource(sourceId) && features.length > 0) {
+          // Register hover popup (once, when layer is first created)
           map.on('mouseenter', circleId, (e) => {
             map.getCanvas().style.cursor = 'pointer';
             if (!e.features?.[0] || !hoverPopupRef.current) return;
@@ -1173,7 +1089,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           });
         }
 
-        // Toggle visibility
+        // Toggle visibility (always, even if source was just created)
         try {
           if (map.getLayer(circleId)) map.setLayoutProperty(circleId, 'visibility', visibility);
           if (map.getLayer(labelId)) map.setLayoutProperty(labelId, 'visibility', visibility);
@@ -1181,15 +1097,23 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       }
 
       if (layer.type === 'arcs') {
-        const features = (layer.arcs || []).map(a => ({
+        const arcFeatures = (layer.arcs || []).map(a => ({
           type: 'Feature' as const,
           geometry: { type: 'LineString' as const, coordinates: [[a.startLng, a.startLat], [a.endLng, a.endLat]] },
           properties: { label: a.label, color: a.color },
         }));
+        const arcGeojson = { type: 'FeatureCollection' as const, features: arcFeatures };
 
-        const existing = map.getSource(sourceId) as mapboxgl.GeoJSONSource | undefined;
-        if (existing) {
-          existing.setData({ type: 'FeatureCollection', features });
+        const existingArc = map.getSource(sourceId) as mapboxgl.GeoJSONSource | undefined;
+        if (existingArc) {
+          existingArc.setData(arcGeojson);
+        } else if (arcFeatures.length > 0) {
+          map.addSource(sourceId, { type: 'geojson', data: arcGeojson });
+          map.addLayer({
+            id: lineId, type: 'line', source: sourceId,
+            layout: { visibility, 'line-cap': 'round' },
+            paint: { 'line-color': ['get', 'color'], 'line-width': 1.5, 'line-opacity': 0.5 },
+          });
         }
 
         try {
