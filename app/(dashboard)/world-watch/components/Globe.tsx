@@ -48,15 +48,26 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
     mapRef.current = map;
 
     map.on('style.load', () => {
-      // Globe atmosphere
+      // Globe atmosphere — dark CCTV aesthetic
       // @ts-ignore setFog (mapbox-gl v3)
       map.setFog({
-        color: theme.crust,
-        'high-color': theme.mantle,
-        'horizon-blend': 0.08,
-        'space-color': theme.base,
-        'star-intensity': 0.15,
+        color: '#0a0a12',
+        'high-color': '#12121e',
+        'horizon-blend': 0.06,
+        'space-color': '#0e0e1a',
+        'star-intensity': 0.08,
       });
+
+      // Darken + desaturate satellite imagery for digital/CCTV look
+      const satLayer = map.getStyle()?.layers?.find((l: { id: string }) => l.id.includes('satellite'));
+      if (satLayer) {
+        try {
+          map.setPaintProperty(satLayer.id, 'raster-brightness-max', 0.45);
+          map.setPaintProperty(satLayer.id, 'raster-brightness-min', 0.0);
+          map.setPaintProperty(satLayer.id, 'raster-saturation', -0.6);
+          map.setPaintProperty(satLayer.id, 'raster-contrast', 0.3);
+        } catch (_) { /* style may not support all properties */ }
+      }
 
       // Events GeoJSON source
       map.addSource('events', {
