@@ -770,6 +770,9 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     if (!map.isStyleLoaded()) return;
 
     for (const layer of layers) {
+      // Aircraft has dedicated icon rendering — skip generic circle system
+      if (layer.id === 'aircraft') continue;
+
       const sourceId = `layer-${layer.id}`;
       const circleId = `layer-${layer.id}-circles`;
       const labelId = `layer-${layer.id}-labels`;
@@ -848,6 +851,13 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
 
     const acLayer = layers.find(l => l.id === 'aircraft');
     if (!acLayer) return;
+
+    // Clean up any leftover generic circles for aircraft
+    try {
+      if (map.getLayer('layer-aircraft-circles')) map.removeLayer('layer-aircraft-circles');
+      if (map.getLayer('layer-aircraft-labels')) map.removeLayer('layer-aircraft-labels');
+      if (map.getSource('layer-aircraft')) map.removeSource('layer-aircraft');
+    } catch (_) {}
 
     const source = map.getSource('aircraft-live') as mapboxgl.GeoJSONSource | undefined;
     if (!source) return;
