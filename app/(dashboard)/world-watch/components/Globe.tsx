@@ -36,7 +36,7 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
 
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
+      style: 'mapbox://styles/mapbox/satellite-streets-v12',
       // @ts-ignore globe projection (mapbox-gl v3)
       projection: 'globe',
       center: [20, 30],
@@ -51,10 +51,10 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
       // Globe atmosphere
       // @ts-ignore setFog (mapbox-gl v3)
       map.setFog({
-        color: 'rgb(10, 10, 18)',
-        'high-color': 'rgb(20, 20, 45)',
+        color: theme.crust  // Catppuccin fog,
+        'high-color': theme.mantle  // upper atmosphere,
         'horizon-blend': 0.08,
-        'space-color': 'rgb(5, 5, 12)',
+        'space-color': theme.base  // Catppuccin bg,
         'star-intensity': 0.15,
       });
 
