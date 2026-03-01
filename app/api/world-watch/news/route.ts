@@ -96,7 +96,6 @@ const COUNTRY_CENTROIDS: Record<string, [number, number]> = {
   'taiwan strait': [24.5, 119.5],
   'black sea': [43.5, 34.0],
   'mediterranean': [35.0, 18.0],
-  'strait of hormuz': [26.5, 56.3],
   'sahel': [14.5, 2.0],
   'africa': [0.0, 25.0],
   'asia': [34.0, 100.0],
