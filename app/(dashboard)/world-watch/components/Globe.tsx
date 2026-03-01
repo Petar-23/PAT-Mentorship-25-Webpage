@@ -910,8 +910,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     map.on('mouseleave', 'pipelines-lines-dashed', () => { map.getCanvas().style.cursor = ''; hoverPopupRef.current?.remove(); });
 
     // ─── SHIPS CLICK POPUP ────────────────────────────────────────────────────
-    // Ships layer uses generic circle layer id: layer-ships-circles
-    // We attach a click handler after map load using a delegated approach
+    // Ships use dedicated ship-icons symbol layer (not generic circles)
     const shipPopup = new mapboxgl.Popup({
       closeButton: true,
       closeOnClick: false,
@@ -919,7 +918,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       className: 'ww-marker-popup',
     });
 
-    map.on('click', 'layer-ships-circles', (e) => {
+    map.on('click', 'ship-icons', (e) => {
       if (!e.features?.[0]) return;
       markerClicked = true;
 
@@ -989,10 +988,10 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       `).addTo(map);
     });
 
-    map.on('mouseenter', 'layer-ships-circles', () => {
+    map.on('mouseenter', 'ship-icons', () => {
       map.getCanvas().style.cursor = 'pointer';
     });
-    map.on('mouseleave', 'layer-ships-circles', () => {
+    map.on('mouseleave', 'ship-icons', () => {
       map.getCanvas().style.cursor = '';
     });
     // ─────────────────────────────────────────────────────────────────────────
