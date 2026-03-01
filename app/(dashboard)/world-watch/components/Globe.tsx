@@ -1172,7 +1172,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           min-width: 240px;
         ">
           ${natoSvg ? `<div style="text-align: center; margin-bottom: 8px;">${natoSvg}</div>` : ''}
-          ${shipImageUrl ? `<img src="${shipImageUrl}" onerror="this.style.display='none'" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; border: 1px solid ${color}33;" />` : ''}
+          <img class="popup-wiki-img" src="${shipImageUrl || ''}" onerror="this.style.display='none'" onload="this.style.display='block'" style="width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; border: 1px solid ${color}33; display: ${shipImageUrl ? 'block' : 'none'};" />
           <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
             <span style="font-size: 18px;">${meta.countryFlag || '🚢'}</span>
             <div>
@@ -1208,6 +1208,18 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           </div>
         </div>
       `).addTo(map);
+
+      // Wikipedia API fallback for image if direct URL failed or missing
+      if (!shipImageUrl && meta.flagship) {
+        const el = shipPopup.getElement();
+        const imgEl = el?.querySelector('.popup-wiki-img') as HTMLImageElement | null;
+        if (imgEl) {
+          fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(meta.flagship.replace(/\s/g, '_'))}`)
+            .then(r => r.json())
+            .then(d => { if (d.thumbnail?.source) { imgEl.src = d.thumbnail.source; imgEl.style.display = 'block'; } })
+            .catch(() => {});
+        }
+      }
     });
 
     map.on('mouseenter', 'ship-icons', () => {
@@ -1411,6 +1423,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           clearAircraftRoute();
         }
         // Dismiss other popups
+        shipPopup.remove();
         disasterPopup.remove();
         basePopup.remove();
         nucPopup.remove();

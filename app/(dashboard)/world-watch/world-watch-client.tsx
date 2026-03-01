@@ -162,6 +162,8 @@ export default function WorldWatchClient() {
             sidc: f.sidc || 'SFSPCLCC--',
             composition: (f.composition || []).join(', '),
             notes: f.notes || '',
+            imageUrl: f.imageUrl || '',
+            wikiUrl: f.wikiUrl || '',
           },
         }));
 
