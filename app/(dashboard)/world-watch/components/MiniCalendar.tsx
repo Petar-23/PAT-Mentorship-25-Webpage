@@ -138,20 +138,24 @@ export function MiniCalendar({ theme }: Props) {
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
-          <select
-            value={impact}
-            onChange={e => setImpact(e.target.value)}
-            onClick={e => e.stopPropagation()}
-            style={{
-              fontSize: 10, background: theme.surface0, color: theme.text,
-              border: `1px solid ${theme.surface1}`, borderRadius: 3, padding: '2px 4px', cursor: 'pointer',
-            }}
-          >
-            <option value="ALL">ALL IMPACT</option>
-            <option value="3">HIGH</option>
-            <option value="2">MED</option>
-            <option value="1">LOW</option>
-          </select>
+          <div style={{ display: 'flex', gap: 3 }} onClick={e => e.stopPropagation()}>
+            {([['3', 'H', theme.red], ['2', 'M', theme.peach], ['1', 'L', theme.yellow]] as const).map(([val, label, color]) => {
+              const active = impact === 'ALL' || impact === val;
+              return (
+                <button
+                  key={val}
+                  onClick={() => setImpact(prev => prev === val ? 'ALL' : val)}
+                  style={{
+                    background: active ? color + '22' : 'transparent',
+                    border: active ? `1px solid ${color}` : `1px solid ${theme.surface1}`,
+                    color: active ? color : theme.overlay0,
+                    fontSize: 9, padding: '1px 5px', cursor: 'pointer',
+                    fontFamily: 'inherit', fontWeight: active ? 700 : 400, borderRadius: 2,
+                  }}
+                >{label}</button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Weekday grouped events */}

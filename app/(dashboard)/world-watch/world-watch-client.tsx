@@ -112,29 +112,40 @@ export default function WorldWatchClient() {
 
   // Fetch OpenSky military aircraft
   useEffect(() => {
+    const updateAircraftLayer = (aircraft: any[]) => {
+      setLayers(prev => prev.map(l => {
+        if (l.id !== 'aircraft') return l;
+        return {
+          ...l,
+          points: aircraft.map((ac: any) => ({
+            id: `ac-${ac.icao24}`,
+            lat: ac.lat,
+            lng: ac.lng,
+            label: ac.callsign,
+            subLabel: `${ac.country} | FL${Math.round(ac.altitude / 30.48)} | ${ac.velocity}kt | HDG ${ac.heading}°`,
+            color: ac.country === 'United States' ? '#89b4fa' : ac.country === 'United Kingdom' ? '#a6e3a1' : '#f38ba8',
+          })),
+        };
+      }));
+    };
+
     const fetchAircraft = () => {
       fetch('/api/world-watch/opensky')
-        .then(r => r.json())
-        .then((aircraft: any[]) => {
-          if (!aircraft.length) return;
-          setLayers(prev => prev.map(l => {
-            if (l.id !== 'aircraft') return l;
-            return {
-              ...l,
-              points: aircraft.map((ac: any) => ({
-                id: `ac-${ac.icao24}`,
-                lat: ac.lat,
-                lng: ac.lng,
-                label: ac.callsign,
-                subLabel: `${ac.country} | FL${Math.round(ac.altitude / 30.48)} | ${ac.velocity}kt | HDG ${ac.heading}°`,
-                color: ac.country === 'United States' ? '#89b4fa' : ac.country === 'United Kingdom' ? '#a6e3a1' : '#f38ba8',
-              })),
-            };
-          }));
-          // Tracks fetched on-demand by Globe on hover/click
+        .then(r => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
         })
-        .catch(() => {});
+        .then((aircraft: any[]) => {
+          console.log(`[OPTICON] OpenSky: ${aircraft.length} military aircraft`);
+          if (aircraft.length > 0) {
+            updateAircraftLayer(aircraft);
+          }
+        })
+        .catch((err) => {
+          console.warn('[OPTICON] OpenSky fetch failed:', err.message);
+        });
     };
+
     fetchAircraft();
     const interval = setInterval(fetchAircraft, 60000);
     return () => clearInterval(interval);

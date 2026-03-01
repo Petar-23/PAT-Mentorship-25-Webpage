@@ -2,15 +2,11 @@ import { NextResponse } from 'next/server';
 
 export const revalidate = 60; // 1 min cache
 
-// Known military ICAO24 hex prefixes
+// Known military ICAO24 hex prefixes (tight filtering to avoid civil false positives)
 const MIL_HEX_PREFIXES = [
-  'ae', 'af',  // US Military
-  '43',        // UK Military
-  '3f',        // Germany (Bundeswehr)
-  '3a', '3b',  // France Military
-  '33',        // Italy Military
-  '34',        // Spain Military
-  '50',        // Israel Military
+  'ae', 'af',  // US Military (Army, Air Force, Navy, Marines, Coast Guard)
+  '43c', '43d', '43e', '43f',  // UK Military (tight range within 43xxxx)
+  '3fc', '3fd', '3fe',         // Germany Bundeswehr (tight range within 3fxxxx)
   'c0',        // Canada Military
 ];
 
@@ -63,14 +59,15 @@ export async function GET() {
       });
     }
 
-    // Limit to 100 most interesting (airborne first, sorted by altitude desc)
+    // Limit to 50 most interesting (airborne first, sorted by altitude desc)
     const sorted = aircraft
       .sort((a, b) => {
         if (a.onGround !== b.onGround) return a.onGround ? 1 : -1;
         return b.altitude - a.altitude;
       })
-      .slice(0, 100);
+      .slice(0, 50);
 
+    console.log(`OpenSky: ${states.length} total, ${aircraft.length} mil/gov, returning ${sorted.length}`);
     return NextResponse.json(sorted);
   } catch (error) {
     console.error('OpenSky error:', error);

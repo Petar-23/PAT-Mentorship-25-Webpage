@@ -131,9 +131,9 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           }
           if (layer.id.includes('admin') && layer.type === 'line') {
             try {
-              map.setPaintProperty(layer.id, 'line-color', '#45475a');
-              map.setPaintProperty(layer.id, 'line-opacity', 0.25);
-              map.setPaintProperty(layer.id, 'line-width', 0.4);
+              map.setPaintProperty(layer.id, 'line-color', '#6c7086');
+              map.setPaintProperty(layer.id, 'line-opacity', 0.4);
+              map.setPaintProperty(layer.id, 'line-width', 0.5);
               map.setPaintProperty(layer.id, 'line-dasharray', [3, 2]);
             } catch (_) {}
           }
