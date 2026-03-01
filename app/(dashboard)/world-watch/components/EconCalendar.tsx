@@ -2,8 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { EconCalendarEntry, ThemeColors } from '../types';
-// mockCalendar replaced by live API
-import { FolderOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FolderOpen, ChevronLeft, ChevronRight, Landmark } from 'lucide-react';
 
 interface Props {
   theme: ThemeColors;
@@ -21,6 +20,7 @@ const TIMEZONES = [
 ];
 
 function ImpactFolder({ impact, theme }: { impact: number; theme: ThemeColors }) {
+  if (impact === 0) return <Landmark size={15} color={theme.teal} strokeWidth={2} />;
   const color = impact === 3 ? theme.red : impact === 2 ? theme.peach : theme.yellow;
   return <FolderOpen size={15} color={color} strokeWidth={2} />;
 }
@@ -57,6 +57,53 @@ function getTzFromStorage(): string {
   return localStorage.getItem('ww-calendar-tz') || 'America/New_York';
 }
 
+/* ─── Smooth line chart across weekdays ─── */
+function WeekLineChart({ weekDays, filtered, theme }: { weekDays: Date[]; filtered: EconCalendarEntry[]; theme: ThemeColors }) {
+  const counts = weekDays.map(day => filtered.filter(e => isSameDay(new Date(e.time), day)).length);
+  const maxCount = Math.max(...counts, 1);
+  const W = 100; // viewBox width percentage per slot
+  const H = 50;  // viewBox height
+  const padY = 6;
+  const slotW = W / (counts.length - 1 || 1);
+
+  const points = counts.map((c, i) => {
+    const x = i * slotW;
+    const y = H - padY - (c / maxCount) * (H - padY * 2);
+    return { x, y, count: c };
+  });
+
+  // Build smooth cubic bezier path
+  let pathD = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
+    const curr = points[i];
+    const cpx1 = prev.x + slotW * 0.4;
+    const cpx2 = curr.x - slotW * 0.4;
+    pathD += ` C ${cpx1} ${prev.y}, ${cpx2} ${curr.y}, ${curr.x} ${curr.y}`;
+  }
+
+  // Area fill path (close to bottom)
+  const areaD = pathD + ` L ${points[points.length - 1].x} ${H} L ${points[0].x} ${H} Z`;
+
+  const gradId = 'week-line-grad';
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: '100%', height: 48, display: 'block' }}>
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={theme.teal} stopOpacity={0.35} />
+          <stop offset="100%" stopColor={theme.teal} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <path d={areaD} fill={`url(#${gradId})`} />
+      <path d={pathD} fill="none" stroke={theme.teal} strokeWidth={0.8} strokeLinecap="round" />
+      {points.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={1.2} fill={theme.teal} />
+      ))}
+    </svg>
+  );
+}
+
 export function EconCalendar({ theme }: Props) {
   const [currencyFilter, setCurrencyFilter] = useState('USD');
   const [impactFilter, setImpactFilter] = useState<string[]>(['HIGH', 'MEDIUM']);
@@ -72,9 +119,10 @@ export function EconCalendar({ theme }: Props) {
       .catch(() => setLoading(false));
   }, []);
 
-  // Auto-detect week with data if current week has no events
+  // Auto-detect: jump to NEXT week only if current week truly empty AND next week has data
+  // Never jump to random far-future weeks
   useEffect(() => {
-    if (calendarData.length === 0) return;
+    if (calendarData.length === 0 || weekOffset !== 0) return;
     const now = new Date();
     const currentWeek = getWeekDays(now);
     const weekEnd = new Date(currentWeek[4].getTime() + 86400000);
@@ -83,15 +131,21 @@ export function EconCalendar({ theme }: Props) {
       return d >= currentWeek[0] && d <= weekEnd;
     });
     if (!hasCurrentWeekEvents) {
-      const latestEvent = calendarData[calendarData.length - 1];
-      if (latestEvent) {
-        const eventDate = new Date(latestEvent.time);
-        const diffMs = eventDate.getTime() - now.getTime();
-        const diffWeeks = Math.round(diffMs / (7 * 86400000));
-        setWeekOffset(diffWeeks);
+      // Check next week only
+      const nextBase = new Date(now);
+      nextBase.setDate(nextBase.getDate() + 7);
+      const nextWeek = getWeekDays(nextBase);
+      const nextWeekEnd = new Date(nextWeek[4].getTime() + 86400000);
+      const hasNextWeekEvents = calendarData.some(e => {
+        const d = new Date(e.time);
+        return d >= nextWeek[0] && d <= nextWeekEnd;
+      });
+      if (hasNextWeekEvents) {
+        setWeekOffset(1);
       }
+      // Otherwise stay on current week — don't jump to May or random weeks
     }
-  }, [calendarData]);
+  }, [calendarData, weekOffset]);
 
   useEffect(() => { setTimezone(getTzFromStorage()); }, []);
   useEffect(() => {
@@ -107,8 +161,15 @@ export function EconCalendar({ theme }: Props) {
   const weekLabel = useMemo(() => {
     const start = weekDays[0];
     const end = weekDays[4];
-    const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    return `${fmt(start)} - ${fmt(end)}`;
+    const showYear = start.getFullYear() !== new Date().getFullYear();
+    const fmt = (d: Date) => d.toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', ...(showYear ? { year: 'numeric' } : {}),
+    });
+    // Always show year on the end date
+    const fmtEnd = (d: Date) => d.toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+    });
+    return `${fmt(start)} - ${fmtEnd(end)}`;
   }, [weekDays]);
 
   const handleToggleImpact = useCallback((level: string) => {
@@ -125,6 +186,10 @@ export function EconCalendar({ theme }: Props) {
       if (currencyFilter !== 'ALL' && entry.currency !== currencyFilter) return false;
       // If no impact filters selected, show all
       if (impactFilter.length === 0) return true;
+      // Holiday events (impact 0) show when HOLIDAY filter is active
+      if (entry.impact === 0 || entry.isHoliday) {
+        return impactFilter.includes('HOLIDAY');
+      }
       const level = entry.impact === 3 ? 'HIGH' : entry.impact === 2 ? 'MEDIUM' : 'LOW';
       return impactFilter.includes(level);
     });
@@ -165,9 +230,10 @@ export function EconCalendar({ theme }: Props) {
           {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
         {/* Impact multi-select badges */}
-        {(['HIGH', 'MEDIUM', 'LOW'] as const).map(level => {
+        {(['HIGH', 'MEDIUM', 'LOW', 'HOLIDAY'] as const).map(level => {
           const active = impactFilter.includes(level);
-          const color = level === 'HIGH' ? theme.red : level === 'MEDIUM' ? theme.peach : theme.yellow;
+          const color = level === 'HIGH' ? theme.red : level === 'MEDIUM' ? theme.peach : level === 'LOW' ? theme.yellow : theme.teal;
+          const Icon = level === 'HOLIDAY' ? Landmark : FolderOpen;
           return (
             <button
               key={level}
@@ -188,7 +254,7 @@ export function EconCalendar({ theme }: Props) {
                 gap: 4,
               }}
             >
-              <FolderOpen size={10} color={active ? color : theme.overlay0} />
+              <Icon size={10} color={active ? color : theme.overlay0} />
               {level}
             </button>
           );
@@ -201,39 +267,47 @@ export function EconCalendar({ theme }: Props) {
         </div>
       </div>
 
-      {/* Weekday tabs */}
-      <div style={{
-        display: 'flex',
-        gap: 0,
-        borderBottom: `1px solid ${theme.surface1}`,
-        background: theme.mantle,
-        flexShrink: 0,
-      }}>
-        {weekDays.map(day => {
-          const isToday = isSameDay(day, today);
-          const dayName = day.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
-          const dayNum = day.getDate();
-          const dayEvents = filtered.filter(e => isSameDay(new Date(e.time), day));
-          return (
-            <div key={day.toISOString()} style={{
-              flex: 1,
-              padding: '8px 0',
-              textAlign: 'center',
-              borderBottom: isToday ? `2px solid ${theme.blue}` : '2px solid transparent',
-              background: isToday ? theme.surface0 + '33' : 'transparent',
-            }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: isToday ? theme.blue : theme.overlay0, letterSpacing: '1.5px' }}>
-                {dayName}
+      {/* Weekday tabs with line chart overlay */}
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        {/* Line chart background */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0, padding: '0 calc(10% - 4px)', pointerEvents: 'none' }}>
+          <WeekLineChart weekDays={weekDays} filtered={filtered} theme={theme} />
+        </div>
+        {/* Day columns on top */}
+        <div style={{
+          display: 'flex',
+          gap: 0,
+          borderBottom: `1px solid ${theme.surface1}`,
+          background: 'transparent',
+          position: 'relative',
+          zIndex: 1,
+        }}>
+          {weekDays.map(day => {
+            const isToday = isSameDay(day, today);
+            const dayName = day.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+            const dayNum = day.getDate();
+            const dayEvents = filtered.filter(e => isSameDay(new Date(e.time), day));
+            return (
+              <div key={day.toISOString()} style={{
+                flex: 1,
+                padding: '8px 0',
+                textAlign: 'center',
+                borderBottom: isToday ? `2px solid ${theme.blue}` : '2px solid transparent',
+                background: isToday ? theme.surface0 + '33' : 'transparent',
+              }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: isToday ? theme.blue : theme.overlay0, letterSpacing: '1.5px' }}>
+                  {dayName}
+                </div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: isToday ? theme.blue : theme.text }}>
+                  {dayNum}
+                </div>
+                <div style={{ fontSize: 9, color: theme.overlay0 }}>
+                  {dayEvents.length > 0 ? `${dayEvents.length} events` : '—'}
+                </div>
               </div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: isToday ? theme.blue : theme.text }}>
-                {dayNum}
-              </div>
-              <div style={{ fontSize: 9, color: theme.overlay0 }}>
-                {dayEvents.length > 0 ? `${dayEvents.length} events` : '—'}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Column header */}
@@ -356,6 +430,7 @@ export function EconCalendar({ theme }: Props) {
           <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><FolderOpen size={10} color={theme.red} /> High</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><FolderOpen size={10} color={theme.peach} /> Medium</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><FolderOpen size={10} color={theme.yellow} /> Low</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Landmark size={10} color={theme.teal} /> Holiday</span>
         </span>
       </div>
     </div>
