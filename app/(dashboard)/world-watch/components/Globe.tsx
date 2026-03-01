@@ -24,8 +24,17 @@ function grayscaleTexture(url: string): Promise<string> {
       canvas.height = img.height;
       const ctx = canvas.getContext('2d');
       if (!ctx) { resolve(url); return; }
-      ctx.filter = 'grayscale(100%) contrast(130%) brightness(60%)';
+      // Step 1: desaturate
+      ctx.filter = 'grayscale(100%) brightness(50%) contrast(120%)';
       ctx.drawImage(img, 0, 0);
+      // Step 2: overlay with Catppuccin base color tint
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.fillStyle = '#1e1e2e'; // Catppuccin Mocha base
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Step 3: slight color tint with blue
+      ctx.globalCompositeOperation = 'soft-light';
+      ctx.fillStyle = '#89b4fa44'; // Catppuccin blue, very subtle
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       resolve(canvas.toDataURL('image/jpeg', 0.85));
     };
     img.onerror = () => resolve(url);

@@ -41,7 +41,7 @@ export function Ticker({ events, theme }: Props) {
         zIndex: 2,
         borderRight: `1px solid ${theme.surface0}`,
       }}>
-        <span style={{ fontSize: 10, fontWeight: 700, color: theme.peach, letterSpacing: '1px' }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: theme.peach, letterSpacing: '1px' }}>
           ▶ FEED
         </span>
       </div>
@@ -53,7 +53,7 @@ export function Ticker({ events, theme }: Props) {
         alignItems: 'center',
         whiteSpace: 'nowrap',
         animation: 'wwTicker 120s linear infinite',
-        fontSize: 11,
+        fontSize: 12,
       }}>
         {items.map((e, i) => (
           <span key={`${e.id}-${i}`}>

@@ -50,23 +50,23 @@ export function EventCard({ event, isSelected, onClick, theme }: Props) {
       onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-        <span style={{ fontSize: 10, color: sevColor, fontWeight: 700, letterSpacing: '1px' }}>
+        <span style={{ fontSize: 12, color: sevColor, fontWeight: 700, letterSpacing: '1px' }}>
           {SEVERITY_LABELS[event.severity]}
         </span>
-        <span style={{ fontSize: 10, color: theme.overlay0 }}>{age}</span>
+        <span style={{ fontSize: 12, color: theme.overlay0 }}>{age}</span>
       </div>
-      <div style={{ fontSize: 12, fontWeight: 600, color: theme.text, marginBottom: 4, lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <CatIcon size={13} color={theme.subtext0} strokeWidth={2} />
+      <div style={{ fontSize: 14, fontWeight: 600, color: theme.text, marginBottom: 4, lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <CatIcon size={15} color={theme.subtext0} strokeWidth={2} />
         {event.title}
       </div>
       {isSelected && (
-        <div style={{ fontSize: 11, color: theme.subtext0, marginBottom: 6, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 13, color: theme.subtext0, marginBottom: 6, lineHeight: 1.5 }}>
           {event.description}
         </div>
       )}
-      <div style={{ display: 'flex', gap: 12, fontSize: 10, color: theme.overlay0, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 12, fontSize: 11, color: theme.overlay0, alignItems: 'center' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-          <MapPin size={10} strokeWidth={2} /> {event.country}
+          <MapPin size={12} strokeWidth={2} /> {event.country}
         </span>
         <span>via {event.source}</span>
       </div>
