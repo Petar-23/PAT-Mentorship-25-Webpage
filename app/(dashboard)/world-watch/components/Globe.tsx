@@ -116,11 +116,17 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
     globe.pointOfView({ lat: 30, lng: 20, altitude: 2.2 });
 
     // Starfield
+    // Stars placed on a distant sphere (radius 400-600) — always behind the globe
     const starCount = 2000;
     const starGeometry = new THREE.BufferGeometry();
     const starPositions = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount * 3; i++) {
-      starPositions[i] = (Math.random() - 0.5) * 800;
+    for (let i = 0; i < starCount; i++) {
+      const radius = 400 + Math.random() * 200;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      starPositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+      starPositions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+      starPositions[i * 3 + 2] = radius * Math.cos(phi);
     }
     starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
     const starMaterial = new THREE.PointsMaterial({
