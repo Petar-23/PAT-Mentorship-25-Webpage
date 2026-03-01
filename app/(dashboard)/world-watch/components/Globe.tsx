@@ -633,33 +633,66 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       if (!e.features || !e.features[0]) return;
       const props = e.features[0].properties;
       const coords = (e.features[0].geometry as any).coordinates.slice() as [number, number];
+      const icao = props?.icao24 || '';
+      const fl = Math.round((props?.altitude || 0) / 30.48);
 
+      // Show popup immediately with basic info
+      const popupId = `ac-popup-${icao}`;
       acPopup.setLngLat(coords).setHTML(`
-        <div style="
+        <div id="${popupId}" style="
           background: ${theme.mantle};
           border: 1px solid ${theme.surface0};
           border-left: 3px solid #89b4fa;
           padding: 8px 10px;
           font-family: inherit;
-          max-width: 280px;
+          width: 260px;
         ">
-          <div style="font-size: 10px; font-weight: 700; color: #89b4fa; letter-spacing: 1px; margin-bottom: 4px;">
+          <div id="${popupId}-img" style="margin-bottom: 6px;"></div>
+          <div style="font-size: 11px; font-weight: 700; color: #89b4fa; letter-spacing: 1px; margin-bottom: 4px;">
             ✈ ${props?.callsign || 'UNKNOWN'}
           </div>
-          <div style="font-size: 11px; color: ${theme.text}; margin-bottom: 2px;">
+          <div id="${popupId}-model" style="font-size: 10px; color: ${theme.subtext0}; margin-bottom: 3px;"></div>
+          <div style="font-size: 11px; color: ${theme.text}; margin-bottom: 3px;">
             ${props?.country || 'Unknown'} Military
           </div>
-          <div style="font-size: 10px; color: ${theme.overlay0}; display: flex; gap: 8px;">
-            <span>FL${Math.round((props?.altitude || 0) / 30.48)}</span>
+          <div style="font-size: 10px; color: ${theme.overlay0}; display: flex; gap: 10px;">
+            <span>FL${fl}</span>
             <span>${props?.velocity || 0} kt</span>
             <span>HDG ${props?.heading || 0}°</span>
+            <span>${Math.round((props?.altitude || 0))}m</span>
           </div>
         </div>
       `).addTo(map);
 
+      // Async: fetch aircraft photo from Planespotters
+      if (icao) {
+        fetch(`https://api.planespotters.net/pub/photos/hex/${icao}`)
+          .then(r => r.json())
+          .then(data => {
+            const photos = data.photos || [];
+            const imgEl = document.getElementById(`${popupId}-img`);
+            const modelEl = document.getElementById(`${popupId}-model`);
+            if (photos.length > 0 && imgEl) {
+              const photo = photos[0];
+              const src = photo.thumbnail_large?.src || photo.thumbnail?.src;
+              if (src) {
+                imgEl.innerHTML = `<img src="${src}" style="width: 100%; height: auto; border-radius: 3px; border: 1px solid ${theme.surface1};" />`;
+              }
+              // Show aircraft model/reg if available
+              const ac = photo.aircraft || {};
+              const model = ac.model || ac.icaotype || '';
+              const reg = ac.registration || '';
+              if (modelEl && (model || reg)) {
+                modelEl.textContent = [model, reg].filter(Boolean).join(' — ');
+              }
+            }
+          })
+          .catch(() => {});
+      }
+
       // Show track on hover (unless pinned to different aircraft)
       if (!pinnedAircraft) {
-        fetchAndShowTrack(props?.icao24, coords[0], coords[1], props?.heading || 0);
+        fetchAndShowTrack(icao, coords[0], coords[1], props?.heading || 0);
       }
     });
 
