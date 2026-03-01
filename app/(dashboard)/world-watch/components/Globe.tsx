@@ -34,9 +34,13 @@ const AIRPORT_NAMES: Record<string, string> = {
   MPN: 'RAF Mount Pleasant', STN: 'Stansted', LHR: 'Heathrow',
   EDI: 'Edinburgh', WIE: 'Wiesbaden AAF', FKB: 'Baden-Baden',
   SZW: 'Schwerin-Parchim',
+  AKT: 'RAF Akrotiri', BLV: 'Scott AFB', GAN: 'Gan Island',
+  JIB: 'Camp Lemonnier', NAP: 'Naples NATO', TER: 'Lajes Field',
+  EIN: 'Eindhoven RNLAF', NUQ: 'Moffett Field', CHS: 'Charleston AFB',
+  AVB: 'Aviano AB', RKE: 'Roskilde',
 };
 
-// Airport coordinates for route visualization
+// Airport coordinates [lng, lat] for route visualization
 const AIRPORT_COORDS: Record<string, [number, number]> = {
   MHZ: [0.4864, 52.3612], BZZ: [-1.5836, 51.7500], RMS: [7.6003, 49.4369],
   SPM: [6.6925, 49.9726], LKZ: [19.1792, 51.5517], KEF: [-22.6056, 63.9850],
@@ -47,6 +51,27 @@ const AIRPORT_COORDS: Record<string, [number, number]> = {
   MPN: [-59.2275, -51.8220], STN: [0.2350, 51.8860], LHR: [-0.4543, 51.4700],
   EDI: [-3.3725, 55.9508], WIE: [8.3254, 50.0498], FKB: [8.0805, 48.7794],
   SZW: [11.7833, 53.4222],
+  // Active mil origins/destinations from FR24
+  AKT: [33.9439, 34.5904], // Akrotiri RAF Base, Cyprus
+  BLV: [-89.8352, 38.5452], // Scott AFB / MidAmerica, IL
+  GAN: [73.1556, -0.6933], // Addu Atoll / Gan, Maldives
+  JIB: [43.1594, 11.5473], // Djibouti-Ambouli (Camp Lemonnier)
+  NAP: [14.2908, 40.8860], // Naples Capodichino (NATO)
+  TER: [-27.0908, 38.7618], // Lajes Field, Azores (USAF)
+  BLQ: [11.2888, 44.5354], // Bologna
+  CRK: [-8.4811, 51.8413], // Cork
+  EIN: [5.3745, 51.4501], // Eindhoven (RNLAF)
+  CVT: [-1.4797, 52.3693], // Coventry
+  NUQ: [-122.0493, 37.4161], // Moffett Federal, CA
+  CHS: [-80.0405, 32.8987], // Charleston AFB, SC
+  RKE: [12.1314, 55.5853], // Roskilde, Denmark
+  RAK: [-8.0363, 31.6069], // Marrakech
+  SIG: [-66.0981, 18.4568], // Isla Grande, Puerto Rico
+  JBK: [-118.1517, 33.8017], // Long Beach (USCG)
+  TSF: [12.1944, 45.6484], // Treviso (Aviano nearby)
+  AVB: [12.5964, 46.0319], // Aviano AB, Italy
+  INC: [-85.3952, 41.5339], // Grissom ARB, IN
+  GUS: [-86.1521, 40.6481], // Grissom ARB alt
 };
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
@@ -657,6 +682,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       if (airForce === 'USAF') return '🇺🇸 USAF';
       if (airForce === 'RAF') return '🇬🇧 RAF';
       if (airForce === 'Luftwaffe') return '🇩🇪 Luftwaffe';
+      if (airForce === 'RCAF') return '🇨🇦 RCAF';
       return `${airForce || 'Military'}`;
     }
 
@@ -702,8 +728,10 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
 
       acPopup.setLngLat(coords).setHTML(`
         <div id="${popupId}" style="
-          background: ${theme.mantle};
-          border: 1px solid ${theme.surface0};
+          background: ${theme.mantle}dd;
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid ${theme.surface0}88;
           border-left: 3px solid ${acColor};
           padding: 8px 10px;
           font-family: inherit;

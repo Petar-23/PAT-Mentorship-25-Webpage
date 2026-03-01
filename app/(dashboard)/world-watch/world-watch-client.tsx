@@ -112,17 +112,20 @@ export default function WorldWatchClient() {
 
   // Fetch FR24 military aircraft feed (proxied server-side to avoid CORS)
   useEffect(() => {
-    // Tight military ICAO hex ranges
-    const MIL_HEX = ['ae', 'af', '43c', '43d', '43e', '43f', '3fc', '3fd', '3fe'];
+    // Military ICAO hex ranges (3fc-3fe REMOVED: catches German civilian ultralights D-M*)
+    const MIL_HEX = ['ae', 'af', '43c', '43d', '43e', '43f'];
     const MIL_CS = ['RCH','REACH','DUKE','EVAC','IRON','GIANT','COBRA','VIPER','SAM','SPAR',
-      'EXEC','DARK','GHOST','MANTA','SHARK','GAF','NAF','FAMUS','BALL','ROCKY','OUTLW','REAPER','FORGE',
-      'CFC','CANAF','CANFORCE','RCAF'];
+      'EXEC','DARK','GHOST','MANTA','SHARK','FAMUS','BALL','ROCKY','OUTLW','REAPER','FORGE',
+      'CFC','CANAF','CANFORCE','RCAF',
+      'GAF','GAFM','GERMAN'];  // Luftwaffe by callsign only
 
-    function getAirForceInfo(icao24: string): { color: string; airForce: string } {
+    function getAirForceInfo(icao24: string, callsign: string): { color: string; airForce: string } {
       const hex = icao24.toLowerCase();
+      const cs = callsign.toUpperCase();
       if (hex.startsWith('ae') || hex.startsWith('af')) return { color: '#89b4fa', airForce: 'USAF' };
       if (hex.startsWith('43c') || hex.startsWith('43d') || hex.startsWith('43e') || hex.startsWith('43f')) return { color: '#cba6f7', airForce: 'RAF' };
-      if (hex.startsWith('3fc') || hex.startsWith('3fd') || hex.startsWith('3fe')) return { color: '#f9e2af', airForce: 'Luftwaffe' };
+      if (cs.startsWith('GAF') || cs.startsWith('GERMAN')) return { color: '#f9e2af', airForce: 'Luftwaffe' };
+      if (cs.startsWith('CFC') || cs.startsWith('CANAF') || cs.startsWith('RCAF')) return { color: '#94e2d5', airForce: 'RCAF' };
       return { color: '#a6adc8', airForce: 'Military' };
     }
 
@@ -158,7 +161,7 @@ export default function WorldWatchClient() {
             const isMilCs = MIL_CS.some(p => callsign.toUpperCase().startsWith(p));
             if (!isMilHex && !isMilCs) continue;
 
-            const { color, airForce } = getAirForceInfo(icao);
+            const { color, airForce } = getAirForceInfo(icao, callsign);
 
             aircraft.push({
               icao24: icao,
