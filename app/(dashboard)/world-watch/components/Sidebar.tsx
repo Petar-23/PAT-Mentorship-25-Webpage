@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import type { GeoEvent, ThemeColors } from '../types';
 import { EventCard } from './EventCard';
 import { severityColors } from '../styles/themes';
@@ -10,9 +9,9 @@ interface Props {
   selectedId: string | null;
   onSelect: (event: GeoEvent) => void;
   theme: ThemeColors;
+  severityFilter: Set<number>;
+  onToggleSeverity: (sev: number) => void;
 }
-
-type SeverityFilter = null | 1 | 2 | 3 | 4;
 
 interface FilterBadgeProps {
   label: string;
@@ -57,12 +56,12 @@ function FilterBadge({ label, count, color, active, onClick, theme }: FilterBadg
   );
 }
 
-export function Sidebar({ events, selectedId, onSelect, theme }: Props) {
-  const [filter, setFilter] = useState<SeverityFilter>(null);
+export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, onToggleSeverity }: Props) {
   const colors = severityColors(theme);
 
-  const filtered = filter
-    ? events.filter(e => e.severity === filter)
+  const hasFilter = severityFilter.size > 0;
+  const filtered = hasFilter
+    ? events.filter(e => severityFilter.has(e.severity))
     : events;
 
   const sorted = [...filtered].sort((a, b) => {
@@ -74,10 +73,6 @@ export function Sidebar({ events, selectedId, onSelect, theme }: Props) {
   const highCount = events.filter(e => e.severity === 3).length;
   const medCount = events.filter(e => e.severity === 2).length;
   const lowCount = events.filter(e => e.severity === 1).length;
-
-  const toggleFilter = (sev: SeverityFilter) => {
-    setFilter(prev => prev === sev ? null : sev);
-  };
 
   return (
     <div style={{
@@ -101,34 +96,38 @@ export function Sidebar({ events, selectedId, onSelect, theme }: Props) {
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <span>HOTWIRE</span>
-          {filter !== null && (
+          {hasFilter && (
             <button
-              onClick={() => setFilter(null)}
+              onClick={() => {
+                // Clear all — toggle each active one off
+                severityFilter.forEach(s => onToggleSeverity(s));
+              }}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 fontSize: 10, color: theme.overlay0, letterSpacing: '0.5px',
+                fontFamily: 'inherit',
               }}
             >
-              CLEAR FILTER
+              CLEAR
             </button>
           )}
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <FilterBadge
             label="CRITICAL" count={critCount} color={colors[4]}
-            active={filter === 4} onClick={() => toggleFilter(4)} theme={theme}
+            active={severityFilter.has(4)} onClick={() => onToggleSeverity(4)} theme={theme}
           />
           <FilterBadge
             label="HIGH" count={highCount} color={colors[3]}
-            active={filter === 3} onClick={() => toggleFilter(3)} theme={theme}
+            active={severityFilter.has(3)} onClick={() => onToggleSeverity(3)} theme={theme}
           />
           <FilterBadge
             label="MEDIUM" count={medCount} color={colors[2]}
-            active={filter === 2} onClick={() => toggleFilter(2)} theme={theme}
+            active={severityFilter.has(2)} onClick={() => onToggleSeverity(2)} theme={theme}
           />
           <FilterBadge
             label="LOW" count={lowCount} color={colors[1]}
-            active={filter === 1} onClick={() => toggleFilter(1)} theme={theme}
+            active={severityFilter.has(1)} onClick={() => onToggleSeverity(1)} theme={theme}
           />
         </div>
       </div>

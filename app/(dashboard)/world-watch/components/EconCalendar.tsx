@@ -58,7 +58,7 @@ function getTzFromStorage(): string {
 }
 
 export function EconCalendar({ theme }: Props) {
-  const [currencyFilter, setCurrencyFilter] = useState('ALL');
+  const [currencyFilter, setCurrencyFilter] = useState('USD');
   const [impactFilter, setImpactFilter] = useState('ALL');
   const [timezone, setTimezone] = useState('America/New_York');
   const [weekOffset, setWeekOffset] = useState(0);
@@ -134,6 +134,41 @@ export function EconCalendar({ theme }: Props) {
             {TIMEZONES.map(t => <option key={t.zone} value={t.zone}>{t.label}</option>)}
           </select>
         </div>
+      </div>
+
+      {/* Weekday tabs */}
+      <div style={{
+        display: 'flex',
+        gap: 0,
+        borderBottom: `1px solid ${theme.surface1}`,
+        background: theme.mantle,
+        flexShrink: 0,
+      }}>
+        {weekDays.map(day => {
+          const isToday = isSameDay(day, today);
+          const dayName = day.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+          const dayNum = day.getDate();
+          const dayEvents = filtered.filter(e => isSameDay(new Date(e.time), day));
+          return (
+            <div key={day.toISOString()} style={{
+              flex: 1,
+              padding: '8px 0',
+              textAlign: 'center',
+              borderBottom: isToday ? `2px solid ${theme.blue}` : '2px solid transparent',
+              background: isToday ? theme.surface0 + '33' : 'transparent',
+            }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: isToday ? theme.blue : theme.overlay0, letterSpacing: '1.5px' }}>
+                {dayName}
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: isToday ? theme.blue : theme.text }}>
+                {dayNum}
+              </div>
+              <div style={{ fontSize: 9, color: theme.overlay0 }}>
+                {dayEvents.length > 0 ? `${dayEvents.length} events` : '—'}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Column header */}

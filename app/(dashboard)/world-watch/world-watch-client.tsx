@@ -64,8 +64,21 @@ export default function WorldWatchClient() {
   const [layers, setLayers] = useState<DataLayer[]>(defaultLayers);
   const [showLayerPanel, setShowLayerPanel] = useState(false);
   const [activeView, setActiveView] = useState<ActiveView>('globe');
+  const [severityFilter, setSeverityFilter] = useState<Set<number>>(new Set());
 
   const theme = themes[currentTheme];
+
+  const handleToggleSeverity = useCallback((sev: number) => {
+    setSeverityFilter(prev => {
+      const next = new Set(prev);
+      if (next.has(sev)) {
+        next.delete(sev);
+      } else {
+        next.add(sev);
+      }
+      return next;
+    });
+  }, []);
 
   // Load theme from localStorage on mount
   useEffect(() => {
@@ -88,6 +101,11 @@ export default function WorldWatchClient() {
   }, []);
 
   const activeLayerCount = layers.filter(l => l.enabled).length;
+
+  // Filter events for Globe based on severity selection
+  const filteredEvents = severityFilter.size > 0
+    ? mockEvents.filter(e => severityFilter.has(e.severity))
+    : mockEvents;
 
   const wrapperStyle: React.CSSProperties = {
     display: 'flex',
@@ -292,7 +310,7 @@ export default function WorldWatchClient() {
             <>
               {/* Globe fills full area */}
               <Globe
-                events={mockEvents}
+                events={filteredEvents}
                 layers={layers}
                 selectedId={selectedId}
                 onSelect={handleSelectEvent}
@@ -341,6 +359,8 @@ export default function WorldWatchClient() {
                   selectedId={selectedId}
                   onSelect={handleSelectEvent}
                   theme={theme}
+                  severityFilter={severityFilter}
+                  onToggleSeverity={handleToggleSeverity}
                 />
               </div>
             </>
