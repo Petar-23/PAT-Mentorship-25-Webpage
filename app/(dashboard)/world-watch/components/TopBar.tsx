@@ -79,17 +79,21 @@ export function TopBar({ theme, currentTheme, setCurrentTheme }: Props) {
         </Link>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 28, fontWeight: 700, color: theme.text, letterSpacing: '6px' }}>
+          <span style={{ fontSize: 28, fontWeight: 900, color: theme.text, letterSpacing: '6px' }}>
             OPTICON
           </span>
           <span style={{
             fontSize: 9,
-            color: theme.crust,
-            background: theme.peach,
-            padding: '2px 5px',
-            fontWeight: 700,
+            color: '#fff',
+            background: '#FF3B00',
+            padding: '3px 8px',
             letterSpacing: '1px',
-          }}>PAT</span>
+            fontWeight: 700,
+            marginLeft: 4,
+          }}>
+            by PRICE ACTION TRADER
+          </span>
+          {/* old PAT badge removed — replaced by "by PRICE ACTION TRADER" orange box */}
         </div>
       </div>
 

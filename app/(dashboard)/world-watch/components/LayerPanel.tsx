@@ -43,7 +43,7 @@ export function LayerPanel({ layers, onToggle, theme, onClose }: Props) {
         alignItems: 'center',
       }}>
         <span style={{ fontSize: 10, fontWeight: 700, color: theme.subtext0, letterSpacing: '2px' }}>
-          OVERLAY PROTOCOLS
+          DATA LAYERS
         </span>
         <button
           onClick={onClose}

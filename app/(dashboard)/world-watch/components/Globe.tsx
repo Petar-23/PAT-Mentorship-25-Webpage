@@ -51,11 +51,11 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
       // Globe atmosphere
       // @ts-ignore setFog (mapbox-gl v3)
       map.setFog({
-        color: 'rgb(15, 15, 25)',
-        'high-color': 'rgb(30, 30, 60)',
+        color: 'rgb(10, 10, 18)',
+        'high-color': 'rgb(20, 20, 45)',
         'horizon-blend': 0.08,
-        'space-color': 'rgb(10, 10, 20)',
-        'star-intensity': 0.6,
+        'space-color': 'rgb(5, 5, 12)',
+        'star-intensity': 0.15,
       });
 
       // Events GeoJSON source
@@ -161,6 +161,20 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
     });
 
     // Click handler
+    // Click on empty space clears country highlight
+    map.on('click', (e) => {
+      const features = map.queryRenderedFeatures(e.point, { layers: ['event-circles'] });
+      if (!features || features.length === 0) {
+        // Clicked empty space — clear highlights
+        if (map.getLayer('country-highlight-fill')) {
+          map.setFilter('country-highlight-fill', ['==', 'name_en', '']);
+        }
+        if (map.getLayer('country-highlight-line')) {
+          map.setFilter('country-highlight-line', ['==', 'name_en', '']);
+        }
+      }
+    });
+
     map.on('click', 'event-circles', (e) => {
       if (e.features && e.features[0]) {
         const id = e.features[0].properties?.id;

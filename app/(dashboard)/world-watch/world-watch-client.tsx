@@ -258,7 +258,7 @@ export default function WorldWatchClient() {
               }}
               onClick={() => setShowLayerPanel(p => !p)}
             >
-              OVERLAY PROTOCOLS
+              LAYERS
               {activeLayerCount > 0 && (
                 <span style={{
                   position: 'absolute',
