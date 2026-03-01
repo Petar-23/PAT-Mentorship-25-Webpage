@@ -443,6 +443,66 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         },
       });
 
+      // ─── SHIP SYSTEM ──────────────────────────────────────────────
+
+      // Load ship icon — inline SVG
+      const shipSvgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M20 21c-1.39 0-2.78-.47-4-1.32-2.44 1.71-5.56 1.71-8 0C6.78 20.53 5.39 21 4 21H2v2h2c1.38 0 2.74-.35 4-.99 2.52 1.29 5.48 1.29 8 0 1.26.65 2.62.99 4 .99h2v-2h-2zM3.95 19H4c1.6 0 3.02-.88 4-2 .98 1.12 2.4 2 4 2s3.02-.88 4-2c.98 1.12 2.4 2 4 2h.05l1.89-6.68c.08-.26.06-.54-.06-.78s-.34-.42-.6-.5L20 10.62V6c0-1.1-.9-2-2-2h-3V1H9v3H6c-1.1 0-2 .9-2 2v4.62l-1.29.42c-.26.08-.48.26-.6.5s-.13.52-.05.78L3.95 19zM6 6h12v3.97L12 8 6 9.97V6z"/></svg>`;
+      const shipBlob = new Blob([shipSvgStr], { type: 'image/svg+xml' });
+      const shipUrl = URL.createObjectURL(shipBlob);
+      const shipImg = new Image(24, 24);
+      shipImg.onload = () => {
+        if (!map.hasImage('ship-icon')) {
+          map.addImage('ship-icon', shipImg, { sdf: true });
+        }
+        URL.revokeObjectURL(shipUrl);
+      };
+      shipImg.onerror = () => URL.revokeObjectURL(shipUrl);
+      shipImg.src = shipUrl;
+
+      // Ship positions source
+      map.addSource('ships-live', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+
+      // Ship icons
+      map.addLayer({
+        id: 'ship-icons',
+        type: 'symbol',
+        source: 'ships-live',
+        layout: {
+          'icon-image': 'ship-icon',
+          'icon-size': 0.9,
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+        },
+        paint: {
+          'icon-color': ['get', 'color'],
+          'icon-opacity': 0.9,
+        },
+      });
+
+      // Ship name labels (zoom >= 3)
+      map.addLayer({
+        id: 'ship-labels',
+        type: 'symbol',
+        source: 'ships-live',
+        minzoom: 3,
+        layout: {
+          'text-field': ['get', 'label'],
+          'text-size': 10,
+          'text-offset': [0, 1.4],
+          'text-anchor': 'top',
+          'text-allow-overlap': false,
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+        },
+        paint: {
+          'text-color': ['get', 'color'],
+          'text-halo-color': '#11111b',
+          'text-halo-width': 1,
+        },
+      });
+
       // Aircraft track source (for hover/click route display)
       map.addSource('aircraft-track-line', {
         type: 'geojson',
@@ -922,8 +982,8 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     if (!map.isStyleLoaded()) return;
 
     for (const layer of layers) {
-      // Aircraft has dedicated icon rendering — skip generic circle system
-      if (layer.id === 'aircraft') continue;
+      // Aircraft + Ships have dedicated icon rendering — skip generic circle system
+      if (layer.id === 'aircraft' || layer.id === 'ships') continue;
 
       const sourceId = `layer-${layer.id}`;
       const circleId = `layer-${layer.id}-circles`;
@@ -948,8 +1008,8 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         if (existing) {
           // Update existing source data
           existing.setData(geojson);
-        } else if (features.length > 0) {
-          // Create source + layers for first time
+        } else if (features.length > 0 || layer.points?.length) {
+          // Create source + layers when data arrives (even on later renders)
           map.addSource(sourceId, { type: 'geojson', data: geojson });
           map.addLayer({
             id: circleId, type: 'circle', source: sourceId,
@@ -1089,6 +1149,56 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           map.off('idle', handler);
         }
       };
+      map.on('idle', handler);
+      return () => { map.off('idle', handler); };
+    }
+  }, [layers]); // eslint-disable-line
+
+  // Update ships-live source when ships layer points change
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    const shipLayer = layers.find(l => l.id === 'ships');
+    if (!shipLayer) return;
+
+    // Clean up any leftover generic circles for ships
+    try {
+      if (map.getLayer('layer-ships-circles')) map.removeLayer('layer-ships-circles');
+      if (map.getLayer('layer-ships-labels')) map.removeLayer('layer-ships-labels');
+      if (map.getSource('layer-ships')) map.removeSource('layer-ships');
+    } catch (_) {}
+
+    const tryUpdate = () => {
+      if (!map.isStyleLoaded()) return false;
+      const source = map.getSource('ships-live') as mapboxgl.GeoJSONSource | undefined;
+      if (!source) return false;
+
+      const features = (shipLayer.points || []).map(p => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
+        properties: {
+          label: p.label,
+          subLabel: p.subLabel || '',
+          color: p.color,
+          meta: p.meta ? JSON.stringify(p.meta) : '',
+        },
+      }));
+
+      source.setData({ type: 'FeatureCollection', features });
+
+      // Toggle visibility
+      const visibility = shipLayer.enabled ? 'visible' : 'none';
+      try {
+        if (map.getLayer('ship-icons')) map.setLayoutProperty('ship-icons', 'visibility', visibility);
+        if (map.getLayer('ship-labels')) map.setLayoutProperty('ship-labels', 'visibility', visibility);
+      } catch (_) {}
+
+      return true;
+    };
+
+    if (!tryUpdate()) {
+      const handler = () => { if (tryUpdate()) map.off('idle', handler); };
       map.on('idle', handler);
       return () => { map.off('idle', handler); };
     }
