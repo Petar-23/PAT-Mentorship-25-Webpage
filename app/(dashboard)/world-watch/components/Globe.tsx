@@ -66,6 +66,12 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
   const isRotatingRef = useRef(true);
   const hoverPopupRef = useRef<mapboxgl.Popup | null>(null);
   const airportRef = useRef<Record<string, [number, number, string]>>({});
+  const militaryPopupRef = useRef<mapboxgl.Popup | null>(null);
+  const nuclearPopupRef = useRef<mapboxgl.Popup | null>(null);
+  const cableClickPopupRef = useRef<mapboxgl.Popup | null>(null);
+  const pipelineClickPopupRef = useRef<mapboxgl.Popup | null>(null);
+  const disasterPopupRef = useRef<mapboxgl.Popup | null>(null);
+  const pulseIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const colors = severityColors(theme);
 
   // Load full airport database (6072 airports) on mount
@@ -421,6 +427,179 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         },
       });
 
+      // ─── MILITARY BASE ICON ───────────────────────────────────────────────
+      const baseSvgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.83-3.23 9.36-7 10.57-3.77-1.21-7-5.74-7-10.57V6.3l7-3.12z"/><path d="M12 7l-1.5 3.5L7 11l3 2.5L9 17l3-2 3 2-1-3.5 3-2.5-3.5-.5z"/></svg>`;
+      const baseBlob = new Blob([baseSvgStr], { type: 'image/svg+xml' });
+      const baseUrl = URL.createObjectURL(baseBlob);
+      const baseImg = new Image(24, 24);
+      baseImg.onload = () => {
+        if (!map.hasImage('base-icon')) map.addImage('base-icon', baseImg, { sdf: true });
+        URL.revokeObjectURL(baseUrl);
+      };
+      baseImg.onerror = () => URL.revokeObjectURL(baseUrl);
+      baseImg.src = baseUrl;
+
+      // ─── NUCLEAR ICON ─────────────────────────────────────────────────────
+      const nuclearSvgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="2.5"/><path d="M12 4a8 8 0 0 0-4.3 1.4l2.3 4.4c.6-.5 1.3-.8 2-.8s1.4.3 2 .8l2.3-4.4A8 8 0 0 0 12 4z"/><path d="M4.7 9.7a8 8 0 0 0 .4 4.8l4.1-.5a4 4 0 0 1-.1-2z"/><path d="M12 20a8 8 0 0 0 4.3-1.4l-2.3-4.4c-.6.5-1.3.8-2 .8s-1.4-.3-2-.8l-2.3 4.4A8 8 0 0 0 12 20z"/><path d="M19.3 9.7l-4.2 2.3c.2.6.1 1.4-.1 2l4.1.5a8 8 0 0 0 .2-4.8z"/></svg>`;
+      const nuclearBlob = new Blob([nuclearSvgStr], { type: 'image/svg+xml' });
+      const nuclearUrl = URL.createObjectURL(nuclearBlob);
+      const nuclearImgEl = new Image(24, 24);
+      nuclearImgEl.onload = () => {
+        if (!map.hasImage('nuclear-icon')) map.addImage('nuclear-icon', nuclearImgEl, { sdf: true });
+        URL.revokeObjectURL(nuclearUrl);
+      };
+      nuclearImgEl.onerror = () => URL.revokeObjectURL(nuclearUrl);
+      nuclearImgEl.src = nuclearUrl;
+
+      // ─── DISASTER PULSE RINGS (on events source, behind event-circles) ────
+      for (let i = 1; i <= 3; i++) {
+        map.addLayer({
+          id: `disaster-pulse-${i}`,
+          type: 'circle',
+          source: 'events',
+          filter: ['==', ['get', 'category'], 'disaster'],
+          layout: { visibility: 'visible' },
+          paint: {
+            'circle-radius': 6,
+            'circle-color': 'transparent',
+            'circle-opacity': 0,
+            'circle-stroke-width': 1.5,
+            'circle-stroke-color': '#fab387',
+            'circle-stroke-opacity': 0,
+          },
+        } as any, 'event-pulse');
+      }
+
+      // ─── MILITARY BASES SOURCE & LAYERS ───────────────────────────────────
+      map.addSource('military-bases-live', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      for (let i = 1; i <= 3; i++) {
+        map.addLayer({
+          id: `military-pulse-${i}`,
+          type: 'circle',
+          source: 'military-bases-live',
+          layout: { visibility: 'none' },
+          paint: {
+            'circle-radius': 6,
+            'circle-color': 'transparent',
+            'circle-opacity': 0,
+            'circle-stroke-width': 1.5,
+            'circle-stroke-color': '#89b4fa',
+            'circle-stroke-opacity': 0,
+          },
+        } as any);
+      }
+      map.addLayer({
+        id: 'military-base-icons',
+        type: 'symbol',
+        source: 'military-bases-live',
+        layout: {
+          visibility: 'none',
+          'icon-image': 'base-icon',
+          'icon-size': 0.8,
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+        },
+        paint: { 'icon-color': ['get', 'color'], 'icon-opacity': 0.9 },
+      });
+      map.addLayer({
+        id: 'military-base-labels',
+        type: 'symbol',
+        source: 'military-bases-live',
+        minzoom: 4,
+        layout: {
+          visibility: 'none',
+          'text-field': ['get', 'label'],
+          'text-size': 10,
+          'text-offset': [0, 1.4],
+          'text-anchor': 'top',
+          'text-allow-overlap': false,
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+        },
+        paint: { 'text-color': ['get', 'color'], 'text-halo-color': '#11111b', 'text-halo-width': 1 },
+      });
+
+      // ─── NUCLEAR FACILITIES SOURCE & LAYERS ───────────────────────────────
+      map.addSource('nuclear-live', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      for (let i = 1; i <= 3; i++) {
+        map.addLayer({
+          id: `nuclear-pulse-${i}`,
+          type: 'circle',
+          source: 'nuclear-live',
+          layout: { visibility: 'none' },
+          paint: {
+            'circle-radius': 6,
+            'circle-color': 'transparent',
+            'circle-opacity': 0,
+            'circle-stroke-width': 1.5,
+            'circle-stroke-color': '#f9e2af',
+            'circle-stroke-opacity': 0,
+          },
+        } as any);
+      }
+      map.addLayer({
+        id: 'nuclear-icons',
+        type: 'symbol',
+        source: 'nuclear-live',
+        layout: {
+          visibility: 'none',
+          'icon-image': 'nuclear-icon',
+          'icon-size': 0.7,
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+        },
+        paint: { 'icon-color': ['get', 'color'], 'icon-opacity': 0.9 },
+      });
+      map.addLayer({
+        id: 'nuclear-labels',
+        type: 'symbol',
+        source: 'nuclear-live',
+        minzoom: 4,
+        layout: {
+          visibility: 'none',
+          'text-field': ['get', 'label'],
+          'text-size': 10,
+          'text-offset': [0, 1.4],
+          'text-anchor': 'top',
+          'text-allow-overlap': false,
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+        },
+        paint: { 'text-color': ['get', 'color'], 'text-halo-color': '#11111b', 'text-halo-width': 1 },
+      });
+
+      // ─── PULSE ANIMATION ──────────────────────────────────────────────────
+      {
+        let pulseFrame = 0;
+        pulseIntervalRef.current = setInterval(() => {
+          const m = mapRef.current;
+          if (!m?.isStyleLoaded()) return;
+          pulseFrame++;
+          const t = (pulseFrame % 60) / 60;
+          const rings = [
+            { phase: t, maxR: 20, maxO: 0.4 },
+            { phase: (t + 0.33) % 1, maxR: 20, maxO: 0.3 },
+            { phase: (t + 0.66) % 1, maxR: 20, maxO: 0.2 },
+          ];
+          const categories = ['military', 'nuclear', 'disaster'];
+          for (const cat of categories) {
+            for (let i = 0; i < 3; i++) {
+              const layerId = `${cat}-pulse-${i + 1}`;
+              if (!m.getLayer(layerId)) continue;
+              const { phase, maxR, maxO } = rings[i];
+              try {
+                m.setPaintProperty(layerId, 'circle-radius', 6 + phase * maxR);
+                m.setPaintProperty(layerId, 'circle-stroke-opacity', maxO * (1 - phase));
+              } catch (_) {}
+            }
+          }
+        }, 50); // 20fps
+      }
+
       // ─── SUBMARINE CABLES (real GeoJSON, 710 cables) ─────────────────────
       fetch('/data/submarine-cables.json')
         .then(r => r.json())
@@ -553,13 +732,60 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     // Click: marker stops rotation + highlights; empty space clears
     let markerClicked = false;
 
+    // ─── DISASTER/EVENT CLICK POPUP ───────────────────────────────────────
+    const disasterPopup = new mapboxgl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      maxWidth: '280px',
+      className: 'ww-marker-popup',
+    });
+    disasterPopupRef.current = disasterPopup;
+
     map.on('click', 'event-circles', (e) => {
       markerClicked = true;
-      stopRotation(); // Stop rotation on any marker click
-      if (e.features && e.features[0]) {
-        const id = e.features[0].properties?.id;
-        const event = events.find(ev => ev.id === id);
-        if (event) onSelect(event);
+      stopRotation();
+      if (!e.features?.[0]) return;
+      const props = e.features[0].properties;
+      const id = props?.id;
+      const event = events.find(ev => ev.id === id);
+      if (event) onSelect(event);
+      const coords = ((e.features[0].geometry as any).coordinates as [number, number]).slice() as [number, number];
+      const severity = props?.severity || 1;
+      const sevColor = colors[severity] || '#cdd6f4';
+      const sevLabel = severity === 4 ? 'CRITICAL' : severity === 3 ? 'HIGH' : severity === 2 ? 'MEDIUM' : 'LOW';
+      const title = props?.title || 'Unknown Event';
+      const country = props?.country || '';
+      const category = props?.category || '';
+      const srcUrl = props?.sourceUrl || '';
+      const popupId = `disaster-popup-${Date.now()}`;
+
+      disasterPopup.setLngLat(coords).setHTML(`
+        <div style="
+          background: ${theme.mantle}ee;
+          border: 1px solid ${sevColor}55;
+          border-left: 3px solid ${sevColor};
+          border-radius: 6px;
+          padding: 10px 12px;
+          backdrop-filter: blur(12px);
+          font-family: ui-monospace, monospace;
+          min-width: 220px;
+        ">
+          <img id="${popupId}-img" class="popup-wiki-img" style="width:100%;max-height:80px;object-fit:cover;border-radius:4px;margin-bottom:6px;display:none;" />
+          <div style="font-size: 10px; font-weight: 700; color: ${sevColor}; letter-spacing: 1px; margin-bottom: 3px;">${sevLabel}${category ? ' · ' + category.toUpperCase() : ''}</div>
+          <div style="font-size: 12px; font-weight: 600; color: ${theme.text}; margin-bottom: 3px; line-height: 1.3;">${title}</div>
+          <div style="font-size: 10px; color: ${theme.overlay0}; margin-bottom: 4px;">📍 ${country}</div>
+          ${srcUrl ? `<div style="border-top: 1px solid ${theme.surface0}; padding-top: 6px; font-size: 9px;"><a href="${srcUrl}" target="_blank" rel="noopener" style="color: ${sevColor}; text-decoration: none; opacity: 0.8;">🔗 SOURCE ↗</a></div>` : ''}
+        </div>
+      `).addTo(map);
+
+      if (country) {
+        fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(country.replace(/\s/g, '_'))}`)
+          .then(r => r.json())
+          .then((d: any) => {
+            const imgEl = document.getElementById(`${popupId}-img`) as HTMLImageElement | null;
+            if (d.thumbnail?.source && imgEl) { imgEl.src = d.thumbnail.source; imgEl.style.display = 'block'; }
+          })
+          .catch(() => {});
       }
     });
 
@@ -953,6 +1179,181 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     });
     // ─────────────────────────────────────────────────────────────────────────
 
+    // ─── MILITARY BASE CLICK POPUP ────────────────────────────────────────
+    const basePopup = new mapboxgl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      maxWidth: '300px',
+      className: 'ww-marker-popup',
+    });
+    militaryPopupRef.current = basePopup;
+
+    map.on('click', 'military-base-icons', (e) => {
+      if (!e.features?.[0]) return;
+      markerClicked = true;
+      stopRotation();
+      const props = e.features[0].properties as { label?: string; subLabel?: string; color?: string } | null;
+      const coords = ((e.features[0].geometry as any).coordinates as [number, number]).slice() as [number, number];
+      const label = props?.label || '';
+      const subLabel = props?.subLabel || '';
+      const color = props?.color || '#89b4fa';
+      const hostileColors = ['#f38ba8', '#fab387'];
+      const affiliation = hostileColors.includes(color) ? 'SH' : 'SF';
+      const sidc = `${affiliation}GPUCA---`;
+      let natoSvg = '';
+      try { const sym = new ms.Symbol(sidc, { size: 30, frame: true, fill: true }); natoSvg = sym.asSVG(); } catch (_) {}
+      const wikiTitle = label.replace(/\s/g, '_');
+      const popupId = `base-popup-${Date.now()}`;
+
+      basePopup.setLngLat(coords).setHTML(`
+        <div style="background:${theme.mantle}ee;border:1px solid ${color}55;border-radius:6px;padding:10px 12px;backdrop-filter:blur(12px);font-family:ui-monospace,monospace;min-width:220px;">
+          ${natoSvg ? `<div style="text-align:center;margin-bottom:6px;">${natoSvg}</div>` : ''}
+          <img id="${popupId}-img" style="width:100%;max-height:100px;object-fit:cover;border-radius:4px;margin-bottom:6px;display:none;" />
+          <div style="font-size:11px;font-weight:700;color:${color};letter-spacing:0.5px;margin-bottom:3px;">🛡 ${label}</div>
+          <div style="font-size:10px;color:${theme.subtext0};margin-bottom:4px;">${subLabel}</div>
+          <div style="border-top:1px solid ${theme.surface0};padding-top:6px;font-size:9px;">
+            <a href="https://en.wikipedia.org/wiki/${encodeURIComponent(wikiTitle)}" target="_blank" style="color:${color};text-decoration:none;opacity:0.8;">Wikipedia ↗</a>
+          </div>
+        </div>
+      `).addTo(map);
+
+      fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`)
+        .then(r => r.json())
+        .then((d: any) => {
+          const imgEl = document.getElementById(`${popupId}-img`) as HTMLImageElement | null;
+          if (d.thumbnail?.source && imgEl) { imgEl.src = d.thumbnail.source; imgEl.style.display = 'block'; }
+        }).catch(() => {});
+    });
+
+    map.on('mouseenter', 'military-base-icons', () => { map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', 'military-base-icons', () => { map.getCanvas().style.cursor = ''; });
+
+    // ─── NUCLEAR FACILITY CLICK POPUP ─────────────────────────────────────
+    const nucPopup = new mapboxgl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      maxWidth: '300px',
+      className: 'ww-marker-popup',
+    });
+    nuclearPopupRef.current = nucPopup;
+
+    map.on('click', 'nuclear-icons', (e) => {
+      if (!e.features?.[0]) return;
+      markerClicked = true;
+      stopRotation();
+      const props = e.features[0].properties as { label?: string; subLabel?: string; color?: string } | null;
+      const coords = ((e.features[0].geometry as any).coordinates as [number, number]).slice() as [number, number];
+      const label = props?.label || '';
+      const subLabel = props?.subLabel || '';
+      const color = props?.color || '#f9e2af';
+      const affiliation = color === '#f38ba8' ? 'SH' : color === '#89b4fa' ? 'SF' : 'SN';
+      const sidc = `${affiliation}GPII-----`;
+      let natoSvg = '';
+      try { const sym = new ms.Symbol(sidc, { size: 30, frame: true, fill: true }); natoSvg = sym.asSVG(); } catch (_) {}
+      const wikiTitle = label.replace(/\s/g, '_');
+      const popupId = `nuc-popup-${Date.now()}`;
+
+      nucPopup.setLngLat(coords).setHTML(`
+        <div style="background:${theme.mantle}ee;border:1px solid ${color}55;border-radius:6px;padding:10px 12px;backdrop-filter:blur(12px);font-family:ui-monospace,monospace;min-width:220px;">
+          ${natoSvg ? `<div style="text-align:center;margin-bottom:6px;">${natoSvg}</div>` : ''}
+          <img id="${popupId}-img" style="width:100%;max-height:100px;object-fit:cover;border-radius:4px;margin-bottom:6px;display:none;" />
+          <div style="font-size:11px;font-weight:700;color:${color};letter-spacing:0.5px;margin-bottom:3px;">☢ ${label}</div>
+          <div style="font-size:10px;color:${theme.subtext0};margin-bottom:4px;">${subLabel}</div>
+          <div style="border-top:1px solid ${theme.surface0};padding-top:6px;font-size:9px;">
+            <a href="https://en.wikipedia.org/wiki/${encodeURIComponent(wikiTitle)}" target="_blank" style="color:${color};text-decoration:none;opacity:0.8;">Wikipedia ↗</a>
+          </div>
+        </div>
+      `).addTo(map);
+
+      fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`)
+        .then(r => r.json())
+        .then((d: any) => {
+          const imgEl = document.getElementById(`${popupId}-img`) as HTMLImageElement | null;
+          if (d.thumbnail?.source && imgEl) { imgEl.src = d.thumbnail.source; imgEl.style.display = 'block'; }
+        }).catch(() => {});
+    });
+
+    map.on('mouseenter', 'nuclear-icons', () => { map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', 'nuclear-icons', () => { map.getCanvas().style.cursor = ''; });
+
+    // ─── SUBMARINE CABLE CLICK POPUP ──────────────────────────────────────
+    const cablePopup = new mapboxgl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      maxWidth: '280px',
+      className: 'ww-marker-popup',
+    });
+    cableClickPopupRef.current = cablePopup;
+
+    map.on('click', 'submarine-cables-lines', (e) => {
+      markerClicked = true;
+      if (!e.features?.[0]) return;
+      const props = e.features[0].properties as { name?: string; color?: string } | null;
+      const color = props?.color || theme.blue;
+      const label = props?.name || 'Submarine Cable';
+      const popupId = `cable-popup-${Date.now()}`;
+
+      cablePopup.setLngLat(e.lngLat).setHTML(`
+        <div style="background:${theme.mantle}ee;border:1px solid ${color}55;border-radius:6px;padding:10px 12px;backdrop-filter:blur(12px);font-family:ui-monospace,monospace;min-width:200px;">
+          <img id="${popupId}-img" style="width:100%;max-height:80px;object-fit:cover;border-radius:4px;margin-bottom:6px;display:none;" />
+          <div style="font-size:11px;font-weight:700;color:${color};margin-bottom:6px;">🌊 ${label}</div>
+          <div style="border-top:1px solid ${theme.surface0};padding-top:6px;font-size:9px;display:flex;gap:8px;">
+            <a href="https://www.submarinecablemap.com" target="_blank" style="color:${color};text-decoration:none;opacity:0.8;">Cable Map ↗</a>
+            <a href="https://en.wikipedia.org/wiki/${encodeURIComponent(label.replace(/\s/g, '_'))}" target="_blank" style="color:${theme.overlay0};text-decoration:none;opacity:0.8;">Wikipedia ↗</a>
+          </div>
+        </div>
+      `).addTo(map);
+
+      fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(label.replace(/\s/g, '_'))}`)
+        .then(r => r.json())
+        .then((d: any) => {
+          const imgEl = document.getElementById(`${popupId}-img`) as HTMLImageElement | null;
+          if (d.thumbnail?.source && imgEl) { imgEl.src = d.thumbnail.source; imgEl.style.display = 'block'; }
+        }).catch(() => {});
+    });
+
+    // ─── PIPELINE CLICK POPUP ─────────────────────────────────────────────
+    const pipePopup = new mapboxgl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      maxWidth: '280px',
+      className: 'ww-marker-popup',
+    });
+    pipelineClickPopupRef.current = pipePopup;
+
+    const pipelineClick = (e: mapboxgl.MapLayerMouseEvent) => {
+      markerClicked = true;
+      if (!e.features?.[0]) return;
+      const props = e.features[0].properties as { name?: string; type?: string; status?: string; route?: string; color?: string; operator?: string } | null;
+      const color = props?.color || '#a6e3a1';
+      const label = props?.name || 'Pipeline';
+      const statusColor = props?.status === 'Active' ? '#a6e3a1' : (props?.status === 'Destroyed' || props?.status === 'Decommissioned') ? '#f38ba8' : '#cba6f7';
+      const popupId = `pipe-popup-${Date.now()}`;
+
+      pipePopup.setLngLat(e.lngLat).setHTML(`
+        <div style="background:${theme.mantle}ee;border:1px solid ${color}55;border-radius:6px;padding:10px 12px;backdrop-filter:blur(12px);font-family:ui-monospace,monospace;min-width:200px;">
+          <img id="${popupId}-img" style="width:100%;max-height:80px;object-fit:cover;border-radius:4px;margin-bottom:6px;display:none;" />
+          <div style="font-size:11px;font-weight:700;color:${color};margin-bottom:3px;">${props?.type === 'gas' ? '⛽' : props?.type === 'oil' ? '🛢️' : '🔧'} ${label}</div>
+          ${props?.route ? `<div style="font-size:10px;color:${theme.overlay0};margin-bottom:3px;">${props.route}</div>` : ''}
+          ${props?.operator ? `<div style="font-size:10px;color:${theme.subtext0};margin-bottom:3px;">Op: ${props.operator}</div>` : ''}
+          ${props?.status ? `<div style="display:inline-block;padding:2px 6px;background:${statusColor}22;border:1px solid ${statusColor}44;border-radius:3px;font-size:9px;color:${statusColor};font-weight:700;margin-bottom:4px;">${props.status}</div>` : ''}
+          <div style="border-top:1px solid ${theme.surface0};padding-top:6px;font-size:9px;">
+            <a href="https://en.wikipedia.org/wiki/${encodeURIComponent(label.replace(/\s/g, '_'))}" target="_blank" style="color:${color};text-decoration:none;opacity:0.8;">Wikipedia ↗</a>
+          </div>
+        </div>
+      `).addTo(map);
+
+      fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(label.replace(/\s/g, '_'))}`)
+        .then(r => r.json())
+        .then((d: any) => {
+          const imgEl = document.getElementById(`${popupId}-img`) as HTMLImageElement | null;
+          if (d.thumbnail?.source && imgEl) { imgEl.src = d.thumbnail.source; imgEl.style.display = 'block'; }
+        }).catch(() => {});
+    };
+
+    map.on('click', 'pipelines-lines', pipelineClick);
+    map.on('click', 'pipelines-lines-dashed', pipelineClick);
+
     // Click empty space: dismiss aircraft popup + clear route + clear country highlight
     map.on('click', () => {
       setTimeout(() => {
@@ -968,6 +1369,12 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           acPopup.remove();
           clearAircraftRoute();
         }
+        // Dismiss other popups
+        disasterPopup.remove();
+        basePopup.remove();
+        nucPopup.remove();
+        cablePopup.remove();
+        pipePopup.remove();
       }, 60);
     });
 
@@ -981,6 +1388,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
 
     return () => {
       if (rotateRef.current) clearInterval(rotateRef.current);
+      if (pulseIntervalRef.current) { clearInterval(pulseIntervalRef.current); pulseIntervalRef.current = null; }
       map.remove();
       mapRef.current = null;
     };
@@ -1039,8 +1447,6 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     const doSync = () => {
       if (!map.isStyleLoaded()) return false;
 
-    console.log('[OPTICON] doSync running, layers:', layers.map(l => `${l.id}:${l.enabled?'ON':'off'}:${l.type}:${l.points?.length||0}pts`).join(', '));
-
     // Handle submarine cables visibility (custom Mapbox source, not generic)
     const cableLayer = layers.find(l => l.id === 'cables');
     if (cableLayer) {
@@ -1063,7 +1469,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     for (const layer of layers) {
       // Aircraft + Ships have dedicated icon rendering — skip generic circle system
       // Cables + Pipelines have custom GeoJSON sources — skip generic arc system
-      if (layer.id === 'aircraft' || layer.id === 'ships' || layer.id === 'cables' || layer.id === 'pipelines') continue;
+      if (layer.id === 'aircraft' || layer.id === 'ships' || layer.id === 'cables' || layer.id === 'pipelines' || layer.id === 'military' || layer.id === 'nuclear') continue;
 
       const sourceId = `layer-${layer.id}`;
       const circleId = `layer-${layer.id}-circles`;
@@ -1072,7 +1478,6 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       const visibility = layer.enabled ? 'visible' : 'none';
 
       if (layer.type === 'points') {
-        console.log(`[OPTICON] Processing points layer "${layer.id}": ${layer.points?.length || 0} points, enabled=${layer.enabled}`);
         const features = (layer.points || []).map(p => ({
           type: 'Feature' as const,
           geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
@@ -1086,12 +1491,10 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         const geojson = { type: 'FeatureCollection' as const, features };
 
         const existing = map.getSource(sourceId) as mapboxgl.GeoJSONSource | undefined;
-        console.log(`[OPTICON] Layer "${layer.id}": existing=${!!existing}, features=${features.length}, vis=${visibility}`);
         if (existing) {
           existing.setData(geojson);
         } else if (features.length > 0) {
           // Create source + layers (works regardless of initial enabled state)
-          console.log(`[OPTICON] Creating source+layers for "${layer.id}" with ${features.length} features`);
           map.addSource(sourceId, { type: 'geojson', data: geojson });
           map.addLayer({
             id: circleId, type: 'circle', source: sourceId,
@@ -1295,6 +1698,84 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         if (map.getLayer('ship-labels')) map.setLayoutProperty('ship-labels', 'visibility', visibility);
       } catch (_) {}
 
+      return true;
+    };
+
+    if (!tryUpdate()) {
+      const handler = () => { if (tryUpdate()) map.off('idle', handler); };
+      map.on('idle', handler);
+      return () => { map.off('idle', handler); };
+    }
+  }, [layers]); // eslint-disable-line
+
+  // Update military-bases-live source when military layer changes
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    const milLayer = layers.find(l => l.id === 'military');
+    if (!milLayer) return;
+
+    try {
+      if (map.getLayer('layer-military-circles')) map.removeLayer('layer-military-circles');
+      if (map.getLayer('layer-military-labels')) map.removeLayer('layer-military-labels');
+      if (map.getSource('layer-military')) map.removeSource('layer-military');
+    } catch (_) {}
+
+    const tryUpdate = () => {
+      if (!map.isStyleLoaded()) return false;
+      const source = map.getSource('military-bases-live') as mapboxgl.GeoJSONSource | undefined;
+      if (!source) return false;
+
+      const features = (milLayer.points || []).map(p => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
+        properties: { label: p.label, subLabel: p.subLabel || '', color: p.color },
+      }));
+      source.setData({ type: 'FeatureCollection', features });
+
+      const visibility = milLayer.enabled ? 'visible' : 'none';
+      for (const id of ['military-base-icons', 'military-base-labels', 'military-pulse-1', 'military-pulse-2', 'military-pulse-3']) {
+        try { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visibility); } catch (_) {}
+      }
+      return true;
+    };
+
+    if (!tryUpdate()) {
+      const handler = () => { if (tryUpdate()) map.off('idle', handler); };
+      map.on('idle', handler);
+      return () => { map.off('idle', handler); };
+    }
+  }, [layers]); // eslint-disable-line
+
+  // Update nuclear-live source when nuclear layer changes
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    const nucLayer = layers.find(l => l.id === 'nuclear');
+    if (!nucLayer) return;
+
+    try {
+      if (map.getLayer('layer-nuclear-circles')) map.removeLayer('layer-nuclear-circles');
+      if (map.getLayer('layer-nuclear-labels')) map.removeLayer('layer-nuclear-labels');
+      if (map.getSource('layer-nuclear')) map.removeSource('layer-nuclear');
+    } catch (_) {}
+
+    const tryUpdate = () => {
+      if (!map.isStyleLoaded()) return false;
+      const source = map.getSource('nuclear-live') as mapboxgl.GeoJSONSource | undefined;
+      if (!source) return false;
+
+      const features = (nucLayer.points || []).map(p => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
+        properties: { label: p.label, subLabel: p.subLabel || '', color: p.color },
+      }));
+      source.setData({ type: 'FeatureCollection', features });
+
+      const visibility = nucLayer.enabled ? 'visible' : 'none';
+      for (const id of ['nuclear-icons', 'nuclear-labels', 'nuclear-pulse-1', 'nuclear-pulse-2', 'nuclear-pulse-3']) {
+        try { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visibility); } catch (_) {}
+      }
       return true;
     };
 
