@@ -425,21 +425,6 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         layout: { 'line-cap': 'round' },
       });
 
-      // Dashed line: current position → projected destination
-      map.addLayer({
-        id: 'aircraft-track-dashed',
-        type: 'line',
-        source: 'aircraft-track-line',
-        filter: ['==', ['get', 'segment'], 'projected'],
-        paint: {
-          'line-color': '#89b4fa',
-          'line-width': 1,
-          'line-opacity': 0.4,
-          'line-dasharray': [4, 4],
-        },
-        layout: { 'line-cap': 'round' },
-      });
-
       // Takeoff dot
       map.addSource('aircraft-endpoints', {
         type: 'geojson',
@@ -613,18 +598,12 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         const data = await res.json();
         const rawTrack: [number, number][] = (data.path || []).map((p: any) => [p[2], p[1]] as [number, number]);
 
-        // Smart filter: only show track if >= 5 points AND traveled >= 0.5 degrees
-        if (rawTrack.length >= 5) {
-          const [originLng, originLat] = rawTrack[0];
-          const [lastLng, lastLat] = rawTrack[rawTrack.length - 1];
-          const traveled = Math.sqrt(Math.pow(lastLng - originLng, 2) + Math.pow(lastLat - originLat, 2));
-          if (traveled >= 0.5) {
-            showAircraftRoute(rawTrack, acLng, acLat, heading);
-            return;
-          }
+        // Show track if we have at least 2 points
+        if (rawTrack.length >= 2) {
+          showAircraftRoute(rawTrack, acLng, acLat, heading);
+        } else {
+          showAircraftRoute([], acLng, acLat, heading);
         }
-        // Track too short or origin suspicious — no track shown
-        showAircraftRoute([], acLng, acLat, heading);
       } catch (_) {
         showAircraftRoute([], acLng, acLat, heading);
       }
@@ -682,29 +661,54 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         </div>
       `).addTo(map);
 
-      // Async: fetch aircraft photo from Planespotters
+      // Async: fetch aircraft photo from Planespotters + type info from adsbdb (parallel)
       if (icao) {
-        fetch(`https://api.planespotters.net/pub/photos/hex/${icao}`)
+        const planespottersPromise = fetch(`https://api.planespotters.net/pub/photos/hex/${icao}`)
           .then(r => r.json())
-          .then(data => {
-            const photos = data.photos || [];
-            const imgEl = document.getElementById(`${popupId}-img`);
-            const modelEl = document.getElementById(`${popupId}-model`);
-            if (photos.length > 0 && imgEl) {
-              const photo = photos[0];
-              const src = photo.thumbnail_large?.src || photo.thumbnail?.src;
-              if (src) {
-                imgEl.innerHTML = `<img src="${src}" style="width: 100%; height: auto; border-radius: 3px; border: 1px solid ${theme.surface1};" />`;
+          .catch(() => ({ photos: [] }));
+
+        const adsbdbPromise = fetch(`https://api.adsbdb.com/v0/aircraft/${icao.toUpperCase()}`)
+          .then(r => r.json())
+          .catch(() => ({}));
+
+        Promise.all([planespottersPromise, adsbdbPromise]).then(([psData, adsbData]) => {
+          const photos = psData?.photos || [];
+          const adsbAircraft = adsbData?.response?.aircraft;
+          const imgEl = document.getElementById(`${popupId}-img`);
+          const modelEl = document.getElementById(`${popupId}-model`);
+
+          // Photo from Planespotters
+          if (photos.length > 0 && imgEl) {
+            const photo = photos[0];
+            const src = photo.thumbnail_large?.src || photo.thumbnail?.src;
+            if (src) {
+              imgEl.innerHTML = `<img src="${src}" style="width: 100%; height: auto; border-radius: 3px; border: 1px solid ${theme.surface1};" />`;
+            }
+          }
+
+          // Aircraft type from adsbdb (preferred) or Planespotters fallback
+          if (modelEl) {
+            if (adsbAircraft) {
+              const parts = [
+                adsbAircraft.type || adsbAircraft.icao_type || '',
+                adsbAircraft.registration || '',
+                adsbAircraft.registered_owner || '',
+              ].filter(Boolean);
+              if (parts.length > 0) {
+                modelEl.innerHTML = parts.map((p, i) =>
+                  i === 0
+                    ? `<span style="color:${acColor};font-weight:600;">${p}</span>`
+                    : `<span>${p}</span>`
+                ).join(' · ');
               }
-              const ac = photo.aircraft || {};
+            } else if (photos.length > 0) {
+              const ac = photos[0].aircraft || {};
               const model = ac.model || ac.icaotype || '';
               const reg = ac.registration || '';
-              if (modelEl && (model || reg)) {
-                modelEl.textContent = [model, reg].filter(Boolean).join(' — ');
-              }
+              if (model || reg) modelEl.textContent = [model, reg].filter(Boolean).join(' — ');
             }
-          })
-          .catch(() => {});
+          }
+        });
       }
 
       // Fetch and show track
@@ -944,7 +948,6 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         if (map.getLayer('aircraft-icons')) map.setLayoutProperty('aircraft-icons', 'visibility', visibility);
         if (map.getLayer('aircraft-labels')) map.setLayoutProperty('aircraft-labels', 'visibility', visibility);
         if (map.getLayer('aircraft-track-solid')) map.setLayoutProperty('aircraft-track-solid', 'visibility', visibility);
-        if (map.getLayer('aircraft-track-dashed')) map.setLayoutProperty('aircraft-track-dashed', 'visibility', visibility);
         if (map.getLayer('aircraft-endpoints-dots')) map.setLayoutProperty('aircraft-endpoints-dots', 'visibility', visibility);
         if (map.getLayer('aircraft-endpoints-labels')) map.setLayoutProperty('aircraft-endpoints-labels', 'visibility', visibility);
       } catch (_) {}
