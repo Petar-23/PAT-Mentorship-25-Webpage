@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
+import * as THREE from 'three';
 import type { GeoEvent, DataLayer, ThemeColors } from '../types';
 import { severityColors } from '../styles/themes';
 
@@ -113,6 +114,24 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
       }, 1000);
     });
     globe.pointOfView({ lat: 30, lng: 20, altitude: 2.2 });
+
+    // Starfield
+    const starCount = 2000;
+    const starGeometry = new THREE.BufferGeometry();
+    const starPositions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount * 3; i++) {
+      starPositions[i] = (Math.random() - 0.5) * 800;
+    }
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMaterial = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.5,
+      transparent: true,
+      opacity: 0.6,
+      sizeAttenuation: true,
+    });
+    const stars = new THREE.Points(starGeometry, starMaterial);
+    globe.scene().add(stars);
 
     globeRef.current = globe;
 

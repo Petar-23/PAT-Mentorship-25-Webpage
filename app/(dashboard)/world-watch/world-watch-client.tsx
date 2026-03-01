@@ -11,6 +11,8 @@ import { Sidebar } from './components/Sidebar';
 import { Ticker } from './components/Ticker';
 import { EconCalendar } from './components/EconCalendar';
 import { LayerPanel } from './components/LayerPanel';
+import { MiniCalendar } from './components/MiniCalendar';
+import { MarketsPanel } from './components/MarketsPanel';
 
 // Globe must be dynamically imported (requires browser/WebGL)
 const Globe = dynamic(
@@ -283,6 +285,25 @@ export default function WorldWatchClient() {
           {/* Globe View */}
           {activeView === 'globe' && (
             <>
+              {/* Left Sidebar Widgets */}
+              <div style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: 300,
+                background: `${theme.mantle}cc`,
+                backdropFilter: 'blur(8px)',
+                borderRight: `1px solid ${theme.surface0}`,
+                zIndex: 50,
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+              }}>
+                <MiniCalendar theme={theme} />
+                <MarketsPanel theme={theme} />
+              </div>
+
               <Globe
                 events={mockEvents}
                 layers={layers}
