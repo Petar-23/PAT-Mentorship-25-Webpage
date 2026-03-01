@@ -110,6 +110,26 @@ export default function WorldWatchClient() {
     setThemeToStorage(currentTheme);
   }, [currentTheme]);
 
+  // Load nuclear facilities from static JSON (195 worldwide plants)
+  useEffect(() => {
+    fetch('/data/nuclear-facilities.json')
+      .then(r => r.json())
+      .then((data: Array<{ name: string; country: string; countryCode: string; lat: number; lng: number; capacityMW: number }>) => {
+        const points = data.map((f, i) => ({
+          id: `nf-json-${i}`,
+          lat: f.lat,
+          lng: f.lng,
+          label: f.name,
+          subLabel: `${f.country} · ${f.capacityMW ? f.capacityMW + ' MW' : 'Unknown capacity'}`,
+          color: '#f9e2af',
+        }));
+        setLayers(prev => prev.map(l =>
+          l.id === 'nuclear' ? { ...l, points } : l
+        ));
+      })
+      .catch(() => {});
+  }, []);
+
   // Fetch naval forces from static OSINT data
   useEffect(() => {
     const NAVY_COLORS: Record<string, string> = {

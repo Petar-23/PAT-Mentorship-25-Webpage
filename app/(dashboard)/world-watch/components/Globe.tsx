@@ -504,6 +504,62 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         },
       });
 
+      // ─── SUBMARINE CABLES (real GeoJSON, 710 cables) ─────────────────────
+      fetch('/data/submarine-cables.json')
+        .then(r => r.json())
+        .then((cableData: any) => {
+          if (map.getSource('submarine-cables')) return;
+          map.addSource('submarine-cables', { type: 'geojson', data: cableData });
+          map.addLayer({
+            id: 'submarine-cables-lines',
+            type: 'line',
+            source: 'submarine-cables',
+            layout: { 'line-cap': 'round', visibility: 'none' },
+            paint: {
+              'line-color': ['coalesce', ['get', 'color'], '#89b4fa'],
+              'line-width': 1,
+              'line-opacity': 0.45,
+            },
+          });
+        })
+        .catch(() => {});
+
+      // ─── GAS / OIL PIPELINES ─────────────────────────────────────────────
+      fetch('/data/pipelines.json')
+        .then(r => r.json())
+        .then((pipeData: any) => {
+          if (map.getSource('pipelines')) return;
+          map.addSource('pipelines', { type: 'geojson', data: pipeData });
+          // Solid lines
+          map.addLayer({
+            id: 'pipelines-lines',
+            type: 'line',
+            source: 'pipelines',
+            filter: ['!', ['in', ['get', 'status'], ['literal', ['Destroyed', 'Decommissioned', 'Planned']]]],
+            layout: { 'line-cap': 'round', visibility: 'none' },
+            paint: {
+              'line-color': ['coalesce', ['get', 'color'], '#a6e3a1'],
+              'line-width': 1.5,
+              'line-opacity': 0.6,
+            },
+          });
+          // Dashed lines for destroyed/decommissioned/planned
+          map.addLayer({
+            id: 'pipelines-lines-dashed',
+            type: 'line',
+            source: 'pipelines',
+            filter: ['in', ['get', 'status'], ['literal', ['Destroyed', 'Decommissioned', 'Planned']]],
+            layout: { 'line-cap': 'round', visibility: 'none' },
+            paint: {
+              'line-color': ['coalesce', ['get', 'color'], '#f38ba8'],
+              'line-width': 1.5,
+              'line-opacity': 0.5,
+              'line-dasharray': [4, 3],
+            },
+          });
+        })
+        .catch(() => {});
+
       // Aircraft track source (for hover/click route display)
       map.addSource('aircraft-track-line', {
         type: 'geojson',
@@ -818,6 +874,41 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       showAircraftRouteFromAirports(coords[0], coords[1], origin, destination, acColor);
     });
 
+    // ─── SUBMARINE CABLE HOVER ───────────────────────────────────────────────
+    map.on('mouseenter', 'submarine-cables-lines', (e) => {
+      map.getCanvas().style.cursor = 'pointer';
+      if (!e.features?.[0] || !hoverPopupRef.current) return;
+      const props = e.features[0].properties as { name?: string; color?: string } | null;
+      const coords = e.lngLat;
+      hoverPopupRef.current.setLngLat(coords).setHTML(`
+        <div style="background: ${theme.mantle}; border: 1px solid ${props?.color || theme.blue}55; border-left: 3px solid ${props?.color || theme.blue}; padding: 6px 10px; font-family: inherit;">
+          <div style="font-size: 11px; font-weight: 700; color: ${props?.color || theme.blue};">🌊 ${props?.name || 'Submarine Cable'}</div>
+        </div>
+      `).addTo(map);
+    });
+    map.on('mouseleave', 'submarine-cables-lines', () => {
+      map.getCanvas().style.cursor = '';
+      hoverPopupRef.current?.remove();
+    });
+
+    // ─── PIPELINE HOVER ──────────────────────────────────────────────────────
+    const pipelineHover = (e: mapboxgl.MapLayerMouseEvent) => {
+      map.getCanvas().style.cursor = 'pointer';
+      if (!e.features?.[0] || !hoverPopupRef.current) return;
+      const props = e.features[0].properties as { name?: string; type?: string; status?: string; route?: string; color?: string } | null;
+      const color = props?.color || '#a6e3a1';
+      hoverPopupRef.current.setLngLat(e.lngLat).setHTML(`
+        <div style="background: ${theme.mantle}; border: 1px solid ${color}55; border-left: 3px solid ${color}; padding: 6px 10px; font-family: inherit;">
+          <div style="font-size: 11px; font-weight: 700; color: ${color};">${props?.type === 'gas' ? '⛽' : props?.type === 'oil' ? '🛢️' : props?.type === 'power' ? '⚡' : '🔧'} ${props?.name || 'Pipeline'}</div>
+          ${props?.status ? `<div style="font-size: 9px; color: ${theme.overlay0}; margin-top: 2px;">${props.status} · ${props.route || ''}</div>` : ''}
+        </div>
+      `).addTo(map);
+    };
+    map.on('mouseenter', 'pipelines-lines', pipelineHover);
+    map.on('mouseenter', 'pipelines-lines-dashed', pipelineHover);
+    map.on('mouseleave', 'pipelines-lines', () => { map.getCanvas().style.cursor = ''; hoverPopupRef.current?.remove(); });
+    map.on('mouseleave', 'pipelines-lines-dashed', () => { map.getCanvas().style.cursor = ''; hoverPopupRef.current?.remove(); });
+
     // ─── SHIPS CLICK POPUP ────────────────────────────────────────────────────
     // Ships layer uses generic circle layer id: layer-ships-circles
     // We attach a click handler after map load using a delegated approach
@@ -990,9 +1081,29 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     const map = mapRef.current;
     if (!map.isStyleLoaded()) return;
 
+    // Handle submarine cables visibility (custom Mapbox source, not generic)
+    const cableLayer = layers.find(l => l.id === 'cables');
+    if (cableLayer) {
+      const vis = cableLayer.enabled ? 'visible' : 'none';
+      try {
+        if (map.getLayer('submarine-cables-lines')) map.setLayoutProperty('submarine-cables-lines', 'visibility', vis);
+      } catch (_) {}
+    }
+
+    // Handle pipelines visibility (custom Mapbox source, not generic)
+    const pipelineLayer = layers.find(l => l.id === 'pipelines');
+    if (pipelineLayer) {
+      const vis = pipelineLayer.enabled ? 'visible' : 'none';
+      try {
+        if (map.getLayer('pipelines-lines')) map.setLayoutProperty('pipelines-lines', 'visibility', vis);
+        if (map.getLayer('pipelines-lines-dashed')) map.setLayoutProperty('pipelines-lines-dashed', 'visibility', vis);
+      } catch (_) {}
+    }
+
     for (const layer of layers) {
       // Aircraft + Ships have dedicated icon rendering — skip generic circle system
-      if (layer.id === 'aircraft' || layer.id === 'ships') continue;
+      // Cables + Pipelines have custom GeoJSON sources — skip generic arc system
+      if (layer.id === 'aircraft' || layer.id === 'ships' || layer.id === 'cables' || layer.id === 'pipelines') continue;
 
       const sourceId = `layer-${layer.id}`;
       const circleId = `layer-${layer.id}-circles`;
