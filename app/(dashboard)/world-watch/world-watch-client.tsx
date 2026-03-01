@@ -115,10 +115,22 @@ export default function WorldWatchClient() {
     <div style={wrapperStyle}>
       {/* Global Styles for World Watch */}
       <style>{`
-        @import url('https://cdn.jsdelivr.net/npm/geist@1.2.0/dist/fonts/geist-mono/style.css');
+        @font-face {
+          font-family: 'Geist Pixel';
+          src: url('/fonts/GeistPixel-Line.woff2') format('woff2');
+          font-weight: 500;
+          font-style: normal;
+          font-display: swap;
+        }
+
+        .ww-root {
+          font-family: 'Geist Pixel', 'Geist Mono', ui-monospace, monospace !important;
+          font-size: 13px;
+        }
 
         .ww-root *, .ww-root *::before, .ww-root *::after {
           box-sizing: border-box;
+          font-family: inherit;
         }
 
         @keyframes wwBlink {
@@ -184,10 +196,10 @@ export default function WorldWatchClient() {
         }}>
           {/* View toggles */}
           <button style={btnStyle(activeView === 'globe')} onClick={() => setActiveView('globe')}>
-            🌍 GLOBE
+            GLOBE
           </button>
           <button style={btnStyle(activeView === 'calendar')} onClick={() => setActiveView('calendar')}>
-            📅 ECON CALENDAR
+            ECON CALENDAR
           </button>
 
           <div style={{ width: 1, height: 20, background: theme.surface1, margin: '0 4px' }} />
@@ -235,7 +247,7 @@ export default function WorldWatchClient() {
               }}
               onClick={() => setShowLayerPanel(p => !p)}
             >
-              🗂️ LAYERS
+              LAYERS
               {activeLayerCount > 0 && (
                 <span style={{
                   position: 'absolute',

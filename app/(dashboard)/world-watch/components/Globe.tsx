@@ -13,7 +13,7 @@ interface Props {
   theme: ThemeColors;
 }
 
-// Convert a color texture to grayscale at runtime via canvas
+// Convert color texture to grayscale at runtime via canvas
 function grayscaleTexture(url: string): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -45,7 +45,6 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
   const initGlobe = useCallback(async () => {
     if (!containerRef.current || globeRef.current) return;
 
-    // Prepare grayscale earth texture (colored markers stay unaffected)
     const grayEarth = await grayscaleTexture('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -61,15 +60,29 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
       .showAtmosphere(true)
       .atmosphereColor('#ffffff')
       .atmosphereAltitude(0.12)
-      // Event points as SPHERES (high resolution = round, not cylindrical)
-      .pointsData(geoEvents)
-      .pointLat('lat')
-      .pointLng('lng')
-      .pointAltitude(0.01)
-      .pointRadius((d: GeoEvent) => d.severity === 4 ? 0.5 : d.severity === 3 ? 0.35 : 0.2)
-      .pointColor((d: GeoEvent) => colors[d.severity])
-      .pointResolution(64)
-      .onPointClick((point: GeoEvent) => onSelect(point))
+      // Use HTML elements for FLAT DOT markers (not pointsData which renders cylinders)
+      .htmlElementsData(geoEvents)
+      .htmlLat('lat')
+      .htmlLng('lng')
+      .htmlAltitude(0.01)
+      .htmlElement((d: GeoEvent) => {
+        const color = colors[d.severity];
+        const size = d.severity === 4 ? 16 : d.severity === 3 ? 12 : 8;
+        const el = document.createElement('div');
+        el.style.width = `${size}px`;
+        el.style.height = `${size}px`;
+        el.style.borderRadius = '50%';
+        el.style.background = color;
+        el.style.boxShadow = `0 0 ${size}px ${color}88, 0 0 ${size * 2}px ${color}44`;
+        el.style.border = `1.5px solid ${color}`;
+        el.style.cursor = 'pointer';
+        el.style.transition = 'transform 0.2s';
+        el.title = d.title;
+        el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.4)'; });
+        el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
+        el.addEventListener('click', () => onSelect(d));
+        return el;
+      })
       // Pulse rings on critical events
       .ringsData(geoEvents.filter(e => e.severity >= 3))
       .ringLat('lat')
@@ -84,9 +97,9 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
       .labelLng('lng')
       .labelText('country')
       .labelSize(0.7)
-      .labelDotRadius(0.2)
-      .labelColor(() => '#ffffff99')
-      .labelAltitude(0.01)
+      .labelDotRadius(0)
+      .labelColor(() => '#ffffffbb')
+      .labelAltitude(0.015)
       // Undersea cables as arcs
       .arcsData(cableArcs)
       .arcStartLat('startLat')
