@@ -159,6 +159,15 @@ export default function WorldWatchClient() {
 
           console.log(`[OPTICON] OpenSky: ${states.length} total, ${aircraft.length} mil/gov, showing ${top.length}`);
 
+          // Determine color by air force based on ICAO hex range
+          function getAirForceColor(icao24: string): string {
+            const hex = icao24.toLowerCase();
+            if (hex.startsWith('ae') || hex.startsWith('af')) return '#89b4fa'; // US — blue
+            if (hex.startsWith('43c') || hex.startsWith('43d') || hex.startsWith('43e') || hex.startsWith('43f')) return '#cba6f7'; // UK — mauve/purple
+            if (hex.startsWith('3fc') || hex.startsWith('3fd') || hex.startsWith('3fe')) return '#f9e2af'; // Germany — yellow/gold
+            return '#a6adc8'; // unknown/other — subtext0
+          }
+
           if (top.length > 0) {
             setLayers(prev => prev.map(l => {
               if (l.id !== 'aircraft') return l;
@@ -170,7 +179,7 @@ export default function WorldWatchClient() {
                   lng: ac.lng,
                   label: ac.callsign,
                   subLabel: `${ac.country} | FL${Math.round(ac.altitude / 30.48)} | ${ac.velocity}kt | HDG ${ac.heading}°`,
-                  color: '#89b4fa', // uniform blue for all military
+                  color: getAirForceColor(ac.icao24),
                 })),
               };
             }));

@@ -491,15 +491,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       }
     });
 
-    map.on('click', () => {
-      setTimeout(() => {
-        if (markerClicked) { markerClicked = false; return; }
-        try {
-          if (map.getLayer('country-highlight-fill')) map.setFilter('country-highlight-fill', ['==', 'name_en', '']);
-          if (map.getLayer('country-highlight-line')) map.setFilter('country-highlight-line', ['==', 'name_en', '']);
-        } catch (_) {}
-      }, 50);
-    });
+    // General click: clear country highlight (aircraft dismiss handled after aircraft section)
 
     // Hover popup
     const popup = new mapboxgl.Popup({
@@ -600,6 +592,14 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       } catch (_) {}
     }
 
+    function getAirForceLabel(icao24: string, country: string): string {
+      const hex = (icao24 || '').toLowerCase();
+      if (hex.startsWith('ae') || hex.startsWith('af')) return '🇺🇸 USAF';
+      if (hex.startsWith('43c') || hex.startsWith('43d') || hex.startsWith('43e') || hex.startsWith('43f')) return '🇬🇧 RAF';
+      if (hex.startsWith('3fc') || hex.startsWith('3fd') || hex.startsWith('3fe')) return '🇩🇪 Luftwaffe';
+      return `${country || 'Unknown'} Military`;
+    }
+
     async function fetchAndShowTrack(icao24: string, acLng: number, acLat: number, heading: number) {
       if (hoverTrackAbort) hoverTrackAbort.abort();
       hoverTrackAbort = new AbortController();
@@ -611,43 +611,66 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         );
         if (!res.ok) { showAircraftRoute([], acLng, acLat, heading); return; }
         const data = await res.json();
-        const track = (data.path || []).map((p: any) => [p[2], p[1]] as [number, number]);
-        if (track.length >= 2) {
-          showAircraftRoute(track, acLng, acLat, heading);
-        } else {
-          showAircraftRoute([], acLng, acLat, heading);
+        const rawTrack: [number, number][] = (data.path || []).map((p: any) => [p[2], p[1]] as [number, number]);
+
+        // Smart filter: only show track if >= 5 points AND traveled >= 0.5 degrees
+        if (rawTrack.length >= 5) {
+          const [originLng, originLat] = rawTrack[0];
+          const [lastLng, lastLat] = rawTrack[rawTrack.length - 1];
+          const traveled = Math.sqrt(Math.pow(lastLng - originLng, 2) + Math.pow(lastLat - originLat, 2));
+          if (traveled >= 0.5) {
+            showAircraftRoute(rawTrack, acLng, acLat, heading);
+            return;
+          }
         }
+        // Track too short or origin suspicious — no track shown
+        showAircraftRoute([], acLng, acLat, heading);
       } catch (_) {
         showAircraftRoute([], acLng, acLat, heading);
       }
     }
 
-    map.on('mouseenter', 'aircraft-icons', (e) => {
+    // Hover: only change cursor (no popup on hover anymore)
+    map.on('mouseenter', 'aircraft-icons', () => {
       map.getCanvas().style.cursor = 'pointer';
+    });
+
+    map.on('mouseleave', 'aircraft-icons', () => {
+      map.getCanvas().style.cursor = '';
+    });
+
+    // Click aircraft: show popup + fetch track (stays until click away)
+    map.on('click', 'aircraft-icons', (e) => {
+      markerClicked = true;
+      stopRotation();
       if (!e.features || !e.features[0]) return;
       const props = e.features[0].properties;
       const coords = (e.features[0].geometry as any).coordinates.slice() as [number, number];
       const icao = props?.icao24 || '';
       const fl = Math.round((props?.altitude || 0) / 30.48);
+      const acColor = props?.color || '#89b4fa';
+      const airForceLabel = getAirForceLabel(icao, props?.country || '');
 
-      // Show popup immediately with basic info
+      pinnedAircraft = icao;
+
+      // Show popup
       const popupId = `ac-popup-${icao}`;
       acPopup.setLngLat(coords).setHTML(`
         <div id="${popupId}" style="
           background: ${theme.mantle};
           border: 1px solid ${theme.surface0};
-          border-left: 3px solid #89b4fa;
+          border-left: 3px solid ${acColor};
           padding: 8px 10px;
           font-family: inherit;
           width: 260px;
         ">
           <div id="${popupId}-img" style="margin-bottom: 6px;"></div>
-          <div style="font-size: 11px; font-weight: 700; color: #89b4fa; letter-spacing: 1px; margin-bottom: 4px;">
+          <div style="font-size: 11px; font-weight: 700; color: ${acColor}; letter-spacing: 1px; margin-bottom: 4px;">
             ✈ ${props?.callsign || 'UNKNOWN'}
           </div>
           <div id="${popupId}-model" style="font-size: 10px; color: ${theme.subtext0}; margin-bottom: 3px;"></div>
           <div style="font-size: 11px; color: ${theme.text}; margin-bottom: 3px;">
-            ${props?.country || 'Unknown'} Military
+            ${airForceLabel}
           </div>
           <div style="font-size: 10px; color: ${theme.overlay0}; display: flex; gap: 10px;">
             <span>FL${fl}</span>
@@ -673,7 +696,6 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
               if (src) {
                 imgEl.innerHTML = `<img src="${src}" style="width: 100%; height: auto; border-radius: 3px; border: 1px solid ${theme.surface1};" />`;
               }
-              // Show aircraft model/reg if available
               const ac = photo.aircraft || {};
               const model = ac.model || ac.icaotype || '';
               const reg = ac.registration || '';
@@ -685,47 +707,24 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           .catch(() => {});
       }
 
-      // Show track on hover (unless pinned to different aircraft)
-      if (!pinnedAircraft) {
-        fetchAndShowTrack(icao, coords[0], coords[1], props?.heading || 0);
-      }
+      // Fetch and show track
+      fetchAndShowTrack(icao, coords[0], coords[1], props?.heading || 0);
     });
 
-    map.on('mouseleave', 'aircraft-icons', () => {
-      map.getCanvas().style.cursor = '';
-      acPopup.remove();
-      // Clear route on mouse leave (unless pinned)
-      if (!pinnedAircraft) {
-        if (hoverTrackAbort) hoverTrackAbort.abort();
-        clearAircraftRoute();
-      }
-    });
-
-    // Click aircraft: pin route
-    map.on('click', 'aircraft-icons', (e) => {
-      markerClicked = true;
-      stopRotation();
-      if (!e.features || !e.features[0]) return;
-      const props = e.features[0].properties;
-      const coords = (e.features[0].geometry as any).coordinates.slice() as [number, number];
-      const icao = props?.icao24;
-
-      if (pinnedAircraft === icao) {
-        // Unpin
-        pinnedAircraft = null;
-        clearAircraftRoute();
-      } else {
-        pinnedAircraft = icao;
-        fetchAndShowTrack(icao, coords[0], coords[1], props?.heading || 0);
-      }
-    });
-
-    // Click empty space: also unpin aircraft
+    // Click empty space: dismiss aircraft popup + clear route + clear country highlight
     map.on('click', () => {
       setTimeout(() => {
-        if (markerClicked) return;
+        if (markerClicked) { markerClicked = false; return; }
+        // Clear country highlight
+        try {
+          if (map.getLayer('country-highlight-fill')) map.setFilter('country-highlight-fill', ['==', 'name_en', '']);
+          if (map.getLayer('country-highlight-line')) map.setFilter('country-highlight-line', ['==', 'name_en', '']);
+        } catch (_) {}
+        // Dismiss aircraft popup/track
         if (pinnedAircraft) {
           pinnedAircraft = null;
+          acPopup.remove();
+          if (hoverTrackAbort) hoverTrackAbort.abort();
           clearAircraftRoute();
         }
       }, 60);
