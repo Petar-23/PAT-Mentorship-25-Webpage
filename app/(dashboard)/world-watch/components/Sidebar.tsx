@@ -43,12 +43,12 @@ export function Sidebar({ events, selectedId, onSelect, theme }: Props) {
 
   return (
     <div style={{
-      width: 360,
+      width: '100%',
+      height: '100%',
       background: theme.mantle,
       borderLeft: `1px solid ${theme.surface0}`,
       display: 'flex',
       flexDirection: 'column',
-      flexShrink: 0,
       overflow: 'hidden',
     }}>
       {/* Header */}

@@ -8,7 +8,7 @@ interface MarketRow {
   name: string;
   region?: string;
   price: string;
-  change: string; // e.g. '+1.38%' | '-0.97%' | '-'
+  change: string;
 }
 
 const INDICES: MarketRow[] = [
@@ -38,7 +38,7 @@ interface Props {
 
 function getSentiment(data: MarketRow[]): 'BULLISH' | 'BEARISH' | 'MIXED' {
   const pos = data.filter(r => r.change.startsWith('+')).length;
-  const neg = data.filter(r => r.change.startsWith('-')).length;
+  const neg = data.filter(r => r.change.startsWith('-') && r.change !== '-').length;
   if (pos > neg * 2) return 'BULLISH';
   if (neg > pos * 2) return 'BEARISH';
   return 'MIXED';
@@ -50,13 +50,11 @@ function SectionHeader({ icon, label, theme }: { icon: React.ReactNode; label: s
       display: 'flex',
       alignItems: 'center',
       gap: 5,
-      padding: '5px 10px 3px',
+      padding: '8px 12px',
       fontSize: 11,
       color: theme.overlay0,
       textTransform: 'uppercase',
       letterSpacing: '1px',
-      borderTop: `1px solid ${theme.surface0}44`,
-      marginTop: 2,
     }}>
       {icon}
       {label}
@@ -71,35 +69,37 @@ function Row({ row, theme }: { row: MarketRow; theme: ThemeColors }) {
 
   return (
     <div style={{
+      height: 36,
       display: 'flex',
       alignItems: 'center',
-      padding: '3px 10px',
-      gap: 4,
+      padding: '0 12px',
+      borderBottom: `1px solid ${(theme.surface0 as string) + '22'}`,
     }}>
-      {/* Name + region */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: theme.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {row.name}
         </span>
         {row.region && (
           <span style={{
-            fontSize: 9, fontWeight: 700, padding: '1px 4px', borderRadius: 3,
-            background: theme.overlay0 + '33', color: theme.overlay0,
+            fontSize: 8,
+            padding: '1px 4px',
+            background: theme.overlay0 + '33',
+            color: theme.overlay0,
+            borderRadius: 2,
+            marginLeft: 6,
+            flexShrink: 0,
           }}>
             {row.region}
           </span>
         )}
       </div>
-      {/* Price */}
-      <span style={{ fontSize: 13, color: theme.subtext0, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+      <span style={{ fontSize: 13, color: theme.subtext0, textAlign: 'right', fontVariantNumeric: 'tabular-nums', minWidth: 90, whiteSpace: 'nowrap' }}>
         {row.price}
       </span>
-      {/* Change */}
-      <span style={{ fontSize: 12, color: changeColor, fontVariantNumeric: 'tabular-nums', minWidth: 48, textAlign: 'right' }}>
+      <span style={{ fontSize: 12, textAlign: 'right', minWidth: 65, color: changeColor, fontVariantNumeric: 'tabular-nums' }}>
         {row.change}
       </span>
-      {/* Arrow */}
-      <span style={{ width: 14, flexShrink: 0 }}>
+      <span style={{ width: 16, flexShrink: 0, display: 'flex', justifyContent: 'flex-end' }}>
         {isPos && <TrendingUp size={12} color={theme.green} />}
         {isNeg && <TrendingDown size={12} color={theme.red} />}
       </span>
@@ -113,52 +113,66 @@ export function MarketsPanel({ theme }: Props) {
   const sentimentColor = sentiment === 'BULLISH' ? theme.green : sentiment === 'BEARISH' ? theme.red : theme.yellow;
 
   return (
-    <div>
+    <div style={{
+      borderRadius: 6,
+      background: theme.mantle + 'ee',
+      border: `1px solid ${theme.surface0}`,
+      boxShadow: '0 6px 18px rgba(0,0,0,0.5)',
+      backdropFilter: 'blur(12px)',
+      overflow: 'hidden',
+    }}>
       {/* Header */}
       <div
         onClick={() => setCollapsed(c => !c)}
         style={{
+          height: 40,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '8px 10px',
+          padding: '0 12px',
+          borderBottom: collapsed ? 'none' : `1px solid ${theme.surface0}`,
           cursor: 'pointer',
-          background: theme.surface0 + '44',
           userSelect: 'none',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', color: theme.blue, textTransform: 'uppercase' }}>
-            Markets
+          <BarChart3 size={14} color={theme.blue} />
+          <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: theme.text }}>
+            MARKETS
           </span>
           <span style={{
-            fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 10,
-            background: sentimentColor + '33', color: sentimentColor, letterSpacing: '0.5px',
+            fontSize: 9,
+            padding: '2px 6px',
+            background: sentimentColor + '33',
+            color: sentimentColor,
+            borderRadius: 3,
           }}>
             {sentiment}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <RefreshCw size={12} color={theme.overlay0} />
+          <RefreshCw size={14} color={theme.overlay0} />
           {collapsed
             ? <ChevronDown size={14} color={theme.overlay0} />
             : <ChevronUp size={14} color={theme.overlay0} />}
         </div>
       </div>
 
-      {/* Body */}
-      {!collapsed && (
-        <div style={{ paddingBottom: 4 }}>
-          <SectionHeader icon={<BarChart3 size={11} />} label="Indices" theme={theme} />
-          {INDICES.map(r => <Row key={r.name} row={r} theme={theme} />)}
+      {/* Collapsible content */}
+      <div style={{
+        maxHeight: collapsed ? 0 : 400,
+        overflow: 'hidden',
+        transition: 'max-height 0.2s ease',
+      }}>
+        <SectionHeader icon={<BarChart3 size={11} />} label="INDICES" theme={theme} />
+        {INDICES.map(r => <Row key={r.name} row={r} theme={theme} />)}
 
-          <SectionHeader icon={<Gem size={11} />} label="Commodities" theme={theme} />
-          {COMMODITIES.map(r => <Row key={r.name} row={r} theme={theme} />)}
+        <SectionHeader icon={<Gem size={11} />} label="COMMODITIES" theme={theme} />
+        {COMMODITIES.map(r => <Row key={r.name} row={r} theme={theme} />)}
 
-          <SectionHeader icon={<DollarSign size={11} />} label="Forex" theme={theme} />
-          {FOREX.map(r => <Row key={r.name} row={r} theme={theme} />)}
-        </div>
-      )}
+        <SectionHeader icon={<DollarSign size={11} />} label="FOREX" theme={theme} />
+        {FOREX.map(r => <Row key={r.name} row={r} theme={theme} />)}
+      </div>
     </div>
   );
 }

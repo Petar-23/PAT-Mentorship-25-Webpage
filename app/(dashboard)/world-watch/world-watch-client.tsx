@@ -290,25 +290,7 @@ export default function WorldWatchClient() {
           {/* Globe View */}
           {activeView === 'globe' && (
             <>
-              {/* Left Sidebar Widgets */}
-              <div style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 300,
-                background: `${theme.mantle}cc`,
-                backdropFilter: 'blur(8px)',
-                borderRight: `1px solid ${theme.surface0}`,
-                zIndex: 50,
-                overflowY: 'auto',
-                display: 'flex',
-                flexDirection: 'column',
-              }}>
-                <MiniCalendar theme={theme} />
-                <MarketsPanel theme={theme} />
-              </div>
-
+              {/* Globe fills full area */}
               <Globe
                 events={mockEvents}
                 layers={layers}
@@ -317,6 +299,23 @@ export default function WorldWatchClient() {
                 focusEvent={focusEvent}
                 theme={theme}
               />
+
+              {/* Left Sidebar Widgets — floating cards */}
+              <div style={{
+                position: 'absolute',
+                left: 12,
+                top: 12,
+                width: 300,
+                zIndex: 50,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                maxHeight: 'calc(100% - 24px)',
+                overflowY: 'auto',
+              }}>
+                <MiniCalendar theme={theme} />
+                <MarketsPanel theme={theme} />
+              </div>
 
               {/* Layer Panel (floating) */}
               {showLayerPanel && (
@@ -328,13 +327,22 @@ export default function WorldWatchClient() {
                 />
               )}
 
-              {/* Sidebar */}
-              <Sidebar
-                events={mockEvents}
-                selectedId={selectedId}
-                onSelect={handleSelectEvent}
-                theme={theme}
-              />
+              {/* Right Sidebar — absolute overlay */}
+              <div style={{
+                position: 'absolute',
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: 360,
+                zIndex: 50,
+              }}>
+                <Sidebar
+                  events={mockEvents}
+                  selectedId={selectedId}
+                  onSelect={handleSelectEvent}
+                  theme={theme}
+                />
+              </div>
             </>
           )}
 
