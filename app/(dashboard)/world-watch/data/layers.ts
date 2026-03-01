@@ -201,6 +201,11 @@ const infrastructure: LayerPoint[] = [
 // ─── LAYER DEFINITIONS ───────────────────────────────────────────────────────
 export const defaultLayers: DataLayer[] = [
   {
+    id: 'active-conflicts', name: 'Active Conflicts', icon: '⚔', enabled: true,
+    type: 'points', color: '#f38ba8',
+    points: [],
+  },
+  {
     id: 'conflicts', name: 'Conflicts', icon: 'swords', enabled: true,
     type: 'points', color: '#f38ba8',
     points: [],  // populated from mockEvents by component

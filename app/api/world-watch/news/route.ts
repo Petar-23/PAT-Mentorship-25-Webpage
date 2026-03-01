@@ -106,6 +106,34 @@ const COUNTRY_CENTROIDS: Record<string, [number, number]> = {
   'tehran': [35.69, 51.39],
 };
 
+// conflict keyword matching (keep in sync with data/conflicts.ts)
+const CONFLICT_KEYWORDS: Record<string, string[]> = {
+  'ru-ua': ['ukraine', 'ukrainian', 'kyiv', 'donbas', 'donetsk', 'crimea', 'kherson', 'zelensky', 'russian invasion', 'kursk', 'bakhmut'],
+  'il-ps': ['israel', 'gaza', 'hamas', 'hezbollah', 'netanyahu', 'idf', 'west bank', 'palestinian', 'rafah', 'ceasefire gaza', 'lebanese', 'lebanon war'],
+  'ir-us': ['iran', 'tehran', 'irgc', 'strait of hormuz', 'houthi', 'red sea', 'proxy war', 'nuclear iran', 'sanctions iran'],
+  'sudan': ['sudan', 'khartoum', 'darfur', 'rsf', 'hemeti'],
+  'myanmar': ['myanmar', 'burma', 'junta', 'naypyidaw'],
+  'sahel': ['sahel', 'mali', 'burkina faso', 'niger coup', 'boko haram'],
+  'taiwan-strait': ['taiwan', 'taipei', 'taiwan strait', 'south china sea', 'pla navy'],
+};
+
+function matchConflict(title: string, description: string): string | null {
+  const text = (title + ' ' + description).toLowerCase();
+  let bestId: string | null = null;
+  let bestScore = 0;
+  for (const [id, keywords] of Object.entries(CONFLICT_KEYWORDS)) {
+    let score = 0;
+    for (const kw of keywords) {
+      if (text.includes(kw)) score++;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestId = id;
+    }
+  }
+  return bestScore >= 1 ? bestId : null;
+}
+
 function geocodeTitle(title: string, description?: string): { lat: number; lng: number; country: string } | null {
   const text = ((title || '') + ' ' + (description || '')).toLowerCase();
   const sorted = Object.entries(COUNTRY_CENTROIDS).sort((a, b) => b[0].length - a[0].length);
@@ -179,6 +207,7 @@ export async function GET() {
         lat: geo?.lat ?? null,
         lng: geo?.lng ?? null,
         country: geo?.country || '',
+        conflictId: matchConflict(item.title, item.description),
       };
     });
 

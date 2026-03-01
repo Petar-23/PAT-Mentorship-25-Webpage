@@ -71,6 +71,7 @@ export default function WorldWatchClient() {
   const globeRef = useRef<GlobeHandle>(null);
   const [liveEvents, setLiveEvents] = useState<GeoEvent[]>([]);
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
+  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const aircraftDataRef = useRef<Map<string, AircraftInfo>>(new Map());
 
   const theme = themes[currentTheme];
@@ -369,6 +370,27 @@ export default function WorldWatchClient() {
     setActiveView('globe');
   }, []);
 
+  const handleNewsSelect = useCallback((news: NewsItem) => {
+    setSelectedNews(news);
+    // If geocoded, fly to location
+    if (news.lat != null && news.lng != null) {
+      const fakeEvent: GeoEvent = {
+        id: news.id,
+        title: news.title,
+        description: news.description,
+        lat: news.lat,
+        lng: news.lng,
+        severity: news.priority >= 3 ? 3 : 2,
+        category: 'political',
+        source: news.source,
+        timestamp: news.pubDate,
+        country: news.country,
+        sourceUrl: news.link,
+      };
+      handleSelectEvent(fakeEvent);
+    }
+  }, [handleSelectEvent]);
+
   const handleToggleLayer = useCallback((id: string) => {
     setLayers(prev => prev.map(l => l.id === id ? { ...l, enabled: !l.enabled } : l));
   }, []);
@@ -661,6 +683,7 @@ export default function WorldWatchClient() {
                 theme={theme}
                 onRotationChange={setIsRotating}
                 aircraftDataRef={aircraftDataRef}
+                selectedNews={selectedNews}
               />
 
               {/* Left Sidebar Widgets — floating cards */}
@@ -707,6 +730,7 @@ export default function WorldWatchClient() {
                   severityFilter={severityFilter}
                   onToggleSeverity={handleToggleSeverity}
                   newsItems={newsItems}
+                  onNewsSelect={handleNewsSelect}
                 />
               </div>
             </>

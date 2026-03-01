@@ -88,6 +88,7 @@ export interface NewsItem {
   lat: number | null;
   lng: number | null;
   country: string;
+  conflictId: string | null;
 }
 
 export const SEVERITY_LABELS: Record<number, string> = {

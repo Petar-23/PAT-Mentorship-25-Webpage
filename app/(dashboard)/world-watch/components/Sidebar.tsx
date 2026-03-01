@@ -3,6 +3,7 @@
 import type { GeoEvent, NewsItem, ThemeColors } from '../types';
 import { EventCard } from './EventCard';
 import { severityColors } from '../styles/themes';
+import { ACTIVE_CONFLICTS } from '../data/conflicts';
 
 interface Props {
   events: GeoEvent[];
@@ -12,6 +13,7 @@ interface Props {
   severityFilter: Set<number>;
   onToggleSeverity: (sev: number) => void;
   newsItems?: NewsItem[];
+  onNewsSelect?: (news: NewsItem) => void;
 }
 
 interface FilterBadgeProps {
@@ -74,7 +76,7 @@ type FeedItem =
   | { type: 'event'; event: GeoEvent }
   | { type: 'news'; news: NewsItem };
 
-export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, onToggleSeverity, newsItems = [] }: Props) {
+export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, onToggleSeverity, newsItems = [], onNewsSelect }: Props) {
   const colors = severityColors(theme);
 
   const hasFilter = severityFilter.size > 0;
@@ -180,7 +182,13 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
             item.type === 'news' ? (
               <div
                 key={item.news.id}
-                onClick={() => window.open(item.news.link, '_blank')}
+                onClick={() => {
+                  if (onNewsSelect) {
+                    onNewsSelect(item.news);
+                  } else {
+                    window.open(item.news.link, '_blank');
+                  }
+                }}
                 style={{
                   padding: '8px 12px',
                   borderLeft: `3px solid ${theme.blue}`,
@@ -209,6 +217,24 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
                     {formatTimeAgo(item.news.pubDate)}
                   </span>
                 </div>
+                {item.news.conflictId && (() => {
+                  const conflict = ACTIVE_CONFLICTS.find(c => c.id === item.news.conflictId);
+                  return conflict ? (
+                    <span style={{
+                      display: 'inline-block',
+                      fontSize: 9,
+                      padding: '1px 5px',
+                      background: `${conflict.color}22`,
+                      border: `1px solid ${conflict.color}33`,
+                      borderRadius: 3,
+                      color: conflict.color,
+                      fontWeight: 600,
+                      marginBottom: 3,
+                    }}>
+                      ⚔ {conflict.shortName}
+                    </span>
+                  ) : null;
+                })()}
                 <div style={{ fontSize: 11, color: theme.text, lineHeight: '1.3' }}>
                   {item.news.title}
                 </div>

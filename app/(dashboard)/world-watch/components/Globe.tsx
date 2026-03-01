@@ -3,9 +3,10 @@
 import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import type { GeoEvent, DataLayer, ThemeColors } from '../types';
+import type { GeoEvent, DataLayer, ThemeColors, NewsItem } from '../types';
 import { severityColors } from '../styles/themes';
 import ms from 'milsymbol';
+import { ACTIVE_CONFLICTS } from '../data/conflicts';
 
 export interface AircraftInfo {
   icao24: string;
@@ -45,6 +46,7 @@ interface Props {
   theme: ThemeColors;
   onRotationChange?: (rotating: boolean) => void;
   aircraftDataRef?: React.RefObject<Map<string, AircraftInfo>>;
+  selectedNews?: NewsItem | null;
 }
 
 const COUNTRY_NAME_MAP: Record<string, string> = {
@@ -67,7 +69,7 @@ function getDisasterType(title: string, category: string): string {
 }
 
 export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
-  { events, layers, onSelect, focusEvent, focusCounter, theme, onRotationChange, aircraftDataRef },
+  { events, layers, onSelect, focusEvent, focusCounter, theme, onRotationChange, aircraftDataRef, selectedNews },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -81,6 +83,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
   const cableClickPopupRef = useRef<mapboxgl.Popup | null>(null);
   const pipelineClickPopupRef = useRef<mapboxgl.Popup | null>(null);
   const disasterPopupRef = useRef<mapboxgl.Popup | null>(null);
+  const newsPopupRef = useRef<mapboxgl.Popup | null>(null);
   const pulseIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const colors = severityColors(theme);
 
@@ -224,6 +227,75 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           map.setPaintProperty(landuseLayer.id, 'fill-opacity', 0.8);
         }
       } catch (_) {}
+
+      // ─── ACTIVE CONFLICT ZONES ─────────────────────────────────────
+      // Add BEFORE event layers so they appear as background
+      for (const conflict of ACTIVE_CONFLICTS) {
+        const sourceId = `conflict-zone-${conflict.id}`;
+        const coords = conflict.bounds.map(([lat, lng]) => [lng, lat]);
+        coords.push(coords[0]); // close polygon
+
+        map.addSource(sourceId, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: { type: 'Polygon', coordinates: [coords] },
+            properties: { id: conflict.id, name: conflict.name, shortName: conflict.shortName, color: conflict.color, severity: conflict.severity },
+          },
+        });
+
+        // Subtle fill
+        map.addLayer({
+          id: `conflict-fill-${conflict.id}`,
+          type: 'fill',
+          source: sourceId,
+          paint: {
+            'fill-color': conflict.color,
+            'fill-opacity': conflict.severity === 'critical' ? 0.08 : 0.05,
+          },
+        });
+
+        // Dashed border
+        map.addLayer({
+          id: `conflict-border-${conflict.id}`,
+          type: 'line',
+          source: sourceId,
+          paint: {
+            'line-color': conflict.color,
+            'line-width': conflict.severity === 'critical' ? 2 : 1.5,
+            'line-opacity': 0.5,
+            'line-dasharray': [4, 4],
+          },
+        });
+
+        // Label visible only when zoomed out (< zoom 6)
+        map.addLayer({
+          id: `conflict-label-${conflict.id}`,
+          type: 'symbol',
+          source: sourceId,
+          maxzoom: 6,
+          layout: {
+            'text-field': `⚔ ${conflict.shortName}`,
+            'text-size': 11,
+            'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+            'text-allow-overlap': false,
+          },
+          paint: {
+            'text-color': conflict.color,
+            'text-halo-color': theme.crust,
+            'text-halo-width': 1.5,
+            'text-opacity': 0.7,
+          },
+        } as any);
+      }
+
+      // News popup (created once, reused via selectedNews prop)
+      newsPopupRef.current = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        maxWidth: '300px',
+        className: 'ww-marker-popup',
+      });
 
       // Events GeoJSON source
       map.addSource('events', {
@@ -1429,6 +1501,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         nucPopup.remove();
         cablePopup.remove();
         pipePopup.remove();
+        newsPopupRef.current?.remove();
       }, 60);
     });
 
@@ -1839,6 +1912,71 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       return () => { map.off('idle', handler); };
     }
   }, [layers]); // eslint-disable-line
+
+  // Toggle active conflict zones visibility based on layer panel
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    const conflictLayer = layers.find(l => l.id === 'active-conflicts');
+    if (!conflictLayer) return;
+    const visibility = conflictLayer.enabled ? 'visible' : 'none';
+    const tryUpdate = () => {
+      if (!map.isStyleLoaded()) return false;
+      for (const conflict of ACTIVE_CONFLICTS) {
+        try {
+          if (map.getLayer(`conflict-fill-${conflict.id}`)) map.setLayoutProperty(`conflict-fill-${conflict.id}`, 'visibility', visibility);
+          if (map.getLayer(`conflict-border-${conflict.id}`)) map.setLayoutProperty(`conflict-border-${conflict.id}`, 'visibility', visibility);
+          if (map.getLayer(`conflict-label-${conflict.id}`)) map.setLayoutProperty(`conflict-label-${conflict.id}`, 'visibility', visibility);
+        } catch (_) {}
+      }
+      return true;
+    };
+    if (!tryUpdate()) {
+      const handler = () => { if (tryUpdate()) map.off('idle', handler); };
+      map.on('idle', handler);
+      return () => { map.off('idle', handler); };
+    }
+  }, [layers]); // eslint-disable-line
+
+  // Show news article preview popup when selectedNews changes
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    const newsPopup = newsPopupRef.current;
+    if (!newsPopup) return;
+
+    if (!selectedNews || selectedNews.lat == null || selectedNews.lng == null) {
+      newsPopup.remove();
+      return;
+    }
+
+    const conflictName = selectedNews.conflictId
+      ? ACTIVE_CONFLICTS.find(c => c.id === selectedNews.conflictId)?.name
+      : null;
+    const conflictColor = selectedNews.conflictId
+      ? ACTIVE_CONFLICTS.find(c => c.id === selectedNews.conflictId)?.color
+      : null;
+
+    const color = theme.blue;
+    const desc = (selectedNews.description || '').slice(0, 200);
+    const descTrunc = selectedNews.description && selectedNews.description.length > 200 ? '...' : '';
+
+    newsPopup
+      .setLngLat([selectedNews.lng, selectedNews.lat])
+      .setHTML(`
+        <div style="font-family: inherit; max-width: 280px; padding: 10px; background: ${theme.mantle}dd; backdrop-filter: blur(8px); border: 1px solid ${theme.surface0}; border-radius: 6px;">
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap;">
+            <span style="font-size: 10px;">📰</span>
+            <span style="font-size: 9px; padding: 1px 5px; background: ${color}22; border: 1px solid ${color}33; border-radius: 3px; color: ${color}; font-weight: 600; letter-spacing: 0.5px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${selectedNews.source.slice(0, 24)}</span>
+            ${conflictName && conflictColor ? `<span style="font-size: 9px; padding: 1px 5px; background: ${conflictColor}22; border: 1px solid ${conflictColor}33; border-radius: 3px; color: ${conflictColor}; font-weight: 600;">⚔ ${conflictName}</span>` : ''}
+          </div>
+          <div style="font-size: 12px; font-weight: 700; color: ${theme.text}; line-height: 1.3; margin-bottom: 6px;">${selectedNews.title}</div>
+          ${desc ? `<div style="font-size: 10px; color: ${theme.subtext0}; line-height: 1.4; margin-bottom: 8px;">${desc}${descTrunc}</div>` : ''}
+          <a href="${selectedNews.link}" target="_blank" style="font-size: 10px; color: ${color}; text-decoration: none; font-weight: 600;">Read Full Article ↗</a>
+        </div>
+      `)
+      .addTo(map);
+  }, [selectedNews, theme]); // eslint-disable-line
 
   return (
     <div
