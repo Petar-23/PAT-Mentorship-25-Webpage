@@ -631,6 +631,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     function showAircraftRouteFromAirports(
       acLng: number, acLat: number,
       originIata: string, destIata: string,
+      acColor: string = '#89b4fa',
     ) {
       try {
         const trackSrc = map.getSource('aircraft-track-line') as mapboxgl.GeoJSONSource | undefined;
@@ -675,6 +676,14 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
 
         trackSrc.setData({ type: 'FeatureCollection', features: trackFeatures });
         endSrc.setData({ type: 'FeatureCollection', features: endpointFeatures });
+
+        // Match route color to aircraft color
+        try {
+          if (map.getLayer('aircraft-track-solid')) map.setPaintProperty('aircraft-track-solid', 'line-color', acColor);
+          if (map.getLayer('aircraft-track-planned')) map.setPaintProperty('aircraft-track-planned', 'line-color', acColor);
+          if (map.getLayer('aircraft-endpoints-dots')) map.setPaintProperty('aircraft-endpoints-dots', 'circle-color', acColor);
+          if (map.getLayer('aircraft-endpoints-labels')) map.setPaintProperty('aircraft-endpoints-labels', 'text-color', acColor);
+        } catch (_) {}
       } catch (_) {}
     }
 
@@ -748,12 +757,8 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             <span>${velocity} kt</span>
             <span>HDG ${heading}°</span>
           </div>
-          ${origin ? `<div style="font-size: 9px; color: ${theme.blue}; margin-bottom: 1px;">FROM: ${origin}${originName ? ` (${originName})` : ''}</div>` : ''}
-          ${destination ? `<div style="font-size: 9px; color: ${theme.green}; margin-bottom: 4px;">TO: ${destination}${destName ? ` (${destName})` : ''}</div>` : ''}
-          <div style="display: flex; gap: 8px; margin-top: 4px;">
-            <a href="${fr24Link}" target="_blank" rel="noopener" style="font-size: 9px; color: ${theme.blue}; text-decoration: none;">🔗 FR24 ↗</a>
-            <a href="https://opensky-network.org/aircraft-profile?icao24=${icao}" target="_blank" rel="noopener" style="font-size: 9px; color: ${theme.overlay0}; text-decoration: none;">OpenSky ↗</a>
-          </div>
+          ${origin ? `<div style="font-size: 9px; color: ${acColor}; margin-bottom: 1px;">FROM: ${origin}${originName !== origin ? ` (${originName})` : ''}</div>` : ''}
+          ${destination ? `<div style="font-size: 9px; color: ${acColor}; opacity: 0.7; margin-bottom: 2px;">TO: ${destination}${destName !== destination ? ` (${destName})` : ''}</div>` : ''}
         </div>
       `).addTo(map);
 
@@ -775,8 +780,8 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           });
       }
 
-      // Show origin/destination route on map
-      showAircraftRouteFromAirports(coords[0], coords[1], origin, destination);
+      // Show origin/destination route on map (only if we have coordinates for the airports)
+      showAircraftRouteFromAirports(coords[0], coords[1], origin, destination, acColor);
     });
 
     // Click empty space: dismiss aircraft popup + clear route + clear country highlight
