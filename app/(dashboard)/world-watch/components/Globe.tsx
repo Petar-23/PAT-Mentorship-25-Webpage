@@ -757,6 +757,86 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       showAircraftRouteFromAirports(coords[0], coords[1], origin, destination, acColor);
     });
 
+    // ─── SHIPS CLICK POPUP ────────────────────────────────────────────────────
+    // Ships layer uses generic circle layer id: layer-ships-circles
+    // We attach a click handler after map load using a delegated approach
+    const shipPopup = new mapboxgl.Popup({
+      closeButton: true,
+      closeOnClick: false,
+      maxWidth: '280px',
+      className: 'ww-marker-popup',
+    });
+
+    map.on('click', 'layer-ships-circles', (e) => {
+      if (!e.features?.[0]) return;
+      markerClicked = true;
+
+      const props = e.features[0].properties as {
+        label?: string; subLabel?: string; color?: string; meta?: string;
+      } | null;
+      const coords = ((e.features[0].geometry as any).coordinates as [number, number]).slice() as [number, number];
+
+      let meta: Record<string, any> = {};
+      try { meta = JSON.parse(props?.meta || '{}'); } catch (_) {}
+
+      const flagEmoji = meta.flagship ? '' : '';
+      const compositionLines = meta.composition
+        ? meta.composition.split(', ').map((s: string) => `<div style="font-size: 9px; color: ${theme.overlay0}; padding: 1px 0;">› ${s}</div>`).join('')
+        : '';
+
+      const color = props?.color || theme.blue;
+
+      shipPopup.setLngLat(coords).setHTML(`
+        <div style="
+          background: ${theme.mantle}ee;
+          border: 1px solid ${color}55;
+          border-radius: 6px;
+          padding: 10px 12px;
+          backdrop-filter: blur(12px);
+          font-family: ui-monospace, monospace;
+          min-width: 220px;
+        ">
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+            <span style="font-size: 18px;">${meta.countryFlag || '🚢'}</span>
+            <div>
+              <div style="font-size: 11px; font-weight: 700; color: ${color}; letter-spacing: 0.5px;">${props?.label || ''}</div>
+              <div style="font-size: 9px; color: ${theme.overlay0}; margin-top: 1px;">${meta.type?.replace(/-/g, ' ').toUpperCase() || 'NAVAL UNIT'}</div>
+            </div>
+          </div>
+          <div style="border-top: 1px solid ${theme.surface0}; padding-top: 6px; margin-bottom: 4px;">
+            <div style="font-size: 10px; color: ${theme.subtext0}; margin-bottom: 2px;">⚓ ${meta.flagship || ''}</div>
+            <div style="font-size: 10px; color: ${theme.overlay0};">📍 ${meta.region || ''}</div>
+          </div>
+          <div style="
+            display: inline-block;
+            margin: 4px 0;
+            padding: 2px 6px;
+            background: ${color}22;
+            border: 1px solid ${color}44;
+            border-radius: 3px;
+            font-size: 9px;
+            color: ${color};
+            font-weight: 700;
+            letter-spacing: 0.5px;
+          ">${meta.status || 'UNKNOWN'}</div>
+          ${compositionLines ? `
+          <div style="margin-top: 6px; border-top: 1px solid ${theme.surface0}; padding-top: 4px;">
+            <div style="font-size: 9px; color: ${theme.overlay0}; margin-bottom: 2px; letter-spacing: 0.5px;">COMPOSITION</div>
+            ${compositionLines}
+          </div>` : ''}
+          ${meta.notes ? `<div style="margin-top: 4px; font-size: 9px; color: ${theme.subtext0}; font-style: italic;">${meta.notes}</div>` : ''}
+        </div>
+      `).addTo(map);
+    });
+
+    map.on('mouseenter', 'layer-ships-circles', () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', 'layer-ships-circles', () => {
+      map.getCanvas().style.cursor = '';
+    });
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Click empty space: dismiss aircraft popup + clear route + clear country highlight
     map.on('click', () => {
       setTimeout(() => {
@@ -855,7 +935,12 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         const features = (layer.points || []).map(p => ({
           type: 'Feature' as const,
           geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
-          properties: { label: p.label, subLabel: p.subLabel || '', color: p.color },
+          properties: {
+            label: p.label,
+            subLabel: p.subLabel || '',
+            color: p.color,
+            meta: p.meta ? JSON.stringify(p.meta) : '',
+          },
         }));
         const geojson = { type: 'FeatureCollection' as const, features };
 

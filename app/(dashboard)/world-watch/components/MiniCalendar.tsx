@@ -28,7 +28,7 @@ function isSameDay(a: Date, b: Date): boolean {
 export function MiniCalendar({ theme }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   const [currency, setCurrency] = useState('USD');
-  const [impactFilter, setImpactFilter] = useState<string[]>(['HIGH', 'MEDIUM']);
+  const [impactFilter, setImpactFilter] = useState<string[]>(['HIGH', 'MEDIUM', 'HOLIDAY']);
   const [calendarData, setCalendarData] = useState<EconCalendarEntry[]>([]);
 
   useEffect(() => {
@@ -62,6 +62,9 @@ export function MiniCalendar({ theme }: Props) {
     return calendarData.filter(e => {
       if (currency !== 'ALL' && e.currency !== currency) return false;
       if (impactFilter.length > 0) {
+        if (e.isHoliday || e.impact === 0) {
+          return impactFilter.includes('HOLIDAY');
+        }
         const level = e.impact === 3 ? 'HIGH' : e.impact === 2 ? 'MEDIUM' : 'LOW';
         if (!impactFilter.includes(level)) return false;
       }
@@ -165,6 +168,23 @@ export function MiniCalendar({ theme }: Props) {
                 >{label}</button>
               );
             })}
+            {/* HOLIDAY toggle */}
+            {(() => {
+              const active = impactFilter.includes('HOLIDAY');
+              return (
+                <button
+                  onClick={() => handleToggleImpact('HOLIDAY')}
+                  title="Bank Holidays"
+                  style={{
+                    background: active ? theme.blue + '22' : 'transparent',
+                    border: active ? `1px solid ${theme.blue}` : `1px solid ${theme.surface1}`,
+                    color: active ? theme.blue : theme.overlay0,
+                    fontSize: 9, padding: '1px 5px', cursor: 'pointer',
+                    fontFamily: 'inherit', fontWeight: active ? 700 : 400, borderRadius: 2,
+                  }}
+                >🏦</button>
+              );
+            })()}
           </div>
         </div>
 
@@ -220,36 +240,59 @@ export function MiniCalendar({ theme }: Props) {
                     No events
                   </div>
                 ) : (
-                  dayEntries.map(entry => (
-                    <div
-                      key={entry.id}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        padding: '6px 12px',
-                        borderBottom: `1px solid ${theme.surface0}22`,
-                      }}
-                    >
-                      <span style={{
-                        fontSize: 12, color: theme.subtext0, width: 44,
-                        fontVariantNumeric: 'tabular-nums', flexShrink: 0,
-                      }}>
-                        {formatTime(entry.time)}
-                      </span>
-                      <span style={{
-                        fontSize: 12, fontWeight: 700, width: 34,
-                        color: entry.currency === 'USD' ? theme.blue : theme.text, flexShrink: 0,
-                      }}>
-                        {entry.currency}
-                      </span>
-                      <FolderOpen size={12} color={impactColor(entry.impact)} style={{ flexShrink: 0 }} />
-                      <span style={{
-                        fontSize: 13, color: theme.text, flex: 1, fontWeight: entry.impact === 3 ? 600 : 400,
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>
-                        {entry.event}
-                      </span>
-                    </div>
-                  ))
+                  dayEntries.map(entry => {
+                    if (entry.isHoliday || entry.impact === 0) {
+                      return (
+                        <div
+                          key={entry.id}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            padding: '5px 12px',
+                            background: theme.blue + '18',
+                            borderBottom: `1px solid ${theme.blue}33`,
+                            borderLeft: `2px solid ${theme.blue}`,
+                          }}
+                        >
+                          <span style={{
+                            fontSize: 11, color: theme.blue, fontWeight: 700,
+                            letterSpacing: '0.5px', textAlign: 'center',
+                          }}>
+                            {entry.event}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div
+                        key={entry.id}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          padding: '6px 12px',
+                          borderBottom: `1px solid ${theme.surface0}22`,
+                        }}
+                      >
+                        <span style={{
+                          fontSize: 12, color: theme.subtext0, width: 44,
+                          fontVariantNumeric: 'tabular-nums', flexShrink: 0,
+                        }}>
+                          {formatTime(entry.time)}
+                        </span>
+                        <span style={{
+                          fontSize: 12, fontWeight: 700, width: 34,
+                          color: entry.currency === 'USD' ? theme.blue : theme.text, flexShrink: 0,
+                        }}>
+                          {entry.currency}
+                        </span>
+                        <FolderOpen size={12} color={impactColor(entry.impact as 1|2|3)} style={{ flexShrink: 0 }} />
+                        <span style={{
+                          fontSize: 13, color: theme.text, flex: 1, fontWeight: entry.impact === 3 ? 600 : 400,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {entry.event}
+                        </span>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             );

@@ -110,6 +110,46 @@ export default function WorldWatchClient() {
     setThemeToStorage(currentTheme);
   }, [currentTheme]);
 
+  // Fetch naval forces from static OSINT data
+  useEffect(() => {
+    const NAVY_COLORS: Record<string, string> = {
+      'US': '#89b4fa',
+      'UK': '#cba6f7',
+      'RU': '#f38ba8',
+      'CN': '#fab387',
+      'FR': '#74c7ec',
+      'IN': '#a6e3a1',
+    };
+
+    fetch('/data/naval-forces.json')
+      .then(r => r.json())
+      .then((data: any) => {
+        const points = (data.forces || []).map((f: any) => ({
+          id: `ship-${f.id}`,
+          lat: f.lat,
+          lng: f.lng,
+          label: f.name,
+          subLabel: `${f.flagship} · ${f.region}`,
+          color: NAVY_COLORS[f.country] || '#a6adc8',
+          meta: {
+            flagship: f.flagship,
+            country: f.country,
+            countryFlag: f.countryFlag || '',
+            region: f.region,
+            status: f.status,
+            type: f.type,
+            composition: (f.composition || []).join(', '),
+            notes: f.notes || '',
+          },
+        }));
+
+        setLayers(prev => prev.map(l =>
+          l.id === 'ships' ? { ...l, points } : l
+        ));
+      })
+      .catch(() => {});
+  }, []);
+
   // Fetch FR24 military aircraft feed (proxied server-side to avoid CORS)
   useEffect(() => {
     // Military ICAO hex ranges (3fc-3fe REMOVED: catches German civilian ultralights D-M*)

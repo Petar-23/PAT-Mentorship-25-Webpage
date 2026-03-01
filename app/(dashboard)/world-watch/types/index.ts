@@ -16,11 +16,12 @@ export interface EconCalendarEntry {
   id: string;
   time: string; // ISO timestamp
   currency: string;
-  impact: 1 | 2 | 3; // 1=low, 2=medium, 3=high
+  impact: 0 | 1 | 2 | 3; // 0=holiday, 1=low, 2=medium, 3=high
   event: string;
   forecast: string;
   previous: string;
   actual: string; // empty if future
+  isHoliday?: boolean;
 }
 
 export interface LayerPoint {
@@ -30,6 +31,7 @@ export interface LayerPoint {
   label: string;
   subLabel?: string;
   color: string;
+  meta?: Record<string, any>; // extra structured data (e.g. naval ship details)
 }
 
 export interface LayerArc {
