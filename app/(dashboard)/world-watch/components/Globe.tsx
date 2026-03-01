@@ -36,7 +36,7 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
 
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: 'mapbox://styles/mapbox/satellite-streets-v12',
+      style: 'mapbox://styles/mapbox/dark-v11',
       // @ts-ignore globe projection (mapbox-gl v3)
       projection: 'globe',
       center: [20, 30],
@@ -48,25 +48,40 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
     mapRef.current = map;
 
     map.on('style.load', () => {
-      // Globe atmosphere — dark CCTV aesthetic
+      // FLIR/thermal atmosphere — near-black space
       // @ts-ignore setFog (mapbox-gl v3)
       map.setFog({
-        color: '#0a0a12',
-        'high-color': '#12121e',
-        'horizon-blend': 0.06,
-        'space-color': '#0e0e1a',
-        'star-intensity': 0.08,
+        color: '#080810',
+        'high-color': '#0c0c18',
+        'horizon-blend': 0.04,
+        'space-color': '#060610',
+        'star-intensity': 0.04,
       });
 
-      // Darken + desaturate satellite imagery for digital/CCTV look
-      const satLayer = map.getStyle()?.layers?.find((l: { id: string }) => l.id.includes('satellite'));
-      if (satLayer) {
-        try {
-          map.setPaintProperty(satLayer.id, 'raster-brightness-max', 0.45);
-          map.setPaintProperty(satLayer.id, 'raster-brightness-min', 0.0);
-          map.setPaintProperty(satLayer.id, 'raster-saturation', -0.6);
-          map.setPaintProperty(satLayer.id, 'raster-contrast', 0.3);
-        } catch (_) { /* style may not support all properties */ }
+      // FLIR look: strip labels, darken water, brighten land borders
+      const style = map.getStyle();
+      if (style?.layers) {
+        for (const layer of style.layers) {
+          // Remove all text labels (country names, city names, ocean names)
+          if (layer.type === 'symbol') {
+            map.setLayoutProperty(layer.id, 'visibility', 'none');
+          }
+          // Darken water
+          if (layer.id.includes('water') && layer.type === 'fill') {
+            try { map.setPaintProperty(layer.id, 'fill-color', '#080810'); } catch (_) {}
+          }
+          // Subtle land
+          if (layer.id.includes('land') && layer.type === 'fill') {
+            try { map.setPaintProperty(layer.id, 'fill-color', '#141420'); } catch (_) {}
+          }
+          // Dim admin boundaries to subtle glow lines
+          if (layer.id.includes('admin') && layer.type === 'line') {
+            try {
+              map.setPaintProperty(layer.id, 'line-color', '#2a2a40');
+              map.setPaintProperty(layer.id, 'line-opacity', 0.5);
+            } catch (_) {}
+          }
+        }
       }
 
       // Events GeoJSON source
@@ -150,25 +165,7 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
         filter: ['==', 'name_en', ''],
       });
 
-      // Country labels
-      map.addLayer({
-        id: 'event-labels',
-        type: 'symbol',
-        source: 'events',
-        filter: ['>=', ['get', 'severity'], 3],
-        layout: {
-          'text-field': ['get', 'country'],
-          'text-size': 12,
-          'text-offset': [0, 1.5],
-          'text-anchor': 'top',
-          'text-allow-overlap': false,
-        },
-        paint: {
-          'text-color': '#ffffffcc',
-          'text-halo-color': '#000000',
-          'text-halo-width': 1,
-        },
-      });
+      // No text labels on globe — FLIR clean look
     });
 
     // Click handler
