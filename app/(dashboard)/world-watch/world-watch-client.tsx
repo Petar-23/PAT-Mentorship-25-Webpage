@@ -92,7 +92,6 @@ export default function WorldWatchClient() {
     flexDirection: 'column',
     height: '100vh',
     width: '100vw',
-    fontFamily: 'var(--font-geist-pixel-line), ui-monospace, monospace',
     background: theme.base,
     color: theme.text,
     overflow: 'hidden',
@@ -115,19 +114,27 @@ export default function WorldWatchClient() {
     <div style={wrapperStyle}>
       {/* Global Styles for World Watch */}
       <style>{`
+        @font-face {
+          font-family: 'GeistPixelLine';
+          src: url('/fonts/GeistPixel-Line.woff2') format('woff2');
+          font-weight: 500;
+          font-style: normal;
+          font-display: block;
+        }
+
         .ww-root {
-          font-family: var(--font-geist-pixel-line), ui-monospace, 'SFMono-Regular', monospace !important;
+          font-family: 'GeistPixelLine', ui-monospace, 'SFMono-Regular', monospace !important;
           font-size: 14px;
           line-height: 1.5;
         }
 
         .ww-root *, .ww-root *::before, .ww-root *::after {
           box-sizing: border-box;
-          font-family: inherit !important;
+          font-family: 'GeistPixelLine', ui-monospace, 'SFMono-Regular', monospace !important;
         }
 
         .ww-root select, .ww-root button, .ww-root input {
-          font-family: inherit !important;
+          font-family: 'GeistPixelLine', ui-monospace, 'SFMono-Regular', monospace !important;
         }
 
         @keyframes wwBlink {
