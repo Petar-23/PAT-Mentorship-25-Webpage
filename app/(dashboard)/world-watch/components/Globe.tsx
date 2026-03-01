@@ -83,7 +83,7 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
       .labelLng('lng')
       .labelText('country')
       .labelSize(1.4)
-      .labelDotRadius(0.3)
+      .labelDotRadius(0)
       .labelColor(() => '#ffffffcc')
       .labelAltitude(0.015)
       // Undersea cables as arcs
