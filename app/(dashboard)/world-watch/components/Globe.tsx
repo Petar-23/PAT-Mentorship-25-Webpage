@@ -51,10 +51,10 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
       // Globe atmosphere
       // @ts-ignore setFog (mapbox-gl v3)
       map.setFog({
-        color: theme.crust  // Catppuccin fog,
-        'high-color': theme.mantle  // upper atmosphere,
+        color: theme.crust,
+        'high-color': theme.mantle,
         'horizon-blend': 0.08,
-        'space-color': theme.base  // Catppuccin bg,
+        'space-color': theme.base,
         'star-intensity': 0.15,
       });
 
