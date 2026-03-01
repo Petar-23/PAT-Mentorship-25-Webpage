@@ -48,12 +48,12 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
     mapRef.current = map;
 
     map.on('style.load', () => {
-      // Catppuccin-tinted atmosphere with muted starfield
+      // Catppuccin atmosphere — lighter halo around globe
       // @ts-ignore setFog (mapbox-gl v3)
       map.setFog({
-        color: theme.crust,
-        'high-color': theme.mantle,
-        'horizon-blend': 0.06,
+        color: theme.surface1,
+        'high-color': theme.surface0,
+        'horizon-blend': 0.12,
         'space-color': theme.crust,
         'star-intensity': 0.15,
       });
