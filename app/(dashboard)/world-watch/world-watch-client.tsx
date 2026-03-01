@@ -3,7 +3,6 @@
 import dynamic from 'next/dynamic';
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { GeoEvent, DataLayer, Theme } from './types';
-import { mockEvents } from './data/mockEvents';
 import { defaultLayers } from './data/layers';
 import { themes, getThemeFromStorage, setThemeToStorage } from './styles/themes';
 import { TopBar } from './components/TopBar';
@@ -70,7 +69,8 @@ export default function WorldWatchClient() {
   const [focusCounter, setFocusCounter] = useState(0);
   const [isRotating, setIsRotating] = useState(true);
   const globeRef = useRef<GlobeHandle>(null);
-  const [liveEvents, setLiveEvents] = useState<GeoEvent[]>(mockEvents);
+  const [liveEvents, setLiveEvents] = useState<GeoEvent[]>([]);
+  const [aircraftTracks, setAircraftTracks] = useState<any[]>([]);
 
   const theme = themes[currentTheme];
 
@@ -93,16 +93,9 @@ export default function WorldWatchClient() {
       fetch('/api/world-watch/gdelt').then(r => r.json()).catch(() => []),
       fetch('/api/world-watch/eonet').then(r => r.json()).catch(() => []),
     ]).then(([quakes, gdelt, eonet]: [GeoEvent[], GeoEvent[], GeoEvent[]]) => {
-      // Keep mock events that don't overlap with real data categories
-      const mockNonOverlap = mockEvents.filter(
-        e => e.category !== 'natural-disaster' && !e.id.startsWith('usgs-')
-      );
-      // Merge all sources, dedupe by id
-      const all = [...mockNonOverlap, ...quakes, ...gdelt, ...eonet];
+      const all = [...quakes, ...gdelt, ...eonet];
       const deduped = new Map<string, GeoEvent>();
-      for (const ev of all) {
-        deduped.set(ev.id, ev);
-      }
+      for (const ev of all) deduped.set(ev.id, ev);
       setLiveEvents(Array.from(deduped.values()));
     });
   }, []);
@@ -116,6 +109,36 @@ export default function WorldWatchClient() {
   useEffect(() => {
     setThemeToStorage(currentTheme);
   }, [currentTheme]);
+
+  // Fetch OpenSky military aircraft
+  useEffect(() => {
+    const fetchAircraft = () => {
+      fetch('/api/world-watch/opensky')
+        .then(r => r.json())
+        .then((aircraft: any[]) => {
+          if (!aircraft.length) return;
+          setLayers(prev => prev.map(l => {
+            if (l.id !== 'aircraft') return l;
+            return {
+              ...l,
+              points: aircraft.map((ac: any) => ({
+                id: `ac-${ac.icao24}`,
+                lat: ac.lat,
+                lng: ac.lng,
+                label: ac.callsign,
+                subLabel: `${ac.country} | FL${Math.round(ac.altitude / 30.48)} | ${ac.velocity}kt | HDG ${ac.heading}°`,
+                color: ac.country === 'United States' ? '#89b4fa' : ac.country === 'United Kingdom' ? '#a6e3a1' : '#f38ba8',
+              })),
+            };
+          }));
+          setAircraftTracks(aircraft.filter((ac: any) => ac.track?.length > 1));
+        })
+        .catch(() => {});
+    };
+    fetchAircraft();
+    const interval = setInterval(fetchAircraft, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSelectEvent = useCallback((event: GeoEvent) => {
     setSelectedId(event.id);
@@ -412,6 +435,7 @@ export default function WorldWatchClient() {
                 focusCounter={focusCounter}
                 theme={theme}
                 onRotationChange={setIsRotating}
+                aircraftTracks={aircraftTracks}
               />
 
               {/* Left Sidebar Widgets — floating cards */}

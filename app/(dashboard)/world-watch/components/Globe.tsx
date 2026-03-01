@@ -23,6 +23,7 @@ interface Props {
   focusCounter: number; // increments on every select to force re-trigger
   theme: ThemeColors;
   onRotationChange?: (rotating: boolean) => void;
+  aircraftTracks?: any[];
 }
 
 const COUNTRY_NAME_MAP: Record<string, string> = {
@@ -35,7 +36,7 @@ const DEFAULT_CENTER: [number, number] = [20, 30];
 const DEFAULT_ZOOM = 1.8;
 
 export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
-  { events, layers, onSelect, focusEvent, focusCounter, theme, onRotationChange },
+  { events, layers, onSelect, focusEvent, focusCounter, theme, onRotationChange, aircraftTracks = [] },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -341,6 +342,23 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           'text-halo-width': 1.5,
         },
       });
+
+      // Aircraft flight tracks
+      map.addSource('aircraft-tracks', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'aircraft-tracks-solid',
+        type: 'line',
+        source: 'aircraft-tracks',
+        paint: {
+          'line-color': '#89b4fa',
+          'line-width': 1.5,
+          'line-opacity': 0.6,
+        },
+        layout: { 'line-cap': 'round' },
+      });
     });
 
     // Click: marker stops rotation + highlights; empty space clears
@@ -488,6 +506,27 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       } catch (_) {}
     }
   }, [layers]); // eslint-disable-line
+
+  // Update aircraft flight tracks when data changes
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    const source = map.getSource('aircraft-tracks') as mapboxgl.GeoJSONSource | undefined;
+    if (!source) return;
+    source.setData({
+      type: 'FeatureCollection',
+      features: aircraftTracks
+        .filter((ac: any) => ac.track?.length > 1)
+        .map((ac: any) => ({
+          type: 'Feature' as const,
+          geometry: {
+            type: 'LineString' as const,
+            coordinates: ac.track,
+          },
+          properties: { callsign: ac.callsign, country: ac.country },
+        })),
+    });
+  }, [aircraftTracks]);
 
   return (
     <div

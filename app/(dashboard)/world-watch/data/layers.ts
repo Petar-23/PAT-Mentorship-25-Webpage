@@ -93,77 +93,16 @@ const underseaCables: LayerArc[] = [
 ];
 
 // ─── SHIP TRACKING ────────────────────────────────────────────────────────────
-const shipPositions: LayerPoint[] = [
-  { id: 'sh-001', lat: 1.35, lng: 104.20, label: 'MV EVER GIVEN', subLabel: 'Container', color: '#a6e3a1' },
-  { id: 'sh-002', lat: 29.38, lng: 32.55, label: 'COSCO HOPE', subLabel: 'Container, Suez transit', color: '#a6e3a1' },
-  { id: 'sh-003', lat: 12.79, lng: 45.40, label: 'GULF PIONEER', subLabel: 'Tanker, Gulf of Aden', color: '#fab387' },
-  { id: 'sh-004', lat: 51.45, lng: 2.45, label: 'MSC ARIA', subLabel: 'Container, North Sea', color: '#a6e3a1' },
-  { id: 'sh-005', lat: 37.91, lng: 23.95, label: 'AEGEAN BREEZE', subLabel: 'Cargo, Mediterranean', color: '#a6e3a1' },
-  { id: 'sh-006', lat: 22.32, lng: 113.84, label: 'CHINA STAR', subLabel: 'VLCC Tanker', color: '#fab387' },
-  { id: 'sh-007', lat: -33.58, lng: 26.89, label: 'CAPE HOPE', subLabel: 'Bulk Carrier, S.Africa', color: '#a6e3a1' },
-  { id: 'sh-008', lat: -5.12, lng: 39.60, label: 'OCEAN PEARL', subLabel: 'LNG Tanker', color: '#89b4fa' },
-  { id: 'sh-009', lat: 8.97, lng: -79.57, label: 'PANAMA STAR', subLabel: 'Container, Pacific', color: '#a6e3a1' },
-  { id: 'sh-010', lat: 35.34, lng: 23.92, label: 'ARIS-13', subLabel: 'Tanker, Crete', color: '#fab387' },
-  { id: 'sh-011', lat: 53.89, lng: 8.67, label: 'HAMBURG EXPRESS', subLabel: 'Container, Cuxhaven', color: '#a6e3a1' },
-  { id: 'sh-012', lat: 55.68, lng: 12.57, label: 'SCANDINAVIAN', subLabel: 'Ro-Ro, Øresund', color: '#a6e3a1' },
-  { id: 'sh-013', lat: -8.86, lng: 115.21, label: 'BALI SPIRIT', subLabel: 'Cruise, Lombok Strait', color: '#89b4fa' },
-  { id: 'sh-014', lat: 14.29, lng: 42.87, label: 'POLAR STAR', subLabel: 'LNG, Red Sea', color: '#89b4fa' },
-  { id: 'sh-015', lat: 25.77, lng: -80.19, label: 'MIAMI BRIDGE', subLabel: 'Container, Florida', color: '#a6e3a1' },
-  { id: 'sh-016', lat: 59.91, lng: 10.76, label: 'NORD STREAM', subLabel: 'Supply, Oslofjord', color: '#a6e3a1' },
-  { id: 'sh-017', lat: -25.86, lng: 32.95, label: 'MAPUTO TRADER', subLabel: 'Bulk, Mozambique', color: '#a6e3a1' },
-  { id: 'sh-018', lat: 18.47, lng: -66.12, label: 'CARIBBEAN SUN', subLabel: 'Container, Puerto Rico', color: '#a6e3a1' },
-  { id: 'sh-019', lat: 60.18, lng: -23.42, label: 'ATLANTIC NORTH', subLabel: 'Container, North Atlantic', color: '#a6e3a1' },
-  { id: 'sh-020', lat: -17.73, lng: 177.44, label: 'PACIFIC PHOENIX', subLabel: 'LNG, Fiji region', color: '#89b4fa' },
-  { id: 'sh-021', lat: 43.76, lng: -1.44, label: 'AZUL MARINE', subLabel: 'Tanker, Bay of Biscay', color: '#fab387' },
-  { id: 'sh-022', lat: 3.54, lng: -8.68, label: 'GUINEA TRADER', subLabel: 'FPSO, Gulf of Guinea', color: '#fab387' },
-  { id: 'sh-023', lat: 45.26, lng: 12.33, label: 'ADRIATIC STAR', subLabel: 'RoPax, Adriatic', color: '#a6e3a1' },
-  { id: 'sh-024', lat: -4.03, lng: 39.66, label: 'MOMBASA LINK', subLabel: 'Cargo, Kenya coast', color: '#a6e3a1' },
-  { id: 'sh-025', lat: 36.00, lng: 5.36, label: 'GIBRALTAR PASS', subLabel: 'Tanker, Strait of Gibraltar', color: '#fab387' },
-  { id: 'sh-026', lat: 21.30, lng: -158.08, label: 'HAWAII CHIEF', subLabel: 'Container, Pearl Harbor approach', color: '#a6e3a1' },
-  { id: 'sh-027', lat: 31.22, lng: 121.49, label: 'SHANGHAI EXPO', subLabel: 'ULCV, Yangshan Port', color: '#a6e3a1' },
-  { id: 'sh-028', lat: -34.60, lng: -58.38, label: 'BUENOS AIRES', subLabel: 'Ro-Ro, Río de la Plata', color: '#a6e3a1' },
-  { id: 'sh-029', lat: 10.32, lng: -61.42, label: 'PORT OF SPAIN', subLabel: 'Tanker, Trinidad', color: '#fab387' },
-  { id: 'sh-030', lat: 64.13, lng: -21.95, label: 'REYKJAVIK RUN', subLabel: 'Supply, Iceland', color: '#89b4fa' },
-];
+// Placeholder — will be populated by live AIS data in future
+const shipPositions: LayerPoint[] = [];
 
 // ─── AIRCRAFT TRACKING ───────────────────────────────────────────────────────
-const aircraftPositions: LayerPoint[] = [
-  { id: 'ac-001', lat: 51.50, lng: -30.00, label: 'BA001', subLabel: 'Boeing 747 LHR→JFK', color: '#89b4fa' },
-  { id: 'ac-002', lat: 35.00, lng: 60.00, label: 'EK773', subLabel: 'A380 DXB→SYD', color: '#89b4fa' },
-  { id: 'ac-003', lat: 25.00, lng: 100.00, label: 'CX831', subLabel: 'B777 HKG→LHR', color: '#89b4fa' },
-  { id: 'ac-004', lat: -10.00, lng: 30.00, label: 'QF63', subLabel: 'B787 LHR→SYD', color: '#89b4fa' },
-  { id: 'ac-005', lat: 60.00, lng: -70.00, label: 'AC848', subLabel: 'A330 YYZ→FRA', color: '#89b4fa' },
-  { id: 'ac-006', lat: 50.00, lng: 20.00, label: 'LH500', subLabel: 'A340 FRA→JFK', color: '#89b4fa' },
-  { id: 'ac-007', lat: -30.00, lng: 150.00, label: 'SQ281', subLabel: 'A350 SIN→SFO', color: '#89b4fa' },
-  { id: 'ac-008', lat: 10.00, lng: -80.00, label: 'AA931', subLabel: 'B777 DFW→GRU', color: '#89b4fa' },
-  { id: 'ac-009', lat: 30.00, lng: 45.00, label: 'TK001', subLabel: 'A350 IST→JFK', color: '#89b4fa' },
-  { id: 'ac-010', lat: 55.00, lng: 80.00, label: 'SU100', subLabel: 'B737 SVO→PEK', color: '#89b4fa' },
-  // Military
-  { id: 'ac-011', lat: 68.00, lng: -20.00, label: 'DARK12', subLabel: 'RC-135W RIVET JOINT', color: '#f38ba8' },
-  { id: 'ac-012', lat: 35.00, lng: 140.00, label: 'GIANT31', subLabel: 'P-8 Poseidon, ISR', color: '#f38ba8' },
-  { id: 'ac-013', lat: 47.00, lng: 35.00, label: 'NATO03', subLabel: 'E-3 Sentry AWACS', color: '#f38ba8' },
-  { id: 'ac-014', lat: 35.00, lng: 25.00, label: 'GHOST21', subLabel: 'RQ-4 Global Hawk', color: '#f38ba8' },
-  { id: 'ac-015', lat: 27.00, lng: 60.00, label: 'DARK45', subLabel: 'U-2S surveillance', color: '#f38ba8' },
-  { id: 'ac-016', lat: 65.00, lng: 10.00, label: 'COBRA11', subLabel: 'P-8 ASW patrol', color: '#f38ba8' },
-  { id: 'ac-017', lat: 20.00, lng: 60.00, label: 'OPR99', subLabel: 'B-52H BUFF, Diego Garcia', color: '#f38ba8' },
-  { id: 'ac-018', lat: 12.00, lng: 45.00, label: 'SHARK07', subLabel: 'MQ-9 Reaper, Yemen', color: '#f38ba8' },
-  { id: 'ac-019', lat: 60.00, lng: 30.00, label: 'SIGINT2', subLabel: 'EP-3E ARIES II', color: '#f38ba8' },
-  { id: 'ac-020', lat: 45.00, lng: -60.00, label: 'MANTA55', subLabel: 'E-6B TACAMO, Atlantic', color: '#f38ba8' },
-];
+// Populated by OpenSky live API via world-watch-client.tsx
+const aircraftPositions: LayerPoint[] = [];
 
 // ─── PROTESTS ────────────────────────────────────────────────────────────────
-const protests: LayerPoint[] = [
-  { id: 'pr-001', lat: 48.86, lng: 2.35, label: 'Paris General Strike', subLabel: '200K protesters, pension reform', color: '#f9e2af' },
-  { id: 'pr-002', lat: 41.01, lng: 28.96, label: 'Istanbul Opposition Rally', subLabel: '50K attendees, election integrity', color: '#f9e2af' },
-  { id: 'pr-003', lat: 52.52, lng: 13.40, label: 'Berlin Climate March', subLabel: '80K Fridays for Future', color: '#f9e2af' },
-  { id: 'pr-004', lat: -34.60, lng: -58.38, label: 'Buenos Aires Austerity Protest', subLabel: 'Anti-Milei, 30K workers', color: '#f9e2af' },
-  { id: 'pr-005', lat: 28.61, lng: 77.21, label: 'New Delhi Farmers March', subLabel: 'Kisan Union, highway blockade', color: '#f9e2af' },
-  { id: 'pr-006', lat: -26.20, lng: 28.04, label: 'Johannesburg Eskom Protests', subLabel: 'Load shedding anger, 15K', color: '#f9e2af' },
-  { id: 'pr-007', lat: -12.04, lng: -77.03, label: 'Lima Anti-Government Rally', subLabel: 'Boluarte opposition, 25K', color: '#f9e2af' },
-  { id: 'pr-008', lat: 37.57, lng: 126.98, label: 'Seoul Democracy Vigil', subLabel: 'Post-impeachment, 60K', color: '#f9e2af' },
-  { id: 'pr-009', lat: 35.69, lng: 51.39, label: 'Tehran Workers Strike', subLabel: 'Unpaid wages, 10K workers', color: '#f9e2af' },
-  { id: 'pr-010', lat: 51.51, lng: -0.13, label: 'London Gaza Solidarity', subLabel: 'UCU/SOAS, Whitehall march', color: '#f9e2af' },
-];
+// Populated by GDELT live API
+const protests: LayerPoint[] = [];
 
 // ─── INFRASTRUCTURE (Pipelines, Datacenters) ─────────────────────────────────
 const infrastructure: LayerPoint[] = [
