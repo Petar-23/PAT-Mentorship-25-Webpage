@@ -13,7 +13,7 @@ import { LayerPanel } from './components/LayerPanel';
 import { MiniCalendar } from './components/MiniCalendar';
 import { MarketsPanel } from './components/MarketsPanel';
 
-import type { GlobeHandle } from './components/Globe';
+import type { GlobeHandle, AircraftInfo } from './components/Globe';
 
 // Globe must be dynamically imported (requires browser/WebGL)
 const Globe = dynamic(
@@ -70,7 +70,7 @@ export default function WorldWatchClient() {
   const [isRotating, setIsRotating] = useState(true);
   const globeRef = useRef<GlobeHandle>(null);
   const [liveEvents, setLiveEvents] = useState<GeoEvent[]>([]);
-  // Aircraft tracks are now fetched on-demand by Globe (hover/click)
+  const aircraftDataRef = useRef<Map<string, AircraftInfo>>(new Map());
 
   const theme = themes[currentTheme];
 
@@ -110,63 +110,84 @@ export default function WorldWatchClient() {
     setThemeToStorage(currentTheme);
   }, [currentTheme]);
 
-  // Fetch OpenSky military aircraft — direct client-side fetch (Vercel serverless gets rate-limited)
+  // Fetch FR24 military aircraft feed (proxied server-side to avoid CORS)
   useEffect(() => {
-    // Tight military ICAO hex ranges (c0 is ALL of Canada civil — removed!)
+    // Tight military ICAO hex ranges
     const MIL_HEX = ['ae', 'af', '43c', '43d', '43e', '43f', '3fc', '3fd', '3fe'];
     const MIL_CS = ['RCH','REACH','DUKE','EVAC','IRON','GIANT','COBRA','VIPER','SAM','SPAR',
       'EXEC','DARK','GHOST','MANTA','SHARK','GAF','NAF','FAMUS','BALL','ROCKY','OUTLW','REAPER','FORGE',
       'CFC','CANAF','CANFORCE','RCAF'];
 
+    function getAirForceInfo(icao24: string): { color: string; airForce: string } {
+      const hex = icao24.toLowerCase();
+      if (hex.startsWith('ae') || hex.startsWith('af')) return { color: '#89b4fa', airForce: 'USAF' };
+      if (hex.startsWith('43c') || hex.startsWith('43d') || hex.startsWith('43e') || hex.startsWith('43f')) return { color: '#cba6f7', airForce: 'RAF' };
+      if (hex.startsWith('3fc') || hex.startsWith('3fd') || hex.startsWith('3fe')) return { color: '#f9e2af', airForce: 'Luftwaffe' };
+      return { color: '#a6adc8', airForce: 'Military' };
+    }
+
     const fetchAircraft = () => {
-      fetch('https://opensky-network.org/api/states/all')
+      fetch('/api/world-watch/fr24')
         .then(r => {
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           return r.json();
         })
         .then((data: any) => {
-          const states = data.states || [];
-          const aircraft: any[] = [];
+          const aircraft: AircraftInfo[] = [];
 
-          for (const s of states) {
-            const icao = (s[0] || '').toLowerCase();
-            const cs = (s[1] || '').trim();
-            const lat = s[6], lng = s[5];
+          for (const [, v] of Object.entries(data)) {
+            // Skip metadata keys (not arrays)
+            if (!Array.isArray(v)) continue;
+            const entry = v as any[];
+
+            const icao = (entry[0] || '').toLowerCase();
+            const lat = entry[1];
+            const lng = entry[2];
             if (!lat || !lng) continue;
 
+            const callsign = (entry[16] || '').trim() || icao.toUpperCase();
+            const heading = entry[3] || 0;
+            const altitude = entry[4] || 0; // feet
+            const speed = entry[5] || 0; // knots
+            const aircraftType = (entry[8] || '').trim();
+            const registration = (entry[9] || '').trim();
+            const origin = (entry[11] || '').trim();
+            const destination = (entry[12] || '').trim();
+
             const isMilHex = MIL_HEX.some(p => icao.startsWith(p));
-            const isMilCs = MIL_CS.some(p => cs.toUpperCase().startsWith(p));
+            const isMilCs = MIL_CS.some(p => callsign.toUpperCase().startsWith(p));
             if (!isMilHex && !isMilCs) continue;
+
+            const { color, airForce } = getAirForceInfo(icao);
 
             aircraft.push({
               icao24: icao,
-              callsign: cs || icao.toUpperCase(),
-              country: s[2] || 'Unknown',
-              lat, lng,
-              altitude: Math.round(s[7] || 0),
-              velocity: Math.round((s[9] || 0) * 1.944),
-              heading: Math.round(s[10] || 0),
-              onGround: s[8] || false,
+              callsign,
+              country: '',
+              lat,
+              lng,
+              altitude,
+              velocity: speed,
+              heading,
+              aircraftType,
+              registration,
+              origin,
+              destination,
+              airForce,
+              airForceColor: color,
             });
           }
 
-          // Sort: airborne first, by altitude desc, limit 50
-          aircraft.sort((a, b) => {
-            if (a.onGround !== b.onGround) return a.onGround ? 1 : -1;
-            return b.altitude - a.altitude;
-          });
+          // Sort: by altitude desc (FR24 only has airborne), limit 50
+          aircraft.sort((a, b) => b.altitude - a.altitude);
           const top = aircraft.slice(0, 50);
 
-          console.log(`[OPTICON] OpenSky: ${states.length} total, ${aircraft.length} mil/gov, showing ${top.length}`);
+          console.log(`[OPTICON] FR24: ${aircraft.length} mil/gov matches, showing ${top.length}`);
 
-          // Determine color by air force based on ICAO hex range
-          function getAirForceColor(icao24: string): string {
-            const hex = icao24.toLowerCase();
-            if (hex.startsWith('ae') || hex.startsWith('af')) return '#89b4fa'; // US — blue
-            if (hex.startsWith('43c') || hex.startsWith('43d') || hex.startsWith('43e') || hex.startsWith('43f')) return '#cba6f7'; // UK — mauve/purple
-            if (hex.startsWith('3fc') || hex.startsWith('3fd') || hex.startsWith('3fe')) return '#f9e2af'; // Germany — yellow/gold
-            return '#a6adc8'; // unknown/other — subtext0
-          }
+          // Update aircraftDataRef
+          const map = new Map<string, AircraftInfo>();
+          for (const ac of top) map.set(ac.icao24, ac);
+          aircraftDataRef.current = map;
 
           if (top.length > 0) {
             setLayers(prev => prev.map(l => {
@@ -178,15 +199,15 @@ export default function WorldWatchClient() {
                   lat: ac.lat,
                   lng: ac.lng,
                   label: ac.callsign,
-                  subLabel: `${ac.country} | FL${Math.round(ac.altitude / 30.48)} | ${ac.velocity}kt | HDG ${ac.heading}°`,
-                  color: getAirForceColor(ac.icao24),
+                  subLabel: `FL${Math.round(ac.altitude / 30.48)} | ${ac.velocity}kt | HDG ${ac.heading}°`,
+                  color: ac.airForceColor,
                 })),
               };
             }));
           }
         })
         .catch((err) => {
-          console.warn('[OPTICON] OpenSky fetch failed:', err.message);
+          console.warn('[OPTICON] FR24 fetch failed:', err.message);
         });
     };
 
@@ -491,7 +512,7 @@ export default function WorldWatchClient() {
                 focusCounter={focusCounter}
                 theme={theme}
                 onRotationChange={setIsRotating}
-                
+                aircraftDataRef={aircraftDataRef}
               />
 
               {/* Left Sidebar Widgets — floating cards */}
