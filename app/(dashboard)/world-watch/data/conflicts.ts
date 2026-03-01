@@ -10,6 +10,8 @@ export interface ActiveConflict {
   name: string;
   shortName: string;
   parties: string[];
+  /** Country names (matching Mapbox name_en) to permanently highlight on the globe */
+  countries: string[];
   status: 'active-war' | 'escalating' | 'ceasefire' | 'frozen';
   region: string;
   startDate: string;
@@ -29,6 +31,7 @@ export const ACTIVE_CONFLICTS: ActiveConflict[] = [
     name: 'Russia-Ukraine War',
     shortName: 'UKRAINE',
     parties: ['Russia', 'Ukraine'],
+    countries: ['Ukraine'],
     status: 'active-war',
     region: 'Eastern Europe',
     startDate: '2022-02-24',
@@ -55,6 +58,7 @@ export const ACTIVE_CONFLICTS: ActiveConflict[] = [
     name: 'Israel-Palestine Conflict',
     shortName: 'GAZA',
     parties: ['Israel', 'Hamas', 'Hezbollah'],
+    countries: ['Israel', 'Palestine'],
     status: 'active-war',
     region: 'Middle East',
     startDate: '2023-10-07',
@@ -76,6 +80,7 @@ export const ACTIVE_CONFLICTS: ActiveConflict[] = [
     name: 'Iran-US/Israel War',
     shortName: 'IRAN',
     parties: ['Iran', 'United States', 'Israel', 'GCC'],
+    countries: ['Iran'],
     status: 'active-war',
     region: 'Middle East / Persian Gulf',
     startDate: '2024-01-01',
@@ -105,6 +110,7 @@ export const ACTIVE_CONFLICTS: ActiveConflict[] = [
     name: 'Sudan Civil War',
     shortName: 'SUDAN',
     parties: ['SAF', 'RSF'],
+    countries: ['Sudan'],
     status: 'active-war',
     region: 'East Africa',
     startDate: '2023-04-15',
@@ -126,6 +132,7 @@ export const ACTIVE_CONFLICTS: ActiveConflict[] = [
     name: 'Myanmar Civil War',
     shortName: 'MYANMAR',
     parties: ['Military Junta', 'NUG/PDF', 'Ethnic Armies'],
+    countries: ['Myanmar'],
     status: 'active-war',
     region: 'Southeast Asia',
     startDate: '2021-02-01',
@@ -147,6 +154,7 @@ export const ACTIVE_CONFLICTS: ActiveConflict[] = [
     name: 'Sahel Insurgency',
     shortName: 'SAHEL',
     parties: ['JNIM', 'ISGS', 'Various States'],
+    countries: ['Mali', 'Burkina Faso', 'Niger'],
     status: 'active-war',
     region: 'West Africa',
     startDate: '2012-01-01',
@@ -168,6 +176,7 @@ export const ACTIVE_CONFLICTS: ActiveConflict[] = [
     name: 'Taiwan Strait Tensions',
     shortName: 'TAIWAN',
     parties: ['China', 'Taiwan', 'United States'],
+    countries: ['Taiwan'],
     status: 'escalating',
     region: 'Indo-Pacific',
     startDate: '2022-08-01',

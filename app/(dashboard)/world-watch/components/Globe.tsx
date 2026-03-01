@@ -371,8 +371,23 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       });
       const conflictPopup = conflictPopupRef.current;
 
+      // Layers that take click priority over conflict zones
+      const conflictClickBlockers = [
+        'event-icons', 'conflict-hotspot-dots', 'aircraft-icons', 'ship-icons',
+        'military-base-icons', 'nuclear-icons', 'submarine-cables-lines',
+        'pipelines-lines', 'pipelines-lines-dashed',
+      ];
+
       for (const conflict of ACTIVE_CONFLICTS) {
         map.on('click', `conflict-fill-${conflict.id}`, (e: any) => {
+          // If a more specific layer feature is under the click, don't show the zone popup
+          const point = e.point;
+          for (const layerId of conflictClickBlockers) {
+            if (map.getLayer(layerId)) {
+              const hits = map.queryRenderedFeatures(point, { layers: [layerId] });
+              if (hits.length > 0) return;
+            }
+          }
           markerClicked = true;
           const statusLabel = conflict.status === 'active-war' ? '🔴 ACTIVE WAR'
             : conflict.status === 'escalating' ? '🟠 ESCALATING'
@@ -493,6 +508,39 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         paint: { 'line-color': colors[4], 'line-width': 1, 'line-opacity': 0.3 },
         filter: ['==', 'name_en', ''],
       });
+
+      // ─── PERMANENT CONFLICT COUNTRY HIGHLIGHTS ───────────────────────
+      // Each conflict gets its own fill + border layer so countries use the conflict color
+      for (const conflict of ACTIVE_CONFLICTS) {
+        const countryFilter: any = conflict.countries.length === 1
+          ? ['==', 'name_en', conflict.countries[0]]
+          : ['in', 'name_en', ...conflict.countries];
+
+        map.addLayer({
+          id: `conflict-country-fill-${conflict.id}`,
+          type: 'fill',
+          source: 'country-boundaries',
+          'source-layer': 'country_boundaries',
+          paint: {
+            'fill-color': conflict.color,
+            'fill-opacity': conflict.severity === 'critical' ? 0.10 : 0.06,
+          },
+          filter: countryFilter,
+        });
+
+        map.addLayer({
+          id: `conflict-country-line-${conflict.id}`,
+          type: 'line',
+          source: 'country-boundaries',
+          'source-layer': 'country_boundaries',
+          paint: {
+            'line-color': conflict.color,
+            'line-width': conflict.severity === 'critical' ? 1.5 : 1,
+            'line-opacity': 0.4,
+          },
+          filter: countryFilter,
+        });
+      }
 
       // NOTE: Generic data layers (points/arcs) are created/managed entirely
       // by the layers-sync useEffect below. Do NOT create them here in style.load
