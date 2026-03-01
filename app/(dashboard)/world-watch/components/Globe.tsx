@@ -42,6 +42,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const rotateRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isRotatingRef = useRef(true);
+  const hoverPopupRef = useRef<mapboxgl.Popup | null>(null);
   const colors = severityColors(theme);
 
   const geoEvents = events.filter(e => e.category !== 'economic');
@@ -344,14 +345,19 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
 
       // ─── AIRCRAFT SYSTEM ──────────────────────────────────────────────
 
-      // Load aircraft icon
+      // Load aircraft icon — inline SVG data URL to avoid async race condition
+      const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>`;
+      const svgBlob = new Blob([svgStr], { type: 'image/svg+xml' });
+      const svgUrl = URL.createObjectURL(svgBlob);
       const img = new Image(24, 24);
       img.onload = () => {
         if (!map.hasImage('aircraft-icon')) {
           map.addImage('aircraft-icon', img, { sdf: true });
         }
+        URL.revokeObjectURL(svgUrl);
       };
-      img.src = '/icons/aircraft.svg';
+      img.onerror = () => URL.revokeObjectURL(svgUrl);
+      img.src = svgUrl;
 
       // Aircraft positions source (populated by live OpenSky data via layers)
       map.addSource('aircraft-live', {
@@ -502,6 +508,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       maxWidth: '280px',
       className: 'ww-marker-popup',
     });
+    hoverPopupRef.current = popup;
 
     map.on('mouseenter', 'event-circles', (e) => {
       map.getCanvas().style.cursor = 'pointer';
@@ -850,6 +857,26 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           });
         }
 
+        // Add hover popup for newly created circle layer (only once per layer)
+        if (!map.getSource(sourceId) && features.length > 0) {
+          map.on('mouseenter', circleId, (e) => {
+            map.getCanvas().style.cursor = 'pointer';
+            if (!e.features?.[0] || !hoverPopupRef.current) return;
+            const props = e.features[0].properties as { label?: string; subLabel?: string } | null;
+            const coords = ((e.features[0].geometry as unknown) as { coordinates: [number, number] }).coordinates.slice() as [number, number];
+            hoverPopupRef.current.setLngLat(coords).setHTML(`
+              <div style="background: ${theme.mantle}; border: 1px solid ${theme.surface0}; padding: 8px 10px; border-radius: 4px;">
+                <div style="font-size: 12px; font-weight: 600; color: ${theme.text};">${props?.label ?? ''}</div>
+                ${props?.subLabel ? `<div style="font-size: 10px; color: ${theme.overlay0}; margin-top: 2px;">${props.subLabel}</div>` : ''}
+              </div>
+            `).addTo(map);
+          });
+          map.on('mouseleave', circleId, () => {
+            map.getCanvas().style.cursor = '';
+            hoverPopupRef.current?.remove();
+          });
+        }
+
         // Toggle visibility
         try {
           if (map.getLayer(circleId)) map.setLayoutProperty(circleId, 'visibility', visibility);
@@ -880,58 +907,74 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;
-    if (!map.isStyleLoaded()) return;
 
     const acLayer = layers.find(l => l.id === 'aircraft');
     if (!acLayer) return;
 
-    // Clean up any leftover generic circles for aircraft
-    try {
-      if (map.getLayer('layer-aircraft-circles')) map.removeLayer('layer-aircraft-circles');
-      if (map.getLayer('layer-aircraft-labels')) map.removeLayer('layer-aircraft-labels');
-      if (map.getSource('layer-aircraft')) map.removeSource('layer-aircraft');
-    } catch (_) {}
+    const tryUpdate = () => {
+      if (!map.isStyleLoaded()) return false;
 
-    const source = map.getSource('aircraft-live') as mapboxgl.GeoJSONSource | undefined;
-    if (!source) return;
+      // Clean up any leftover generic circles for aircraft
+      try {
+        if (map.getLayer('layer-aircraft-circles')) map.removeLayer('layer-aircraft-circles');
+        if (map.getLayer('layer-aircraft-labels')) map.removeLayer('layer-aircraft-labels');
+        if (map.getSource('layer-aircraft')) map.removeSource('layer-aircraft');
+      } catch (_) {}
 
-    const features = (acLayer.points || []).map(p => {
-      // Parse subLabel for altitude/velocity/heading
-      const parts = (p.subLabel || '').split(' | ');
-      const altStr = parts.find(s => s.startsWith('FL'));
-      const velStr = parts.find(s => s.endsWith('kt'));
-      const hdgStr = parts.find(s => s.startsWith('HDG'));
-      const altitude = altStr ? parseInt(altStr.replace('FL', '')) * 30.48 : 0;
-      const velocity = velStr ? parseInt(velStr) : 0;
-      const heading = hdgStr ? parseInt(hdgStr.replace('HDG ', '').replace('°', '')) : 0;
+      const source = map.getSource('aircraft-live') as mapboxgl.GeoJSONSource | undefined;
+      if (!source) return false;
 
-      return {
-        type: 'Feature' as const,
-        geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
-        properties: {
-          icao24: p.id.replace('ac-', ''),
-          callsign: p.label,
-          country: (p.subLabel || '').split(' | ')[0] || 'Unknown',
-          altitude,
-          velocity,
-          heading,
-          color: p.color,
-        },
+      const features = (acLayer.points || []).map(p => {
+        // Parse subLabel for altitude/velocity/heading
+        const parts = (p.subLabel || '').split(' | ');
+        const altStr = parts.find(s => s.startsWith('FL'));
+        const velStr = parts.find(s => s.endsWith('kt'));
+        const hdgStr = parts.find(s => s.startsWith('HDG'));
+        const altitude = altStr ? parseInt(altStr.replace('FL', '')) * 30.48 : 0;
+        const velocity = velStr ? parseInt(velStr) : 0;
+        const heading = hdgStr ? parseInt(hdgStr.replace('HDG ', '').replace('°', '')) : 0;
+
+        return {
+          type: 'Feature' as const,
+          geometry: { type: 'Point' as const, coordinates: [p.lng, p.lat] },
+          properties: {
+            icao24: p.id.replace('ac-', ''),
+            callsign: p.label,
+            country: (p.subLabel || '').split(' | ')[0] || 'Unknown',
+            altitude,
+            velocity,
+            heading,
+            color: p.color,
+          },
+        };
+      });
+
+      source.setData({ type: 'FeatureCollection', features });
+
+      // Toggle aircraft layer visibility
+      const visibility = acLayer.enabled ? 'visible' : 'none';
+      try {
+        if (map.getLayer('aircraft-icons')) map.setLayoutProperty('aircraft-icons', 'visibility', visibility);
+        if (map.getLayer('aircraft-labels')) map.setLayoutProperty('aircraft-labels', 'visibility', visibility);
+        if (map.getLayer('aircraft-track-solid')) map.setLayoutProperty('aircraft-track-solid', 'visibility', visibility);
+        if (map.getLayer('aircraft-track-dashed')) map.setLayoutProperty('aircraft-track-dashed', 'visibility', visibility);
+        if (map.getLayer('aircraft-endpoints-dots')) map.setLayoutProperty('aircraft-endpoints-dots', 'visibility', visibility);
+        if (map.getLayer('aircraft-endpoints-labels')) map.setLayoutProperty('aircraft-endpoints-labels', 'visibility', visibility);
+      } catch (_) {}
+
+      return true;
+    };
+
+    if (!tryUpdate()) {
+      // Style not loaded yet or source not ready — retry on idle
+      const handler = () => {
+        if (tryUpdate()) {
+          map.off('idle', handler);
+        }
       };
-    });
-
-    source.setData({ type: 'FeatureCollection', features });
-
-    // Toggle aircraft layer visibility
-    const visibility = acLayer.enabled ? 'visible' : 'none';
-    try {
-      if (map.getLayer('aircraft-icons')) map.setLayoutProperty('aircraft-icons', 'visibility', visibility);
-      if (map.getLayer('aircraft-labels')) map.setLayoutProperty('aircraft-labels', 'visibility', visibility);
-      if (map.getLayer('aircraft-track-solid')) map.setLayoutProperty('aircraft-track-solid', 'visibility', visibility);
-      if (map.getLayer('aircraft-track-dashed')) map.setLayoutProperty('aircraft-track-dashed', 'visibility', visibility);
-      if (map.getLayer('aircraft-endpoints-dots')) map.setLayoutProperty('aircraft-endpoints-dots', 'visibility', visibility);
-      if (map.getLayer('aircraft-endpoints-labels')) map.setLayoutProperty('aircraft-endpoints-labels', 'visibility', visibility);
-    } catch (_) {}
+      map.on('idle', handler);
+      return () => { map.off('idle', handler); };
+    }
   }, [layers]); // eslint-disable-line
 
   return (
