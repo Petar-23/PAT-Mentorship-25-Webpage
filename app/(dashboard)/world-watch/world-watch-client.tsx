@@ -110,35 +110,68 @@ export default function WorldWatchClient() {
     setThemeToStorage(currentTheme);
   }, [currentTheme]);
 
-  // Fetch OpenSky military aircraft
+  // Fetch OpenSky military aircraft — direct client-side fetch (Vercel serverless gets rate-limited)
   useEffect(() => {
-    const updateAircraftLayer = (aircraft: any[]) => {
-      setLayers(prev => prev.map(l => {
-        if (l.id !== 'aircraft') return l;
-        return {
-          ...l,
-          points: aircraft.map((ac: any) => ({
-            id: `ac-${ac.icao24}`,
-            lat: ac.lat,
-            lng: ac.lng,
-            label: ac.callsign,
-            subLabel: `${ac.country} | FL${Math.round(ac.altitude / 30.48)} | ${ac.velocity}kt | HDG ${ac.heading}°`,
-            color: ac.country === 'United States' ? '#89b4fa' : ac.country === 'United Kingdom' ? '#a6e3a1' : '#f38ba8',
-          })),
-        };
-      }));
-    };
+    const MIL_HEX = ['ae', 'af', '43c', '43d', '43e', '43f', '3fc', '3fd', '3fe', 'c0'];
+    const MIL_CS = ['RCH','REACH','DUKE','EVAC','IRON','GIANT','COBRA','VIPER','SAM','SPAR',
+      'EXEC','DARK','GHOST','MANTA','SHARK','GAF','NAF','FAMUS','BALL','ROCKY','OUTLW','REAPER','FORGE'];
 
     const fetchAircraft = () => {
-      fetch('/api/world-watch/opensky')
+      fetch('https://opensky-network.org/api/states/all')
         .then(r => {
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           return r.json();
         })
-        .then((aircraft: any[]) => {
-          console.log(`[OPTICON] OpenSky: ${aircraft.length} military aircraft`);
-          if (aircraft.length > 0) {
-            updateAircraftLayer(aircraft);
+        .then((data: any) => {
+          const states = data.states || [];
+          const aircraft: any[] = [];
+
+          for (const s of states) {
+            const icao = (s[0] || '').toLowerCase();
+            const cs = (s[1] || '').trim();
+            const lat = s[6], lng = s[5];
+            if (!lat || !lng) continue;
+
+            const isMilHex = MIL_HEX.some(p => icao.startsWith(p));
+            const isMilCs = MIL_CS.some(p => cs.toUpperCase().startsWith(p));
+            if (!isMilHex && !isMilCs) continue;
+
+            aircraft.push({
+              icao24: icao,
+              callsign: cs || icao.toUpperCase(),
+              country: s[2] || 'Unknown',
+              lat, lng,
+              altitude: Math.round(s[7] || 0),
+              velocity: Math.round((s[9] || 0) * 1.944),
+              heading: Math.round(s[10] || 0),
+              onGround: s[8] || false,
+            });
+          }
+
+          // Sort: airborne first, by altitude desc, limit 50
+          aircraft.sort((a, b) => {
+            if (a.onGround !== b.onGround) return a.onGround ? 1 : -1;
+            return b.altitude - a.altitude;
+          });
+          const top = aircraft.slice(0, 50);
+
+          console.log(`[OPTICON] OpenSky: ${states.length} total, ${aircraft.length} mil/gov, showing ${top.length}`);
+
+          if (top.length > 0) {
+            setLayers(prev => prev.map(l => {
+              if (l.id !== 'aircraft') return l;
+              return {
+                ...l,
+                points: top.map(ac => ({
+                  id: `ac-${ac.icao24}`,
+                  lat: ac.lat,
+                  lng: ac.lng,
+                  label: ac.callsign,
+                  subLabel: `${ac.country} | FL${Math.round(ac.altitude / 30.48)} | ${ac.velocity}kt | HDG ${ac.heading}°`,
+                  color: ac.country === 'United States' ? '#89b4fa' : ac.country === 'United Kingdom' ? '#a6e3a1' : '#f38ba8',
+                })),
+              };
+            }));
           }
         })
         .catch((err) => {
