@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { GeoEvent, DataLayer, Theme } from './types';
 import { mockEvents } from './data/mockEvents';
 import { defaultLayers } from './data/layers';
@@ -13,6 +13,8 @@ import { EconCalendar } from './components/EconCalendar';
 import { LayerPanel } from './components/LayerPanel';
 import { MiniCalendar } from './components/MiniCalendar';
 import { MarketsPanel } from './components/MarketsPanel';
+
+import type { GlobeHandle } from './components/Globe';
 
 // Globe must be dynamically imported (requires browser/WebGL)
 const Globe = dynamic(
@@ -65,6 +67,9 @@ export default function WorldWatchClient() {
   const [showLayerPanel, setShowLayerPanel] = useState(false);
   const [activeView, setActiveView] = useState<ActiveView>('globe');
   const [severityFilter, setSeverityFilter] = useState<Set<number>>(new Set());
+  const [focusCounter, setFocusCounter] = useState(0);
+  const [isRotating, setIsRotating] = useState(true);
+  const globeRef = useRef<GlobeHandle>(null);
 
   const theme = themes[currentTheme];
 
@@ -91,8 +96,9 @@ export default function WorldWatchClient() {
   }, [currentTheme]);
 
   const handleSelectEvent = useCallback((event: GeoEvent) => {
-    setSelectedId(prev => prev === event.id ? null : event.id);
+    setSelectedId(event.id);
     setFocusEvent(event);
+    setFocusCounter(c => c + 1); // Always increment to force re-trigger
     setActiveView('globe');
   }, []);
 
@@ -267,6 +273,42 @@ export default function WorldWatchClient() {
           {/* Spacer */}
           <div style={{ flex: 1 }} />
 
+          {/* Globe controls */}
+          {activeView === 'globe' && (
+            <>
+              <button
+                onClick={() => globeRef.current?.toggleRotation()}
+                style={{
+                  background: isRotating ? theme.blue + '22' : 'transparent',
+                  border: `1px solid ${isRotating ? theme.blue : theme.surface1}`,
+                  color: isRotating ? theme.blue : theme.subtext0,
+                  fontSize: 10,
+                  padding: '3px 8px',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                {isRotating ? '⏸ ROTATE' : '▶ ROTATE'}
+              </button>
+              <button
+                onClick={() => globeRef.current?.resetView()}
+                style={{
+                  background: 'transparent',
+                  border: `1px solid ${theme.surface1}`,
+                  color: theme.subtext0,
+                  fontSize: 10,
+                  padding: '3px 8px',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                ↻ RESET
+              </button>
+            </>
+          )}
+
           {/* Layer Toggle Button */}
           {activeView === 'globe' && (
             <button
@@ -310,12 +352,15 @@ export default function WorldWatchClient() {
             <>
               {/* Globe fills full area */}
               <Globe
+                ref={globeRef}
                 events={filteredEvents}
                 layers={layers}
                 selectedId={selectedId}
                 onSelect={handleSelectEvent}
                 focusEvent={focusEvent}
+                focusCounter={focusCounter}
                 theme={theme}
+                onRotationChange={setIsRotating}
               />
 
               {/* Left Sidebar Widgets — floating cards */}

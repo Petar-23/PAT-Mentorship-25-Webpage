@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import type { GeoEvent, DataLayer, ThemeColors } from '../types';
@@ -8,13 +8,21 @@ import { severityColors } from '../styles/themes';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
+export interface GlobeHandle {
+  toggleRotation: () => void;
+  resetView: () => void;
+  isRotating: boolean;
+}
+
 interface Props {
   events: GeoEvent[];
   layers: DataLayer[];
   selectedId: string | null;
   onSelect: (event: GeoEvent) => void;
   focusEvent: GeoEvent | null;
+  focusCounter: number; // increments on every select to force re-trigger
   theme: ThemeColors;
+  onRotationChange?: (rotating: boolean) => void;
 }
 
 const COUNTRY_NAME_MAP: Record<string, string> = {
@@ -23,13 +31,65 @@ const COUNTRY_NAME_MAP: Record<string, string> = {
   'South Korea': 'Republic of Korea',
 };
 
-export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
+const DEFAULT_CENTER: [number, number] = [20, 30];
+const DEFAULT_ZOOM = 1.8;
+
+export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
+  { events, layers, onSelect, focusEvent, focusCounter, theme, onRotationChange },
+  ref
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const rotateRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isRotatingRef = useRef(true);
   const colors = severityColors(theme);
 
-  // Only geopolitical events on the globe (no economic)
   const geoEvents = events.filter(e => e.category !== 'economic');
+
+  const stopRotation = useCallback(() => {
+    if (rotateRef.current) {
+      clearInterval(rotateRef.current);
+      rotateRef.current = null;
+    }
+    isRotatingRef.current = false;
+    onRotationChange?.(false);
+  }, [onRotationChange]);
+
+  const startRotation = useCallback(() => {
+    if (rotateRef.current || !mapRef.current) return;
+    const map = mapRef.current;
+    rotateRef.current = setInterval(() => {
+      const center = map.getCenter();
+      center.lng += 0.03;
+      map.setCenter(center);
+    }, 16);
+    isRotatingRef.current = true;
+    onRotationChange?.(true);
+  }, [onRotationChange]);
+
+  useImperativeHandle(ref, () => ({
+    toggleRotation: () => {
+      if (isRotatingRef.current) {
+        stopRotation();
+      } else {
+        startRotation();
+      }
+    },
+    resetView: () => {
+      if (!mapRef.current) return;
+      // Clear highlights
+      const map = mapRef.current;
+      try {
+        if (map.getLayer('country-highlight-fill')) map.setFilter('country-highlight-fill', ['==', 'name_en', '']);
+        if (map.getLayer('country-highlight-line')) map.setFilter('country-highlight-line', ['==', 'name_en', '']);
+      } catch (_) {}
+      // Fly to default
+      map.flyTo({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM, duration: 1500, essential: true });
+      // Resume rotation
+      startRotation();
+    },
+    get isRotating() { return isRotatingRef.current; },
+  }), [startRotation, stopRotation]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -39,8 +99,8 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
       style: 'mapbox://styles/mapbox/dark-v11',
       // @ts-ignore globe projection (mapbox-gl v3)
       projection: 'globe',
-      center: [20, 30],
-      zoom: 1.8,
+      center: DEFAULT_CENTER,
+      zoom: DEFAULT_ZOOM,
       attributionControl: false,
       antialias: true,
     });
@@ -48,12 +108,12 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
     mapRef.current = map;
 
     map.on('style.load', () => {
-      // Catppuccin atmosphere — lighter halo around globe
+      // Catppuccin atmosphere — subtle blue-tinted halo
       // @ts-ignore setFog (mapbox-gl v3)
       map.setFog({
-        color: theme.surface1,
-        'high-color': theme.surface0,
-        'horizon-blend': 0.12,
+        color: '#313244',      // surface0 with slight warmth
+        'high-color': '#45475a88', // surface1 semi-transparent
+        'horizon-blend': 0.08,
         'space-color': theme.crust,
         'star-intensity': 0.15,
       });
@@ -62,15 +122,12 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
       const style = map.getStyle();
       if (style?.layers) {
         for (const layer of style.layers) {
-          // Remove all default labels except our custom ones
           if (layer.type === 'symbol') {
             map.setLayoutProperty(layer.id, 'visibility', 'none');
           }
-          // Water: very dark Catppuccin crust
           if (layer.id.includes('water') && layer.type === 'fill') {
             try { map.setPaintProperty(layer.id, 'fill-color', '#11111b'); } catch (_) {}
           }
-          // Country borders: thin dashed Catppuccin subtext
           if (layer.id.includes('admin') && layer.type === 'line') {
             try {
               map.setPaintProperty(layer.id, 'line-color', '#585b70');
@@ -82,40 +139,30 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
         }
       }
 
-      // Variation in landmass shading — Catppuccin slate/surface palette
-      // Use a fill-extrusion or override the land with continent-scale variation
-      // Override the single land fill with a data-driven expression
+      // Land shading variation
       try {
         const landLayers = style?.layers?.filter((l: { id: string; type: string }) =>
           l.id.includes('land') && l.type === 'fill'
         ) || [];
         for (const layer of landLayers) {
-          // Use latitude-based shading for natural variation
-          // Northern regions slightly lighter, equatorial slightly different
           map.setPaintProperty(layer.id, 'fill-color', [
             'interpolate', ['linear'], ['zoom'],
-            0, '#1e1e2e',  // Catppuccin base at low zoom
-            3, '#181825',  // Catppuccin mantle at mid zoom
-            6, '#1e1e2e',  // base again at higher zoom
+            0, '#1e1e2e',
+            3, '#181825',
+            6, '#1e1e2e',
           ]);
         }
       } catch (_) {}
 
-      // Add a continent-scale variation layer using built-in landuse
-      // This gives different shades for forests, urban, etc.
+      // Landuse variation
       try {
         const landuseLayer = style?.layers?.find((l: { id: string }) => l.id.includes('landuse'));
         if (landuseLayer) {
           map.setPaintProperty(landuseLayer.id, 'fill-color', [
             'match', ['get', 'class'],
-            'park', '#1a1a2e',
-            'glacier', '#2a2a3e',
-            'pitch', '#161628',
-            'sand', '#1c1c30',
-            'hospital', '#1e1e32',
-            'school', '#1a1a2c',
-            'industrial', '#16162a',
-            '#1e1e2e',  // default
+            'park', '#1a1a2e', 'glacier', '#2a2a3e', 'pitch', '#161628',
+            'sand', '#1c1c30', 'hospital', '#1e1e32', 'school', '#1a1a2c',
+            'industrial', '#16162a', '#1e1e2e',
           ]);
           map.setPaintProperty(landuseLayer.id, 'fill-opacity', 0.8);
         }
@@ -128,22 +175,13 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
           type: 'FeatureCollection',
           features: geoEvents.map(ev => ({
             type: 'Feature' as const,
-            geometry: {
-              type: 'Point' as const,
-              coordinates: [ev.lng, ev.lat],
-            },
-            properties: {
-              id: ev.id,
-              severity: ev.severity,
-              title: ev.title,
-              country: ev.country,
-              category: ev.category,
-            },
+            geometry: { type: 'Point' as const, coordinates: [ev.lng, ev.lat] },
+            properties: { id: ev.id, severity: ev.severity, title: ev.title, country: ev.country, category: ev.category },
           })),
         },
       });
 
-      // Pulse layer (behind main dots)
+      // Pulse layer
       map.addLayer({
         id: 'event-pulse',
         type: 'circle',
@@ -171,7 +209,7 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
         },
       });
 
-      // Country boundaries
+      // Country boundaries for highlighting
       map.addSource('country-boundaries', {
         type: 'vector',
         url: 'mapbox://mapbox.country-boundaries-v1',
@@ -182,10 +220,7 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
         type: 'fill',
         source: 'country-boundaries',
         'source-layer': 'country_boundaries',
-        paint: {
-          'fill-color': colors[4],
-          'fill-opacity': 0.1,
-        },
+        paint: { 'fill-color': colors[4], 'fill-opacity': 0.12 },
         filter: ['==', 'name_en', ''],
       });
 
@@ -194,15 +229,11 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
         type: 'line',
         source: 'country-boundaries',
         'source-layer': 'country_boundaries',
-        paint: {
-          'line-color': colors[4],
-          'line-width': 2,
-          'line-opacity': 0.6,
-        },
+        paint: { 'line-color': colors[4], 'line-width': 2, 'line-opacity': 0.6 },
         filter: ['==', 'name_en', ''],
       });
 
-      // Country labels only where events exist
+      // Event country labels
       map.addLayer({
         id: 'event-labels',
         type: 'symbol',
@@ -224,11 +255,12 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
       });
     });
 
-    // Click handlers — marker click highlights, empty click clears
+    // Click: marker stops rotation + highlights; empty space clears
     let markerClicked = false;
 
     map.on('click', 'event-circles', (e) => {
       markerClicked = true;
+      stopRotation(); // Stop rotation on any marker click
       if (e.features && e.features[0]) {
         const id = e.features[0].properties?.id;
         const event = events.find(ev => ev.id === id);
@@ -237,69 +269,39 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
     });
 
     map.on('click', () => {
-      // Defer so marker click fires first
       setTimeout(() => {
-        if (markerClicked) {
-          markerClicked = false;
-          return;
-        }
-        // Clicked empty space — clear highlights
-        if (map.getLayer('country-highlight-fill')) {
-          map.setFilter('country-highlight-fill', ['==', 'name_en', '']);
-        }
-        if (map.getLayer('country-highlight-line')) {
-          map.setFilter('country-highlight-line', ['==', 'name_en', '']);
-        }
+        if (markerClicked) { markerClicked = false; return; }
+        try {
+          if (map.getLayer('country-highlight-fill')) map.setFilter('country-highlight-fill', ['==', 'name_en', '']);
+          if (map.getLayer('country-highlight-line')) map.setFilter('country-highlight-line', ['==', 'name_en', '']);
+        } catch (_) {}
       }, 50);
     });
 
-    map.on('mouseenter', 'event-circles', () => {
-      map.getCanvas().style.cursor = 'pointer';
-    });
-    map.on('mouseleave', 'event-circles', () => {
-      map.getCanvas().style.cursor = '';
-    });
+    map.on('mouseenter', 'event-circles', () => { map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', 'event-circles', () => { map.getCanvas().style.cursor = ''; });
 
-    // Auto-rotation
-    let rotateInterval: ReturnType<typeof setInterval> | null = null;
-    let resumeTimeout: ReturnType<typeof setTimeout> | null = null;
-
-    function startRotation() {
-      if (rotateInterval) return;
-      rotateInterval = setInterval(() => {
-        const center = map.getCenter();
-        center.lng += 0.03;
-        map.setCenter(center);
-      }, 16);
-    }
-
-    function stopRotation() {
-      if (rotateInterval) {
-        clearInterval(rotateInterval);
-        rotateInterval = null;
-      }
-      if (resumeTimeout) clearTimeout(resumeTimeout);
-      resumeTimeout = setTimeout(startRotation, 2000);
-    }
-
+    // Stop rotation on user interaction (no auto-resume)
     map.on('mousedown', stopRotation);
     map.on('touchstart', stopRotation);
     map.on('wheel', stopRotation);
 
+    // Start rotating on load
     map.on('load', startRotation);
 
     return () => {
-      if (rotateInterval) clearInterval(rotateInterval);
-      if (resumeTimeout) clearTimeout(resumeTimeout);
+      if (rotateRef.current) clearInterval(rotateRef.current);
       map.remove();
       mapRef.current = null;
     };
   }, []); // eslint-disable-line
 
-  // Focus event effect
+  // Focus event — triggered by focusCounter to allow re-selecting same event
   useEffect(() => {
-    if (!mapRef.current || !focusEvent) return;
+    if (!mapRef.current || !focusEvent || focusCounter === 0) return;
     const map = mapRef.current;
+
+    stopRotation();
 
     map.flyTo({
       center: [focusEvent.lng, focusEvent.lat],
@@ -311,24 +313,22 @@ export function Globe({ events, layers, onSelect, focusEvent, theme }: Props) {
     const countryName = COUNTRY_NAME_MAP[focusEvent.country] || focusEvent.country;
     const sevColor = colors[focusEvent.severity];
 
-    if (map.getLayer('country-highlight-fill')) {
-      map.setFilter('country-highlight-fill', ['==', 'name_en', countryName]);
-      map.setPaintProperty('country-highlight-fill', 'fill-color', sevColor);
-    }
-    if (map.getLayer('country-highlight-line')) {
-      map.setFilter('country-highlight-line', ['==', 'name_en', countryName]);
-      map.setPaintProperty('country-highlight-line', 'line-color', sevColor);
-    }
-  }, [focusEvent]); // eslint-disable-line
+    try {
+      if (map.getLayer('country-highlight-fill')) {
+        map.setFilter('country-highlight-fill', ['==', 'name_en', countryName]);
+        map.setPaintProperty('country-highlight-fill', 'fill-color', sevColor);
+      }
+      if (map.getLayer('country-highlight-line')) {
+        map.setFilter('country-highlight-line', ['==', 'name_en', countryName]);
+        map.setPaintProperty('country-highlight-line', 'line-color', sevColor);
+      }
+    } catch (_) {}
+  }, [focusCounter]); // eslint-disable-line
 
   return (
     <div
       ref={containerRef}
-      style={{
-        flex: 1,
-        width: '100%',
-        height: '100%',
-      }}
+      style={{ flex: 1, width: '100%', height: '100%' }}
     />
   );
-}
+});
