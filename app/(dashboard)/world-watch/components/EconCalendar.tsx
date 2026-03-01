@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { EconCalendarEntry, ThemeColors } from '../types';
 // mockCalendar replaced by live API
 import { FolderOpen, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -59,7 +59,7 @@ function getTzFromStorage(): string {
 
 export function EconCalendar({ theme }: Props) {
   const [currencyFilter, setCurrencyFilter] = useState('USD');
-  const [impactFilter, setImpactFilter] = useState('ALL');
+  const [impactFilter, setImpactFilter] = useState<Set<string>>(new Set(['HIGH', 'MEDIUM']));
   const [timezone, setTimezone] = useState('America/New_York');
   const [weekOffset, setWeekOffset] = useState(0);
   const [calendarData, setCalendarData] = useState<EconCalendarEntry[]>([]);
@@ -111,13 +111,25 @@ export function EconCalendar({ theme }: Props) {
     return `${fmt(start)} - ${fmt(end)}`;
   }, [weekDays]);
 
+  const handleToggleImpact = useCallback((level: string) => {
+    setImpactFilter(prev => {
+      const next = new Set(prev);
+      if (next.has(level)) {
+        next.delete(level);
+      } else {
+        next.add(level);
+      }
+      return next;
+    });
+  }, []);
+
   const filtered = useMemo(() => {
     return calendarData.filter(entry => {
       if (currencyFilter !== 'ALL' && entry.currency !== currencyFilter) return false;
-      if (impactFilter === 'HIGH' && entry.impact !== 3) return false;
-      if (impactFilter === 'MEDIUM' && entry.impact !== 2) return false;
-      if (impactFilter === 'LOW' && entry.impact !== 1) return false;
-      return true;
+      // If no impact filters selected, show all
+      if (impactFilter.size === 0) return true;
+      const level = entry.impact === 3 ? 'HIGH' : entry.impact === 2 ? 'MEDIUM' : 'LOW';
+      return impactFilter.has(level);
     });
   }, [currencyFilter, impactFilter, calendarData]);
 
@@ -155,9 +167,35 @@ export function EconCalendar({ theme }: Props) {
         <select value={currencyFilter} onChange={e => setCurrencyFilter(e.target.value)} style={selectStyle}>
           {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-        <select value={impactFilter} onChange={e => setImpactFilter(e.target.value)} style={selectStyle}>
-          {['ALL', 'HIGH', 'MEDIUM', 'LOW'].map(i => <option key={i} value={i}>{i}</option>)}
-        </select>
+        {/* Impact multi-select badges */}
+        {(['HIGH', 'MEDIUM', 'LOW'] as const).map(level => {
+          const active = impactFilter.has(level);
+          const color = level === 'HIGH' ? theme.red : level === 'MEDIUM' ? theme.peach : theme.yellow;
+          return (
+            <button
+              key={level}
+              onClick={() => handleToggleImpact(level)}
+              style={{
+                background: active ? color + '22' : theme.surface0,
+                border: active ? `1.5px solid ${color}` : `1px solid ${theme.surface1}`,
+                color: active ? color : theme.overlay0,
+                fontSize: 10,
+                padding: '3px 8px',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                fontWeight: active ? 700 : 400,
+                letterSpacing: '0.5px',
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+            >
+              <FolderOpen size={10} color={active ? color : theme.overlay0} />
+              {level}
+            </button>
+          );
+        })}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 11, color: theme.overlay0 }}>TZ:</span>
           <select value={timezone} onChange={e => setTimezone(e.target.value)} style={selectStyle}>

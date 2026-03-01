@@ -131,9 +131,9 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           }
           if (layer.id.includes('admin') && layer.type === 'line') {
             try {
-              map.setPaintProperty(layer.id, 'line-color', '#585b70');
-              map.setPaintProperty(layer.id, 'line-opacity', 0.45);
-              map.setPaintProperty(layer.id, 'line-width', 0.6);
+              map.setPaintProperty(layer.id, 'line-color', '#45475a');
+              map.setPaintProperty(layer.id, 'line-opacity', 0.25);
+              map.setPaintProperty(layer.id, 'line-width', 0.4);
               map.setPaintProperty(layer.id, 'line-dasharray', [3, 2]);
             } catch (_) {}
           }
@@ -177,7 +177,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           features: geoEvents.map(ev => ({
             type: 'Feature' as const,
             geometry: { type: 'Point' as const, coordinates: [ev.lng, ev.lat] },
-            properties: { id: ev.id, severity: ev.severity, title: ev.title, country: ev.country, category: ev.category },
+            properties: { id: ev.id, severity: ev.severity, title: ev.title, country: ev.country, category: ev.category, sourceUrl: ev.sourceUrl || '' },
           })),
         },
       });
@@ -221,7 +221,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         type: 'fill',
         source: 'country-boundaries',
         'source-layer': 'country_boundaries',
-        paint: { 'fill-color': colors[4], 'fill-opacity': 0.12 },
+        paint: { 'fill-color': colors[4], 'fill-opacity': 0.06 },
         filter: ['==', 'name_en', ''],
       });
 
@@ -230,7 +230,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         type: 'line',
         source: 'country-boundaries',
         'source-layer': 'country_boundaries',
-        paint: { 'line-color': colors[4], 'line-width': 2, 'line-opacity': 0.6 },
+        paint: { 'line-color': colors[4], 'line-width': 1, 'line-opacity': 0.3 },
         filter: ['==', 'name_en', ''],
       });
 
@@ -382,6 +382,8 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       const severity = props?.severity || 1;
       const sevLabel = severity === 4 ? 'CRITICAL' : severity === 3 ? 'HIGH' : severity === 2 ? 'MEDIUM' : 'LOW';
       const sevColor = colors[severity] || '#cdd6f4';
+      const srcUrl = props?.sourceUrl || '';
+      const srcLink = srcUrl ? `<a href="${srcUrl}" target="_blank" rel="noopener" style="font-size: 9px; color: ${theme.blue}; text-decoration: none; margin-top: 4px; display: block;">🔗 SOURCE ↗</a>` : '';
       popup.setLngLat(coords).setHTML(`
         <div style="
           background: ${theme.mantle};
@@ -400,6 +402,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           <div style="font-size: 10px; color: ${theme.overlay0};">
             📍 ${props?.country || 'Unknown'}
           </div>
+          ${srcLink}
         </div>
       `).addTo(map);
     });
@@ -435,7 +438,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       features: geoEvents.map(ev => ({
         type: 'Feature' as const,
         geometry: { type: 'Point' as const, coordinates: [ev.lng, ev.lat] },
-        properties: { id: ev.id, severity: ev.severity, title: ev.title, country: ev.country, category: ev.category },
+        properties: { id: ev.id, severity: ev.severity, title: ev.title, country: ev.country, category: ev.category, sourceUrl: ev.sourceUrl || '' },
       })),
     });
   }, [events]); // eslint-disable-line

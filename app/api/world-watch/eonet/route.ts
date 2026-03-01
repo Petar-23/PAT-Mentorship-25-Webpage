@@ -49,6 +49,7 @@ export async function GET() {
           source: 'NASA',
           timestamp: geo.date || new Date().toISOString(),
           country: e.title.split(', ').pop()?.trim() || 'Unknown',
+          sourceUrl: e.sources?.[0]?.url || `https://eonet.gsfc.nasa.gov/api/v3/events/${e.id}`,
         };
       });
 

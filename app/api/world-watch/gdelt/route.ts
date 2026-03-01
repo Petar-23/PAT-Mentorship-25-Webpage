@@ -32,6 +32,10 @@ export async function GET() {
             const titleMatch = props.html?.match(/title="([^"]+)"/);
             const articleTitle = titleMatch ? titleMatch[1] : `${category} activity in ${name}`;
 
+            // Extract first article URL from HTML
+            const urlMatch = props.html?.match(/href="([^"]+)"/);
+            const sourceUrl = urlMatch ? urlMatch[1] : undefined;
+
             const severity: 1 | 2 | 3 | 4 = count >= 5000 ? 4 : count >= 2000 ? 3 : count >= 500 ? 2 : 1;
 
             allEvents.push({
@@ -45,6 +49,7 @@ export async function GET() {
               source: 'GDELT',
               timestamp: new Date().toISOString(),
               country: name,
+              ...(sourceUrl && { sourceUrl }),
             });
           }
         }

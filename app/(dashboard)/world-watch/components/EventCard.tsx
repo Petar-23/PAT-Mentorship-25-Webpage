@@ -3,7 +3,7 @@
 import type { GeoEvent, ThemeColors } from '../types';
 import { SEVERITY_LABELS } from '../types';
 import { severityColors } from '../styles/themes';
-import { Swords, BarChart3, Mountain, Globe2, Activity, MapPin } from 'lucide-react';
+import { Swords, BarChart3, Mountain, Globe2, Activity, MapPin, ExternalLink } from 'lucide-react';
 
 interface Props {
   event: GeoEvent;
@@ -69,6 +69,26 @@ export function EventCard({ event, isSelected, onClick, theme }: Props) {
           <MapPin size={12} strokeWidth={2} /> {event.country}
         </span>
         <span>via {event.source}</span>
+        {event.sourceUrl && (
+          <a
+            href={event.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            style={{
+              color: theme.blue,
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 3,
+              marginLeft: 'auto',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'underline'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'none'; }}
+          >
+            <ExternalLink size={10} /> SOURCE
+          </a>
+        )}
       </div>
     </div>
   );

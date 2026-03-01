@@ -26,6 +26,7 @@ export async function GET() {
         source: 'USGS',
         timestamp: new Date(p.time).toISOString(),
         country: p.place?.split(', ').pop() || 'Unknown',
+        sourceUrl: p.url || `https://earthquake.usgs.gov/earthquakes/eventpage/${f.id}`,
       };
     });
 

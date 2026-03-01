@@ -9,6 +9,7 @@ export interface GeoEvent {
   source: string;
   timestamp: string;
   country: string;
+  sourceUrl?: string;
 }
 
 export interface EconCalendarEntry {
