@@ -73,10 +73,10 @@ export interface ThemeColors {
 }
 
 export const SEVERITY_LABELS: Record<number, string> = {
-  4: 'CRITICAL',
-  3: 'HIGH',
-  2: 'MEDIUM',
-  1: 'LOW',
+  4: 'DEFCON 1',
+  3: 'DEFCON 2',
+  2: 'DEFCON 3',
+  1: 'DEFCON 4',
 };
 
 export const CATEGORY_ICONS: Record<string, string> = {
@@ -88,7 +88,7 @@ export const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export const IMPACT_LABELS: Record<number, string> = {
-  3: 'HIGH',
+  3: 'DEFCON 2',
   2: 'MED',
-  1: 'LOW',
+  1: 'DEFCON 4',
 };

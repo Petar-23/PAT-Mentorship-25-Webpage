@@ -42,7 +42,7 @@ export function Ticker({ events, theme }: Props) {
         borderRight: `1px solid ${theme.surface0}`,
       }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: theme.peach, letterSpacing: '1px' }}>
-          ▶ FEED
+          ▶ FLASH TRAFFIC
         </span>
       </div>
 

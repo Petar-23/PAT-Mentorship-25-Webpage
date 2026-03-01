@@ -42,7 +42,7 @@ function GlobeLoader() {
         borderRadius: '50%',
         animation: 'wwSpin 1s linear infinite',
       }} />
-      INITIALIZING GLOBE...
+      ESTABLISHING SECURE UPLINK...
     </div>
   );
 }
@@ -258,7 +258,7 @@ export default function WorldWatchClient() {
               }}
               onClick={() => setShowLayerPanel(p => !p)}
             >
-              LAYERS
+              OVERLAY PROTOCOLS
               {activeLayerCount > 0 && (
                 <span style={{
                   position: 'absolute',
@@ -371,11 +371,11 @@ export default function WorldWatchClient() {
           letterSpacing: '0.5px',
           flexShrink: 0,
         }}>
-          <span style={{ color: theme.green }}>● CONNECTED</span>
-          <span>WORLD WATCH v1.0</span>
-          <span>PAT MENTORSHIP</span>
+          <span style={{ color: theme.green }}>● UPLINK ACTIVE</span>
+          <span>OPTICON v1.0</span>
+          <span>PAT CLASSIFIED</span>
           <span style={{ marginLeft: 'auto' }}>
-            DATA: MOCK · REAL API INTEGRATION READY
+            SIGINT FEED // REAL-TIME // ENCRYPTED
           </span>
         </div>
       </div>

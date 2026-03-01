@@ -100,7 +100,7 @@ export function Sidebar({ events, selectedId, onSelect, theme }: Props) {
           letterSpacing: '2px', marginBottom: 8,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
-          <span>EVENT FEED</span>
+          <span>HOTWIRE</span>
           {filter !== null && (
             <button
               onClick={() => setFilter(null)}
@@ -115,19 +115,19 @@ export function Sidebar({ events, selectedId, onSelect, theme }: Props) {
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <FilterBadge
-            label="CRITICAL" count={critCount} color={colors[4]}
+            label="DEFCON 1" count={critCount} color={colors[4]}
             active={filter === 4} onClick={() => toggleFilter(4)} theme={theme}
           />
           <FilterBadge
-            label="HIGH" count={highCount} color={colors[3]}
+            label="DEFCON 2" count={highCount} color={colors[3]}
             active={filter === 3} onClick={() => toggleFilter(3)} theme={theme}
           />
           <FilterBadge
-            label="MEDIUM" count={medCount} color={colors[2]}
+            label="DEFCON 3" count={medCount} color={colors[2]}
             active={filter === 2} onClick={() => toggleFilter(2)} theme={theme}
           />
           <FilterBadge
-            label="LOW" count={lowCount} color={colors[1]}
+            label="DEFCON 4" count={lowCount} color={colors[1]}
             active={filter === 1} onClick={() => toggleFilter(1)} theme={theme}
           />
         </div>

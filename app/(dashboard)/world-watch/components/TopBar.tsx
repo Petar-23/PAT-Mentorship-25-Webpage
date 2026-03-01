@@ -80,7 +80,7 @@ export function TopBar({ theme, currentTheme, setCurrentTheme }: Props) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 28, fontWeight: 700, color: theme.text, letterSpacing: '6px' }}>
-            WORLD WATCH
+            OPTICON
           </span>
           <span style={{
             fontSize: 9,
