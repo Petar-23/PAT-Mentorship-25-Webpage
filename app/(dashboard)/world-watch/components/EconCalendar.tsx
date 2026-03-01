@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import type { EconCalendarEntry, ThemeColors } from '../types';
-import { mockCalendar } from '../data/mockCalendar';
+// mockCalendar replaced by live API
 import { FolderOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Props {
@@ -62,6 +62,15 @@ export function EconCalendar({ theme }: Props) {
   const [impactFilter, setImpactFilter] = useState('ALL');
   const [timezone, setTimezone] = useState('America/New_York');
   const [weekOffset, setWeekOffset] = useState(0);
+  const [calendarData, setCalendarData] = useState<EconCalendarEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/world-watch/calendar')
+      .then(r => r.json())
+      .then(data => { setCalendarData(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
 
   useEffect(() => { setTimezone(getTzFromStorage()); }, []);
   useEffect(() => {
@@ -82,14 +91,14 @@ export function EconCalendar({ theme }: Props) {
   }, [weekDays]);
 
   const filtered = useMemo(() => {
-    return mockCalendar.filter(entry => {
+    return calendarData.filter(entry => {
       if (currencyFilter !== 'ALL' && entry.currency !== currencyFilter) return false;
       if (impactFilter === 'HIGH' && entry.impact !== 3) return false;
       if (impactFilter === 'MEDIUM' && entry.impact !== 2) return false;
       if (impactFilter === 'LOW' && entry.impact !== 1) return false;
       return true;
     });
-  }, [currencyFilter, impactFilter]);
+  }, [currencyFilter, impactFilter, calendarData]);
 
   const selectStyle = {
     background: theme.surface0,
@@ -187,6 +196,12 @@ export function EconCalendar({ theme }: Props) {
           }}>{h}</span>
         ))}
       </div>
+
+      {loading && (
+        <div style={{ padding: '12px 16px', fontSize: 12, color: theme.overlay0, textAlign: 'center' }}>
+          Loading economic calendar...
+        </div>
+      )}
 
       {/* Scrollable body — full 5-day week */}
       <div style={{ flex: 1, overflowY: 'auto' }}>

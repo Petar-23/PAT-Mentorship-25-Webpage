@@ -70,6 +70,7 @@ export default function WorldWatchClient() {
   const [focusCounter, setFocusCounter] = useState(0);
   const [isRotating, setIsRotating] = useState(true);
   const globeRef = useRef<GlobeHandle>(null);
+  const [liveEvents, setLiveEvents] = useState<GeoEvent[]>(mockEvents);
 
   const theme = themes[currentTheme];
 
@@ -83,6 +84,17 @@ export default function WorldWatchClient() {
       }
       return next;
     });
+  }, []);
+
+  // Fetch live earthquake data on mount
+  useEffect(() => {
+    fetch('/api/world-watch/earthquakes')
+      .then(r => r.json())
+      .then((quakes: GeoEvent[]) => {
+        const nonQuake = mockEvents.filter(e => e.category !== 'natural-disaster');
+        setLiveEvents([...nonQuake, ...quakes]);
+      })
+      .catch(() => {});
   }, []);
 
   // Load theme from localStorage on mount
@@ -110,8 +122,8 @@ export default function WorldWatchClient() {
 
   // Filter events for Globe based on severity selection
   const filteredEvents = severityFilter.size > 0
-    ? mockEvents.filter(e => severityFilter.has(e.severity))
-    : mockEvents;
+    ? liveEvents.filter(e => severityFilter.has(e.severity))
+    : liveEvents;
 
   const wrapperStyle: React.CSSProperties = {
     display: 'flex',
@@ -341,7 +353,7 @@ export default function WorldWatchClient() {
 
           {/* Event count */}
           <div style={{ fontSize: 10, color: theme.overlay0, letterSpacing: '0.5px' }}>
-            {mockEvents.length} EVENTS &nbsp;|&nbsp; {new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin', month: 'short', day: 'numeric' })}
+            {liveEvents.length} EVENTS &nbsp;|&nbsp; {new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin', month: 'short', day: 'numeric' })}
           </div>
         </div>
 
@@ -400,7 +412,7 @@ export default function WorldWatchClient() {
                 zIndex: 50,
               }}>
                 <Sidebar
-                  events={mockEvents}
+                  events={liveEvents}
                   selectedId={selectedId}
                   onSelect={handleSelectEvent}
                   theme={theme}
@@ -420,7 +432,7 @@ export default function WorldWatchClient() {
         </div>
 
         {/* Bottom Ticker */}
-        <Ticker events={mockEvents} theme={theme} />
+        <Ticker events={liveEvents} theme={theme} />
 
         {/* Status Bar */}
         <div style={{

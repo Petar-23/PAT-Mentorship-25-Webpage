@@ -1,44 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronUp, ChevronDown, RefreshCw, BarChart3, Gem, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 import type { ThemeColors } from '../types';
 
 interface MarketRow {
-  name: string;
-  region?: string;
+  symbol: string;
   price: string;
   change: string;
+  changePercent: string;
+  type: string;
 }
-
-const INDICES: MarketRow[] = [
-  { name: 'S&P 500',     region: 'US', price: '6,878.88',  change: '-0.97%' },
-  { name: 'NASDAQ',      region: 'US', price: '22,668.21', change: '-2.09%' },
-  { name: 'Dow Jones',   region: 'US', price: '48,977.92', change: '-1.02%' },
-  { name: 'DAX',         region: 'EU', price: '25,284.26', change: '+0.43%' },
-  { name: 'FTSE 100',    region: 'UK', price: '10,910.55', change: '+0.96%' },
-  { name: 'Nikkei 225',  region: 'JP', price: '58,850.27', change: '+0.16%' },
-];
-
-const COMMODITIES: MarketRow[] = [
-  { name: 'Gold',       price: '5,247.90', change: '+1.38%' },
-  { name: 'Crude Oil',  price: '67.02',    change: '+2.78%' },
-  { name: 'Silver',     price: '93.29',    change: '+7.23%' },
-];
-
-const FOREX: MarketRow[] = [
-  { name: 'EUR/USD', price: '1.1807',  change: '-' },
-  { name: 'GBP/USD', price: '1.3478',  change: '-' },
-  { name: 'USD/JPY', price: '156.04',  change: '-' },
-];
 
 interface Props {
   theme: ThemeColors;
 }
 
 function getSentiment(data: MarketRow[]): 'BULLISH' | 'BEARISH' | 'MIXED' {
-  const pos = data.filter(r => r.change.startsWith('+')).length;
-  const neg = data.filter(r => r.change.startsWith('-') && r.change !== '-').length;
+  const pos = data.filter(r => r.changePercent.startsWith('+')).length;
+  const neg = data.filter(r => r.changePercent.startsWith('-') && r.changePercent !== '-').length;
   if (pos > neg * 2) return 'BULLISH';
   if (neg > pos * 2) return 'BEARISH';
   return 'MIXED';
@@ -63,8 +43,8 @@ function SectionHeader({ icon, label, theme }: { icon: React.ReactNode; label: s
 }
 
 function Row({ row, theme }: { row: MarketRow; theme: ThemeColors }) {
-  const isPos = row.change.startsWith('+');
-  const isNeg = row.change.startsWith('-') && row.change !== '-';
+  const isPos = row.changePercent.startsWith('+');
+  const isNeg = row.changePercent.startsWith('-') && row.changePercent !== '-';
   const changeColor = isPos ? theme.green : isNeg ? theme.red : theme.overlay0;
 
   return (
@@ -77,27 +57,14 @@ function Row({ row, theme }: { row: MarketRow; theme: ThemeColors }) {
     }}>
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: theme.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {row.name}
+          {row.symbol}
         </span>
-        {row.region && (
-          <span style={{
-            fontSize: 8,
-            padding: '1px 4px',
-            background: theme.overlay0 + '33',
-            color: theme.overlay0,
-            borderRadius: 2,
-            marginLeft: 6,
-            flexShrink: 0,
-          }}>
-            {row.region}
-          </span>
-        )}
       </div>
       <span style={{ fontSize: 13, color: theme.subtext0, textAlign: 'right', fontVariantNumeric: 'tabular-nums', minWidth: 90, whiteSpace: 'nowrap' }}>
         {row.price}
       </span>
       <span style={{ fontSize: 12, textAlign: 'right', minWidth: 65, color: changeColor, fontVariantNumeric: 'tabular-nums' }}>
-        {row.change}
+        {row.changePercent}
       </span>
       <span style={{ width: 16, flexShrink: 0, display: 'flex', justifyContent: 'flex-end' }}>
         {isPos && <TrendingUp size={12} color={theme.green} />}
@@ -109,7 +76,29 @@ function Row({ row, theme }: { row: MarketRow; theme: ThemeColors }) {
 
 export function MarketsPanel({ theme }: Props) {
   const [collapsed, setCollapsed] = useState(false);
-  const sentiment = getSentiment([...INDICES, ...COMMODITIES]);
+  const [markets, setMarkets] = useState<MarketRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/world-watch/markets')
+      .then(r => r.json())
+      .then(data => { setMarkets(data); setLoading(false); })
+      .catch(() => setLoading(false));
+
+    const interval = setInterval(() => {
+      fetch('/api/world-watch/markets')
+        .then(r => r.json())
+        .then(setMarkets)
+        .catch(() => {});
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const indices = markets.filter(m => m.type === 'index');
+  const commodities = markets.filter(m => m.type === 'commodity');
+  const forex = markets.filter(m => m.type === 'forex');
+
+  const sentiment = getSentiment([...indices, ...commodities]);
   const sentimentColor = sentiment === 'BULLISH' ? theme.green : sentiment === 'BEARISH' ? theme.red : theme.yellow;
 
   return (
@@ -140,18 +129,20 @@ export function MarketsPanel({ theme }: Props) {
           <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: theme.text }}>
             MARKETS
           </span>
-          <span style={{
-            fontSize: 9,
-            padding: '2px 6px',
-            background: sentimentColor + '33',
-            color: sentimentColor,
-            borderRadius: 3,
-          }}>
-            {sentiment}
-          </span>
+          {!loading && (
+            <span style={{
+              fontSize: 9,
+              padding: '2px 6px',
+              background: sentimentColor + '33',
+              color: sentimentColor,
+              borderRadius: 3,
+            }}>
+              {sentiment}
+            </span>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <RefreshCw size={14} color={theme.overlay0} />
+          <RefreshCw size={14} color={loading ? theme.blue : theme.overlay0} style={loading ? { animation: 'wwSpin 1s linear infinite' } : undefined} />
           {collapsed
             ? <ChevronDown size={14} color={theme.overlay0} />
             : <ChevronUp size={14} color={theme.overlay0} />}
@@ -164,14 +155,22 @@ export function MarketsPanel({ theme }: Props) {
         overflow: 'hidden',
         transition: 'max-height 0.2s ease',
       }}>
-        <SectionHeader icon={<BarChart3 size={11} />} label="INDICES" theme={theme} />
-        {INDICES.map(r => <Row key={r.name} row={r} theme={theme} />)}
+        {loading ? (
+          <div style={{ padding: '16px 12px', fontSize: 12, color: theme.overlay0, textAlign: 'center' }}>
+            Loading market data...
+          </div>
+        ) : (
+          <>
+            <SectionHeader icon={<BarChart3 size={11} />} label="INDICES" theme={theme} />
+            {indices.map(r => <Row key={r.symbol} row={r} theme={theme} />)}
 
-        <SectionHeader icon={<Gem size={11} />} label="COMMODITIES" theme={theme} />
-        {COMMODITIES.map(r => <Row key={r.name} row={r} theme={theme} />)}
+            <SectionHeader icon={<Gem size={11} />} label="COMMODITIES" theme={theme} />
+            {commodities.map(r => <Row key={r.symbol} row={r} theme={theme} />)}
 
-        <SectionHeader icon={<DollarSign size={11} />} label="FOREX" theme={theme} />
-        {FOREX.map(r => <Row key={r.name} row={r} theme={theme} />)}
+            <SectionHeader icon={<DollarSign size={11} />} label="FOREX" theme={theme} />
+            {forex.map(r => <Row key={r.symbol} row={r} theme={theme} />)}
+          </>
+        )}
       </div>
     </div>
   );

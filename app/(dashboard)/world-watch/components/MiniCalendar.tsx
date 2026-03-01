@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ChevronUp, ChevronDown, FolderOpen, Calendar } from 'lucide-react';
-import type { ThemeColors } from '../types';
-import { mockCalendar } from '../data/mockCalendar';
+import type { ThemeColors, EconCalendarEntry } from '../types';
 
 interface Props {
   theme: ThemeColors;
@@ -30,6 +29,14 @@ export function MiniCalendar({ theme }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   const [currency, setCurrency] = useState('USD');
   const [impact, setImpact] = useState('ALL');
+  const [calendarData, setCalendarData] = useState<EconCalendarEntry[]>([]);
+
+  useEffect(() => {
+    fetch('/api/world-watch/calendar')
+      .then(r => r.json())
+      .then(data => setCalendarData(data))
+      .catch(() => {});
+  }, []);
 
   const today = new Date();
   // On weekends (Sat=6, Sun=0), show next week
@@ -45,12 +52,12 @@ export function MiniCalendar({ theme }: Props) {
   }, []);
 
   const filtered = useMemo(() => {
-    return mockCalendar.filter(e => {
+    return calendarData.filter(e => {
       if (currency !== 'ALL' && e.currency !== currency) return false;
       if (impact !== 'ALL' && String(e.impact) !== impact) return false;
       return true;
     });
-  }, [currency, impact]);
+  }, [currency, impact, calendarData]);
 
   const impactColor = (imp: 1 | 2 | 3) => {
     if (imp === 3) return theme.red;
