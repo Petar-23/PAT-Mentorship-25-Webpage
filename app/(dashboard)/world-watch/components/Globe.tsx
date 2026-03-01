@@ -70,11 +70,17 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
   // Load full airport database (6072 airports) on mount
   useEffect(() => {
     fetch('/data/airports.json')
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((data: Record<string, [number, number, string]>) => {
         airportRef.current = data;
+        console.log(`[OPTICON] Airport DB loaded: ${Object.keys(data).length} airports`);
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('[OPTICON] Airport DB failed:', err.message);
+      });
   }, []);
 
   const geoEvents = events.filter(e => e.category !== 'economic');
@@ -604,8 +610,10 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         const trackFeatures: any[] = [];
         const endpointFeatures: any[] = [];
 
+        const dbSize = Object.keys(airportRef.current).length;
         const originData = originIata ? airportRef.current[originIata] : undefined;
         const destData = destIata ? airportRef.current[destIata] : undefined;
+        console.log(`[OPTICON] Route: origin=${originIata}(${!!originData}) dest=${destIata}(${!!destData}) dbSize=${dbSize}`);
         const originCoords: [number, number] | undefined = originData ? [originData[0], originData[1]] : undefined;
         const destCoords: [number, number] | undefined = destData ? [destData[0], destData[1]] : undefined;
 

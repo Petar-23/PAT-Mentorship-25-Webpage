@@ -188,13 +188,13 @@ export function MiniCalendar({ theme }: Props) {
                   borderBottom: `1px solid ${theme.surface0}33`,
                 }}>
                   <span style={{
-                    fontSize: 11, fontWeight: 700,
+                    fontSize: 12, fontWeight: 700,
                     color: isToday ? theme.blue : theme.subtext0,
-                    letterSpacing: '1px', width: 32,
+                    letterSpacing: '1px', width: 34,
                   }}>
                     {dayNames[di]}
                   </span>
-                  <span style={{ fontSize: 10, color: isToday ? theme.blue : theme.overlay0 }}>
+                  <span style={{ fontSize: 11, color: isToday ? theme.blue : theme.overlay0 }}>
                     {day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
                   {isToday && (
@@ -213,8 +213,8 @@ export function MiniCalendar({ theme }: Props) {
                 {/* Events for this day */}
                 {dayEntries.length === 0 ? (
                   <div style={{
-                    padding: '4px 12px 4px 54px',
-                    fontSize: 10, color: theme.overlay0, fontStyle: 'italic',
+                    padding: '6px 12px 6px 54px',
+                    fontSize: 12, color: theme.overlay0, fontStyle: 'italic',
                     borderBottom: `1px solid ${theme.surface0}22`,
                   }}>
                     No events
@@ -224,26 +224,26 @@ export function MiniCalendar({ theme }: Props) {
                     <div
                       key={entry.id}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: 6,
-                        padding: '4px 12px',
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '6px 12px',
                         borderBottom: `1px solid ${theme.surface0}22`,
                       }}
                     >
                       <span style={{
-                        fontSize: 10, color: theme.subtext0, width: 42,
+                        fontSize: 12, color: theme.subtext0, width: 44,
                         fontVariantNumeric: 'tabular-nums', flexShrink: 0,
                       }}>
                         {formatTime(entry.time)}
                       </span>
                       <span style={{
-                        fontSize: 10, fontWeight: 700, width: 30,
+                        fontSize: 12, fontWeight: 700, width: 34,
                         color: entry.currency === 'USD' ? theme.blue : theme.text, flexShrink: 0,
                       }}>
                         {entry.currency}
                       </span>
-                      <FolderOpen size={10} color={impactColor(entry.impact)} style={{ flexShrink: 0 }} />
+                      <FolderOpen size={12} color={impactColor(entry.impact)} style={{ flexShrink: 0 }} />
                       <span style={{
-                        fontSize: 12, color: theme.text, flex: 1,
+                        fontSize: 13, color: theme.text, flex: 1, fontWeight: entry.impact === 3 ? 600 : 400,
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                       }}>
                         {entry.event}
