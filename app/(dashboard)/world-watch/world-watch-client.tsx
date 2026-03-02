@@ -72,6 +72,7 @@ export default function WorldWatchClient() {
   const [liveEvents, setLiveEvents] = useState<GeoEvent[]>([]);
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  const [aiBrief, setAiBrief] = useState<any>(null);
   const aircraftDataRef = useRef<Map<string, AircraftInfo>>(new Map());
 
   const theme = themes[currentTheme];
@@ -112,6 +113,21 @@ export default function WorldWatchClient() {
     };
     fetchNews();
     const interval = setInterval(fetchNews, 15 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch AI Brief (OSINT analysis) every 5 minutes
+  useEffect(() => {
+    const fetchBrief = () => {
+      fetch('/api/world-watch/brief')
+        .then(r => r.json())
+        .then(data => {
+          if (data.generatedAt) setAiBrief(data);
+        })
+        .catch(() => {});
+    };
+    fetchBrief();
+    const interval = setInterval(fetchBrief, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -702,6 +718,7 @@ export default function WorldWatchClient() {
                 onRotationChange={setIsRotating}
                 aircraftDataRef={aircraftDataRef}
                 selectedNews={selectedNews}
+                aiBrief={aiBrief}
               />
 
               {/* Left Sidebar Widgets — floating cards */}

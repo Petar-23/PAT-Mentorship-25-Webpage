@@ -36,6 +36,28 @@ export interface GlobeHandle {
   isRotating: boolean;
 }
 
+export interface AIBriefEvent {
+  headline: string;
+  conflictId: string | null;
+  type: 'strike' | 'deployment' | 'diplomatic' | 'protest' | 'humanitarian' | 'other';
+  targetLocation: { name: string; lat: number; lng: number } | null;
+  originLocation: { name: string; lat: number; lng: number } | null;
+  corroboration: number;
+  sources: string[];
+  verified: boolean;
+  severity: 1 | 2 | 3 | 4;
+}
+
+export interface AIBrief {
+  generatedAt: string | null;
+  riskLevel: 'LOW' | 'ELEVATED' | 'HIGH' | 'CRITICAL';
+  conflictHeat: Record<string, number>;
+  focalPoints: { conflictId: string; region: string; heat: number; summary: string; escalation: 'up' | 'stable' | 'down' }[];
+  verifiedEvents: AIBriefEvent[];
+  newHotspots: { name: string; lat: number; lng: number; conflictId: string | null; reason: string; type: 'chokepoint' | 'frontline' | 'target' }[];
+  meta?: Record<string, any>;
+}
+
 interface Props {
   events: GeoEvent[];
   layers: DataLayer[];
@@ -47,6 +69,7 @@ interface Props {
   onRotationChange?: (rotating: boolean) => void;
   aircraftDataRef?: React.RefObject<Map<string, AircraftInfo>>;
   selectedNews?: NewsItem | null;
+  aiBrief?: AIBrief | null;
 }
 
 const COUNTRY_NAME_MAP: Record<string, string> = {
@@ -69,7 +92,7 @@ function getDisasterType(title: string, category: string): string {
 }
 
 export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
-  { events, layers, onSelect, focusEvent, focusCounter, theme, onRotationChange, aircraftDataRef, selectedNews },
+  { events, layers, onSelect, focusEvent, focusCounter, theme, onRotationChange, aircraftDataRef, selectedNews, aiBrief },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -456,7 +479,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       const conflictClickBlockers = [
         'event-icons', 'conflict-hotspot-dots', 'aircraft-icons', 'ship-icons',
         'military-base-icons', 'nuclear-icons', 'submarine-cables-lines',
-        'pipelines-lines', 'pipelines-lines-dashed',
+        'pipelines-lines', 'pipelines-lines-dashed', 'strike-target-icon',
       ];
 
       for (const conflict of ACTIVE_CONFLICTS) {
@@ -994,6 +1017,14 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             try {
               m.setLayoutProperty(layerId, 'icon-size', 0.5 + phase * 1.2);
               m.setPaintProperty(layerId, 'icon-opacity', maxO * (1 - phase));
+            } catch (_) {}
+          }
+          // Strike target pulse (circle)
+          if (m.getLayer('strike-target-pulse')) {
+            const { phase, maxO } = rings[0];
+            try {
+              m.setPaintProperty('strike-target-pulse', 'circle-radius', 8 + phase * 20);
+              m.setPaintProperty('strike-target-pulse', 'circle-stroke-opacity', maxO * (1 - phase));
             } catch (_) {}
           }
         }, 50); // 20fps
@@ -1905,6 +1936,210 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       map.once('style.load', applyHighlight);
     }
   }, [focusEvent]); // eslint-disable-line
+
+  // ─── AI BRIEF: STRIKE ARCS + DYNAMIC HEAT + TARGET MARKERS ─────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !aiBrief) return;
+
+    const apply = () => {
+      if (!map.isStyleLoaded()) return;
+
+      // --- 1. Dynamic conflict heat → adjust conflict zone fill opacity ---
+      for (const conflict of ACTIVE_CONFLICTS) {
+        const heat = aiBrief.conflictHeat?.[conflict.id] || 0;
+        const fillLayerId = `conflict-fill-${conflict.id}`;
+        const countryFillLayerId = `conflict-country-fill-${conflict.id}`;
+        // Scale opacity: 0 heat → base opacity, 20 heat → 3x base
+        const heatMultiplier = 1 + (heat / 10);
+        const baseOpacity = conflict.severity === 'critical' ? 0.08 : 0.05;
+        const countryBaseOpacity = conflict.severity === 'critical' ? 0.10 : 0.06;
+        try {
+          if (map.getLayer(fillLayerId)) {
+            map.setPaintProperty(fillLayerId, 'fill-opacity', Math.min(baseOpacity * heatMultiplier, 0.25));
+          }
+          if (map.getLayer(countryFillLayerId)) {
+            map.setPaintProperty(countryFillLayerId, 'fill-opacity', Math.min(countryBaseOpacity * heatMultiplier, 0.30));
+          }
+        } catch (_) {}
+      }
+
+      // --- 2. Strike arcs (origin → target for verified strike events) ---
+      const strikeFeatures: any[] = [];
+      const targetFeatures: any[] = [];
+
+      for (const event of (aiBrief.verifiedEvents || [])) {
+        if (!event.verified || event.type !== 'strike') continue;
+        if (!event.targetLocation?.lat || !event.targetLocation?.lng) continue;
+
+        // Target marker
+        const conflict = ACTIVE_CONFLICTS.find(c => c.id === event.conflictId);
+        const color = conflict?.color || '#f38ba8';
+        targetFeatures.push({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [event.targetLocation.lng, event.targetLocation.lat] },
+          properties: {
+            headline: event.headline,
+            targetName: event.targetLocation.name,
+            severity: event.severity,
+            color,
+            corroboration: event.corroboration,
+            sources: (event.sources || []).join(', '),
+          },
+        });
+
+        // Strike arc (if we have origin)
+        if (event.originLocation?.lat && event.originLocation?.lng) {
+          // Generate curved arc (great circle approximation with elevation)
+          const origin = [event.originLocation.lng, event.originLocation.lat];
+          const target = [event.targetLocation.lng, event.targetLocation.lat];
+          const arcCoords: [number, number][] = [];
+          const steps = 40;
+          for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const lng = origin[0] + (target[0] - origin[0]) * t;
+            const lat = origin[1] + (target[1] - origin[1]) * t;
+            arcCoords.push([lng, lat]);
+          }
+          strikeFeatures.push({
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: arcCoords },
+            properties: {
+              color,
+              severity: event.severity,
+              headline: event.headline,
+              originName: event.originLocation.name,
+              targetName: event.targetLocation.name,
+            },
+          });
+        }
+      }
+
+      // Strike arc source + layers
+      const arcSourceId = 'strike-arcs';
+      const arcData = { type: 'FeatureCollection' as const, features: strikeFeatures };
+      const existingArcSrc = map.getSource(arcSourceId) as mapboxgl.GeoJSONSource | undefined;
+      if (existingArcSrc) {
+        existingArcSrc.setData(arcData);
+      } else if (strikeFeatures.length > 0) {
+        map.addSource(arcSourceId, { type: 'geojson', data: arcData });
+        // Glow layer (wider, lower opacity)
+        map.addLayer({
+          id: 'strike-arcs-glow',
+          type: 'line',
+          source: arcSourceId,
+          paint: {
+            'line-color': ['get', 'color'],
+            'line-width': 6,
+            'line-opacity': 0.15,
+            'line-blur': 4,
+          },
+          layout: { 'line-cap': 'round' },
+        });
+        // Core line (dashed, animated feel)
+        map.addLayer({
+          id: 'strike-arcs-line',
+          type: 'line',
+          source: arcSourceId,
+          paint: {
+            'line-color': ['get', 'color'],
+            'line-width': ['match', ['get', 'severity'], 4, 2.5, 3, 2, 1.5],
+            'line-opacity': 0.7,
+            'line-dasharray': [2, 2],
+          },
+          layout: { 'line-cap': 'round' },
+        });
+      }
+
+      // Target markers source + layers
+      const targetSourceId = 'strike-targets';
+      const targetData = { type: 'FeatureCollection' as const, features: targetFeatures };
+      const existingTargetSrc = map.getSource(targetSourceId) as mapboxgl.GeoJSONSource | undefined;
+      if (existingTargetSrc) {
+        existingTargetSrc.setData(targetData);
+      } else if (targetFeatures.length > 0) {
+        map.addSource(targetSourceId, { type: 'geojson', data: targetData });
+        // Pulse ring
+        map.addLayer({
+          id: 'strike-target-pulse',
+          type: 'circle',
+          source: targetSourceId,
+          paint: {
+            'circle-radius': 12,
+            'circle-color': 'transparent',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': ['get', 'color'],
+            'circle-stroke-opacity': 0.5,
+          },
+        });
+        // Core marker (using diamond icon if available)
+        map.addLayer({
+          id: 'strike-target-icon',
+          type: 'symbol',
+          source: targetSourceId,
+          layout: {
+            'icon-image': 'diamond-icon',
+            'icon-size': 0.6,
+            'icon-allow-overlap': true,
+          },
+          paint: {
+            'icon-color': '#f38ba8',
+            'icon-opacity': 1.0,
+          },
+        } as any);
+        // Label
+        map.addLayer({
+          id: 'strike-target-label',
+          type: 'symbol',
+          source: targetSourceId,
+          layout: {
+            'text-field': ['concat', '🎯 ', ['get', 'targetName']],
+            'text-size': 10,
+            'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
+            'text-offset': [0, 2],
+            'text-allow-overlap': false,
+          },
+          paint: {
+            'text-color': '#f38ba8',
+            'text-halo-color': theme.crust,
+            'text-halo-width': 1.5,
+          },
+        } as any);
+
+        // Click handler for strike targets
+        map.on('click', 'strike-target-icon', (e: any) => {
+          if (!e.features?.[0]) return;
+          e.originalEvent?._stopPropagation?.(); // prevent conflict zone popup
+          const props = e.features[0].properties;
+          const coords = (e.features[0].geometry as any).coordinates.slice() as [number, number];
+          const popup = new mapboxgl.Popup({
+            closeButton: false, closeOnClick: true, maxWidth: '300px', className: 'ww-marker-popup',
+          });
+          popup.setLngLat(coords).setHTML(`
+            <div style="font-family: inherit; padding: 10px; background: ${theme.mantle}ee; backdrop-filter: blur(12px); border: 1px solid #f38ba855; border-left: 3px solid #f38ba8; border-radius: 6px;">
+              <div style="font-size: 10px; font-weight: 700; color: #f38ba8; letter-spacing: 1px; margin-bottom: 4px;">🎯 STRIKE TARGET</div>
+              <div style="font-size: 12px; font-weight: 600; color: ${theme.text}; margin-bottom: 4px; line-height: 1.3;">${props.headline}</div>
+              <div style="font-size: 10px; color: ${theme.overlay0}; margin-bottom: 4px;">📍 ${props.targetName}</div>
+              <div style="font-size: 9px; color: ${theme.subtext0}; border-top: 1px solid ${theme.surface0}; padding-top: 4px; margin-top: 4px;">
+                Corroboration: ${props.corroboration}/5 · Sources: ${props.sources}
+              </div>
+            </div>
+          `).addTo(map);
+        });
+        map.on('mouseenter', 'strike-target-icon', () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', 'strike-target-icon', () => { map.getCanvas().style.cursor = ''; });
+      }
+
+      // --- 3. Add strike target pulse to animation loop ---
+      // (pulse is handled in the existing interval via the 'strike-target-pulse' layer check)
+    };
+
+    if (map.isStyleLoaded()) {
+      apply();
+    } else {
+      map.once('style.load', apply);
+    }
+  }, [aiBrief, theme]); // eslint-disable-line
 
   // Sync data layers: create sources/layers if missing, update data, toggle visibility
   useEffect(() => {
