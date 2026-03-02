@@ -766,6 +766,7 @@ export default function WorldWatchClient() {
                   onToggleSeverity={handleToggleSeverity}
                   newsItems={newsItems}
                   onNewsSelect={handleNewsSelect}
+                  aiBrief={aiBrief}
                 />
               </div>
             </>
@@ -780,7 +781,7 @@ export default function WorldWatchClient() {
         </div>
 
         {/* Bottom Ticker */}
-        <Ticker events={layerFilteredEvents} theme={theme} newsItems={newsItems} />
+        <Ticker events={layerFilteredEvents} theme={theme} newsItems={newsItems} aiBrief={aiBrief} />
 
         {/* Status Bar */}
         <div style={{

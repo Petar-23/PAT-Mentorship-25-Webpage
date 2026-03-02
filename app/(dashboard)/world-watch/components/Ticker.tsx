@@ -3,22 +3,47 @@
 import type { GeoEvent, NewsItem, ThemeColors } from '../types';
 import { severityColors } from '../styles/themes';
 
+interface AIBriefEvent {
+  headline: string;
+  type: string;
+  severity: 1 | 2 | 3 | 4;
+  verified: boolean;
+  sources: string[];
+  corroboration: number;
+  targetLocation?: { name: string } | null;
+  conflictId?: string | null;
+}
+
+interface AIBrief {
+  riskLevel: string;
+  verifiedEvents?: AIBriefEvent[];
+}
+
 interface Props {
   events: GeoEvent[];
   theme: ThemeColors;
   newsItems?: NewsItem[];
+  aiBrief?: AIBrief | null;
 }
 
-export function Ticker({ events, theme, newsItems = [] }: Props) {
+export function Ticker({ events, theme, newsItems = [], aiBrief }: Props) {
   const colors = severityColors(theme);
 
-  // Ticker = RSS news only, sorted newest first. No natural disasters/events.
+  // AI Brief verified events (highest severity first)
+  const intelItems = (aiBrief?.verifiedEvents || [])
+    .filter(e => e.verified)
+    .sort((a, b) => b.severity - a.severity);
+
+  // RSS news, sorted newest first
   const newsHeadlines = [...newsItems]
     .sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime())
     .slice(0, 30);
 
-  type TickerItem = { kind: 'news'; n: NewsItem };
-  const combined: TickerItem[] = newsHeadlines.map(n => ({ kind: 'news' as const, n }));
+  type TickerItem = { kind: 'news'; n: NewsItem } | { kind: 'intel'; e: AIBriefEvent };
+  const combined: TickerItem[] = [
+    ...intelItems.map(e => ({ kind: 'intel' as const, e })),
+    ...newsHeadlines.map(n => ({ kind: 'news' as const, n })),
+  ];
 
   // Double for seamless loop
   const items = [...combined, ...combined];
@@ -63,17 +88,34 @@ export function Ticker({ events, theme, newsItems = [] }: Props) {
         animation: `wwTicker ${duration}s linear infinite`,
         fontSize: 12,
       }}>
-        {items.map((item, i) => (
-          <span key={`news-${item.n.id}-${i}`}>
-            <span style={{ color: theme.blue, fontWeight: 600 }}>INTEL</span>
-            {' '}
-            <span style={{ color: theme.subtext0, fontSize: 10 }}>[{item.n.source.slice(0, 18)}]</span>
-            {' '}
-            <span style={{ color: theme.text }}>{item.n.title}</span>
-            {item.n.country && <span style={{ color: theme.overlay0 }}> — {item.n.country}</span>}
-            <span style={{ color: theme.surface1, margin: '0 16px' }}>///</span>
-          </span>
-        ))}
+        {items.map((item, i) =>
+          item.kind === 'intel' ? (
+            <span key={`intel-${i}`}>
+              <span style={{
+                color: colors[item.e.severity],
+                fontWeight: 700,
+                fontSize: 10,
+                letterSpacing: '0.5px',
+              }}>
+                {item.e.severity === 4 ? '🔴 CRITICAL' : item.e.severity === 3 ? '🟠 HIGH' : item.e.severity === 2 ? '🟡 MEDIUM' : '⚪ LOW'}
+              </span>
+              {' '}
+              <span style={{ color: theme.text, fontWeight: 500 }}>{item.e.headline}</span>
+              {item.e.targetLocation?.name && <span style={{ color: theme.overlay0 }}> — 📍 {item.e.targetLocation.name}</span>}
+              <span style={{ color: theme.surface1, margin: '0 16px' }}>///</span>
+            </span>
+          ) : (
+            <span key={`news-${item.n.id}-${i}`}>
+              <span style={{ color: theme.blue, fontWeight: 600, fontSize: 10 }}>INTEL</span>
+              {' '}
+              <span style={{ color: theme.subtext0, fontSize: 10 }}>[{item.n.source.slice(0, 18)}]</span>
+              {' '}
+              <span style={{ color: theme.text }}>{item.n.title}</span>
+              {item.n.country && <span style={{ color: theme.overlay0 }}> — {item.n.country}</span>}
+              <span style={{ color: theme.surface1, margin: '0 16px' }}>///</span>
+            </span>
+          )
+        )}
       </div>
     </div>
   );

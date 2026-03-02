@@ -5,6 +5,23 @@ import { EventCard } from './EventCard';
 import { severityColors } from '../styles/themes';
 import { ACTIVE_CONFLICTS } from '../data/conflicts';
 
+interface AIBriefEvent {
+  headline: string;
+  conflictId: string | null;
+  type: string;
+  targetLocation: { name: string; lat: number; lng: number } | null;
+  corroboration: number;
+  sources: string[];
+  verified: boolean;
+  severity: 1 | 2 | 3 | 4;
+}
+
+interface AIBrief {
+  riskLevel: string;
+  verifiedEvents?: AIBriefEvent[];
+  conflictHeat?: Record<string, number>;
+}
+
 interface Props {
   events: GeoEvent[];
   selectedId: string | null;
@@ -14,6 +31,7 @@ interface Props {
   onToggleSeverity: (sev: number) => void;
   newsItems?: NewsItem[];
   onNewsSelect?: (news: NewsItem) => void;
+  aiBrief?: AIBrief | null;
 }
 
 interface FilterBadgeProps {
@@ -74,9 +92,10 @@ function formatTimeAgo(dateStr: string): string {
 
 type FeedItem =
   | { type: 'event'; event: GeoEvent }
-  | { type: 'news'; news: NewsItem };
+  | { type: 'news'; news: NewsItem }
+  | { type: 'intel'; intel: AIBriefEvent };
 
-export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, onToggleSeverity, newsItems = [], onNewsSelect }: Props) {
+export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, onToggleSeverity, newsItems = [], onNewsSelect, aiBrief }: Props) {
   const colors = severityColors(theme);
 
   const hasFilter = severityFilter.size > 0;
@@ -84,28 +103,40 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
     ? events.filter(e => severityFilter.has(e.severity))
     : events;
 
-  // Build unified feed: events + news, sorted by time
+  // AI Brief verified events (sorted by severity, highest first)
+  const intelItems: FeedItem[] = (aiBrief?.verifiedEvents || [])
+    .filter(e => e.verified)
+    .map(e => ({ type: 'intel' as const, intel: e }));
+
+  // Build unified feed: intel events first (by severity), then news
   const feed: FeedItem[] = [
+    ...intelItems,
     ...filtered.map(e => ({ type: 'event' as const, event: e })),
     ...newsItems.map(n => ({ type: 'news' as const, news: n })),
   ].sort((a, b) => {
+    // Intel items sort by severity (highest first)
+    const sevA = a.type === 'intel' ? a.intel.severity : a.type === 'event' ? a.event.severity : 0;
+    const sevB = b.type === 'intel' ? b.intel.severity : b.type === 'event' ? b.event.severity : 0;
+    if (a.type === 'intel' && b.type !== 'intel') return -1;
+    if (b.type === 'intel' && a.type !== 'intel') return 1;
+    if (a.type === 'intel' && b.type === 'intel') return sevB - sevA;
     const timeA = a.type === 'event'
       ? new Date(a.event.timestamp || 0).getTime()
-      : new Date(a.news.pubDate || 0).getTime();
+      : new Date((a as any).news?.pubDate || 0).getTime();
     const timeB = b.type === 'event'
       ? new Date(b.event.timestamp || 0).getTime()
-      : new Date(b.news.pubDate || 0).getTime();
-    // Events by severity first if same time bucket
+      : new Date((b as any).news?.pubDate || 0).getTime();
     if (Math.abs(timeB - timeA) < 60000 && a.type === 'event' && b.type === 'event') {
       return b.event.severity - a.event.severity;
     }
     return timeB - timeA;
   });
 
-  const critCount = events.filter(e => e.severity === 4).length;
-  const highCount = events.filter(e => e.severity === 3).length;
-  const medCount = events.filter(e => e.severity === 2).length;
-  const lowCount = events.filter(e => e.severity === 1).length;
+  const verifiedIntel = (aiBrief?.verifiedEvents || []).filter(e => e.verified);
+  const critCount = events.filter(e => e.severity === 4).length + verifiedIntel.filter(e => e.severity === 4).length;
+  const highCount = events.filter(e => e.severity === 3).length + verifiedIntel.filter(e => e.severity === 3).length;
+  const medCount = events.filter(e => e.severity === 2).length + verifiedIntel.filter(e => e.severity === 2).length;
+  const lowCount = events.filter(e => e.severity === 1).length + verifiedIntel.filter(e => e.severity === 1).length;
 
   return (
     <div style={{
@@ -179,7 +210,67 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
           </div>
         ) : (
           feed.map((item, idx) =>
-            item.type === 'news' ? (
+            item.type === 'intel' ? (() => {
+              const sev = item.intel.severity;
+              const sevLabel = sev === 4 ? 'CRITICAL' : sev === 3 ? 'HIGH' : sev === 2 ? 'MEDIUM' : 'LOW';
+              const sevColor = colors[sev];
+              const typeIcon = item.intel.type === 'strike' ? '🎯' : item.intel.type === 'deployment' ? '🛡️' : item.intel.type === 'diplomatic' ? '🏛️' : item.intel.type === 'protest' ? '✊' : item.intel.type === 'humanitarian' ? '🏥' : '📡';
+              const conflict = ACTIVE_CONFLICTS.find(c => c.id === item.intel.conflictId);
+              return (
+                <div
+                  key={`intel-${idx}`}
+                  style={{
+                    padding: '8px 12px',
+                    borderLeft: `3px solid ${sevColor}`,
+                    background: `${sevColor}11`,
+                    borderRadius: '0 4px 4px 0',
+                    marginBottom: '2px',
+                    cursor: 'default',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <span style={{ fontSize: 10 }}>{typeIcon}</span>
+                    <span style={{
+                      fontSize: 9, padding: '1px 5px',
+                      background: `${sevColor}22`,
+                      border: `1px solid ${sevColor}44`,
+                      borderRadius: 3, color: sevColor,
+                      fontWeight: 700, letterSpacing: '1px',
+                    }}>
+                      {sevLabel}
+                    </span>
+                    <span style={{
+                      fontSize: 9, padding: '1px 5px',
+                      background: `${theme.surface0}`,
+                      borderRadius: 3, color: theme.subtext0,
+                      fontWeight: 500, textTransform: 'uppercase',
+                    }}>
+                      {item.intel.type}
+                    </span>
+                    {conflict && (
+                      <span style={{
+                        fontSize: 9, padding: '1px 5px',
+                        background: `${conflict.color}22`,
+                        border: `1px solid ${conflict.color}33`,
+                        borderRadius: 3, color: conflict.color,
+                        fontWeight: 600,
+                      }}>
+                        ⚔ {conflict.shortName}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 11, color: theme.text, lineHeight: '1.3', marginBottom: 3 }}>
+                    {item.intel.headline}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 9, color: theme.overlay0 }}>
+                    {item.intel.targetLocation && <span>📍 {item.intel.targetLocation.name}</span>}
+                    <span style={{ marginLeft: 'auto' }}>
+                      ✓ {item.intel.corroboration}/5 · {item.intel.sources.slice(0, 3).join(', ')}
+                    </span>
+                  </div>
+                </div>
+              );
+            })() : item.type === 'news' ? (
               <div
                 key={item.news.id}
                 onClick={() => {
@@ -268,7 +359,7 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
         flexShrink: 0,
       }}>
         <span>Reuters · BBC · Defense One · Crisis Group</span>
-        <span>{filtered.length} events · {newsItems.length} intel</span>
+        <span>{filtered.length} events · {intelItems.length} verified · {newsItems.length} intel</span>
       </div>
     </div>
   );

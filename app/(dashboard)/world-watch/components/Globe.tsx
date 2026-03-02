@@ -466,70 +466,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         map.getCanvas().style.cursor = '';
       });
 
-      // ─── CONFLICT ZONE CLICK POPUP ────────────────────────────────────
-      conflictPopupRef.current = new mapboxgl.Popup({
-        closeButton: false,
-        closeOnClick: false,
-        maxWidth: '320px',
-        className: 'ww-marker-popup',
-      });
-      const conflictPopup = conflictPopupRef.current;
-
-      // Layers that take click priority over conflict zones
-      const conflictClickBlockers = [
-        'event-icons', 'conflict-hotspot-dots', 'aircraft-icons', 'ship-icons',
-        'military-base-icons', 'nuclear-icons', 'submarine-cables-lines',
-        'pipelines-lines', 'pipelines-lines-dashed', 'strike-target-icon',
-      ];
-
-      for (const conflict of ACTIVE_CONFLICTS) {
-        map.on('click', `conflict-fill-${conflict.id}`, (e: any) => {
-          // If a more specific layer feature is under the click, don't show the zone popup
-          const point = e.point;
-          for (const layerId of conflictClickBlockers) {
-            if (map.getLayer(layerId)) {
-              const hits = map.queryRenderedFeatures(point, { layers: [layerId] });
-              if (hits.length > 0) return;
-            }
-          }
-          markerClicked = true;
-          const statusLabel = conflict.status === 'active-war' ? '🔴 ACTIVE WAR'
-            : conflict.status === 'escalating' ? '🟠 ESCALATING'
-            : conflict.status === 'ceasefire' ? '🟡 CEASEFIRE' : '⚪ FROZEN';
-          const partiesHtml = conflict.parties.map(p =>
-            `<span style="font-size: 9px; padding: 1px 5px; background: ${conflict.color}15; border: 1px solid ${conflict.color}33; border-radius: 3px; color: ${theme.subtext0};">${p}</span>`
-          ).join(' ');
-          const hotspotsHtml = (conflict.hotspots || []).map(h =>
-            `<span style="font-size: 9px; color: ${theme.overlay0};">• ${h.label} (${h.type})</span>`
-          ).join('<br/>');
-
-          conflictPopup
-            .setLngLat(e.lngLat)
-            .setHTML(`
-              <div style="font-family: inherit; max-width: 300px; padding: 10px; background: ${theme.mantle}dd; backdrop-filter: blur(8px); border: 1px solid ${conflict.color}44; border-radius: 6px;">
-                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                  <span style="font-size: 14px;">⚔</span>
-                  <span style="font-size: 13px; font-weight: 700; color: ${conflict.color};">${conflict.name}</span>
-                </div>
-                <div style="font-size: 10px; color: ${theme.subtext0}; margin-bottom: 6px;">
-                  ${statusLabel} · Since ${conflict.startDate} · ${conflict.region}
-                </div>
-                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;">
-                  ${partiesHtml}
-                </div>
-                ${hotspotsHtml ? `<div style="margin-top: 4px; padding-top: 4px; border-top: 1px solid ${theme.surface0};">${hotspotsHtml}</div>` : ''}
-              </div>
-            `)
-            .addTo(map);
-        });
-
-        map.on('mouseenter', `conflict-fill-${conflict.id}`, () => {
-          map.getCanvas().style.cursor = 'pointer';
-        });
-        map.on('mouseleave', `conflict-fill-${conflict.id}`, () => {
-          map.getCanvas().style.cursor = '';
-        });
-      }
+      // Conflict zone click popup DISABLED — zones are visual-only, clicking through to items below
 
       // News popup (created once, reused via selectedNews prop)
       newsPopupRef.current = new mapboxgl.Popup({
@@ -984,19 +921,25 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         paint: { 'text-color': ['get', 'color'], 'text-halo-color': '#11111b', 'text-halo-width': 1 },
       });
 
-      // ─── PULSE ANIMATION ──────────────────────────────────────────────────
+      // ─── PULSE ANIMATION (smooth easing) ──────────────────────────────────
       {
-        let pulseFrame = 0;
-        pulseIntervalRef.current = setInterval(() => {
+        let pulseStart = performance.now();
+        const CYCLE_MS = 3000; // 3 second full cycle
+        const easeOut = (t: number) => 1 - Math.pow(1 - t, 2); // quadratic ease-out for smooth fade
+
+        const animate = () => {
           const m = mapRef.current;
-          if (!m?.isStyleLoaded()) return;
-          pulseFrame++;
-          const t = (pulseFrame % 60) / 60;
+          if (!m?.isStyleLoaded()) { pulseIntervalRef.current = requestAnimationFrame(animate) as any; return; }
+
+          const elapsed = performance.now() - pulseStart;
+          const t = (elapsed % CYCLE_MS) / CYCLE_MS;
           const rings = [
-            { phase: t, maxR: 20, maxO: 0.4 },
-            { phase: (t + 0.33) % 1, maxR: 20, maxO: 0.3 },
-            { phase: (t + 0.66) % 1, maxR: 20, maxO: 0.2 },
+            { phase: easeOut(t), rawPhase: t, maxR: 20, maxO: 0.4 },
+            { phase: easeOut((t + 0.33) % 1), rawPhase: (t + 0.33) % 1, maxR: 20, maxO: 0.3 },
+            { phase: easeOut((t + 0.66) % 1), rawPhase: (t + 0.66) % 1, maxR: 20, maxO: 0.2 },
           ];
+
+          // Circle pulses (military, nuclear, disaster)
           const circleCategories = ['military', 'nuclear', 'disaster'];
           for (const cat of circleCategories) {
             for (let i = 0; i < 3; i++) {
@@ -1009,17 +952,19 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
               } catch (_) {}
             }
           }
-          // Diamond pulse for conflict hotspots (symbol layers — animate icon-size + icon-opacity)
+
+          // Diamond pulse for conflict hotspots (symbol layers)
           for (let i = 0; i < 3; i++) {
             const layerId = `conflict-hotspot-pulse-${i + 1}`;
             if (!m.getLayer(layerId)) continue;
             const { phase, maxO } = rings[i];
             try {
-              m.setLayoutProperty(layerId, 'icon-size', 0.5 + phase * 1.2);
+              m.setLayoutProperty(layerId, 'icon-size', 0.5 + phase * 0.8);
               m.setPaintProperty(layerId, 'icon-opacity', maxO * (1 - phase));
             } catch (_) {}
           }
-          // Strike target pulse (circle)
+
+          // Strike target pulse (red circle)
           if (m.getLayer('strike-target-pulse')) {
             const { phase, maxO } = rings[0];
             try {
@@ -1027,7 +972,10 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
               m.setPaintProperty('strike-target-pulse', 'circle-stroke-opacity', maxO * (1 - phase));
             } catch (_) {}
           }
-        }, 50); // 20fps
+
+          pulseIntervalRef.current = requestAnimationFrame(animate) as any;
+        };
+        pulseIntervalRef.current = requestAnimationFrame(animate) as any;
       }
 
       // ─── SUBMARINE CABLES (real GeoJSON, 710 cables) ─────────────────────
@@ -1850,7 +1798,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
 
     return () => {
       if (rotateRef.current) clearInterval(rotateRef.current);
-      if (pulseIntervalRef.current) { clearInterval(pulseIntervalRef.current); pulseIntervalRef.current = null; }
+      if (pulseIntervalRef.current) { cancelAnimationFrame(pulseIntervalRef.current as any); pulseIntervalRef.current = null; }
       map.remove();
       mapRef.current = null;
     };
@@ -2023,29 +1971,29 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         existingArcSrc.setData(arcData);
       } else if (strikeFeatures.length > 0) {
         map.addSource(arcSourceId, { type: 'geojson', data: arcData });
-        // Glow layer (wider, lower opacity)
+        // Glow layer (subtle)
         map.addLayer({
           id: 'strike-arcs-glow',
           type: 'line',
           source: arcSourceId,
           paint: {
             'line-color': ['get', 'color'],
-            'line-width': 6,
-            'line-opacity': 0.15,
-            'line-blur': 4,
+            'line-width': 3,
+            'line-opacity': 0.10,
+            'line-blur': 3,
           },
           layout: { 'line-cap': 'round' },
         });
-        // Core line (dashed, animated feel)
+        // Core line (thin, dashed)
         map.addLayer({
           id: 'strike-arcs-line',
           type: 'line',
           source: arcSourceId,
           paint: {
             'line-color': ['get', 'color'],
-            'line-width': ['match', ['get', 'severity'], 4, 2.5, 3, 2, 1.5],
-            'line-opacity': 0.7,
-            'line-dasharray': [2, 2],
+            'line-width': ['match', ['get', 'severity'], 4, 1.2, 3, 1, 0.8],
+            'line-opacity': 0.6,
+            'line-dasharray': [3, 3],
           },
           layout: { 'line-cap': 'round' },
         });
@@ -2059,7 +2007,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         existingTargetSrc.setData(targetData);
       } else if (targetFeatures.length > 0) {
         map.addSource(targetSourceId, { type: 'geojson', data: targetData });
-        // Pulse ring
+        // Pulse ring (always red for strike targets)
         map.addLayer({
           id: 'strike-target-pulse',
           type: 'circle',
@@ -2068,7 +2016,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             'circle-radius': 12,
             'circle-color': 'transparent',
             'circle-stroke-width': 2,
-            'circle-stroke-color': ['get', 'color'],
+            'circle-stroke-color': '#f38ba8',
             'circle-stroke-opacity': 0.5,
           },
         });
