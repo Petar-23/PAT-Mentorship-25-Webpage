@@ -1963,13 +1963,13 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         }
       }
 
-      // Strike arc source + layers
+      // Strike arc source + layers (always create, update data on subsequent runs)
       const arcSourceId = 'strike-arcs';
       const arcData = { type: 'FeatureCollection' as const, features: strikeFeatures };
       const existingArcSrc = map.getSource(arcSourceId) as mapboxgl.GeoJSONSource | undefined;
       if (existingArcSrc) {
         existingArcSrc.setData(arcData);
-      } else if (strikeFeatures.length > 0) {
+      } else {
         map.addSource(arcSourceId, { type: 'geojson', data: arcData });
         // Glow layer (subtle)
         map.addLayer({
@@ -1999,13 +1999,13 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         });
       }
 
-      // Target markers source + layers
+      // Target markers source + layers (always create)
       const targetSourceId = 'strike-targets';
       const targetData = { type: 'FeatureCollection' as const, features: targetFeatures };
       const existingTargetSrc = map.getSource(targetSourceId) as mapboxgl.GeoJSONSource | undefined;
       if (existingTargetSrc) {
         existingTargetSrc.setData(targetData);
-      } else if (targetFeatures.length > 0) {
+      } else {
         map.addSource(targetSourceId, { type: 'geojson', data: targetData });
         // Pulse ring (always red for strike targets)
         map.addLayer({
