@@ -829,7 +829,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           id: `military-pulse-${i}`,
           type: 'circle',
           source: 'military-bases-live',
-          layout: { visibility: 'none' },
+          layout: { visibility: 'visible' },
           paint: {
             'circle-radius': 6,
             'circle-color': 'transparent',
@@ -845,7 +845,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         type: 'symbol',
         source: 'military-bases-live',
         layout: {
-          visibility: 'none',
+          visibility: 'visible',
           'icon-image': 'base-icon',
           'icon-size': 0.8,
           'icon-allow-overlap': true,
@@ -859,7 +859,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         source: 'military-bases-live',
         minzoom: 4,
         layout: {
-          visibility: 'none',
+          visibility: 'visible',
           'text-field': ['get', 'label'],
           'text-size': 10,
           'text-offset': [0, 1.4],
@@ -880,7 +880,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           id: `nuclear-pulse-${i}`,
           type: 'circle',
           source: 'nuclear-live',
-          layout: { visibility: 'none' },
+          layout: { visibility: 'visible' },
           paint: {
             'circle-radius': 6,
             'circle-color': 'transparent',
@@ -896,7 +896,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         type: 'symbol',
         source: 'nuclear-live',
         layout: {
-          visibility: 'none',
+          visibility: 'visible',
           'icon-image': 'nuclear-icon',
           'icon-size': 0.7,
           'icon-allow-overlap': true,
@@ -910,7 +910,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         source: 'nuclear-live',
         minzoom: 4,
         layout: {
-          visibility: 'none',
+          visibility: 'visible',
           'text-field': ['get', 'label'],
           'text-size': 10,
           'text-offset': [0, 1.4],
@@ -988,7 +988,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             id: 'submarine-cables-lines',
             type: 'line',
             source: 'submarine-cables',
-            layout: { 'line-cap': 'round', visibility: 'none' },
+            layout: { 'line-cap': 'round', visibility: 'visible' },
             paint: {
               'line-color': ['coalesce', ['get', 'color'], '#89b4fa'],
               'line-width': 1,
@@ -1010,7 +1010,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             type: 'line',
             source: 'pipelines',
             filter: ['!', ['in', ['get', 'status'], ['literal', ['Destroyed', 'Decommissioned', 'Planned']]]],
-            layout: { 'line-cap': 'round', visibility: 'none' },
+            layout: { 'line-cap': 'round', visibility: 'visible' },
             paint: {
               'line-color': ['coalesce', ['get', 'color'], '#a6e3a1'],
               'line-width': 1.5,
@@ -1023,7 +1023,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             type: 'line',
             source: 'pipelines',
             filter: ['in', ['get', 'status'], ['literal', ['Destroyed', 'Decommissioned', 'Planned']]],
-            layout: { 'line-cap': 'round', visibility: 'none' },
+            layout: { 'line-cap': 'round', visibility: 'visible' },
             paint: {
               'line-color': ['coalesce', ['get', 'color'], '#f38ba8'],
               'line-width': 1.5,
