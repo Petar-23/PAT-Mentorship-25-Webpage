@@ -2078,15 +2078,18 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     const map = mapRef.current;
 
     const doSync = () => {
-      if (!map.isStyleLoaded()) return false;
+      if (!map.isStyleLoaded()) { console.log('[OPTICON] doSync: style not loaded yet'); return false; }
+      console.log('[OPTICON] doSync: running, layers:', layers.map(l => `${l.id}:${l.enabled}`).join(', '));
 
     // Handle submarine cables visibility (custom Mapbox source, not generic)
     const cableLayer = layers.find(l => l.id === 'cables');
     if (cableLayer) {
       const vis = cableLayer.enabled ? 'visible' : 'none';
+      const hasLayer = !!map.getLayer('submarine-cables-lines');
+      console.log(`[OPTICON] cables: enabled=${cableLayer.enabled}, hasLayer=${hasLayer}, vis=${vis}`);
       try {
-        if (map.getLayer('submarine-cables-lines')) map.setLayoutProperty('submarine-cables-lines', 'visibility', vis);
-      } catch (_) {}
+        if (hasLayer) map.setLayoutProperty('submarine-cables-lines', 'visibility', vis);
+      } catch (e) { console.error('[OPTICON] cables setVis error:', e); }
     }
 
     // Handle pipelines visibility (custom Mapbox source, not generic)
@@ -2355,8 +2358,9 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     } catch (_) {}
 
     const tryUpdate = () => {
-      if (!map.isStyleLoaded()) return false;
+      if (!map.isStyleLoaded()) { console.log('[OPTICON] military: style not loaded'); return false; }
       const source = map.getSource('military-bases-live') as mapboxgl.GeoJSONSource | undefined;
+      console.log(`[OPTICON] military tryUpdate: hasSource=${!!source}, enabled=${milLayer.enabled}, pts=${milLayer.points?.length}`);
       if (!source) return false;
 
       const features = (milLayer.points || []).map(p => ({
@@ -2365,15 +2369,19 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         properties: { label: p.label, subLabel: p.subLabel || '', color: p.color },
       }));
       source.setData({ type: 'FeatureCollection', features });
+      console.log(`[OPTICON] military: set ${features.length} features`);
 
       const visibility = milLayer.enabled ? 'visible' : 'none';
       for (const id of ['military-base-icons', 'military-base-labels', 'military-pulse-1', 'military-pulse-2', 'military-pulse-3']) {
-        try { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visibility); } catch (_) {}
+        const hasL = !!map.getLayer(id);
+        try { if (hasL) map.setLayoutProperty(id, 'visibility', visibility); } catch (e) { console.error(`[OPTICON] military ${id} vis error:`, e); }
+        console.log(`[OPTICON] military layer ${id}: exists=${hasL}, vis=${visibility}`);
       }
       return true;
     };
 
     if (!tryUpdate()) {
+      console.log('[OPTICON] military: deferred to idle');
       const handler = () => { if (tryUpdate()) map.off('idle', handler); };
       map.on('idle', handler);
       return () => { map.off('idle', handler); };
