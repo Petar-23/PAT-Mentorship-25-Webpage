@@ -65,7 +65,8 @@ export async function POST(req: Request) {
 
       try {
         // Pruefen ob schon importiert
-        const existing = await prisma.payPalSubscriber.findUnique({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const existing = await (prisma as any).payPalSubscriber.findUnique({
           where: { paypalSubscriptionId: trimmedId },
         })
 
@@ -84,7 +85,7 @@ export async function POST(req: Request) {
         const info = await getPayPalSubscription(trimmedId)
 
         // In DB speichern
-        await prisma.payPalSubscriber.create({
+        await (prisma as any).payPalSubscriber.create({
           data: {
             paypalSubscriptionId: info.id,
             paypalEmail: info.subscriberEmail,
