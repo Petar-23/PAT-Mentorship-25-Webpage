@@ -103,9 +103,12 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
     ? events.filter(e => severityFilter.has(e.severity))
     : events;
 
-  // AI Brief verified events (sorted by severity, highest first)
-  const intelItems: FeedItem[] = (aiBrief?.verifiedEvents || [])
-    .filter(e => e.verified)
+  // AI Brief verified events (sorted by severity, highest first, respects filter)
+  const allIntelItems = (aiBrief?.verifiedEvents || []).filter(e => e.verified);
+  const filteredIntel = hasFilter
+    ? allIntelItems.filter(e => severityFilter.has(e.severity))
+    : allIntelItems;
+  const intelItems: FeedItem[] = filteredIntel
     .map(e => ({ type: 'intel' as const, intel: e }));
 
   // Build unified feed: intel events first (by severity), then news
@@ -219,14 +222,34 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
               return (
                 <div
                   key={`intel-${idx}`}
+                  onClick={() => {
+                    // Create a synthetic GeoEvent to trigger flyTo on the globe
+                    if (item.intel.targetLocation) {
+                      onSelect({
+                        id: `intel-${idx}`,
+                        title: item.intel.headline,
+                        description: item.intel.headline,
+                        lat: item.intel.targetLocation.lat,
+                        lng: item.intel.targetLocation.lng,
+                        severity: item.intel.severity,
+                        category: (item.intel.type === 'strike' ? 'conflict' : item.intel.type) as 'conflict' | 'economic' | 'natural-disaster' | 'political' | 'health',
+                        source: 'AI Brief',
+                        timestamp: new Date().toISOString(),
+                        country: item.intel.targetLocation.name,
+                      });
+                    }
+                  }}
                   style={{
                     padding: '8px 12px',
                     borderLeft: `3px solid ${sevColor}`,
                     background: `${sevColor}11`,
                     borderRadius: '0 4px 4px 0',
                     marginBottom: '2px',
-                    cursor: 'default',
+                    cursor: item.intel.targetLocation ? 'pointer' : 'default',
+                    transition: 'background 0.15s',
                   }}
+                  onMouseEnter={e => { if (item.intel.targetLocation) (e.currentTarget as HTMLDivElement).style.background = `${sevColor}22`; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = `${sevColor}11`; }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                     <span style={{ fontSize: 10 }}>{typeIcon}</span>
