@@ -121,7 +121,6 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       })
       .then((data: Record<string, [number, number, string]>) => {
         airportRef.current = data;
-        console.log(`[OPTICON] Airport DB loaded: ${Object.keys(data).length} airports`);
       })
       .catch((err) => {
         console.warn('[OPTICON] Airport DB failed:', err.message);
@@ -1351,7 +1350,6 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         const dbSize = Object.keys(airportRef.current).length;
         const originData = originIata ? airportRef.current[originIata] : undefined;
         const destData = destIata ? airportRef.current[destIata] : undefined;
-        console.log(`[OPTICON] Route: origin=${originIata}(${!!originData}) dest=${destIata}(${!!destData}) dbSize=${dbSize}`);
         const originCoords: [number, number] | undefined = originData ? [originData[0], originData[1]] : undefined;
         const destCoords: [number, number] | undefined = destData ? [destData[0], destData[1]] : undefined;
 
@@ -1991,8 +1989,6 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     if (!map || !aiBrief) return;
 
     const apply = () => {
-      if (!map.isStyleLoaded()) return;
-
       // --- 1. Dynamic conflict heat → adjust conflict zone fill opacity ---
       for (const conflict of ACTIVE_CONFLICTS) {
         const heat = aiBrief.conflictHeat?.[conflict.id] || 0;
@@ -2078,8 +2074,6 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     const map = mapRef.current;
 
     const doSync = () => {
-      if (!map.isStyleLoaded()) { console.log('[OPTICON] doSync: style not loaded yet'); return false; }
-      console.log('[OPTICON] doSync: running, layers:', layers.map(l => `${l.id}:${l.enabled}`).join(', '));
 
         for (const layer of layers) {
       // aircraft/ships/military/nuclear: dedicated icon rendering + pulse rings via their own effects
@@ -2192,7 +2186,6 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
 
     // Try immediately, retry on idle if style not ready
     if (!doSync()) {
-      console.log('[OPTICON] Layer sync deferred — waiting for style');
       const handler = () => { if (doSync()) map.off('idle', handler); };
       map.on('idle', handler);
       return () => { map.off('idle', handler); };
@@ -2208,8 +2201,6 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     if (!acLayer) return;
 
     const tryUpdate = () => {
-      if (!map.isStyleLoaded()) return false;
-
       // Clean up any leftover generic circles for aircraft
       try {
         if (map.getLayer('layer-aircraft-circles')) map.removeLayer('layer-aircraft-circles');
@@ -2286,7 +2277,6 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     } catch (_) {}
 
     const tryUpdate = () => {
-      if (!map.isStyleLoaded()) return false;
       const source = map.getSource('ships-live') as mapboxgl.GeoJSONSource | undefined;
       if (!source) return false;
 
@@ -2336,9 +2326,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     } catch (_) {}
 
     const tryUpdate = () => {
-      if (!map.isStyleLoaded()) { console.log('[OPTICON] military: style not loaded'); return false; }
       const source = map.getSource('military-bases-live') as mapboxgl.GeoJSONSource | undefined;
-      console.log(`[OPTICON] military tryUpdate: hasSource=${!!source}, enabled=${milLayer.enabled}, pts=${milLayer.points?.length}`);
       if (!source) return false;
 
       const features = (milLayer.points || []).map(p => ({
@@ -2347,19 +2335,15 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         properties: { label: p.label, subLabel: p.subLabel || '', color: p.color },
       }));
       source.setData({ type: 'FeatureCollection', features });
-      console.log(`[OPTICON] military: set ${features.length} features`);
 
       const visibility = milLayer.enabled ? 'visible' : 'none';
       for (const id of ['military-base-icons', 'military-base-labels', 'military-pulse-1', 'military-pulse-2', 'military-pulse-3']) {
-        const hasL = !!map.getLayer(id);
-        try { if (hasL) map.setLayoutProperty(id, 'visibility', visibility); } catch (e) { console.error(`[OPTICON] military ${id} vis error:`, e); }
-        console.log(`[OPTICON] military layer ${id}: exists=${hasL}, vis=${visibility}`);
+        try { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visibility); } catch (_) {}
       }
       return true;
     };
 
     if (!tryUpdate()) {
-      console.log('[OPTICON] military: deferred to style.load+idle');
       const onStyleLoad = () => { tryUpdate(); };
       const onIdle = () => { if (tryUpdate()) { map.off('idle', onIdle); map.off('style.load', onStyleLoad); } };
       map.on('style.load', onStyleLoad);
@@ -2382,7 +2366,6 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     } catch (_) {}
 
     const tryUpdate = () => {
-      if (!map.isStyleLoaded()) return false;
       const source = map.getSource('nuclear-live') as mapboxgl.GeoJSONSource | undefined;
       if (!source) return false;
 
@@ -2417,7 +2400,6 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     if (!conflictLayer) return;
     const visibility = conflictLayer.enabled ? 'visible' : 'none';
     const tryUpdate = () => {
-      if (!map.isStyleLoaded()) return false;
       for (const conflict of ACTIVE_CONFLICTS) {
         try {
           if (map.getLayer(`conflict-fill-${conflict.id}`)) map.setLayoutProperty(`conflict-fill-${conflict.id}`, 'visibility', visibility);
