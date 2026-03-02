@@ -97,6 +97,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const styleReadyRef = useRef(false);
   const rotateRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isRotatingRef = useRef(true);
   const hoverPopupRef = useRef<mapboxgl.Popup | null>(null);
@@ -192,6 +193,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     mapRef.current = map;
 
     map.on('style.load', () => {
+      styleReadyRef.current = true;
       // Catppuccin atmosphere — subtle blue-tinted halo
       // @ts-ignore setFog (mapbox-gl v3)
       map.setFog({
@@ -828,7 +830,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           id: `military-pulse-${i}`,
           type: 'circle',
           source: 'military-bases-live',
-          layout: { visibility: 'visible' },
+          layout: { visibility: 'none' },
           paint: {
             'circle-radius': 6,
             'circle-color': 'transparent',
@@ -844,7 +846,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         type: 'symbol',
         source: 'military-bases-live',
         layout: {
-          visibility: 'visible',
+          visibility: 'none',
           'icon-image': 'base-icon',
           'icon-size': 0.8,
           'icon-allow-overlap': true,
@@ -858,7 +860,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         source: 'military-bases-live',
         minzoom: 4,
         layout: {
-          visibility: 'visible',
+          visibility: 'none',
           'text-field': ['get', 'label'],
           'text-size': 10,
           'text-offset': [0, 1.4],
@@ -879,7 +881,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           id: `nuclear-pulse-${i}`,
           type: 'circle',
           source: 'nuclear-live',
-          layout: { visibility: 'visible' },
+          layout: { visibility: 'none' },
           paint: {
             'circle-radius': 6,
             'circle-color': 'transparent',
@@ -895,7 +897,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         type: 'symbol',
         source: 'nuclear-live',
         layout: {
-          visibility: 'visible',
+          visibility: 'none',
           'icon-image': 'nuclear-icon',
           'icon-size': 0.7,
           'icon-allow-overlap': true,
@@ -909,7 +911,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         source: 'nuclear-live',
         minzoom: 4,
         layout: {
-          visibility: 'visible',
+          visibility: 'none',
           'text-field': ['get', 'label'],
           'text-size': 10,
           'text-offset': [0, 1.4],
@@ -987,7 +989,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             id: 'submarine-cables-lines',
             type: 'line',
             source: 'submarine-cables',
-            layout: { 'line-cap': 'round', visibility: 'visible' },
+            layout: { 'line-cap': 'round', visibility: 'none' },
             paint: {
               'line-color': ['coalesce', ['get', 'color'], '#89b4fa'],
               'line-width': 1,
@@ -1009,7 +1011,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             type: 'line',
             source: 'pipelines',
             filter: ['!', ['in', ['get', 'status'], ['literal', ['Destroyed', 'Decommissioned', 'Planned']]]],
-            layout: { 'line-cap': 'round', visibility: 'visible' },
+            layout: { 'line-cap': 'round', visibility: 'none' },
             paint: {
               'line-color': ['coalesce', ['get', 'color'], '#a6e3a1'],
               'line-width': 1.5,
@@ -1022,7 +1024,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             type: 'line',
             source: 'pipelines',
             filter: ['in', ['get', 'status'], ['literal', ['Destroyed', 'Decommissioned', 'Planned']]],
-            layout: { 'line-cap': 'round', visibility: 'visible' },
+            layout: { 'line-cap': 'round', visibility: 'none' },
             paint: {
               'line-color': ['coalesce', ['get', 'color'], '#f38ba8'],
               'line-width': 1.5,
@@ -1989,6 +1991,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     if (!map || !aiBrief) return;
 
     const apply = () => {
+      if (!styleReadyRef.current) return;
       // --- 1. Dynamic conflict heat → adjust conflict zone fill opacity ---
       for (const conflict of ACTIVE_CONFLICTS) {
         const heat = aiBrief.conflictHeat?.[conflict.id] || 0;
@@ -2074,6 +2077,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     const map = mapRef.current;
 
     const doSync = () => {
+      if (!styleReadyRef.current) return false;
 
         for (const layer of layers) {
       // aircraft/ships/military/nuclear: dedicated icon rendering + pulse rings via their own effects
@@ -2201,6 +2205,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     if (!acLayer) return;
 
     const tryUpdate = () => {
+      if (!styleReadyRef.current) return false;
       // Clean up any leftover generic circles for aircraft
       try {
         if (map.getLayer('layer-aircraft-circles')) map.removeLayer('layer-aircraft-circles');
@@ -2277,6 +2282,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     } catch (_) {}
 
     const tryUpdate = () => {
+      if (!styleReadyRef.current) return false;
       const source = map.getSource('ships-live') as mapboxgl.GeoJSONSource | undefined;
       if (!source) return false;
 
@@ -2326,6 +2332,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     } catch (_) {}
 
     const tryUpdate = () => {
+      if (!styleReadyRef.current) return false;
       const source = map.getSource('military-bases-live') as mapboxgl.GeoJSONSource | undefined;
       if (!source) return false;
 
@@ -2366,6 +2373,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     } catch (_) {}
 
     const tryUpdate = () => {
+      if (!styleReadyRef.current) return false;
       const source = map.getSource('nuclear-live') as mapboxgl.GeoJSONSource | undefined;
       if (!source) return false;
 
@@ -2400,6 +2408,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     if (!conflictLayer) return;
     const visibility = conflictLayer.enabled ? 'visible' : 'none';
     const tryUpdate = () => {
+      if (!styleReadyRef.current) return false;
       for (const conflict of ACTIVE_CONFLICTS) {
         try {
           if (map.getLayer(`conflict-fill-${conflict.id}`)) map.setLayoutProperty(`conflict-fill-${conflict.id}`, 'visibility', visibility);
