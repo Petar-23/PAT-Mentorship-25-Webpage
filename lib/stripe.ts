@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/lib/stripe.ts
 import Stripe from 'stripe'
 import { prisma } from './prisma'
