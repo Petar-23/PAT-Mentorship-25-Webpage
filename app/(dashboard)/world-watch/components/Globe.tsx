@@ -318,31 +318,54 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           data: { type: 'FeatureCollection', features: hotspotFeatures },
         });
 
-        // Diamond SDF icon for hotspot markers
-        const diamondSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><polygon points="12,2 22,12 12,22 2,12" fill="white"/></svg>`;
-        const diamondBlob = new Blob([diamondSvg], { type: 'image/svg+xml' });
-        const diamondUrl = URL.createObjectURL(diamondBlob);
-        const diamondImg = new Image(24, 24);
-        diamondImg.onload = () => {
-          if (!map.hasImage('diamond-icon')) map.addImage('diamond-icon', diamondImg, { sdf: true });
-          URL.revokeObjectURL(diamondUrl);
-        };
-        diamondImg.src = diamondUrl;
+        // Diamond SDF icons for hotspot markers (solid core + outline for pulse)
+        const diamondSolidSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><polygon points="12,2 22,12 12,22 2,12" fill="white"/></svg>`;
+        const diamondOutlineSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><polygon points="12,2 22,12 12,22 2,12" fill="none" stroke="white" stroke-width="2"/></svg>`;
 
-        // Pulse ring layers (3 diamond outlines pulsing outward)
+        // Load solid diamond
+        const solidBlob = new Blob([diamondSolidSvg], { type: 'image/svg+xml' });
+        const solidUrl = URL.createObjectURL(solidBlob);
+        const solidImg = new Image(24, 24);
+        solidImg.onload = () => {
+          if (!map.hasImage('diamond-icon')) map.addImage('diamond-icon', solidImg, { sdf: true });
+          URL.revokeObjectURL(solidUrl);
+        };
+        solidImg.src = solidUrl;
+
+        // Load outline diamond for pulse
+        const outlineBlob = new Blob([diamondOutlineSvg], { type: 'image/svg+xml' });
+        const outlineUrl = URL.createObjectURL(outlineBlob);
+        const outlineImg = new Image(24, 24);
+        outlineImg.onload = () => {
+          if (!map.hasImage('diamond-outline-icon')) map.addImage('diamond-outline-icon', outlineImg, { sdf: true });
+          URL.revokeObjectURL(outlineUrl);
+        };
+        outlineImg.src = outlineUrl;
+
+        // Hotspot color: frontlines always red (#f38ba8), others use conflict color
+        const hotspotColor: mapboxgl.Expression = [
+          'case',
+          ['==', ['get', 'type'], 'frontline'], '#f38ba8',
+          ['get', 'color'],
+        ] as any;
+
+        // Pulse diamond outlines (3 rings pulsing outward)
         for (let ring = 1; ring <= 3; ring++) {
           map.addLayer({
             id: `conflict-hotspot-pulse-${ring}`,
-            type: 'circle',
+            type: 'symbol',
             source: 'conflict-hotspots',
-            paint: {
-              'circle-radius': 6,
-              'circle-color': 'transparent',
-              'circle-stroke-width': 2,
-              'circle-stroke-color': ['get', 'color'],
-              'circle-stroke-opacity': 0.4,
+            layout: {
+              'icon-image': 'diamond-outline-icon',
+              'icon-size': 0.5,
+              'icon-allow-overlap': true,
+              'icon-ignore-placement': true,
             },
-          });
+            paint: {
+              'icon-color': hotspotColor,
+              'icon-opacity': 0.4,
+            },
+          } as any);
         }
 
         // Core diamond icon
@@ -357,7 +380,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             'icon-ignore-placement': true,
           },
           paint: {
-            'icon-color': ['get', 'color'],
+            'icon-color': hotspotColor,
             'icon-opacity': 0.9,
           },
         } as any);
@@ -951,8 +974,8 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             { phase: (t + 0.33) % 1, maxR: 20, maxO: 0.3 },
             { phase: (t + 0.66) % 1, maxR: 20, maxO: 0.2 },
           ];
-          const categories = ['military', 'nuclear', 'disaster', 'conflict-hotspot'];
-          for (const cat of categories) {
+          const circleCategories = ['military', 'nuclear', 'disaster'];
+          for (const cat of circleCategories) {
             for (let i = 0; i < 3; i++) {
               const layerId = `${cat}-pulse-${i + 1}`;
               if (!m.getLayer(layerId)) continue;
@@ -962,6 +985,16 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
                 m.setPaintProperty(layerId, 'circle-stroke-opacity', maxO * (1 - phase));
               } catch (_) {}
             }
+          }
+          // Diamond pulse for conflict hotspots (symbol layers — animate icon-size + icon-opacity)
+          for (let i = 0; i < 3; i++) {
+            const layerId = `conflict-hotspot-pulse-${i + 1}`;
+            if (!m.getLayer(layerId)) continue;
+            const { phase, maxO } = rings[i];
+            try {
+              m.setLayoutProperty(layerId, 'icon-size', 0.5 + phase * 1.2);
+              m.setPaintProperty(layerId, 'icon-opacity', maxO * (1 - phase));
+            } catch (_) {}
           }
         }, 50); // 20fps
       }
