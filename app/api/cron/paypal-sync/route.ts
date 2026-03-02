@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getPayPalSubscription } from '@/lib/paypal'
@@ -109,7 +108,7 @@ export async function GET(request: NextRequest) {
 
   const summary = { checked: 0, changed: 0, errors: 0 }
 
-  const subscribers = await (prisma as any).payPalSubscriber.findMany()
+  const subscribers = await prisma.payPalSubscriber.findMany()
   console.log(`[paypal-sync] Starting sync for ${subscribers.length} subscribers`)
 
   for (const subscriber of subscribers) {
@@ -126,7 +125,7 @@ export async function GET(request: NextRequest) {
         )
 
         // 1. Update PayPalSubscriber
-        await (prisma as any).payPalSubscriber.update({
+        await prisma.payPalSubscriber.update({
           where: { id: subscriber.id },
           data: { status: liveStatus },
         })

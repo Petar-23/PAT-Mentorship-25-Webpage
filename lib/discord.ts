@@ -8,10 +8,9 @@ function requireEnv(name: string): string {
   return value
 }
 
-// Lazy getters — avoid throwing at module-evaluation time (breaks Next.js static build)
-function getDiscordBotToken() { return requireEnv('DISCORD_BOT_TOKEN') }
-function getDiscordClientId() { return requireEnv('DISCORD_CLIENT_ID') }
-function getDiscordClientSecret() { return requireEnv('DISCORD_CLIENT_SECRET') }
+const DISCORD_BOT_TOKEN = requireEnv('DISCORD_BOT_TOKEN')
+const DISCORD_CLIENT_ID = requireEnv('DISCORD_CLIENT_ID')
+const DISCORD_CLIENT_SECRET = requireEnv('DISCORD_CLIENT_SECRET')
 
 export type DiscordOAuthTokenResponse = {
   access_token: string
@@ -39,7 +38,7 @@ export function buildDiscordAuthorizeUrl(params: {
   state: string
 }) {
   const search = new URLSearchParams({
-    client_id: getDiscordClientId(),
+    client_id: DISCORD_CLIENT_ID,
     redirect_uri: params.redirectUri,
     response_type: 'code',
     scope: 'identify guilds.join',
@@ -55,8 +54,8 @@ export async function exchangeDiscordCodeForToken(params: {
   redirectUri: string
 }): Promise<DiscordOAuthTokenResponse> {
   const body = new URLSearchParams({
-    client_id: getDiscordClientId(),
-    client_secret: getDiscordClientSecret(),
+    client_id: DISCORD_CLIENT_ID,
+    client_secret: DISCORD_CLIENT_SECRET,
     grant_type: 'authorization_code',
     code: params.code,
     redirect_uri: params.redirectUri,
@@ -91,7 +90,7 @@ export async function fetchDiscordUser(accessToken: string): Promise<DiscordUser
 
 async function discordBotFetch(path: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers)
-  headers.set('Authorization', `Bot ${getDiscordBotToken()}`)
+  headers.set('Authorization', `Bot ${DISCORD_BOT_TOKEN}`)
 
   // Wenn wir FormData senden, darf Content-Type nicht manuell gesetzt werden
   // (sonst fehlt der multipart boundary).

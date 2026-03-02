@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { auth, clerkClient } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
@@ -66,8 +65,7 @@ export async function POST(req: Request) {
 
       try {
         // Pruefen ob schon importiert
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const existing = await (prisma as any).payPalSubscriber.findUnique({
+        const existing = await prisma.payPalSubscriber.findUnique({
           where: { paypalSubscriptionId: trimmedId },
         })
 
@@ -86,7 +84,7 @@ export async function POST(req: Request) {
         const info = await getPayPalSubscription(trimmedId)
 
         // In DB speichern
-        await (prisma as any).payPalSubscriber.create({
+        await prisma.payPalSubscriber.create({
           data: {
             paypalSubscriptionId: info.id,
             paypalEmail: info.subscriberEmail,
