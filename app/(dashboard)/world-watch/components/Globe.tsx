@@ -2081,31 +2081,10 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       if (!map.isStyleLoaded()) { console.log('[OPTICON] doSync: style not loaded yet'); return false; }
       console.log('[OPTICON] doSync: running, layers:', layers.map(l => `${l.id}:${l.enabled}`).join(', '));
 
-    // Handle submarine cables visibility (custom Mapbox source, not generic)
-    const cableLayer = layers.find(l => l.id === 'cables');
-    if (cableLayer) {
-      const vis = cableLayer.enabled ? 'visible' : 'none';
-      const hasLayer = !!map.getLayer('submarine-cables-lines');
-      console.log(`[OPTICON] cables: enabled=${cableLayer.enabled}, hasLayer=${hasLayer}, vis=${vis}`);
-      try {
-        if (hasLayer) map.setLayoutProperty('submarine-cables-lines', 'visibility', vis);
-      } catch (e) { console.error('[OPTICON] cables setVis error:', e); }
-    }
-
-    // Handle pipelines visibility (custom Mapbox source, not generic)
-    const pipelineLayer = layers.find(l => l.id === 'pipelines');
-    if (pipelineLayer) {
-      const vis = pipelineLayer.enabled ? 'visible' : 'none';
-      try {
-        if (map.getLayer('pipelines-lines')) map.setLayoutProperty('pipelines-lines', 'visibility', vis);
-        if (map.getLayer('pipelines-lines-dashed')) map.setLayoutProperty('pipelines-lines-dashed', 'visibility', vis);
-      } catch (_) {}
-    }
-
-    for (const layer of layers) {
-      // Aircraft + Ships have dedicated icon rendering — skip generic circle system
-      // Cables + Pipelines have custom GeoJSON sources — skip generic arc system
-      if (layer.id === 'aircraft' || layer.id === 'ships' || layer.id === 'cables' || layer.id === 'pipelines' || layer.id === 'military' || layer.id === 'nuclear') continue;
+        for (const layer of layers) {
+      // aircraft/ships/military/nuclear: dedicated icon rendering + pulse rings via their own effects
+      // cables/pipelines: use generic arc system below (arc data is in layers.ts)
+      if (layer.id === 'aircraft' || layer.id === 'ships' || layer.id === 'military' || layer.id === 'nuclear') continue;
 
       const sourceId = `layer-${layer.id}`;
       const circleId = `layer-${layer.id}-circles`;
@@ -2283,14 +2262,11 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     };
 
     if (!tryUpdate()) {
-      // Style not loaded yet or source not ready — retry on idle
-      const handler = () => {
-        if (tryUpdate()) {
-          map.off('idle', handler);
-        }
-      };
-      map.on('idle', handler);
-      return () => { map.off('idle', handler); };
+      const onStyleLoad2 = () => { tryUpdate(); };
+      const onIdle2 = () => { if (tryUpdate()) { map.off('idle', onIdle2); map.off('style.load', onStyleLoad2); } };
+      map.on('style.load', onStyleLoad2);
+      map.on('idle', onIdle2);
+      return () => { map.off('idle', onIdle2); map.off('style.load', onStyleLoad2); };
     }
   }, [layers]); // eslint-disable-line
 
@@ -2338,9 +2314,11 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     };
 
     if (!tryUpdate()) {
-      const handler = () => { if (tryUpdate()) map.off('idle', handler); };
-      map.on('idle', handler);
-      return () => { map.off('idle', handler); };
+      const onStyleLoad3 = () => { tryUpdate(); };
+      const onIdle3 = () => { if (tryUpdate()) { map.off('idle', onIdle3); map.off('style.load', onStyleLoad3); } };
+      map.on('style.load', onStyleLoad3);
+      map.on('idle', onIdle3);
+      return () => { map.off('idle', onIdle3); map.off('style.load', onStyleLoad3); };
     }
   }, [layers]); // eslint-disable-line
 
@@ -2381,10 +2359,12 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     };
 
     if (!tryUpdate()) {
-      console.log('[OPTICON] military: deferred to idle');
-      const handler = () => { if (tryUpdate()) map.off('idle', handler); };
-      map.on('idle', handler);
-      return () => { map.off('idle', handler); };
+      console.log('[OPTICON] military: deferred to style.load+idle');
+      const onStyleLoad = () => { tryUpdate(); };
+      const onIdle = () => { if (tryUpdate()) { map.off('idle', onIdle); map.off('style.load', onStyleLoad); } };
+      map.on('style.load', onStyleLoad);
+      map.on('idle', onIdle);
+      return () => { map.off('idle', onIdle); map.off('style.load', onStyleLoad); };
     }
   }, [layers]); // eslint-disable-line
 
@@ -2421,9 +2401,11 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     };
 
     if (!tryUpdate()) {
-      const handler = () => { if (tryUpdate()) map.off('idle', handler); };
-      map.on('idle', handler);
-      return () => { map.off('idle', handler); };
+      const onStyleLoad4 = () => { tryUpdate(); };
+      const onIdle4 = () => { if (tryUpdate()) { map.off('idle', onIdle4); map.off('style.load', onStyleLoad4); } };
+      map.on('style.load', onStyleLoad4);
+      map.on('idle', onIdle4);
+      return () => { map.off('idle', onIdle4); map.off('style.load', onStyleLoad4); };
     }
   }, [layers]); // eslint-disable-line
 
@@ -2452,9 +2434,11 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       return true;
     };
     if (!tryUpdate()) {
-      const handler = () => { if (tryUpdate()) map.off('idle', handler); };
-      map.on('idle', handler);
-      return () => { map.off('idle', handler); };
+      const onStyleLoad5 = () => { tryUpdate(); };
+      const onIdle5 = () => { if (tryUpdate()) { map.off('idle', onIdle5); map.off('style.load', onStyleLoad5); } };
+      map.on('style.load', onStyleLoad5);
+      map.on('idle', onIdle5);
+      return () => { map.off('idle', onIdle5); map.off('style.load', onStyleLoad5); };
     }
   }, [layers]); // eslint-disable-line
 
