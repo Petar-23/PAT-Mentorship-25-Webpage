@@ -231,8 +231,8 @@ export default function WorldWatchClient() {
       'IRIAF','IRGC',
       // Iraq
       'IQA',
-      // China
-      'CCA','CHH','CXA',
+      // China (military only — CCA/CHH/CXA are Air China/Hainan/China Eastern commercial)
+      'PLAAF','PLAN','CBA',
       // Pakistan
       'PAF',
       // NATO
@@ -272,8 +272,8 @@ export default function WorldWatchClient() {
       // Iraq
       if (hex.startsWith('74')) return { color: '#fab387', airForce: 'IqAF (Iraq)' };
       if (cs.startsWith('IQA')) return { color: '#fab387', airForce: 'IqAF (Iraq)' };
-      // China (hostile)
-      if (['CCA','CHH','CXA'].some(p => cs.startsWith(p))) return { color: '#f38ba8', airForce: 'PLAAF (China)' };
+      // China (military only — NOT commercial airlines)
+      if (['PLAAF','PLAN','CBA'].some(p => cs.startsWith(p))) return { color: '#f38ba8', airForce: 'PLAAF (China)' };
       // Pakistan
       if (cs.startsWith('PAF')) return { color: '#fab387', airForce: 'PAF (Pakistan)' };
       // NATO

@@ -85,6 +85,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
   const disasterPopupRef = useRef<mapboxgl.Popup | null>(null);
   const newsPopupRef = useRef<mapboxgl.Popup | null>(null);
   const conflictPopupRef = useRef<mapboxgl.Popup | null>(null);
+  const hotspotPopupRef = useRef<mapboxgl.Popup | null>(null);
   const pulseIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const colors = severityColors(theme);
 
@@ -269,14 +270,22 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           },
         });
 
-        // Label visible only when zoomed out (< zoom 6)
+        // Label at conflict center point (NOT on polygon to avoid repeat rendering)
+        map.addSource(`conflict-label-pt-${conflict.id}`, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [conflict.lng, conflict.lat] },
+            properties: { label: `⚔ ${conflict.shortName}`, color: conflict.color },
+          },
+        });
         map.addLayer({
           id: `conflict-label-${conflict.id}`,
           type: 'symbol',
-          source: sourceId,
+          source: `conflict-label-pt-${conflict.id}`,
           maxzoom: 6,
           layout: {
-            'text-field': `⚔ ${conflict.shortName}`,
+            'text-field': ['get', 'label'],
             'text-size': 11,
             'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
             'text-allow-overlap': false,
@@ -309,7 +318,18 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           data: { type: 'FeatureCollection', features: hotspotFeatures },
         });
 
-        // Pulse ring layers (3 rings, same pattern as military/nuclear/disaster pulses)
+        // Diamond SDF icon for hotspot markers
+        const diamondSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><polygon points="12,2 22,12 12,22 2,12" fill="white"/></svg>`;
+        const diamondBlob = new Blob([diamondSvg], { type: 'image/svg+xml' });
+        const diamondUrl = URL.createObjectURL(diamondBlob);
+        const diamondImg = new Image(24, 24);
+        diamondImg.onload = () => {
+          if (!map.hasImage('diamond-icon')) map.addImage('diamond-icon', diamondImg, { sdf: true });
+          URL.revokeObjectURL(diamondUrl);
+        };
+        diamondImg.src = diamondUrl;
+
+        // Pulse ring layers (3 diamond outlines pulsing outward)
         for (let ring = 1; ring <= 3; ring++) {
           map.addLayer({
             id: `conflict-hotspot-pulse-${ring}`,
@@ -325,20 +345,22 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           });
         }
 
-        // Core dot
+        // Core diamond icon
         map.addLayer({
           id: 'conflict-hotspot-dots',
-          type: 'circle',
+          type: 'symbol',
           source: 'conflict-hotspots',
-          paint: {
-            'circle-radius': 4,
-            'circle-color': ['get', 'color'],
-            'circle-opacity': 0.9,
-            'circle-stroke-width': 1,
-            'circle-stroke-color': '#ffffff',
-            'circle-stroke-opacity': 0.5,
+          layout: {
+            'icon-image': 'diamond-icon',
+            'icon-size': 0.5,
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
           },
-        });
+          paint: {
+            'icon-color': ['get', 'color'],
+            'icon-opacity': 0.9,
+          },
+        } as any);
 
         // Label
         map.addLayer({
@@ -350,7 +372,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             'text-field': ['get', 'label'],
             'text-size': 9,
             'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
-            'text-offset': [0, 1.4],
+            'text-offset': [0, 1.8],
             'text-allow-overlap': false,
           },
           paint: {
@@ -361,6 +383,42 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           },
         } as any);
       }
+
+      // ─── CONFLICT HOTSPOT CLICK POPUP ─────────────────────────────────
+      hotspotPopupRef.current = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        maxWidth: '240px',
+        className: 'ww-marker-popup',
+      });
+      const hotspotPopup = hotspotPopupRef.current;
+
+      map.on('click', 'conflict-hotspot-dots', (e: any) => {
+        markerClicked = true;
+        if (!e.features?.[0]) return;
+        const props = e.features[0].properties;
+        const coords = (e.features[0].geometry as any).coordinates.slice() as [number, number];
+        const typeLabel = props.type === 'chokepoint' ? '🔒 CHOKEPOINT'
+          : props.type === 'frontline' ? '⚔ FRONTLINE' : '🎯 TARGET';
+        const typeColor = props.type === 'chokepoint' ? '#f9e2af'
+          : props.type === 'frontline' ? '#f38ba8' : '#fab387';
+
+        // Dismiss other popups
+        conflictPopupRef.current?.remove();
+        hotspotPopup.setLngLat(coords).setHTML(`
+          <div style="font-family: inherit; padding: 8px 10px; background: ${theme.mantle}ee; backdrop-filter: blur(12px); border: 1px solid ${props.color || typeColor}55; border-left: 3px solid ${props.color || typeColor}; border-radius: 6px;">
+            <div style="font-size: 10px; font-weight: 700; color: ${typeColor}; letter-spacing: 1px; margin-bottom: 3px;">${typeLabel}</div>
+            <div style="font-size: 12px; font-weight: 600; color: ${theme.text}; line-height: 1.3;">◆ ${props.label}</div>
+          </div>
+        `).addTo(map);
+      });
+
+      map.on('mouseenter', 'conflict-hotspot-dots', () => {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+      map.on('mouseleave', 'conflict-hotspot-dots', () => {
+        map.getCanvas().style.cursor = '';
+      });
 
       // ─── CONFLICT ZONE CLICK POPUP ────────────────────────────────────
       conflictPopupRef.current = new mapboxgl.Popup({
@@ -541,6 +599,32 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           filter: countryFilter,
         });
       }
+
+      // ─── SUBTLE COUNTRY NAMES (all countries) ─────────────────────────
+      map.addLayer({
+        id: 'country-names-subtle',
+        type: 'symbol',
+        source: 'country-boundaries',
+        'source-layer': 'country_boundaries',
+        minzoom: 2,
+        maxzoom: 8,
+        layout: {
+          'text-field': ['get', 'name_en'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 2, 8, 5, 11, 8, 14],
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+          'text-allow-overlap': false,
+          'text-ignore-placement': false,
+          'text-padding': 8,
+          'text-transform': 'uppercase',
+          'text-letter-spacing': 0.1,
+        },
+        paint: {
+          'text-color': theme.overlay0,
+          'text-halo-color': theme.crust,
+          'text-halo-width': 1,
+          'text-opacity': 0.35,
+        },
+      } as any);
 
       // NOTE: Generic data layers (points/arcs) are created/managed entirely
       // by the layers-sync useEffect below. Do NOT create them here in style.load
@@ -1682,6 +1766,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         // Dismiss other popups
         shipPopup.remove();
         conflictPopupRef.current?.remove();
+        hotspotPopupRef.current?.remove();
         disasterPopup.remove();
         basePopup.remove();
         nucPopup.remove();
