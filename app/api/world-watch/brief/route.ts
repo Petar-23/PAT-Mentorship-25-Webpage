@@ -19,7 +19,7 @@ export async function GET() {
   try {
     // List blobs with prefix to find the latest ai-brief
     const listRes = await fetch(
-      `https://blob.vercel-storage.com?prefix=world-watch/ai-brief&limit=1`,
+      `https://blob.vercel-storage.com?prefix=world-watch/ai-brief&limit=10`,
       {
         headers: { 'Authorization': `Bearer ${BLOB_TOKEN}` },
         next: { revalidate: 300 },
@@ -32,7 +32,11 @@ export async function GET() {
     }
 
     const listData = await listRes.json();
-    const blob = listData?.blobs?.[0];
+    // Sort by uploadedAt descending to always get the latest brief
+    const blobs = (listData?.blobs || []).sort(
+      (a: any, b: any) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+    );
+    const blob = blobs[0];
     if (!blob?.url) {
       return NextResponse.json(EMPTY_BRIEF);
     }
