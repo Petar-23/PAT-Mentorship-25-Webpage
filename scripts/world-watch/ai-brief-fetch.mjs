@@ -8,7 +8,12 @@
  * Run: node scripts/world-watch/ai-brief-fetch.mjs
  */
 
-import { writeFileSync } from 'fs';
+import { writeFileSync, existsSync } from 'fs';
+import { execFileSync } from 'child_process';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ─── RSS FEEDS (geopolitical only, no OilPrice) ───────────────────────
 const FEEDS = [
@@ -167,24 +172,50 @@ async function fetchEconCalendar() {
   return [];
 }
 
+// ─── DEEP SCRAPE (ISW, Bellingcat, Kyiv Independent via Python/httpx) ─
+async function fetchDeepScrape() {
+  const scraperPath = resolve(__dirname, 'scrape-deep.py');
+  if (!existsSync(scraperPath)) {
+    console.warn('[OPTICON] scrape-deep.py not found — skipping deep scrape');
+    return [];
+  }
+  try {
+    const output = execFileSync('python3', [scraperPath], {
+      timeout: 30000,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    const items = JSON.parse(output);
+    return items;
+  } catch (e) {
+    console.warn(`[OPTICON] Deep scrape failed: ${e.message}`);
+    return [];
+  }
+}
+
 // ─── MAIN ────────────────────────────────────────────────────────────
 async function main() {
   const t0 = Date.now();
   console.log('[OPTICON] Fetching raw data...');
 
-  const [newsItems, gdeltItems, econCalendar] = await Promise.all([
+  const [newsItems, gdeltItems, econCalendar, deepItems] = await Promise.all([
     fetchRSS(),
     fetchGDELT(),
     fetchEconCalendar(),
+    fetchDeepScrape(),
   ]);
 
-  console.log(`[OPTICON] News: ${newsItems.length} items from ${[...new Set(newsItems.map(n => n.source))].length} sources`);
+  // Merge RSS + deep scrape into single newsItems array (deep items have richer excerpt)
+  const allNews = [...newsItems, ...deepItems];
+
+  console.log(`[OPTICON] RSS: ${newsItems.length} items | Deep: ${deepItems.length} items | Total: ${allNews.length}`);
+  console.log(`[OPTICON] Sources: ${[...new Set(allNews.map(n => n.source))].join(', ')}`);
   console.log(`[OPTICON] GDELT: ${gdeltItems.length} hotspots`);
   console.log(`[OPTICON] Econ Calendar: ${econCalendar.length} high-impact events`);
 
   const output = {
     fetchedAt: new Date().toISOString(),
-    newsItems,
+    newsItems: allNews,
     gdeltItems,
     econCalendar,
   };
