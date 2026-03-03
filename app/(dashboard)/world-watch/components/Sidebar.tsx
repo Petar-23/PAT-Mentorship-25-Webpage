@@ -16,7 +16,7 @@ interface AIBriefEvent {
   sourceUrl?: string;
   verified: boolean;
   severity: 1 | 2 | 3 | 4;
-  side?: 'hostile' | 'friendly';
+  side?: 'hostile' | 'friendly' | 'neutral' | 'unknown';
   timestamp?: string;
 }
 
@@ -312,16 +312,18 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
                     })()}
                   </div>
                   <div style={{ fontSize: 13, color: theme.text, lineHeight: '1.4', marginBottom: 4, fontWeight: 500, display: 'flex', alignItems: 'flex-start', gap: 5 }}>
-                    {/* Inline NATO affiliation marker */}
-                    {item.intel.side && (
-                      <svg width="12" height="12" viewBox="0 0 16 16" style={{ flexShrink: 0, marginTop: 2 }}>
-                        {item.intel.side === 'hostile' ? (
-                          <polygon points="8,1 15,8 8,15 1,8" fill="#ef444455" stroke="#ef4444" strokeWidth="1.5" />
-                        ) : (
-                          <rect x="1" y="3" width="14" height="10" rx="1" fill="#3b82f655" stroke="#3b82f6" strokeWidth="1.5" />
-                        )}
-                      </svg>
-                    )}
+                    {/* Inline NATO APP-6 affiliation marker */}
+                    {item.intel.side && (() => {
+                      const c = item.intel.side === 'hostile' ? '#ef4444' : item.intel.side === 'friendly' ? '#3b82f6' : item.intel.side === 'neutral' ? '#22c55e' : '#eab308';
+                      return (
+                        <svg width="12" height="12" viewBox="0 0 16 16" style={{ flexShrink: 0, marginTop: 2 }}>
+                          {item.intel.side === 'hostile' && <polygon points="8,1 15,8 8,15 1,8" fill={`${c}55`} stroke={c} strokeWidth="1.5" />}
+                          {item.intel.side === 'friendly' && <rect x="1" y="3" width="14" height="10" rx="1" fill={`${c}55`} stroke={c} strokeWidth="1.5" />}
+                          {item.intel.side === 'neutral' && <rect x="2" y="2" width="12" height="12" rx="0" fill={`${c}55`} stroke={c} strokeWidth="1.5" />}
+                          {item.intel.side === 'unknown' && <circle cx="8" cy="8" r="6" fill={`${c}33`} stroke={c} strokeWidth="1.5" strokeDasharray="3 2" />}
+                        </svg>
+                      );
+                    })()}
                     <span>{item.intel.headline}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: theme.overlay0, flexWrap: 'wrap' }}>
@@ -332,29 +334,29 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
                   </div>
                   {expandedIntel === idx && (
                     <div style={{ marginTop: 6, paddingTop: 6, borderTop: `1px solid ${theme.surface0}` }}>
-                      {item.intel.side && (
-                        <div style={{ fontSize: 11, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                          {/* NATO APP-6 affiliation symbol */}
-                          <svg width="16" height="16" viewBox="0 0 16 16" style={{ flexShrink: 0 }}>
-                            {item.intel.side === 'hostile' ? (
-                              /* Hostile = Red Diamond (Raute) */
-                              <polygon points="8,1 15,8 8,15 1,8" fill="#ef444433" stroke="#ef4444" strokeWidth="1.5" />
-                            ) : (
-                              /* Friendly = Blue Rectangle */
-                              <rect x="1" y="3" width="14" height="10" rx="1" fill="#3b82f633" stroke="#3b82f6" strokeWidth="1.5" />
-                            )}
-                          </svg>
-                          <span style={{
-                            padding: '1px 6px', borderRadius: 3, fontWeight: 700, fontSize: 10,
-                            letterSpacing: '1px',
-                            background: item.intel.side === 'hostile' ? '#ef444418' : '#3b82f618',
-                            color: item.intel.side === 'hostile' ? '#ef4444' : '#3b82f6',
-                            border: `1px solid ${item.intel.side === 'hostile' ? '#ef444433' : '#3b82f633'}`,
-                          }}>
-                            {item.intel.side === 'hostile' ? 'HOSTILE' : 'FRIENDLY'}
-                          </span>
-                        </div>
-                      )}
+                      {item.intel.side && (() => {
+                        const natoConfig: Record<string, { label: string; color: string; symbol: React.ReactNode }> = {
+                          hostile:  { label: 'HOSTILE',  color: '#ef4444', symbol: <polygon points="8,1 15,8 8,15 1,8" fill="#ef444433" stroke="#ef4444" strokeWidth="1.5" /> },
+                          friendly: { label: 'FRIENDLY', color: '#3b82f6', symbol: <rect x="1" y="3" width="14" height="10" rx="1" fill="#3b82f633" stroke="#3b82f6" strokeWidth="1.5" /> },
+                          neutral:  { label: 'NEUTRAL',  color: '#22c55e', symbol: <rect x="2" y="2" width="12" height="12" rx="0" fill="#22c55e33" stroke="#22c55e" strokeWidth="1.5" /> },
+                          unknown:  { label: 'UNKNOWN',  color: '#eab308', symbol: <><circle cx="8" cy="4" r="3" fill="none" stroke="#eab308" strokeWidth="1.2" /><circle cx="12" cy="8" r="3" fill="none" stroke="#eab308" strokeWidth="1.2" /><circle cx="8" cy="12" r="3" fill="none" stroke="#eab308" strokeWidth="1.2" /><circle cx="4" cy="8" r="3" fill="none" stroke="#eab308" strokeWidth="1.2" /></> },
+                        };
+                        const cfg = natoConfig[item.intel.side] || natoConfig.unknown;
+                        return (
+                          <div style={{ fontSize: 11, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <svg width="16" height="16" viewBox="0 0 16 16" style={{ flexShrink: 0 }}>{cfg.symbol}</svg>
+                            <span style={{
+                              padding: '1px 6px', borderRadius: 3, fontWeight: 700, fontSize: 10,
+                              letterSpacing: '1px',
+                              background: `${cfg.color}18`,
+                              color: cfg.color,
+                              border: `1px solid ${cfg.color}33`,
+                            }}>
+                              {cfg.label}
+                            </span>
+                          </div>
+                        );
+                      })()}
                       <div style={{ fontSize: 11, color: theme.subtext0, marginBottom: 4 }}>
                         Sources: {item.intel.sources.join(' · ')}
                       </div>

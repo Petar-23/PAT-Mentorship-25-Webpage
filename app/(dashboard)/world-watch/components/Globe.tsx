@@ -46,8 +46,8 @@ export interface AIBriefEvent {
   sources: string[];
   verified: boolean;
   severity: 1 | 2 | 3 | 4;
-  /** 'hostile' = aggressor/adversary strike (red), 'friendly' = allied/defensive strike (green), default = hostile */
-  side?: 'hostile' | 'friendly';
+  /** NATO APP-6 affiliation: hostile=red diamond, friendly=blue rect, neutral=green square, unknown=yellow quatrefoil */
+  side?: 'hostile' | 'friendly' | 'neutral' | 'unknown';
 }
 
 export interface AIBrief {
@@ -1922,6 +1922,9 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     });
   }, [events]); // eslint-disable-line
 
+  // Ref for focus pulse marker + popup (cleaned up on next focus or unmount)
+  const focusPulseRef = useRef<{ marker: mapboxgl.Marker; popup: mapboxgl.Popup; animId: number } | null>(null);
+
   // Focus event — triggered by focusCounter to allow re-selecting same event
   useEffect(() => {
     if (!mapRef.current || !focusEvent || focusCounter === 0) return;
@@ -1929,9 +1932,17 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
 
     stopRotation();
 
+    // Clean up previous focus pulse
+    if (focusPulseRef.current) {
+      cancelAnimationFrame(focusPulseRef.current.animId);
+      focusPulseRef.current.marker.remove();
+      focusPulseRef.current.popup.remove();
+      focusPulseRef.current = null;
+    }
+
     map.flyTo({
       center: [focusEvent.lng, focusEvent.lat],
-      zoom: 4,
+      zoom: 5,
       duration: 1500,
       essential: true,
     });
@@ -1949,6 +1960,100 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         map.setPaintProperty('country-highlight-line', 'line-color', sevColor);
       }
     } catch (_) {}
+
+    // ─── FOCUS PULSE RING (animated expanding rings at event location) ────
+    const pulseEl = document.createElement('div');
+    pulseEl.style.cssText = 'width:80px;height:80px;position:relative;pointer-events:none;';
+    // 3 concentric rings
+    for (let i = 0; i < 3; i++) {
+      const ring = document.createElement('div');
+      ring.className = `focus-ring-${i}`;
+      ring.style.cssText = `
+        position:absolute;top:50%;left:50%;
+        width:10px;height:10px;
+        margin:-5px 0 0 -5px;
+        border-radius:50%;
+        border:2px solid ${sevColor};
+        opacity:0;
+        pointer-events:none;
+      `;
+      pulseEl.appendChild(ring);
+    }
+    // Center dot
+    const dot = document.createElement('div');
+    dot.style.cssText = `
+      position:absolute;top:50%;left:50%;
+      width:8px;height:8px;margin:-4px 0 0 -4px;
+      border-radius:50%;
+      background:${sevColor};
+      box-shadow:0 0 8px ${sevColor};
+    `;
+    pulseEl.appendChild(dot);
+
+    const focusMarker = new mapboxgl.Marker({ element: pulseEl, anchor: 'center' })
+      .setLngLat([focusEvent.lng, focusEvent.lat])
+      .addTo(map);
+
+    // Animate pulse rings
+    const startTime = performance.now();
+    const CYCLE = 2500;
+    let animId: number;
+    const animatePulse = () => {
+      const elapsed = performance.now() - startTime;
+      const t = (elapsed % CYCLE) / CYCLE;
+      for (let i = 0; i < 3; i++) {
+        const ring = pulseEl.querySelector(`.focus-ring-${i}`) as HTMLElement;
+        if (!ring) continue;
+        const phase = (t + i * 0.33) % 1;
+        const size = 10 + phase * 60;
+        const opacity = 0.6 * (1 - phase);
+        ring.style.width = ring.style.height = `${size}px`;
+        ring.style.margin = `${-size / 2}px 0 0 ${-size / 2}px`;
+        ring.style.opacity = `${opacity}`;
+        ring.style.borderColor = sevColor;
+      }
+      animId = requestAnimationFrame(animatePulse);
+    };
+    animId = requestAnimationFrame(animatePulse);
+
+    // ─── FOCUS POPUP (event details at location) ────────────────────────
+    const sevLabel = focusEvent.severity === 4 ? 'CRITICAL' : focusEvent.severity === 3 ? 'HIGH' : focusEvent.severity === 2 ? 'MEDIUM' : 'LOW';
+    const sourceLine = focusEvent.source && focusEvent.source !== 'AI Brief' ? `<div style="font-size:10px;color:#a6adc8;margin-top:4px;">via ${focusEvent.source}</div>` : '';
+
+    const focusPopup = new mapboxgl.Popup({
+      closeButton: true,
+      closeOnClick: false,
+      maxWidth: '300px',
+      className: 'ww-marker-popup',
+      offset: [0, -10],
+    })
+      .setLngLat([focusEvent.lng, focusEvent.lat])
+      .setHTML(`
+        <div style="font-family:'Geist Mono',monospace;padding:2px 0;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="font-size:10px;font-weight:700;color:${sevColor};letter-spacing:1px;">${sevLabel}</span>
+            <span style="font-size:10px;color:#a6adc8;">📍 ${focusEvent.country || ''}</span>
+          </div>
+          <div style="font-size:12px;font-weight:600;color:#cdd6f4;line-height:1.4;">
+            ${focusEvent.title}
+          </div>
+          ${focusEvent.description && focusEvent.description !== focusEvent.title ? `<div style="font-size:11px;color:#bac2de;margin-top:4px;line-height:1.3;">${focusEvent.description}</div>` : ''}
+          ${sourceLine}
+        </div>
+      `)
+      .addTo(map);
+
+    focusPulseRef.current = { marker: focusMarker, popup: focusPopup, animId };
+
+    // Auto-remove after 30 seconds
+    setTimeout(() => {
+      if (focusPulseRef.current?.animId === animId) {
+        cancelAnimationFrame(animId);
+        focusMarker.remove();
+        focusPopup.remove();
+        focusPulseRef.current = null;
+      }
+    }, 30000);
   }, [focusCounter]); // eslint-disable-line
 
   // Permanent country highlight — stays visible as long as a conflict event is selected
