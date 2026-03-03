@@ -311,8 +311,18 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
                       );
                     })()}
                   </div>
-                  <div style={{ fontSize: 13, color: theme.text, lineHeight: '1.4', marginBottom: 4, fontWeight: 500 }}>
-                    {item.intel.headline}
+                  <div style={{ fontSize: 13, color: theme.text, lineHeight: '1.4', marginBottom: 4, fontWeight: 500, display: 'flex', alignItems: 'flex-start', gap: 5 }}>
+                    {/* Inline NATO affiliation marker */}
+                    {item.intel.side && (
+                      <svg width="12" height="12" viewBox="0 0 16 16" style={{ flexShrink: 0, marginTop: 2 }}>
+                        {item.intel.side === 'hostile' ? (
+                          <polygon points="8,1 15,8 8,15 1,8" fill="#ef444455" stroke="#ef4444" strokeWidth="1.5" />
+                        ) : (
+                          <rect x="1" y="3" width="14" height="10" rx="1" fill="#3b82f655" stroke="#3b82f6" strokeWidth="1.5" />
+                        )}
+                      </svg>
+                    )}
+                    <span>{item.intel.headline}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: theme.overlay0, flexWrap: 'wrap' }}>
                     {item.intel.targetLocation && <span>📍 {item.intel.targetLocation.name}</span>}
@@ -323,14 +333,25 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
                   {expandedIntel === idx && (
                     <div style={{ marginTop: 6, paddingTop: 6, borderTop: `1px solid ${theme.surface0}` }}>
                       {item.intel.side && (
-                        <div style={{ fontSize: 11, marginBottom: 4 }}>
+                        <div style={{ fontSize: 11, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {/* NATO APP-6 affiliation symbol */}
+                          <svg width="16" height="16" viewBox="0 0 16 16" style={{ flexShrink: 0 }}>
+                            {item.intel.side === 'hostile' ? (
+                              /* Hostile = Red Diamond (Raute) */
+                              <polygon points="8,1 15,8 8,15 1,8" fill="#ef444433" stroke="#ef4444" strokeWidth="1.5" />
+                            ) : (
+                              /* Friendly = Blue Rectangle */
+                              <rect x="1" y="3" width="14" height="10" rx="1" fill="#3b82f633" stroke="#3b82f6" strokeWidth="1.5" />
+                            )}
+                          </svg>
                           <span style={{
-                            padding: '1px 6px', borderRadius: 3, fontWeight: 600, fontSize: 10,
-                            background: item.intel.side === 'hostile' ? '#ef444422' : '#22c55e22',
-                            color: item.intel.side === 'hostile' ? '#ef4444' : '#22c55e',
-                            border: `1px solid ${item.intel.side === 'hostile' ? '#ef444444' : '#22c55e44'}`,
+                            padding: '1px 6px', borderRadius: 3, fontWeight: 700, fontSize: 10,
+                            letterSpacing: '1px',
+                            background: item.intel.side === 'hostile' ? '#ef444418' : '#3b82f618',
+                            color: item.intel.side === 'hostile' ? '#ef4444' : '#3b82f6',
+                            border: `1px solid ${item.intel.side === 'hostile' ? '#ef444433' : '#3b82f633'}`,
                           }}>
-                            {item.intel.side === 'hostile' ? '🔴 HOSTILE' : '🟢 FRIENDLY'}
+                            {item.intel.side === 'hostile' ? 'HOSTILE' : 'FRIENDLY'}
                           </span>
                         </div>
                       )}
