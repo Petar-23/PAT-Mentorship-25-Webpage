@@ -46,6 +46,8 @@ export interface AIBriefEvent {
   sources: string[];
   verified: boolean;
   severity: 1 | 2 | 3 | 4;
+  /** 'hostile' = aggressor/adversary strike (red), 'friendly' = allied/defensive strike (green), default = hostile */
+  side?: 'hostile' | 'friendly';
 }
 
 export interface AIBrief {
@@ -1117,7 +1119,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         type: 'line',
         source: 'strike-arcs',
         paint: {
-          'line-color': ['coalesce', ['get', 'color'], '#f38ba8'],
+          'line-color': ['coalesce', ['get', 'color'], '#ef4444'],
           'line-width': 3,
           'line-opacity': 0.10,
           'line-blur': 3,
@@ -1129,7 +1131,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         type: 'line',
         source: 'strike-arcs',
         paint: {
-          'line-color': ['coalesce', ['get', 'color'], '#f38ba8'],
+          'line-color': ['coalesce', ['get', 'color'], '#ef4444'],
           'line-width': ['match', ['get', 'severity'], 4, 1.2, 3, 1, 0.8],
           'line-opacity': 0.6,
           'line-dasharray': [3, 3],
@@ -1149,7 +1151,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           'circle-radius': 12,
           'circle-color': 'transparent',
           'circle-stroke-width': 2,
-          'circle-stroke-color': '#f38ba8',
+          'circle-stroke-color': ['coalesce', ['get', 'color'], '#ef4444'],
           'circle-stroke-opacity': 0.5,
         },
       });
@@ -1163,7 +1165,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           'icon-allow-overlap': true,
         },
         paint: {
-          'icon-color': '#f38ba8',
+          'icon-color': ['coalesce', ['get', 'color'], '#ef4444'],
           'icon-opacity': 1.0,
         },
       } as any);
@@ -1179,7 +1181,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           'text-allow-overlap': false,
         },
         paint: {
-          'text-color': '#f38ba8',
+          'text-color': ['coalesce', ['get', 'color'], '#ef4444'],
           'text-halo-color': '#11111b',
           'text-halo-width': 1.5,
         },
@@ -1194,8 +1196,8 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           closeButton: false, closeOnClick: true, maxWidth: '300px', className: 'ww-marker-popup',
         });
         popup.setLngLat(coords).setHTML(`
-          <div style="font-family: inherit; padding: 10px; background: #181825ee; backdrop-filter: blur(12px); border: 1px solid #f38ba855; border-left: 3px solid #f38ba8; border-radius: 6px;">
-            <div style="font-size: 10px; font-weight: 700; color: #f38ba8; letter-spacing: 1px; margin-bottom: 4px;">🎯 STRIKE TARGET</div>
+          <div style="font-family: inherit; padding: 10px; background: #181825ee; backdrop-filter: blur(12px); border: 1px solid ${props.color || '#ef4444'}55; border-left: 3px solid ${props.color || '#ef4444'}; border-radius: 6px;">
+            <div style="font-size: 10px; font-weight: 700; color: ${props.color || '#ef4444'}; letter-spacing: 1px; margin-bottom: 4px;">🎯 ${props.side === 'friendly' ? 'ALLIED STRIKE' : 'STRIKE TARGET'}</div>
             <div style="font-size: 12px; font-weight: 600; color: #cdd6f4; margin-bottom: 4px; line-height: 1.3;">${props.headline}</div>
             <div style="font-size: 10px; color: #6c7086; margin-bottom: 4px;">📍 ${props.targetName}</div>
             <div style="font-size: 9px; color: #9399b2; border-top: 1px solid #313244; padding-top: 4px; margin-top: 4px;">
@@ -2019,7 +2021,9 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         if (!event.targetLocation?.lat || !event.targetLocation?.lng) continue;
 
         const conflict = ACTIVE_CONFLICTS.find(c => c.id === event.conflictId);
-        const color = conflict?.color || '#f38ba8';
+        // Strike color: hostile = bold red, friendly/allied = green, fallback = red
+        const side = (event as any).side || 'hostile';
+        const color = side === 'friendly' ? '#22c55e' : '#ef4444';
         targetFeatures.push({
           type: 'Feature',
           geometry: { type: 'Point', coordinates: [event.targetLocation.lng, event.targetLocation.lat] },
@@ -2028,6 +2032,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
             targetName: event.targetLocation.name,
             severity: event.severity,
             color,
+            side,
             corroboration: event.corroboration,
             sources: (event.sources || []).join(', '),
           },
