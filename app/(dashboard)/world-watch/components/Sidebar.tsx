@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import type { GeoEvent, NewsItem, ThemeColors } from '../types';
 import { EventCard } from './EventCard';
 import { severityColors } from '../styles/themes';
@@ -12,8 +13,10 @@ interface AIBriefEvent {
   targetLocation: { name: string; lat: number; lng: number } | null;
   corroboration: number;
   sources: string[];
+  sourceUrl?: string;
   verified: boolean;
   severity: 1 | 2 | 3 | 4;
+  side?: 'hostile' | 'friendly';
 }
 
 interface AIBrief {
@@ -96,6 +99,7 @@ type FeedItem =
   | { type: 'intel'; intel: AIBriefEvent };
 
 export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, onToggleSeverity, newsItems = [], onNewsSelect, aiBrief }: Props) {
+  const [expandedIntel, setExpandedIntel] = React.useState<number | null>(null);
   const colors = severityColors(theme);
 
   const hasFilter = severityFilter.size > 0;
@@ -158,7 +162,7 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
         flexShrink: 0,
       }}>
         <div style={{
-          fontSize: 13, fontWeight: 700, color: theme.subtext0,
+          fontSize: 15, fontWeight: 700, color: theme.subtext0,
           letterSpacing: '2px', marginBottom: 8,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
@@ -223,7 +227,8 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
                 <div
                   key={`intel-${idx}`}
                   onClick={() => {
-                    // Create a synthetic GeoEvent to trigger flyTo on the globe
+                    setExpandedIntel(expandedIntel === idx ? null : idx);
+                    // Also fly to location on the globe
                     if (item.intel.targetLocation) {
                       onSelect({
                         id: `intel-${idx}`,
@@ -252,9 +257,9 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
                   onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = `${sevColor}11`; }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                    <span style={{ fontSize: 10 }}>{typeIcon}</span>
+                    <span style={{ fontSize: 13 }}>{typeIcon}</span>
                     <span style={{
-                      fontSize: 9, padding: '1px 5px',
+                      fontSize: 11, padding: '2px 6px',
                       background: `${sevColor}22`,
                       border: `1px solid ${sevColor}44`,
                       borderRadius: 3, color: sevColor,
@@ -263,7 +268,7 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
                       {sevLabel}
                     </span>
                     <span style={{
-                      fontSize: 9, padding: '1px 5px',
+                      fontSize: 11, padding: '2px 6px',
                       background: `${theme.surface0}`,
                       borderRadius: 3, color: theme.subtext0,
                       fontWeight: 500, textTransform: 'uppercase',
@@ -282,15 +287,50 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 11, color: theme.text, lineHeight: '1.3', marginBottom: 3 }}>
+                  <div style={{ fontSize: 13, color: theme.text, lineHeight: '1.4', marginBottom: 4, fontWeight: 500 }}>
                     {item.intel.headline}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 9, color: theme.overlay0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: theme.overlay0, flexWrap: 'wrap' }}>
                     {item.intel.targetLocation && <span>📍 {item.intel.targetLocation.name}</span>}
                     <span style={{ marginLeft: 'auto' }}>
                       ✓ {item.intel.corroboration}/5 · {item.intel.sources.slice(0, 3).join(', ')}
                     </span>
                   </div>
+                  {expandedIntel === idx && (
+                    <div style={{ marginTop: 6, paddingTop: 6, borderTop: `1px solid ${theme.surface0}` }}>
+                      {item.intel.side && (
+                        <div style={{ fontSize: 11, marginBottom: 4 }}>
+                          <span style={{
+                            padding: '1px 6px', borderRadius: 3, fontWeight: 600, fontSize: 10,
+                            background: item.intel.side === 'hostile' ? '#ef444422' : '#22c55e22',
+                            color: item.intel.side === 'hostile' ? '#ef4444' : '#22c55e',
+                            border: `1px solid ${item.intel.side === 'hostile' ? '#ef444444' : '#22c55e44'}`,
+                          }}>
+                            {item.intel.side === 'hostile' ? '🔴 HOSTILE' : '🟢 FRIENDLY'}
+                          </span>
+                        </div>
+                      )}
+                      <div style={{ fontSize: 11, color: theme.subtext0, marginBottom: 4 }}>
+                        Sources: {item.intel.sources.join(' · ')}
+                      </div>
+                      {item.intel.sourceUrl && (
+                        <a
+                          href={item.intel.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          style={{
+                            fontSize: 11, color: theme.blue, textDecoration: 'none',
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                          }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'underline'; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'none'; }}
+                        >
+                          🔗 View Source
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })() : item.type === 'news' ? (

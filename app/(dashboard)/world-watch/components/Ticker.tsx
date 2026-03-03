@@ -53,7 +53,7 @@ export function Ticker({ events, theme, newsItems = [], aiBrief }: Props) {
 
   return (
     <div style={{
-      height: 30,
+      height: 36,
       background: theme.crust,
       borderTop: `1px solid ${theme.surface0}`,
       display: 'flex',
@@ -86,7 +86,7 @@ export function Ticker({ events, theme, newsItems = [], aiBrief }: Props) {
         alignItems: 'center',
         whiteSpace: 'nowrap',
         animation: `wwTicker ${duration}s linear infinite`,
-        fontSize: 12,
+        fontSize: 14,
       }}>
         {items.map((item, i) =>
           item.kind === 'intel' ? (
@@ -94,7 +94,7 @@ export function Ticker({ events, theme, newsItems = [], aiBrief }: Props) {
               <span style={{
                 color: colors[item.e.severity],
                 fontWeight: 700,
-                fontSize: 10,
+                fontSize: 12,
                 letterSpacing: '0.5px',
               }}>
                 {item.e.severity === 4 ? '🔴 CRITICAL' : item.e.severity === 3 ? '🟠 HIGH' : item.e.severity === 2 ? '🟡 MEDIUM' : '⚪ LOW'}
@@ -106,9 +106,9 @@ export function Ticker({ events, theme, newsItems = [], aiBrief }: Props) {
             </span>
           ) : (
             <span key={`news-${item.n.id}-${i}`}>
-              <span style={{ color: theme.blue, fontWeight: 600, fontSize: 10 }}>INTEL</span>
+              <span style={{ color: theme.blue, fontWeight: 600, fontSize: 12 }}>INTEL</span>
               {' '}
-              <span style={{ color: theme.subtext0, fontSize: 10 }}>[{item.n.source.slice(0, 18)}]</span>
+              <span style={{ color: theme.subtext0, fontSize: 12 }}>[{item.n.source.slice(0, 18)}]</span>
               {' '}
               <span style={{ color: theme.text }}>{item.n.title}</span>
               {item.n.country && <span style={{ color: theme.overlay0 }}> — {item.n.country}</span>}

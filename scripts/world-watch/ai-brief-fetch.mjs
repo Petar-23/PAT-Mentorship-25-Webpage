@@ -17,24 +17,38 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ─── RSS FEEDS (geopolitical only, no OilPrice) ───────────────────────
 const FEEDS = [
+  // Tier 1: Major wires & broadcasters
   { url: 'https://feeds.bbci.co.uk/news/world/rss.xml', source: 'BBC' },
   { url: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml', source: 'NYT' },
   { url: 'https://feeds.reuters.com/reuters/worldNews', source: 'Reuters' },
   { url: 'https://www.aljazeera.com/xml/rss/all.xml', source: 'Al Jazeera' },
+  { url: 'https://www.dw.com/rss/en/top-stories/rss-en-all', source: 'DW' },
+  // Tier 2: Military & defense
   { url: 'https://www.defenseone.com/rss/', source: 'DefenseOne' },
   { url: 'https://breakingdefense.com/feed/', source: 'BreakingDefense' },
-  { url: 'https://www.bellingcat.com/feed/', source: 'Bellingcat' },
-  { url: 'https://www.timesofisrael.com/feed/', source: 'TimesOfIsrael' },
+  { url: 'https://www.janes.com/feeds/news', source: 'Janes' },
+  { url: 'https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=945', source: 'DoD/CENTCOM' },
+  { url: 'https://www.militarytimes.com/arc/outboundfeeds/rss/?outputType=xml', source: 'MilitaryTimes' },
+  // Tier 3: Middle East & Gulf (CRITICAL for strike coverage)
   { url: 'https://english.alarabiya.net/tools/rss', source: 'AlArabiya' },
+  { url: 'https://www.timesofisrael.com/feed/', source: 'TimesOfIsrael' },
+  { url: 'https://gulfnews.com/rss/uae', source: 'GulfNews' },
+  { url: 'https://www.middleeasteye.net/rss', source: 'MiddleEastEye' },
+  { url: 'https://en.irna.ir/rssfeed', source: 'IRNA' },
+  { url: 'https://www.presstv.ir/RSS', source: 'PressTV' },
+  { url: 'https://www.arabnews.com/cat/16/rss.xml', source: 'ArabNews' },
+  // Tier 4: OSINT & investigations
+  { url: 'https://www.bellingcat.com/feed/', source: 'Bellingcat' },
   { url: 'https://www.kyivindependent.com/feed/', source: 'KyivIndependent' },
-  { url: 'https://www.dw.com/rss/en/top-stories/rss-en-all', source: 'DW' },
+  { url: 'https://www.understandingwar.org/rss.xml', source: 'ISW' },
+  // Tier 5: Think tanks & policy
   { url: 'https://thediplomat.com/feed/', source: 'Diplomat' },
   { url: 'https://www.foreignaffairs.com/rss.xml', source: 'ForeignAffairs' },
   { url: 'https://www.atlanticcouncil.org/feed/', source: 'AtlanticCouncil' },
   { url: 'https://www.crisisgroup.org/rss.xml', source: 'CrisisGroup' },
+  // Tier 6: Institutional
   { url: 'https://news.un.org/feed/subscribe/en/news/all/rss.xml', source: 'UN' },
   { url: 'https://reliefweb.int/headlines/rss.xml', source: 'ReliefWeb' },
-  { url: 'https://www.understandingwar.org/rss.xml', source: 'ISW' },
 ];
 
 // ─── FETCH RSS ───────────────────────────────────────────────────────
@@ -193,6 +207,28 @@ async function fetchDeepScrape() {
   }
 }
 
+// ─── DIFF MODE: Load previous brief headlines for dedup ──────────────
+const PREV_BRIEF_PATH = '/tmp/opticon-prev-brief.json';
+const PREV_HEADLINES_PATH = '/tmp/opticon-prev-headlines.json';
+
+function loadPreviousHeadlines() {
+  try {
+    if (existsSync(PREV_HEADLINES_PATH)) {
+      const data = JSON.parse(readFileSync(PREV_HEADLINES_PATH, 'utf-8'));
+      return new Set(data.headlines || []);
+    }
+  } catch (e) { /* ignore */ }
+  return new Set();
+}
+
+function savePreviousHeadlines(newsItems) {
+  const headlines = newsItems.map(n => n.title.toLowerCase().trim().slice(0, 80));
+  writeFileSync(PREV_HEADLINES_PATH, JSON.stringify({
+    savedAt: new Date().toISOString(),
+    headlines,
+  }));
+}
+
 // ─── MAIN ────────────────────────────────────────────────────────────
 async function main() {
   const t0 = Date.now();
@@ -213,9 +249,21 @@ async function main() {
   console.log(`[OPTICON] GDELT: ${gdeltItems.length} hotspots`);
   console.log(`[OPTICON] Econ Calendar: ${econCalendar.length} high-impact events`);
 
+  // Diff mode: identify genuinely new items
+  const prevHeadlines = loadPreviousHeadlines();
+  const newItems = allNews.filter(n => !prevHeadlines.has(n.title.toLowerCase().trim().slice(0, 80)));
+  const recycledItems = allNews.filter(n => prevHeadlines.has(n.title.toLowerCase().trim().slice(0, 80)));
+  
+  console.log('[OPTICON] Diff: ' + newItems.length + ' NEW items, ' + recycledItems.length + ' already covered');
+  
+  // Save current headlines for next run
+  savePreviousHeadlines(allNews);
+
   const output = {
     fetchedAt: new Date().toISOString(),
     newsItems: allNews,
+    newItems,           // genuinely new since last run
+    recycledCount: recycledItems.length,
     gdeltItems,
     econCalendar,
   };

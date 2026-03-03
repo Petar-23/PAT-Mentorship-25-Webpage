@@ -31,6 +31,19 @@ export function TopBar({ theme, currentTheme, setCurrentTheme }: Props) {
     weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
   }) ?? '';
 
+  const nyTime = time?.toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    hour: '2-digit', minute: '2-digit',
+    hour12: false,
+  }) ?? '--:--';
+
+  // Determine NY session status
+  const nyHour = time ? parseInt(time.toLocaleString('en-US', { timeZone: 'America/New_York', hour: '2-digit', hour12: false })) : 0;
+  const nyMin = time ? parseInt(time.toLocaleString('en-US', { timeZone: 'America/New_York', minute: '2-digit' })) : 0;
+  const nyDecimal = nyHour + nyMin / 60;
+  const sessionLabel = nyDecimal >= 9.5 && nyDecimal < 12 ? 'NY AM' : nyDecimal >= 13.5 && nyDecimal < 16 ? 'NY PM' : nyDecimal >= 8 && nyDecimal < 9.5 ? 'PRE-MKT' : nyDecimal >= 16 && nyDecimal < 17 ? 'CLOSE' : '';
+  const sessionColor = sessionLabel.includes('NY') ? theme.green : sessionLabel === 'PRE-MKT' ? theme.yellow : sessionLabel === 'CLOSE' ? theme.peach : '';
+
   const themeOptions: { value: Theme; label: string }[] = [
     { value: 'gotham', label: 'Gotham' },
     { value: 'mocha', label: 'Catppuccin Mocha' },
@@ -131,13 +144,27 @@ export function TopBar({ theme, currentTheme, setCurrentTheme }: Props) {
           <span style={{ fontSize: 10, color: theme.green, fontWeight: 700, letterSpacing: '1.5px' }}>LIVE</span>
         </div>
 
-        {/* Clock */}
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: theme.text, fontVariantNumeric: 'tabular-nums' }}>
-            {cetTime}{' '}
-            <span style={{ fontSize: 9, color: theme.overlay0 }}>CET</span>
+        {/* Clock — dual timezone */}
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: theme.subtext0, fontVariantNumeric: 'tabular-nums' }}>
+              {nyTime}{' '}
+              <span style={{ fontSize: 9, color: theme.overlay0 }}>NY</span>
+            </div>
+            {sessionLabel && (
+              <div style={{ fontSize: 9, color: sessionColor, fontWeight: 700, letterSpacing: '1px' }}>
+                {sessionLabel}
+              </div>
+            )}
           </div>
-          <div style={{ fontSize: 9, color: theme.subtext0 }}>{cetDate}</div>
+          <div style={{ width: 1, height: 28, background: theme.surface1 }} />
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: theme.text, fontVariantNumeric: 'tabular-nums' }}>
+              {cetTime}{' '}
+              <span style={{ fontSize: 9, color: theme.overlay0 }}>CET</span>
+            </div>
+            <div style={{ fontSize: 9, color: theme.subtext0 }}>{cetDate}</div>
+          </div>
         </div>
       </div>
     </div>
