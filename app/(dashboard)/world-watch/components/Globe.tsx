@@ -2210,10 +2210,9 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
 
       for (const event of (aiBrief.verifiedEvents || [])) {
         if (!event.verified) continue;
-        // Show arcs for strike events AND any event with originLocation
-        const isStrike = event.type === 'strike';
-        const hasOrigin = event.originLocation?.lat && event.originLocation?.lng;
-        if (!isStrike && !hasOrigin) continue;
+        // Arcs ONLY for kinetic strike events (missiles, drones, bombs, airstrikes)
+        // NOT for ground operations, diplomacy, arrests, deployments
+        if (event.type !== 'strike') continue;
         if (!event.targetLocation?.lat || !event.targetLocation?.lng) continue;
 
         const conflict = ACTIVE_CONFLICTS.find(c => c.id === event.conflictId);
