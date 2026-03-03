@@ -17,6 +17,7 @@ interface AIBriefEvent {
   verified: boolean;
   severity: 1 | 2 | 3 | 4;
   side?: 'hostile' | 'friendly';
+  timestamp?: string;
 }
 
 interface AIBrief {
@@ -286,6 +287,29 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
                         ⚔ {conflict.shortName}
                       </span>
                     )}
+                    {/* Time-ago indicator */}
+                    {(() => {
+                      const ts = item.intel.timestamp;
+                      if (!ts) return null;
+                      const diff = Date.now() - new Date(ts).getTime();
+                      const mins = Math.floor(diff / 60000);
+                      if (mins < 0) return null;
+                      const label = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins / 60)}h` : `${Math.floor(mins / 1440)}d`;
+                      const isHot = mins < 60;
+                      const isWarm = mins >= 60 && mins < 360;
+                      const color = isHot ? theme.red : isWarm ? theme.peach : theme.overlay0;
+                      return (
+                        <span style={{
+                          marginLeft: 'auto',
+                          fontSize: 10, fontWeight: 600, color,
+                          display: 'flex', alignItems: 'center', gap: 3,
+                          flexShrink: 0,
+                        }}>
+                          {isHot && <span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: '50%', background: theme.red, animation: 'wwBlink 1.5s ease-in-out infinite' }} />}
+                          {label} ago
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div style={{ fontSize: 13, color: theme.text, lineHeight: '1.4', marginBottom: 4, fontWeight: 500 }}>
                     {item.intel.headline}
