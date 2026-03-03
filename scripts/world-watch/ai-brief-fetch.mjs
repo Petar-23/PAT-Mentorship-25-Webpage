@@ -91,20 +91,78 @@ async function fetchRSS() {
   return allItems;
 }
 
-// ─── FETCH GDELT ─────────────────────────────────────────────────────
+// ─── FETCH GDELT EVENTS (structured military events with coordinates) ──
 async function fetchGDELT() {
   try {
-    const url = 'https://api.gdeltproject.org/api/v2/geo/geo?query=conflict%20OR%20war%20OR%20military%20OR%20attack&format=GeoJSON&maxpoints=30&timespan=6h';
-    const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
-    const data = await res.json();
-    return (data?.features || []).map(f => ({
-      title: f.properties?.html?.match(/title="([^"]+)"/)?.[1] || 'Unknown',
-      lat: f.geometry?.coordinates?.[1],
-      lng: f.geometry?.coordinates?.[0],
-      count: f.properties?.count || 0,
-    }));
+    // Get latest GDELT 2.0 Events Export (updates every 15 min)
+    const indexRes = await fetch('http://data.gdeltproject.org/gdeltv2/lastupdate.txt', {
+      signal: AbortSignal.timeout(10000),
+    });
+    const indexText = await indexRes.text();
+    const exportLine = indexText.split('\n').find(l => l.includes('.export.CSV.zip'));
+    if (!exportLine) return [];
+    const exportUrl = exportLine.trim().split(/\s+/).pop();
+
+    const zipRes = await fetch(exportUrl, { signal: AbortSignal.timeout(20000) });
+    const zipBuf = Buffer.from(await zipRes.arrayBuffer());
+
+    // Unzip in memory using child_process
+    const { execFileSync } = await import('child_process');
+    const tmpZip = '/tmp/gdelt-events.zip';
+    const tmpCsv = '/tmp/gdelt-events.csv';
+    writeFileSync(tmpZip, zipBuf);
+    execFileSync('unzip', ['-o', tmpZip, '-d', '/tmp'], { timeout: 10000 });
+    // Find extracted CSV
+    const csvFile = execFileSync('ls', ['-t', '/tmp/'], { encoding: 'utf-8' })
+      .split('\n').find(f => f.endsWith('.export.CSV'));
+    if (!csvFile) return [];
+
+    const { readFileSync: rfs } = await import('fs');
+    const csv = rfs(`/tmp/${csvFile}`, 'utf-8');
+    const lines = csv.trim().split('\n');
+
+    // GDELT 2.0 columns (1-indexed):
+    // 27: EventCode (CAMEO), 53: ActionGeo_FullName
+    // 57: ActionGeo_Lat, 58: ActionGeo_Long, 61: SOURCEURL
+    // CAMEO 18x=assault, 19x=fight/military, 20x=unconventional violence
+    const MILITARY_CAMEO = /^(18|19|20)/;
+    const events = [];
+    const seen = new Set();
+
+    for (const line of lines) {
+      const cols = line.split('\t');
+      if (cols.length < 61) continue;
+      const cameo = cols[26]; // 0-indexed
+      if (!MILITARY_CAMEO.test(cameo)) continue;
+
+      const lat = parseFloat(cols[56]);
+      const lng = parseFloat(cols[57]);
+      const location = cols[52] || '';
+      const sourceUrl = cols[60] || '';
+
+      if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) continue;
+      // Skip US domestic events (noise from US media about US topics)
+      if (location.includes('United States') && lat > 24 && lat < 50 && lng < -60) continue;
+
+      // Dedup by location (round to 0.5°)
+      const key = `${Math.round(lat*2)/2},${Math.round(lng*2)/2}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      events.push({
+        cameoCode: cameo,
+        type: cameo.startsWith('19') ? 'military_force' : cameo.startsWith('18') ? 'assault' : 'mass_violence',
+        lat, lng,
+        location,
+        sourceUrl,
+        source: 'GDELT',
+      });
+    }
+
+    console.log(`[OPTICON] GDELT Events: ${lines.length} total rows, ${events.length} military events with coords`);
+    return events;
   } catch (e) {
-    console.warn(`[OPTICON] GDELT failed: ${e.message}`);
+    console.warn(`[OPTICON] GDELT Events failed: ${e.message}`);
     return [];
   }
 }

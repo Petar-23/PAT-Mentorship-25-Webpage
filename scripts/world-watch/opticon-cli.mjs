@@ -16,12 +16,29 @@ const BLOB_STORE_URL = 'https://blob.vercel-storage.com';
 const BRIEF_PATH = 'world-watch/ai-brief.json';
 
 function getBlobToken() {
-  try {
-    return readFileSync(resolve(WORKSPACE, '.secrets/vercel-blob-token'), 'utf-8').trim();
-  } catch (e) {
-    console.error('[opticon] Cannot read Vercel Blob token:', e.message);
-    process.exit(1);
+  // Try multiple locations
+  const paths = [
+    resolve(WORKSPACE, '.secrets/vercel-blob-token'),
+    resolve(WORKSPACE, 'PAT-Mentorship-25-Webpage/.secrets/vercel-blob-token'),
+  ];
+  for (const p of paths) {
+    try { return readFileSync(p, 'utf-8').trim(); } catch (_) {}
   }
+  // Fallback: read from .env.local BLOB_READ_WRITE_TOKEN
+  const envPaths = [
+    resolve(WORKSPACE, '.env.local'),
+    resolve(WORKSPACE, 'PAT-Mentorship-25-Webpage/.env.local'),
+    resolve(import.meta.dirname, '../../.env.local'),
+  ];
+  for (const p of envPaths) {
+    try {
+      const env = readFileSync(p, 'utf-8');
+      const m = env.match(/BLOB_READ_WRITE_TOKEN=(.+)/);
+      if (m) return m[1].trim();
+    } catch (_) {}
+  }
+  console.error('[opticon] Cannot find Vercel Blob token in .secrets/ or .env.local');
+  process.exit(1);
 }
 
 async function push(jsonContent) {
