@@ -1114,27 +1114,132 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
       });
-      map.addLayer({
-        id: 'strike-arcs-glow',
-        type: 'line',
-        source: 'strike-arcs',
-        paint: {
-          'line-color': ['coalesce', ['get', 'color'], '#ef4444'],
-          'line-width': 3,
-          'line-opacity': 0.10,
-          'line-blur': 3,
+      // ─── 3D STRIKE ARC CUSTOM LAYER ──────────────────────────────────────
+      // Pure WebGL custom layer — renders elevated parabolic arcs in globe projection
+      let _arcProgram: WebGLProgram | null = null;
+      let _arcBuffer: WebGLBuffer | null = null;
+      let _arcGeoMap: mapboxgl.Map | null = null;
+      type ArcVert = { verts: Float32Array; color: [number, number, number]; lineWidth: number };
+
+      function rebuildArcData(): ArcVert[] {
+        if (!_arcGeoMap) return [];
+        const src = _arcGeoMap.getSource('strike-arcs') as any;
+        const geojson = src?._data;
+        if (!geojson?.features) return [];
+
+        const SEGMENTS = 64;
+        const PEAK_M = 80000;
+        const arcs: ArcVert[] = [];
+
+        for (const feat of geojson.features) {
+          if (feat.geometry.type !== 'LineString') continue;
+          const coords: [number, number][] = feat.geometry.coordinates;
+          if (coords.length < 2) continue;
+          const origin = coords[0];
+          const target = coords[coords.length - 1];
+          const color: string = feat.properties?.color ?? '#ef4444';
+          const severity: number = feat.properties?.severity ?? 2;
+          const lineWidth = severity >= 4 ? 2.0 : severity >= 3 ? 1.5 : 1.0;
+          const hex = color.replace('#', '');
+          const r = parseInt(hex.substring(0, 2), 16) / 255;
+          const g = parseInt(hex.substring(2, 4), 16) / 255;
+          const b = parseInt(hex.substring(4, 6), 16) / 255;
+          const mc0 = mapboxgl.MercatorCoordinate.fromLngLat({ lng: origin[0], lat: origin[1] }, 0);
+          const mc1 = mapboxgl.MercatorCoordinate.fromLngLat({ lng: target[0], lat: target[1] }, 0);
+          const dx = mc1.x - mc0.x; const dy = mc1.y - mc0.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const distScale = Math.min(1, dist / 0.05);
+          const verts = new Float32Array((SEGMENTS + 1) * 3);
+          for (let i = 0; i <= SEGMENTS; i++) {
+            const t = i / SEGMENTS;
+            const lng = origin[0] + (target[0] - origin[0]) * t;
+            const lat = origin[1] + (target[1] - origin[1]) * t;
+            const altM = PEAK_M * 4 * t * (1 - t) * distScale;
+            const mc = mapboxgl.MercatorCoordinate.fromLngLat({ lng, lat }, altM);
+            verts[i * 3 + 0] = mc.x;
+            verts[i * 3 + 1] = mc.y;
+            verts[i * 3 + 2] = mc.z ?? 0;
+          }
+          arcs.push({ verts, color: [r, g, b], lineWidth });
+        }
+        return arcs;
+      }
+
+      const arcCustomLayer: mapboxgl.CustomLayerInterface = {
+        id: 'strike-arcs-3d',
+        type: 'custom',
+        renderingMode: '3d',
+
+        onAdd(_map: mapboxgl.Map, gl: WebGLRenderingContext) {
+          _arcGeoMap = _map;
+          const vsSource = `
+            attribute vec3 a_pos;
+            uniform mat4 u_matrix;
+            void main() {
+              gl_Position = u_matrix * vec4(a_pos, 1.0);
+            }
+          `;
+          const fsSource = `
+            precision mediump float;
+            uniform vec4 u_color;
+            void main() {
+              gl_FragColor = u_color;
+            }
+          `;
+          const compile = (type: number, src: string) => {
+            const s = gl.createShader(type)!;
+            gl.shaderSource(s, src); gl.compileShader(s); return s;
+          };
+          const prog = gl.createProgram()!;
+          gl.attachShader(prog, compile(gl.VERTEX_SHADER, vsSource));
+          gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fsSource));
+          gl.linkProgram(prog);
+          _arcProgram = prog;
+          _arcBuffer = gl.createBuffer();
         },
-        layout: { 'line-cap': 'round' },
-      });
+
+        render(gl: WebGLRenderingContext, matrix: number[]) {
+          if (!_arcProgram || !_arcBuffer) return;
+          const arcs = rebuildArcData();
+          if (!arcs.length) return;
+
+          gl.useProgram(_arcProgram);
+          const uMatrix = gl.getUniformLocation(_arcProgram, 'u_matrix');
+          const uColor = gl.getUniformLocation(_arcProgram, 'u_color');
+          const aPos = gl.getAttribLocation(_arcProgram, 'a_pos');
+
+          gl.uniformMatrix4fv(uMatrix, false, matrix);
+
+          gl.bindBuffer(gl.ARRAY_BUFFER, _arcBuffer);
+          gl.enableVertexAttribArray(aPos);
+          gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);
+
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+          for (const arc of arcs) {
+            gl.bufferData(gl.ARRAY_BUFFER, arc.verts, gl.DYNAMIC_DRAW);
+            gl.uniform4f(uColor, arc.color[0], arc.color[1], arc.color[2], 0.8);
+            gl.lineWidth(arc.lineWidth);
+            gl.drawArrays(gl.LINE_STRIP, 0, arc.verts.length / 3);
+          }
+
+          gl.disableVertexAttribArray(aPos);
+          if (_arcGeoMap) _arcGeoMap.triggerRepaint();
+        },
+      };
+
+      map.addLayer(arcCustomLayer);
+
+      // Keep an invisible 2D line layer for click detection (no visual output)
       map.addLayer({
         id: 'strike-arcs-line',
         type: 'line',
         source: 'strike-arcs',
         paint: {
           'line-color': ['coalesce', ['get', 'color'], '#ef4444'],
-          'line-width': ['match', ['get', 'severity'], 4, 1.8, 3, 1.4, 1.0],
-          'line-opacity': 0.7,
-          'line-dasharray': [4, 3],
+          'line-width': ['match', ['get', 'severity'], 4, 8, 3, 6, 4],
+          'line-opacity': 0,
         },
         layout: { 'line-cap': 'round' },
       });
