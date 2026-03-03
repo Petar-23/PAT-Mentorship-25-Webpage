@@ -564,6 +564,28 @@ export default function WorldWatchClient() {
         .ww-marker-popup .mapboxgl-popup-tip {
           display: none !important;
         }
+        /* Focus popup — solid background for click-from-sidebar events */
+        .ww-focus-popup .mapboxgl-popup-content {
+          background: ${theme.mantle} !important;
+          border: 1px solid ${theme.surface1} !important;
+          border-radius: 6px !important;
+          padding: 10px 12px !important;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+          max-width: 300px !important;
+        }
+        .ww-focus-popup .mapboxgl-popup-tip {
+          border-top-color: ${theme.mantle} !important;
+        }
+        .ww-focus-popup .mapboxgl-popup-close-button {
+          color: ${theme.overlay0} !important;
+          font-size: 16px !important;
+          right: 4px !important;
+          top: 2px !important;
+        }
+        .ww-focus-popup .mapboxgl-popup-close-button:hover {
+          color: ${theme.text} !important;
+          background: transparent !important;
+        }
       `}</style>
 
       <div className="ww-root" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>

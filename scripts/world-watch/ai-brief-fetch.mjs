@@ -26,17 +26,15 @@ const FEEDS = [
   // Tier 2: Military & defense
   { url: 'https://www.defenseone.com/rss/', source: 'DefenseOne' },
   { url: 'https://breakingdefense.com/feed/', source: 'BreakingDefense' },
-  { url: 'https://www.janes.com/feeds/news', source: 'Janes' },
+  { url: 'https://www.longwarjournal.org/feed', source: 'LongWarJournal' },
   { url: 'https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=945', source: 'DoD/CENTCOM' },
   { url: 'https://www.militarytimes.com/arc/outboundfeeds/rss/?outputType=xml', source: 'MilitaryTimes' },
   // Tier 3: Middle East & Gulf (CRITICAL for strike coverage)
   { url: 'https://english.alarabiya.net/tools/rss', source: 'AlArabiya' },
   { url: 'https://www.timesofisrael.com/feed/', source: 'TimesOfIsrael' },
-  { url: 'https://gulfnews.com/rss/uae', source: 'GulfNews' },
+  { url: 'https://www.thenationalnews.com/arc/outboundfeeds/rss/?outputType=xml', source: 'TheNational' },
   { url: 'https://www.middleeasteye.net/rss', source: 'MiddleEastEye' },
-  { url: 'https://en.irna.ir/rssfeed', source: 'IRNA' },
-  { url: 'https://www.presstv.ir/RSS', source: 'PressTV' },
-  { url: 'https://www.arabnews.com/cat/16/rss.xml', source: 'ArabNews' },
+  { url: 'https://english.aawsat.com/feed', source: 'AsharqAlAwsat' },
   // Tier 4: OSINT & investigations
   { url: 'https://www.bellingcat.com/feed/', source: 'Bellingcat' },
   { url: 'https://www.kyivindependent.com/feed/', source: 'KyivIndependent' },

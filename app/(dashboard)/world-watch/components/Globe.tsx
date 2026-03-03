@@ -2016,32 +2016,46 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     };
     animId = requestAnimationFrame(animatePulse);
 
+    // ─── DISMISS ALL OTHER POPUPS (prevent overlap) ────────────────────
+    [hoverPopupRef, militaryPopupRef, nuclearPopupRef, cableClickPopupRef,
+     pipelineClickPopupRef, disasterPopupRef, newsPopupRef, conflictPopupRef,
+     hotspotPopupRef].forEach(ref => { try { ref.current?.remove(); } catch (_) {} });
+
     // ─── FOCUS POPUP (event details at location) ────────────────────────
     const sevLabel = focusEvent.severity === 4 ? 'CRITICAL' : focusEvent.severity === 3 ? 'HIGH' : focusEvent.severity === 2 ? 'MEDIUM' : 'LOW';
     const sourceLine = focusEvent.source && focusEvent.source !== 'AI Brief' ? `<div style="font-size:10px;color:#a6adc8;margin-top:4px;">via ${focusEvent.source}</div>` : '';
 
     const focusPopup = new mapboxgl.Popup({
       closeButton: true,
-      closeOnClick: false,
+      closeOnClick: true,
       maxWidth: '300px',
-      className: 'ww-marker-popup',
-      offset: [0, -10],
+      className: 'ww-focus-popup',
+      offset: [0, -20],
     })
       .setLngLat([focusEvent.lng, focusEvent.lat])
       .setHTML(`
-        <div style="font-family:'Geist Mono',monospace;padding:2px 0;">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-            <span style="font-size:10px;font-weight:700;color:${sevColor};letter-spacing:1px;">${sevLabel}</span>
-            <span style="font-size:10px;color:#a6adc8;">📍 ${focusEvent.country || ''}</span>
+        <div style="font-family:'Geist Mono',monospace;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:700;color:${sevColor};letter-spacing:1px;">${sevLabel}</span>
+            <span style="font-size:11px;color:#a6adc8;">📍 ${focusEvent.country || ''}</span>
           </div>
-          <div style="font-size:12px;font-weight:600;color:#cdd6f4;line-height:1.4;">
+          <div style="font-size:13px;font-weight:600;color:#cdd6f4;line-height:1.4;">
             ${focusEvent.title}
           </div>
-          ${focusEvent.description && focusEvent.description !== focusEvent.title ? `<div style="font-size:11px;color:#bac2de;margin-top:4px;line-height:1.3;">${focusEvent.description}</div>` : ''}
+          ${focusEvent.description && focusEvent.description !== focusEvent.title ? `<div style="font-size:11px;color:#bac2de;margin-top:6px;line-height:1.4;">${focusEvent.description}</div>` : ''}
           ${sourceLine}
         </div>
       `)
       .addTo(map);
+
+    // When popup is closed manually, also remove the pulse marker
+    focusPopup.on('close', () => {
+      if (focusPulseRef.current?.popup === focusPopup) {
+        cancelAnimationFrame(focusPulseRef.current.animId);
+        focusPulseRef.current.marker.remove();
+        focusPulseRef.current = null;
+      }
+    });
 
     focusPulseRef.current = { marker: focusMarker, popup: focusPopup, animId };
 
