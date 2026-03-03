@@ -1192,16 +1192,32 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         if (!e.features?.[0]) return;
         const props = e.features[0].properties;
         const coords = (e.features[0].geometry as any).coordinates.slice() as [number, number];
+        const isHostile = props.side === 'hostile';
+        const isFriendly = props.side === 'friendly';
+        const sideColor = isFriendly ? '#89b4fa' : isHostile ? '#ef4444' : '#a6adc8';
+        const natoSvg = isHostile
+          ? `<svg width="12" height="12" viewBox="0 0 14 14"><polygon points="7,0 14,7 7,14 0,7" fill="${sideColor}" opacity="0.9"/></svg>`
+          : isFriendly
+          ? `<svg width="12" height="9" viewBox="0 0 14 11"><rect width="14" height="11" rx="1" fill="${sideColor}" opacity="0.9"/></svg>`
+          : `<svg width="12" height="12" viewBox="0 0 14 14"><rect x="1" y="1" width="12" height="12" rx="1" fill="none" stroke="${sideColor}" stroke-width="2"/></svg>`;
+        // Dismiss other popups first
+        document.querySelectorAll('.ww-focus-popup, .ww-marker-popup').forEach(el => {
+          const parent = el.closest('.mapboxgl-popup');
+          if (parent) parent.remove();
+        });
         const popup = new mapboxgl.Popup({
-          closeButton: false, closeOnClick: true, maxWidth: '300px', className: 'ww-marker-popup',
+          closeButton: true, closeOnClick: true, maxWidth: '300px', className: 'ww-focus-popup',
         });
         popup.setLngLat(coords).setHTML(`
-          <div style="font-family: inherit; padding: 10px; background: #181825ee; backdrop-filter: blur(12px); border: 1px solid ${props.color || '#ef4444'}55; border-left: 3px solid ${props.color || '#ef4444'}; border-radius: 6px;">
-            <div style="font-size: 10px; font-weight: 700; color: ${props.color || '#ef4444'}; letter-spacing: 1px; margin-bottom: 4px;">🎯 ${props.side === 'friendly' ? 'ALLIED STRIKE' : 'STRIKE TARGET'}</div>
+          <div style="font-family: 'GeistMono', monospace; padding: 10px; background: #181825; border: 1px solid ${sideColor}44; border-left: 3px solid ${sideColor}; border-radius: 6px;">
+            <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 4px;">
+              ${natoSvg}
+              <span style="font-size: 10px; font-weight: 700; color: ${sideColor}; letter-spacing: 1px;">${isFriendly ? 'ALLIED STRIKE' : 'STRIKE TARGET'}</span>
+            </div>
             <div style="font-size: 12px; font-weight: 600; color: #cdd6f4; margin-bottom: 4px; line-height: 1.3;">${props.headline}</div>
-            <div style="font-size: 10px; color: #6c7086; margin-bottom: 4px;">📍 ${props.targetName}</div>
+            <div style="font-size: 10px; color: #6c7086; margin-bottom: 4px;">${props.targetName}</div>
             <div style="font-size: 9px; color: #9399b2; border-top: 1px solid #313244; padding-top: 4px; margin-top: 4px;">
-              Corroboration: ${props.corroboration}/5 · Sources: ${props.sources}
+              Corroboration: ${props.corroboration}/5 · ${props.sources}
             </div>
           </div>
         `).addTo(map);
@@ -1210,33 +1226,56 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       map.on('mouseleave', 'strike-target-icon', () => { map.getCanvas().style.cursor = ''; });
 
       // ─── STRIKE ARC CLICK POPUP ───────────────────────────────────────
+      let arcPopup: mapboxgl.Popup | null = null;
       map.on('click', 'strike-arcs-line', (e: any) => {
         if (!e.features?.[0]) return;
+        e.originalEvent?.stopPropagation?.();
         const props = e.features[0].properties;
-        const color = props.color || '#ef4444';
-        const sideLabel = props.side === 'friendly' ? '🟢 ALLIED STRIKE' : props.side === 'hostile' ? '🔴 HOSTILE STRIKE' : '⚠️ STRIKE';
-        const sideColor = props.side === 'friendly' ? '#22c55e' : '#ef4444';
+
+        // NATO APP-6 colors + inline SVG symbols
+        const isHostile = props.side === 'hostile';
+        const isFriendly = props.side === 'friendly';
+        const sideColor = isFriendly ? '#89b4fa' : isHostile ? '#ef4444' : '#a6adc8';
+        const natoSymbol = isHostile
+          ? `<svg width="14" height="14" viewBox="0 0 14 14"><polygon points="7,0 14,7 7,14 0,7" fill="${sideColor}" opacity="0.9"/></svg>`
+          : isFriendly
+          ? `<svg width="14" height="11" viewBox="0 0 14 11"><rect width="14" height="11" rx="1" fill="${sideColor}" opacity="0.9"/></svg>`
+          : `<svg width="14" height="14" viewBox="0 0 14 14"><rect x="1" y="1" width="12" height="12" rx="1" fill="none" stroke="${sideColor}" stroke-width="2"/></svg>`;
+        const sideLabel = isHostile ? 'HOSTILE STRIKE' : isFriendly ? 'ALLIED STRIKE' : 'STRIKE';
         const ts = props.timestamp ? new Date(props.timestamp).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC' : '';
-        const popup = new mapboxgl.Popup({
-          closeButton: true, closeOnClick: true, maxWidth: '320px', className: 'ww-focus-popup',
+
+        // Dismiss ALL existing popups (focus, marker, disaster, previous arc)
+        if (arcPopup) { arcPopup.remove(); arcPopup = null; }
+        // Remove focus popup + pulse markers
+        document.querySelectorAll('.ww-focus-popup, .ww-marker-popup').forEach(el => {
+          const parent = el.closest('.mapboxgl-popup');
+          if (parent) parent.remove();
         });
-        popup.setLngLat(e.lngLat).setHTML(`
-          <div style="font-family: 'GeistMono', monospace; padding: 12px; background: #181825; border: 1px solid ${sideColor}55; border-left: 3px solid ${sideColor}; border-radius: 6px;">
-            <div style="font-size: 10px; font-weight: 700; color: ${sideColor}; letter-spacing: 1px; margin-bottom: 6px;">${sideLabel}</div>
+
+        arcPopup = new mapboxgl.Popup({
+          closeButton: true, closeOnClick: true, maxWidth: '320px', className: 'ww-focus-popup',
+          offset: 15,
+        });
+        arcPopup.setLngLat(e.lngLat).setHTML(`
+          <div style="font-family: 'GeistMono', monospace; padding: 12px; background: #181825; border: 1px solid ${sideColor}44; border-left: 3px solid ${sideColor}; border-radius: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+              ${natoSymbol}
+              <span style="font-size: 10px; font-weight: 700; color: ${sideColor}; letter-spacing: 1px;">${sideLabel}</span>
+            </div>
             <div style="font-size: 12px; font-weight: 600; color: #cdd6f4; margin-bottom: 8px; line-height: 1.3;">${props.headline}</div>
             <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-              <span style="font-size: 10px; color: ${sideColor};">▶ FROM:</span>
-              <span style="font-size: 11px; color: #a6adc8; font-weight: 500;">${props.originName}</span>
+              <span style="font-size: 10px; color: ${sideColor}; font-weight: 600;">FROM</span>
+              <span style="font-size: 11px; color: #a6adc8;">${props.originName}</span>
             </div>
             <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
-              <span style="font-size: 10px; color: ${sideColor};">▶ TO:</span>
-              <span style="font-size: 11px; color: #a6adc8; font-weight: 500;">${props.targetName}</span>
+              <span style="font-size: 10px; color: ${sideColor}; font-weight: 600;">TO</span>
+              <span style="font-size: 11px; color: #a6adc8;">${props.targetName}</span>
             </div>
-            ${ts ? `<div style="font-size: 9px; color: #6c7086; margin-bottom: 4px;">🕐 ${ts}</div>` : ''}
-            <div style="font-size: 9px; color: #9399b2; border-top: 1px solid #313244; padding-top: 4px; margin-top: 4px;">
-              Corroboration: ${props.corroboration}/5 · Sources: ${props.sources}
+            ${ts ? `<div style="font-size: 9px; color: #6c7086; margin-bottom: 6px;">${ts}</div>` : ''}
+            <div style="font-size: 9px; color: #9399b2; border-top: 1px solid #313244; padding-top: 4px;">
+              Corroboration: ${props.corroboration}/5 · ${props.sources}
             </div>
-            ${props.sourceUrl ? `<div style="margin-top: 4px;"><a href="${props.sourceUrl}" target="_blank" rel="noopener" style="font-size: 9px; color: ${sideColor}; text-decoration: none;">🔗 View Source →</a></div>` : ''}
+            ${props.sourceUrl ? `<a href="${props.sourceUrl}" target="_blank" rel="noopener" style="display: block; font-size: 9px; color: ${sideColor}; text-decoration: none; margin-top: 4px;">View Source →</a>` : ''}
           </div>
         `).addTo(map);
       });
@@ -2178,9 +2217,9 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         if (!event.targetLocation?.lat || !event.targetLocation?.lng) continue;
 
         const conflict = ACTIVE_CONFLICTS.find(c => c.id === event.conflictId);
-        // Strike color: hostile = bold red, friendly/allied = green, fallback = red
+        // NATO APP-6 colors: friendly = blue, hostile = red, neutral = green, unknown = yellow
         const side = (event as any).side || 'hostile';
-        const color = side === 'friendly' ? '#22c55e' : '#ef4444';
+        const color = side === 'friendly' ? '#89b4fa' : side === 'neutral' ? '#a6e3a1' : side === 'unknown' ? '#f9e2af' : '#ef4444';
         targetFeatures.push({
           type: 'Feature',
           geometry: { type: 'Point', coordinates: [event.targetLocation.lng, event.targetLocation.lat] },
@@ -2198,25 +2237,15 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         if (event.originLocation?.lat && event.originLocation?.lng) {
           const origin = [event.originLocation.lng, event.originLocation.lat];
           const target = [event.targetLocation.lng, event.targetLocation.lat];
-          // Generate great-circle-like curved arc (not straight line)
+          // Straight interpolated points — on Mapbox globe projection these
+          // automatically follow a great-circle path and look naturally curved in 3D
           const arcCoords: [number, number][] = [];
-          const steps = 50;
-          const dx = target[0] - origin[0];
-          const dy = target[1] - origin[1];
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          // Arc height proportional to distance (more curve for longer arcs)
-          const arcHeight = Math.min(dist * 0.15, 8);
+          const steps = 40;
           for (let i = 0; i <= steps; i++) {
             const t = i / steps;
-            const lng = origin[0] + dx * t;
-            const lat = origin[1] + dy * t;
-            // Parabolic arc offset perpendicular to the line
-            const arcOffset = arcHeight * Math.sin(t * Math.PI);
-            // Offset perpendicular: rotate 90° from direction
-            const angle = Math.atan2(dy, dx) + Math.PI / 2;
             arcCoords.push([
-              lng + Math.cos(angle) * arcOffset * 0.3,
-              lat + Math.sin(angle) * arcOffset,
+              origin[0] + (target[0] - origin[0]) * t,
+              origin[1] + (target[1] - origin[1]) * t,
             ]);
           }
           strikeFeatures.push({
