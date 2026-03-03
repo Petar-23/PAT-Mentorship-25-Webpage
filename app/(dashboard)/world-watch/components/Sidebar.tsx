@@ -323,11 +323,25 @@ export function Sidebar({ events, selectedId, onSelect, theme, severityFilter, o
                     border: `1px solid ${theme.blue}33`,
                     borderRadius: 3, color: theme.blue,
                     fontWeight: 600, letterSpacing: '0.5px',
-                    maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    flexShrink: 0,
                   }}>
                     {item.news.source.slice(0, 24)}
                   </span>
-                  <span style={{ fontSize: 9, color: theme.overlay0, marginLeft: 'auto', flexShrink: 0 }}>
+                  {item.news.corroboration !== undefined && (
+                    <span style={{
+                      fontSize: 8, padding: '1px 6px',
+                      borderRadius: 10,
+                      fontWeight: 700, letterSpacing: '0.5px',
+                      flexShrink: 0,
+                      color: item.news.corroboration >= 2 ? '#22c55e' : '#f9e2af',
+                      border: `1px solid ${item.news.corroboration >= 2 ? '#22c55e44' : '#f9e2af44'}`,
+                      background: item.news.corroboration >= 2 ? '#22c55e11' : '#f9e2af11',
+                    }}>
+                      {item.news.corroboration >= 2 ? '✓ VERIFIED' : '? UNVERIFIED'}
+                    </span>
+                  )}
+                  <span style={{ fontSize: 9, color: theme.overlay0, marginLeft: 'auto', flexShrink: 0, fontFamily: 'inherit' }}>
                     {formatTimeAgo(item.news.pubDate)}
                   </span>
                 </div>

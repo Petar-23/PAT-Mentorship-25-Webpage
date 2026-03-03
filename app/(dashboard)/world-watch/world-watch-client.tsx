@@ -12,6 +12,7 @@ import { EconCalendar } from './components/EconCalendar';
 import { LayerPanel } from './components/LayerPanel';
 import { MiniCalendar } from './components/MiniCalendar';
 import { MarketsPanel } from './components/MarketsPanel';
+import { ToastSystem } from './components/ToastSystem';
 
 import type { GlobeHandle, AircraftInfo } from './components/Globe';
 
@@ -782,6 +783,9 @@ export default function WorldWatchClient() {
 
         {/* Bottom Ticker */}
         <Ticker events={layerFilteredEvents} theme={theme} newsItems={newsItems} aiBrief={aiBrief} />
+
+        {/* Toast Notifications — high-severity AI Brief events */}
+        <ToastSystem aiBrief={aiBrief} theme={theme} onEventFocus={handleSelectEvent} />
 
         {/* Status Bar */}
         <div style={{

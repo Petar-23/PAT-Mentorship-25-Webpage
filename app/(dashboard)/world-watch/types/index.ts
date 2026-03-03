@@ -89,6 +89,7 @@ export interface NewsItem {
   lng: number | null;
   country: string;
   conflictId: string | null;
+  corroboration?: number;
 }
 
 export const SEVERITY_LABELS: Record<number, string> = {
