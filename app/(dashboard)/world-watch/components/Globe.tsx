@@ -2069,10 +2069,13 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       // (pulse animation handled by the existing animation loop via 'strike-target-pulse' layer check)
     };
 
-    if (map.isStyleLoaded()) {
+    if (styleReadyRef.current) {
       apply();
     } else {
-      map.once('style.load', apply);
+      // Brief arrived before style.load — wait for it, then apply
+      const onReady = () => { apply(); };
+      map.once('style.load', onReady);
+      return () => { map.off('style.load', onReady); };
     }
   }, [aiBrief, theme]); // eslint-disable-line
 
