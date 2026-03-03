@@ -1132,9 +1132,9 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         source: 'strike-arcs',
         paint: {
           'line-color': ['coalesce', ['get', 'color'], '#ef4444'],
-          'line-width': ['match', ['get', 'severity'], 4, 1.2, 3, 1, 0.8],
-          'line-opacity': 0.6,
-          'line-dasharray': [3, 3],
+          'line-width': ['match', ['get', 'severity'], 4, 1.8, 3, 1.4, 1.0],
+          'line-opacity': 0.7,
+          'line-dasharray': [4, 3],
         },
         layout: { 'line-cap': 'round' },
       });
@@ -1208,6 +1208,40 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       });
       map.on('mouseenter', 'strike-target-icon', () => { map.getCanvas().style.cursor = 'pointer'; });
       map.on('mouseleave', 'strike-target-icon', () => { map.getCanvas().style.cursor = ''; });
+
+      // ─── STRIKE ARC CLICK POPUP ───────────────────────────────────────
+      map.on('click', 'strike-arcs-line', (e: any) => {
+        if (!e.features?.[0]) return;
+        const props = e.features[0].properties;
+        const color = props.color || '#ef4444';
+        const sideLabel = props.side === 'friendly' ? '🟢 ALLIED STRIKE' : props.side === 'hostile' ? '🔴 HOSTILE STRIKE' : '⚠️ STRIKE';
+        const sideColor = props.side === 'friendly' ? '#22c55e' : '#ef4444';
+        const ts = props.timestamp ? new Date(props.timestamp).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC' : '';
+        const popup = new mapboxgl.Popup({
+          closeButton: true, closeOnClick: true, maxWidth: '320px', className: 'ww-focus-popup',
+        });
+        popup.setLngLat(e.lngLat).setHTML(`
+          <div style="font-family: 'GeistMono', monospace; padding: 12px; background: #181825; border: 1px solid ${sideColor}55; border-left: 3px solid ${sideColor}; border-radius: 6px;">
+            <div style="font-size: 10px; font-weight: 700; color: ${sideColor}; letter-spacing: 1px; margin-bottom: 6px;">${sideLabel}</div>
+            <div style="font-size: 12px; font-weight: 600; color: #cdd6f4; margin-bottom: 8px; line-height: 1.3;">${props.headline}</div>
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+              <span style="font-size: 10px; color: ${sideColor};">▶ FROM:</span>
+              <span style="font-size: 11px; color: #a6adc8; font-weight: 500;">${props.originName}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+              <span style="font-size: 10px; color: ${sideColor};">▶ TO:</span>
+              <span style="font-size: 11px; color: #a6adc8; font-weight: 500;">${props.targetName}</span>
+            </div>
+            ${ts ? `<div style="font-size: 9px; color: #6c7086; margin-bottom: 4px;">🕐 ${ts}</div>` : ''}
+            <div style="font-size: 9px; color: #9399b2; border-top: 1px solid #313244; padding-top: 4px; margin-top: 4px;">
+              Corroboration: ${props.corroboration}/5 · Sources: ${props.sources}
+            </div>
+            ${props.sourceUrl ? `<div style="margin-top: 4px;"><a href="${props.sourceUrl}" target="_blank" rel="noopener" style="font-size: 9px; color: ${sideColor}; text-decoration: none;">🔗 View Source →</a></div>` : ''}
+          </div>
+        `).addTo(map);
+      });
+      map.on('mouseenter', 'strike-arcs-line', () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', 'strike-arcs-line', () => { map.getCanvas().style.cursor = ''; });
     });
 
     // Click: marker stops rotation + highlights; empty space clears
@@ -2136,7 +2170,11 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       const targetFeatures: any[] = [];
 
       for (const event of (aiBrief.verifiedEvents || [])) {
-        if (!event.verified || event.type !== 'strike') continue;
+        if (!event.verified) continue;
+        // Show arcs for strike events AND any event with originLocation
+        const isStrike = event.type === 'strike';
+        const hasOrigin = event.originLocation?.lat && event.originLocation?.lng;
+        if (!isStrike && !hasOrigin) continue;
         if (!event.targetLocation?.lat || !event.targetLocation?.lng) continue;
 
         const conflict = ACTIVE_CONFLICTS.find(c => c.id === event.conflictId);
@@ -2160,20 +2198,42 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
         if (event.originLocation?.lat && event.originLocation?.lng) {
           const origin = [event.originLocation.lng, event.originLocation.lat];
           const target = [event.targetLocation.lng, event.targetLocation.lat];
+          // Generate great-circle-like curved arc (not straight line)
           const arcCoords: [number, number][] = [];
-          const steps = 40;
+          const steps = 50;
+          const dx = target[0] - origin[0];
+          const dy = target[1] - origin[1];
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          // Arc height proportional to distance (more curve for longer arcs)
+          const arcHeight = Math.min(dist * 0.15, 8);
           for (let i = 0; i <= steps; i++) {
             const t = i / steps;
+            const lng = origin[0] + dx * t;
+            const lat = origin[1] + dy * t;
+            // Parabolic arc offset perpendicular to the line
+            const arcOffset = arcHeight * Math.sin(t * Math.PI);
+            // Offset perpendicular: rotate 90° from direction
+            const angle = Math.atan2(dy, dx) + Math.PI / 2;
             arcCoords.push([
-              origin[0] + (target[0] - origin[0]) * t,
-              origin[1] + (target[1] - origin[1]) * t,
+              lng + Math.cos(angle) * arcOffset * 0.3,
+              lat + Math.sin(angle) * arcOffset,
             ]);
           }
           strikeFeatures.push({
             type: 'Feature',
             geometry: { type: 'LineString', coordinates: arcCoords },
-            properties: { color, severity: event.severity, headline: event.headline,
-              originName: event.originLocation.name, targetName: event.targetLocation.name },
+            properties: {
+              color,
+              severity: event.severity,
+              headline: event.headline,
+              side,
+              originName: event.originLocation.name,
+              targetName: event.targetLocation.name,
+              sources: (event.sources || []).join(', '),
+              sourceUrl: (event as any).sourceUrl || '',
+              timestamp: (event as any).timestamp || '',
+              corroboration: event.corroboration || 0,
+            },
           });
         }
       }
