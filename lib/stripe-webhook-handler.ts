@@ -61,6 +61,28 @@ async function upsertUserSubscription(params: {
   const { userId, stripeCustomerId, subscription } = params
 
   const priceIds = getPriceIdsFromSubscription(subscription)
+  const stripeStatus = subscription.status
+
+  // Guard: If Stripe is reporting a non-active status (canceled, past_due, etc.),
+  // check if the user has an active PayPal subscription. If so, preserve 'active'
+  // status so PayPal access isn't overwritten by a stale Stripe webhook.
+  let effectiveStatus = stripeStatus
+  if (stripeStatus !== 'active' && stripeStatus !== 'trialing') {
+    try {
+      const paypalSub = await prisma.payPalSubscriber.findUnique({
+        where: { userId },
+        select: { status: true },
+      })
+      if (paypalSub?.status === 'ACTIVE') {
+        effectiveStatus = 'active'
+        console.log(
+          `[stripe-webhook] User ${userId} has active PayPal sub — preserving 'active' status despite Stripe '${stripeStatus}'`
+        )
+      }
+    } catch (err) {
+      console.error('[stripe-webhook] PayPal guard check failed:', err)
+    }
+  }
 
   await prisma.userSubscription.upsert({
     where: { userId },
@@ -68,7 +90,7 @@ async function upsertUserSubscription(params: {
       userId,
       stripeCustomerId,
       stripeSubscriptionId: subscription.id,
-      status: subscription.status,
+      status: effectiveStatus,
       cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
       currentPeriodEnd: unixToDate(subscription.current_period_end),
       cancelAt: unixToDate(subscription.cancel_at),
@@ -77,10 +99,14 @@ async function upsertUserSubscription(params: {
     update: {
       stripeCustomerId,
       stripeSubscriptionId: subscription.id,
-      status: subscription.status,
-      cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
+      status: effectiveStatus,
+      cancelAtPeriodEnd: effectiveStatus === 'active' && stripeStatus !== 'active'
+        ? false  // Don't mark as canceling if PayPal keeps it active
+        : Boolean(subscription.cancel_at_period_end),
       currentPeriodEnd: unixToDate(subscription.current_period_end),
-      cancelAt: unixToDate(subscription.cancel_at),
+      cancelAt: effectiveStatus === 'active' && stripeStatus !== 'active'
+        ? null
+        : unixToDate(subscription.cancel_at),
       priceIds,
     },
   })
