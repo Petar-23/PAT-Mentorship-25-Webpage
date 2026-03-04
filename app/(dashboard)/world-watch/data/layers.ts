@@ -1,4 +1,4 @@
-import type { DataLayer, LayerPoint, LayerArc } from '../types';
+import type { DataLayer, LayerPoint, LayerArc, LayerPolygon } from '../types';
 
 // ─── MILITARY BASES ───────────────────────────────────────────────────────────
 const militaryBases: LayerPoint[] = [
@@ -172,6 +172,10 @@ const underseaCables: LayerArc[] = [
   { id: 'uc-020', startLat: 51.50, startLng: -0.13, endLat: 25.20, endLng: 55.27, label: 'SMW3 West', color: '#94e2d5' },
 ];
 
+// ─── AIRSPACE CLOSURES ───────────────────────────────────────────────────────
+// Populated from /api/world-watch/notams by world-watch-client.tsx
+const airspacePolygons: LayerPolygon[] = [];
+
 // ─── SHIP TRACKING ────────────────────────────────────────────────────────────
 // Placeholder — will be populated by live AIS data in future
 const shipPositions: LayerPoint[] = [];
@@ -254,5 +258,10 @@ export const defaultLayers: DataLayer[] = [
     id: 'pipelines', name: 'Gas & Oil Pipelines', icon: '⚡', enabled: false,
     type: 'arcs', color: '#a6e3a1',
     arcs: [],  // populated from /data/pipelines.json via Globe.tsx
+  },
+  {
+    id: 'airspace', name: 'AIRSPACE', icon: '🚫', enabled: false,
+    type: 'polygons', color: '#ef4444',
+    polygons: airspacePolygons,  // populated from /api/world-watch/notams by world-watch-client.tsx
   },
 ];

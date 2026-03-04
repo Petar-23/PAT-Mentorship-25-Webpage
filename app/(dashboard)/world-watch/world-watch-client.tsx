@@ -79,6 +79,10 @@ export default function WorldWatchClient() {
   const trailHistoryRef = useRef<Map<string, [number, number, number][]>>(new Map());
   const [aircraftTrails, setAircraftTrails] = useState<{ type: 'FeatureCollection'; features: { type: 'Feature'; geometry: { type: 'LineString'; coordinates: [number, number][] }; properties: { color: string } }[] }>({ type: 'FeatureCollection', features: [] });
 
+  // AIS ship trail history: mmsi → [[lng, lat, timestamp], ...]
+  const shipTrailHistoryRef = useRef<Map<string, [number, number, number][]>>(new Map());
+  const [shipTrails, setShipTrails] = useState<{ type: 'FeatureCollection'; features: { type: 'Feature'; geometry: { type: 'LineString'; coordinates: [number, number][] }; properties: { color: string } }[] }>({ type: 'FeatureCollection', features: [] });
+
   const theme = themes[currentTheme];
 
   const handleToggleSeverity = useCallback((sev: number) => {

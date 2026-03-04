@@ -44,14 +44,24 @@ export interface LayerArc {
   color: string;
 }
 
+export interface LayerPolygon {
+  id: string;
+  coordinates: [number, number][]; // [lng, lat][]
+  name: string;
+  country: string;
+  status: 'CLOSED' | 'RESTRICTED' | 'DANGER';
+  color: string;
+}
+
 export interface DataLayer {
   id: string;
   name: string;
   icon: string;
   enabled: boolean;
-  type: 'points' | 'arcs';
+  type: 'points' | 'arcs' | 'polygons';
   points?: LayerPoint[];
   arcs?: LayerArc[];
+  polygons?: LayerPolygon[];
   color: string;
 }
 

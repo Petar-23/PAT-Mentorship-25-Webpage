@@ -2428,6 +2428,106 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           if (map.getLayer(lineId)) map.setLayoutProperty(lineId, 'visibility', visibility);
         } catch (_) {}
       }
+
+      if (layer.type === 'polygons') {
+        const fillId = `layer-${layer.id}-fill`;
+        const borderId = `layer-${layer.id}-border`;
+        const polyLabelId = `layer-${layer.id}-labels`;
+
+        const polyFeatures = (layer.polygons || []).map(p => {
+          // Compute centroid for label placement
+          const coords = p.coordinates;
+          const cx = coords.reduce((s, c) => s + c[0], 0) / coords.length;
+          const cy = coords.reduce((s, c) => s + c[1], 0) / coords.length;
+          const fillColor = p.status === 'CLOSED' ? '#ef4444' : p.status === 'RESTRICTED' ? '#fab387' : '#f9e2af';
+          const fillOpacity = p.status === 'CLOSED' ? 0.12 : p.status === 'RESTRICTED' ? 0.10 : 0.08;
+          return {
+            type: 'Feature' as const,
+            geometry: {
+              type: 'Polygon' as const,
+              coordinates: [[...coords, coords[0]]],
+            },
+            properties: {
+              name: p.name,
+              status: p.status,
+              fillColor,
+              fillOpacity,
+              cx,
+              cy,
+            },
+          };
+        });
+        const polyGeojson = { type: 'FeatureCollection' as const, features: polyFeatures };
+
+        // Label features (points at centroid)
+        const labelFeatures = (layer.polygons || []).map(p => {
+          const coords = p.coordinates;
+          const cx = coords.reduce((s, c) => s + c[0], 0) / coords.length;
+          const cy = coords.reduce((s, c) => s + c[1], 0) / coords.length;
+          return {
+            type: 'Feature' as const,
+            geometry: { type: 'Point' as const, coordinates: [cx, cy] },
+            properties: { name: p.name, status: p.status },
+          };
+        });
+        const labelGeojson = { type: 'FeatureCollection' as const, features: labelFeatures };
+        const labelSourceId = `layer-${layer.id}-label-src`;
+
+        const existingPoly = map.getSource(sourceId) as mapboxgl.GeoJSONSource | undefined;
+        if (existingPoly) {
+          existingPoly.setData(polyGeojson);
+          (map.getSource(labelSourceId) as mapboxgl.GeoJSONSource | undefined)?.setData(labelGeojson);
+        } else if (polyFeatures.length > 0) {
+          map.addSource(sourceId, { type: 'geojson', data: polyGeojson });
+          map.addSource(labelSourceId, { type: 'geojson', data: labelGeojson });
+
+          // Fill layer
+          map.addLayer({
+            id: fillId, type: 'fill', source: sourceId,
+            layout: { visibility },
+            paint: {
+              'fill-color': ['get', 'fillColor'],
+              'fill-opacity': ['get', 'fillOpacity'],
+            },
+          });
+
+          // Dashed border
+          map.addLayer({
+            id: borderId, type: 'line', source: sourceId,
+            layout: { visibility },
+            paint: {
+              'line-color': ['get', 'fillColor'],
+              'line-width': 1.5,
+              'line-opacity': 0.6,
+              'line-dasharray': [4, 4],
+            },
+          });
+
+          // Labels at centroid
+          map.addLayer({
+            id: polyLabelId, type: 'symbol', source: labelSourceId,
+            layout: {
+              visibility,
+              'text-field': ['get', 'name'],
+              'text-size': 10,
+              'text-anchor': 'center',
+              'text-allow-overlap': false,
+              'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+            },
+            paint: {
+              'text-color': '#ffffff',
+              'text-halo-color': '#000000',
+              'text-halo-width': 1.2,
+            },
+          });
+        }
+
+        try {
+          if (map.getLayer(fillId)) map.setLayoutProperty(fillId, 'visibility', visibility);
+          if (map.getLayer(borderId)) map.setLayoutProperty(borderId, 'visibility', visibility);
+          if (map.getLayer(polyLabelId)) map.setLayoutProperty(polyLabelId, 'visibility', visibility);
+        } catch (_) {}
+      }
     }
 
       return true; // sync succeeded
