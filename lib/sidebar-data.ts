@@ -53,7 +53,7 @@ export const getSidebarData = cache(async (): Promise<SidebarData> => {
         published: true,
       },
       orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
-    }),
+    }).catch(() => [] as any[]),
     prisma.adminSetting.findUnique({
       where: { key: 'sidebarOrder' },
     }),
