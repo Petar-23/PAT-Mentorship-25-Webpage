@@ -60,6 +60,12 @@ export interface AIBrief {
   meta?: Record<string, any>;
 }
 
+interface TrailFeature {
+  type: 'Feature';
+  geometry: { type: 'LineString'; coordinates: [number, number][] };
+  properties: { color: string };
+}
+
 interface Props {
   events: GeoEvent[];
   layers: DataLayer[];
@@ -70,6 +76,7 @@ interface Props {
   theme: ThemeColors;
   onRotationChange?: (rotating: boolean) => void;
   aircraftDataRef?: React.RefObject<Map<string, AircraftInfo>>;
+  aircraftTrails?: { type: 'FeatureCollection'; features: TrailFeature[] };
   selectedNews?: NewsItem | null;
   aiBrief?: AIBrief | null;
 }
@@ -94,7 +101,7 @@ function getDisasterType(title: string, category: string): string {
 }
 
 export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
-  { events, layers, onSelect, focusEvent, focusCounter, theme, onRotationChange, aircraftDataRef, selectedNews, aiBrief },
+  { events, layers, onSelect, focusEvent, focusCounter, theme, onRotationChange, aircraftDataRef, aircraftTrails, selectedNews, aiBrief },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -652,6 +659,29 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       };
       img.onerror = () => URL.revokeObjectURL(svgUrl);
       img.src = svgUrl;
+
+      // Aircraft trails source
+      map.addSource('aircraft-trails', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+
+      // Aircraft trail lines (rendered below icons)
+      map.addLayer({
+        id: 'aircraft-trail-lines',
+        type: 'line',
+        source: 'aircraft-trails',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+        },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': 1.5,
+          'line-opacity': 0.4,
+          'line-dasharray': [2, 2],
+        },
+      });
 
       // Aircraft positions source (populated by live OpenSky data via layers)
       map.addSource('aircraft-live', {
@@ -2480,6 +2510,14 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       return () => { map.off('idle', onIdle2); map.off('style.load', onStyleLoad2); };
     }
   }, [layers]); // eslint-disable-line
+
+  // Update aircraft-trails source when aircraftTrails prop changes
+  useEffect(() => {
+    if (!mapRef.current || !styleReadyRef.current) return;
+    const src = mapRef.current.getSource('aircraft-trails') as mapboxgl.GeoJSONSource | undefined;
+    if (!src) return;
+    src.setData(aircraftTrails ?? { type: 'FeatureCollection', features: [] });
+  }, [aircraftTrails]);
 
   // Update ships-live source when ships layer points change
   useEffect(() => {

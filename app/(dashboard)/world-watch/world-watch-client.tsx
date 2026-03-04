@@ -75,6 +75,9 @@ export default function WorldWatchClient() {
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [aiBrief, setAiBrief] = useState<any>(null);
   const aircraftDataRef = useRef<Map<string, AircraftInfo>>(new Map());
+  // Trail history: icao → [[lng, lat, timestamp], ...]
+  const trailHistoryRef = useRef<Map<string, [number, number, number][]>>(new Map());
+  const [aircraftTrails, setAircraftTrails] = useState<{ type: 'FeatureCollection'; features: { type: 'Feature'; geometry: { type: 'LineString'; coordinates: [number, number][] }; properties: { color: string } }[] }>({ type: 'FeatureCollection', features: [] });
 
   const theme = themes[currentTheme];
 
@@ -102,6 +105,18 @@ export default function WorldWatchClient() {
       for (const ev of all) deduped.set(ev.id, ev);
       setLiveEvents(Array.from(deduped.values()));
     });
+  }, []);
+
+  // Fetch NOTAM airspace closures
+  useEffect(() => {
+    fetch('/api/world-watch/notams')
+      .then(r => r.json())
+      .then((polygons) => {
+        setLayers(prev => prev.map(l =>
+          l.id === 'airspace' ? { ...l, polygons } : l
+        ));
+      })
+      .catch(() => {});
   }, []);
 
   // Fetch RSS news feed every 15 minutes
@@ -308,89 +323,140 @@ export default function WorldWatchClient() {
       return { color: '#a6adc8', airForce: 'Military' };
     }
 
-    const fetchAircraft = () => {
-      fetch('/api/world-watch/fr24')
-        .then(r => {
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          return r.json();
-        })
-        .then((data: any) => {
-          const aircraft: AircraftInfo[] = [];
+    const fetchAircraft = async () => {
+      const now = Date.now();
 
-          for (const [, v] of Object.entries(data)) {
-            // Skip metadata keys (not arrays)
-            if (!Array.isArray(v)) continue;
-            const entry = v as any[];
+      // Fetch from both sources in parallel; FR24 is fallback
+      const [fr24Result, adsbResult] = await Promise.allSettled([
+        fetch('/api/world-watch/fr24').then(r => { if (!r.ok) throw new Error(`FR24 HTTP ${r.status}`); return r.json(); }),
+        fetch('/api/world-watch/adsb').then(r => { if (!r.ok) throw new Error(`ADS-B HTTP ${r.status}`); return r.json(); }),
+      ]);
 
-            const icao = (entry[0] || '').toLowerCase();
-            const lat = entry[1];
-            const lng = entry[2];
-            if (!lat || !lng) continue;
+      // Map: icao → AircraftInfo (ADS-B Exchange preferred)
+      const mergedMap = new Map<string, AircraftInfo>();
 
-            const callsign = (entry[16] || '').trim() || icao.toUpperCase();
-            const heading = entry[3] || 0;
-            const altitude = entry[4] || 0; // feet
-            const speed = entry[5] || 0; // knots
-            const aircraftType = (entry[8] || '').trim();
-            const registration = (entry[9] || '').trim();
-            const origin = (entry[11] || '').trim();
-            const destination = (entry[12] || '').trim();
+      // --- Parse FR24 ---
+      if (fr24Result.status === 'fulfilled') {
+        const data = fr24Result.value as Record<string, unknown>;
+        for (const [, v] of Object.entries(data)) {
+          if (!Array.isArray(v)) continue;
+          const entry = v as unknown[];
+          const icao = ((entry[0] as string) || '').toLowerCase();
+          const lat = entry[1] as number;
+          const lng = entry[2] as number;
+          if (!lat || !lng) continue;
+          const callsign = ((entry[16] as string) || '').trim() || icao.toUpperCase();
+          const heading = (entry[3] as number) || 0;
+          const altitude = (entry[4] as number) || 0;
+          const speed = (entry[5] as number) || 0;
+          const aircraftType = ((entry[8] as string) || '').trim();
+          const registration = ((entry[9] as string) || '').trim();
+          const origin = ((entry[11] as string) || '').trim();
+          const destination = ((entry[12] as string) || '').trim();
+          const isMilHex = MIL_HEX.some(p => icao.startsWith(p));
+          const isMilCs = MIL_CS.some(p => callsign.toUpperCase().startsWith(p));
+          if (!isMilHex && !isMilCs) continue;
+          const { color, airForce } = getAirForceInfo(icao, callsign);
+          mergedMap.set(icao, { icao24: icao, callsign, country: '', lat, lng, altitude, velocity: speed, heading, aircraftType, registration, origin, destination, airForce, airForceColor: color });
+        }
+      } else {
+        console.warn('[OPTICON] FR24 fetch failed:', fr24Result.reason?.message);
+      }
 
-            const isMilHex = MIL_HEX.some(p => icao.startsWith(p));
-            const isMilCs = MIL_CS.some(p => callsign.toUpperCase().startsWith(p));
-            if (!isMilHex && !isMilCs) continue;
+      // --- Parse ADS-B Exchange (preferred — overwrites FR24 for same hex) ---
+      if (adsbResult.status === 'fulfilled') {
+        const data = adsbResult.value as { ac?: unknown[] };
+        for (const raw of data.ac || []) {
+          const ac = raw as { hex?: string; flight?: string; lat?: number; lon?: number; alt_baro?: number | string; track?: number; gs?: number; t?: string; r?: string };
+          const icao = (ac.hex || '').toLowerCase();
+          if (!icao) continue;
+          const lat = ac.lat;
+          const lng = ac.lon;
+          if (!lat || !lng) continue;
+          const callsign = (ac.flight || '').trim() || icao.toUpperCase();
+          const isMilHex = MIL_HEX.some(p => icao.startsWith(p));
+          const isMilCs = MIL_CS.some(p => callsign.toUpperCase().startsWith(p));
+          if (!isMilHex && !isMilCs) continue;
+          const altBaro = typeof ac.alt_baro === 'number' ? ac.alt_baro : 0;
+          const heading = ac.track || 0;
+          const speed = ac.gs || 0;
+          const aircraftType = ac.t || '';
+          const registration = ac.r || '';
+          const { color, airForce } = getAirForceInfo(icao, callsign);
+          // ADS-B Exchange preferred: overwrite FR24 entry
+          mergedMap.set(icao, { icao24: icao, callsign, country: '', lat, lng, altitude: altBaro, velocity: speed, heading, aircraftType, registration, origin: '', destination: '', airForce, airForceColor: color });
+        }
+      } else {
+        console.warn('[OPTICON] ADS-B fetch failed:', adsbResult.reason?.message);
+      }
 
-            const { color, airForce } = getAirForceInfo(icao, callsign);
+      const aircraft = Array.from(mergedMap.values());
 
-            aircraft.push({
-              icao24: icao,
-              callsign,
-              country: '',
-              lat,
-              lng,
-              altitude,
-              velocity: speed,
-              heading,
-              aircraftType,
-              registration,
-              origin,
-              destination,
-              airForce,
-              airForceColor: color,
-            });
-          }
+      // Sort: by altitude desc, limit 50
+      aircraft.sort((a, b) => b.altitude - a.altitude);
+      const top = aircraft.slice(0, 50);
 
-          // Sort: by altitude desc (FR24 only has airborne), limit 50
-          aircraft.sort((a, b) => b.altitude - a.altitude);
-          const top = aircraft.slice(0, 50);
+      console.log(`[OPTICON] Merged: ${aircraft.length} mil/gov matches, showing ${top.length}`);
 
-          console.log(`[OPTICON] FR24: ${aircraft.length} mil/gov matches, showing ${top.length}`);
+      // Update aircraftDataRef
+      const acMap = new Map<string, AircraftInfo>();
+      for (const ac of top) acMap.set(ac.icao24, ac);
+      aircraftDataRef.current = acMap;
 
-          // Update aircraftDataRef
-          const map = new Map<string, AircraftInfo>();
-          for (const ac of top) map.set(ac.icao24, ac);
-          aircraftDataRef.current = map;
+      // --- Update trail history ---
+      const trails = trailHistoryRef.current;
+      const seenIcaos = new Set<string>();
 
-          if (top.length > 0) {
-            setLayers(prev => prev.map(l => {
-              if (l.id !== 'aircraft') return l;
-              return {
-                ...l,
-                points: top.map(ac => ({
-                  id: `ac-${ac.icao24}`,
-                  lat: ac.lat,
-                  lng: ac.lng,
-                  label: ac.callsign,
-                  subLabel: `FL${Math.round(ac.altitude / 30.48)} | ${ac.velocity}kt | HDG ${ac.heading}°`,
-                  color: ac.airForceColor,
-                })),
-              };
-            }));
-          }
-        })
-        .catch((err) => {
-          console.warn('[OPTICON] FR24 fetch failed:', err.message);
+      for (const ac of top) {
+        seenIcaos.add(ac.icao24);
+        const history = trails.get(ac.icao24) ?? [];
+        const last = history[history.length - 1];
+        const moved = !last || Math.abs(ac.lng - last[0]) > 0.01 || Math.abs(ac.lat - last[1]) > 0.01;
+        if (moved) {
+          history.push([ac.lng, ac.lat, now]);
+          if (history.length > 60) history.shift(); // ring buffer
+        }
+        trails.set(ac.icao24, history);
+      }
+
+      // Remove stale aircraft (not seen for 5 minutes)
+      const STALE_MS = 5 * 60 * 1000;
+      for (const [icao, history] of trails.entries()) {
+        if (!seenIcaos.has(icao)) {
+          const lastTs = history[history.length - 1]?.[2] ?? 0;
+          if (now - lastTs > STALE_MS) trails.delete(icao);
+        }
+      }
+
+      // Build trail GeoJSON
+      const trailFeatures: { type: 'Feature'; geometry: { type: 'LineString'; coordinates: [number, number][] }; properties: { color: string } }[] = [];
+      for (const ac of top) {
+        const history = trails.get(ac.icao24);
+        if (!history || history.length < 2) continue;
+        trailFeatures.push({
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: history.map(([lng, lat]) => [lng, lat]) },
+          properties: { color: ac.airForceColor },
         });
+      }
+      setAircraftTrails({ type: 'FeatureCollection', features: trailFeatures });
+
+      if (top.length > 0) {
+        setLayers(prev => prev.map(l => {
+          if (l.id !== 'aircraft') return l;
+          return {
+            ...l,
+            points: top.map(ac => ({
+              id: `ac-${ac.icao24}`,
+              lat: ac.lat,
+              lng: ac.lng,
+              label: ac.callsign,
+              subLabel: `FL${Math.round(ac.altitude / 30.48)} | ${ac.velocity}kt | HDG ${ac.heading}°`,
+              color: ac.airForceColor,
+            })),
+          };
+        }));
+      }
     };
 
     fetchAircraft();
@@ -740,6 +806,7 @@ export default function WorldWatchClient() {
                 theme={theme}
                 onRotationChange={setIsRotating}
                 aircraftDataRef={aircraftDataRef}
+                aircraftTrails={aircraftTrails}
                 selectedNews={selectedNews}
                 aiBrief={aiBrief}
               />
