@@ -17,8 +17,18 @@ type Kurs = {
   iconUrl?: string | null
 }
 
+type Page = {
+  id: string
+  title: string
+  slug: string
+  description?: string | null
+  iconUrl?: string | null
+  published: boolean
+}
+
 type Props = {
   kurse: Kurs[]
+  pages?: Page[]
   savedSidebarOrder?: string[] | null
   activeCourseId?: string | null
   isAdmin: boolean
@@ -29,6 +39,7 @@ type Props = {
 
 export function MobileCoursesDrawer({
   kurse,
+  pages = [],
   savedSidebarOrder,
   activeCourseId,
   isAdmin,
@@ -74,6 +85,7 @@ export function MobileCoursesDrawer({
         <SlideOverContent side="left" title="Kurse" className="p-0 w-screen max-w-none">
           <Sidebar
             kurse={kurse}
+            pages={pages}
             savedSidebarOrder={savedSidebarOrder}
             activeCourseId={activeCourseId}
             isAdmin={isAdmin}

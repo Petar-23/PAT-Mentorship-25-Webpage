@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { BookOpen, ChevronDown, SquareKanban, Users } from 'lucide-react'
+import { BookOpen, ChevronDown, FileText, SquareKanban, Users } from 'lucide-react'
 import patBanner from '@/public/images/pat-banner.jpeg'
 import { UserButton, useUser } from '@clerk/nextjs'
 import {
@@ -26,6 +26,14 @@ type Kurs = {
   iconUrl?: string | null
 }
 
+type Page = {
+  id: string
+  title: string
+  slug: string
+  description?: string | null
+  iconUrl?: string | null
+}
+
 type SidebarItem = {
   id: string
   title: string
@@ -37,11 +45,12 @@ type SidebarItem = {
 
 type Props = {
   kurse: Kurs[]
+  pages?: Page[]
   savedSidebarOrder?: string[] | null
   activeCourseId?: string | null
 }
 
-export function SidebarUser({ kurse, savedSidebarOrder, activeCourseId }: Props) {
+export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourseId }: Props) {
   const pathname = usePathname()
   const isMentorship = pathname?.startsWith('/mentorship')
   const { user, isLoaded } = useUser()
@@ -51,9 +60,16 @@ export function SidebarUser({ kurse, savedSidebarOrder, activeCourseId }: Props)
     if (pathname?.startsWith('/mentorship/discord')) return 'discord'
     if (activeCourseId) return activeCourseId
 
+    const pageMatch = pathname?.match(/^\/mentorship\/page\/([^/]+)$/)
+    if (pageMatch) {
+      const slug = pageMatch[1]
+      const page = pages.find((p) => p.slug === slug)
+      if (page) return `page:${page.id}`
+    }
+
     const match = pathname?.match(/^\/mentorship\/([^/]+)$/)
     return match?.[1] ?? null
-  }, [pathname, activeCourseId])
+  }, [pathname, activeCourseId, pages])
 
   const staticItems = useMemo<SidebarItem[]>(
     () => [
@@ -86,8 +102,29 @@ export function SidebarUser({ kurse, savedSidebarOrder, activeCourseId }: Props)
         ),
         iconBg: 'from-slate-700/80 to-slate-600/70',
       })),
+      ...pages.map((page) => ({
+        id: `page:${page.id}`,
+        title: page.title,
+        subtitle: page.description ?? 'Seite',
+        href: `/mentorship/page/${page.slug}`,
+        icon: page.iconUrl ? (
+          <div className="relative w-full h-full">
+            <Image
+              src={page.iconUrl}
+              alt={`${page.title} Icon`}
+              fill
+              sizes="40px"
+              className="object-cover"
+              quality={70}
+            />
+          </div>
+        ) : (
+          <FileText className="h-6 w-6 text-white" />
+        ),
+        iconBg: 'from-emerald-700/80 to-emerald-600/70',
+      })),
     ],
-    [kurse]
+    [kurse, pages]
   )
 
   const items = useMemo<SidebarItem[]>(() => {

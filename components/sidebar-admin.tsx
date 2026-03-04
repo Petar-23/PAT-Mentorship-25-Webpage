@@ -6,6 +6,7 @@ import Image from 'next/image'
 import {
   BookOpen,
   ChevronDown,
+  FileText,
   Users,
   GripVertical,
   Plus,
@@ -84,6 +85,15 @@ type Kurs = {
   iconUrl?: string | null
 }
 
+type Page = {
+  id: string
+  title: string
+  slug: string
+  description?: string | null
+  iconUrl?: string | null
+  published: boolean
+}
+
 type SidebarItem = {
   id: string
   title: string
@@ -95,6 +105,7 @@ type SidebarItem = {
 
 type Props = {
   kurse: Kurs[]
+  pages?: Page[]
   savedSidebarOrder?: string[] | null
   activeCourseId?: string | null
   isAdmin: boolean
@@ -103,6 +114,7 @@ type Props = {
 
 export function SidebarAdmin({
   kurse,
+  pages = [],
   savedSidebarOrder,
   activeCourseId,
   isAdmin,
@@ -126,6 +138,57 @@ export function SidebarAdmin({
   const [iconFile, setIconFile] = useState<File | null>(null)
   const [iconPreviewUrl, setIconPreviewUrl] = useState<string | null>(null)
   const [isSavingCourse, setIsSavingCourse] = useState(false)
+
+  // Page modal state
+  const [isPageModalOpen, setIsPageModalOpen] = useState(false)
+  const [pageModalMode, setPageModalMode] = useState<'create' | 'edit'>('create')
+  const [editingPageId, setEditingPageId] = useState<string | null>(null)
+  const [pageName, setPageName] = useState('')
+  const [pageDescription, setPageDescription] = useState('')
+  const [existingPageIconUrl, setExistingPageIconUrl] = useState<string | null>(null)
+  const [removePageIcon, setRemovePageIcon] = useState(false)
+  const [pageIconFile, setPageIconFile] = useState<File | null>(null)
+  const [pageIconPreviewUrl, setPageIconPreviewUrl] = useState<string | null>(null)
+  const [isSavingPage, setIsSavingPage] = useState(false)
+  const [deletingPageId, setDeletingPageId] = useState<string | null>(null)
+  const [isDeletingPage, setIsDeletingPage] = useState(false)
+  const [localPages, setLocalPages] = useState<Page[]>(pages)
+
+  const resetPageModal = () => {
+    if (pageIconPreviewUrl) URL.revokeObjectURL(pageIconPreviewUrl)
+    setEditingPageId(null)
+    setPageModalMode('create')
+    setPageName('')
+    setPageDescription('')
+    setExistingPageIconUrl(null)
+    setRemovePageIcon(false)
+    setPageIconFile(null)
+    setPageIconPreviewUrl(null)
+    setIsSavingPage(false)
+  }
+
+  const closePageModal = () => {
+    if (isSavingPage) return
+    setIsPageModalOpen(false)
+    resetPageModal()
+  }
+
+  const openCreatePageDialog = () => {
+    resetPageModal()
+    setPageModalMode('create')
+    setIsPageModalOpen(true)
+  }
+
+  const openEditPageDialog = (pageId: string) => {
+    const page = localPages.find((p) => p.id === pageId)
+    resetPageModal()
+    setPageModalMode('edit')
+    setEditingPageId(pageId)
+    setPageName(page?.title ?? '')
+    setPageDescription(page?.description ?? '')
+    setExistingPageIconUrl(page?.iconUrl ?? null)
+    setIsPageModalOpen(true)
+  }
 
   const resetCourseModal = () => {
     if (iconPreviewUrl) URL.revokeObjectURL(iconPreviewUrl)
@@ -190,9 +253,17 @@ export function SidebarAdmin({
     if (pathname?.startsWith('/mentorship/discord')) return 'discord'
     if (activeCourseId) return activeCourseId
 
+    // Check if on a page route
+    const pageMatch = pathname?.match(/^\/mentorship\/page\/([^/]+)$/)
+    if (pageMatch) {
+      const slug = pageMatch[1]
+      const page = localPages.find((p) => p.slug === slug)
+      if (page) return `page:${page.id}`
+    }
+
     const match = pathname?.match(/^\/mentorship\/([^/]+)$/)
     return match?.[1] ?? null
-  }, [pathname, activeCourseId])
+  }, [pathname, activeCourseId, localPages])
 
   async function confirmDeleteCourse(courseId: string) {
     setIsDeletingCourse(true)
@@ -330,6 +401,77 @@ export function SidebarAdmin({
     }
   }
 
+  async function handleSavePage() {
+    const title = pageName.trim()
+    if (!title) {
+      toast({ variant: 'destructive', title: 'Titel ist erforderlich' })
+      return
+    }
+
+    setIsSavingPage(true)
+    toast({
+      title: pageModalMode === 'create' ? 'Seite wird erstellt...' : 'Seite wird gespeichert...',
+      description: 'Bitte einen Moment.',
+    })
+
+    try {
+      const description = pageDescription.trim() || null
+      let iconUrl: string | null = existingPageIconUrl
+
+      if (pageIconFile && pageIconFile.size > 0) {
+        const newBlob = await upload(`page-icons/${pageIconFile.name}`, pageIconFile, {
+          access: 'public',
+          handleUploadUrl: '/api/page-icon-upload',
+        })
+        iconUrl = newBlob.url
+      } else if (removePageIcon) {
+        iconUrl = null
+      }
+
+      const url = pageModalMode === 'create' ? '/api/pages' : `/api/pages/${editingPageId}`
+      const method = pageModalMode === 'create' ? 'POST' : 'PATCH'
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description, iconUrl }),
+      })
+
+      if (!res.ok) {
+        const data: unknown = await res.json().catch(() => null)
+        let message = 'Speichern fehlgeschlagen.'
+        if (data && typeof data === 'object' && 'error' in data) {
+          const err = (data as { error?: unknown }).error
+          if (typeof err === 'string') message = err
+        }
+        throw new Error(message)
+      }
+
+      const savedPage = (await res.json()) as { id: string; title: string; slug: string; description: string | null; iconUrl: string | null; published: boolean }
+
+      toast({
+        title: pageModalMode === 'create' ? 'Seite erstellt' : 'Seite gespeichert',
+        description: pageModalMode === 'create' ? 'Die Seite wurde angelegt.' : 'Änderungen übernommen.',
+      })
+
+      setIsPageModalOpen(false)
+      resetPageModal()
+
+      if (pageModalMode === 'create') {
+        setLocalPages((prev) => [...prev, savedPage])
+        router.push(`/mentorship/page/${savedPage.slug}`)
+      } else {
+        setLocalPages((prev) => prev.map((p) => p.id === savedPage.id ? savedPage : p))
+        router.refresh()
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error)
+      toast({ variant: 'destructive', title: 'Fehler', description: message })
+    } finally {
+      setIsSavingPage(false)
+    }
+  }
+
   const displayName =
     user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Mitglied'
   const email = user?.primaryEmailAddress?.emailAddress ?? ''
@@ -366,8 +508,29 @@ export function SidebarAdmin({
         ),
         iconBg: 'from-slate-700/80 to-slate-600/70',
       })),
+      ...localPages.map((page) => ({
+        id: `page:${page.id}`,
+        title: page.title,
+        subtitle: page.description ?? 'Seite',
+        href: `/mentorship/page/${page.slug}`,
+        icon: page.iconUrl ? (
+          <div className="relative w-full h-full">
+            <Image
+              src={page.iconUrl}
+              alt={`${page.title} Icon`}
+              fill
+              sizes="40px"
+              className="object-cover"
+              quality={70}
+            />
+          </div>
+        ) : (
+          <FileText className="h-6 w-6 text-white" />
+        ),
+        iconBg: 'from-emerald-700/80 to-emerald-600/70',
+      })),
     ],
-    [kurse]
+    [kurse, localPages]
   )
 
   const initialItems = useMemo<SidebarItem[]>(() => {
@@ -389,6 +552,11 @@ export function SidebarAdmin({
   useEffect(() => {
     setItems(initialItems)
   }, [initialItems])
+
+  // Sync localPages when pages prop changes
+  useEffect(() => {
+    setLocalPages(pages)
+  }, [pages])
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -492,26 +660,42 @@ export function SidebarAdmin({
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 rounded-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                  aria-label="Kurs Aktionen"
+                  aria-label="Aktionen"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem className="gap-2" onSelect={() => openEditCourseDialog(item.id)}>
-                  <Pencil className="h-4 w-4" />
-                  Bearbeiten
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="gap-2 text-destructive focus:text-destructive"
-                  onSelect={() => setDeleteCourseId(item.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Kurs löschen
-                </DropdownMenuItem>
-              </DropdownMenuContent>
+              {item.id.startsWith('page:') ? (
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem className="gap-2" onSelect={() => openEditPageDialog(item.id.replace('page:', ''))}>
+                    <Pencil className="h-4 w-4" />
+                    Bearbeiten
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="gap-2 text-destructive focus:text-destructive"
+                    onSelect={() => setDeletingPageId(item.id.replace('page:', ''))}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Seite löschen
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              ) : (
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem className="gap-2" onSelect={() => openEditCourseDialog(item.id)}>
+                    <Pencil className="h-4 w-4" />
+                    Bearbeiten
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="gap-2 text-destructive focus:text-destructive"
+                    onSelect={() => setDeleteCourseId(item.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Kurs löschen
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              )}
             </DropdownMenu>
           )}
         </div>
@@ -714,16 +898,25 @@ export function SidebarAdmin({
 
               {/* Plus-Button – nur für Admin */}
               {isAdmin && (
-                <div
-                  className="h-5 w-5 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-200 cursor-pointer transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    openCreateCourseDialog()
-                  }}
-                  title="Neuen Kurs anlegen"
-                >
-                  <Plus className="h-4 w-4 text-gray-500 hover:text-foreground" />
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div
+                      className="h-5 w-5 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-200 cursor-pointer transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                      title="Neues Element anlegen"
+                    >
+                      <Plus className="h-4 w-4 text-gray-500 hover:text-foreground" />
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenuItem onSelect={() => openCreateCourseDialog()}>
+                      📚 Kurs erstellen
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => openCreatePageDialog()}>
+                      📄 Seite erstellen
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </AccordionTrigger>
 
@@ -934,6 +1127,170 @@ export function SidebarAdmin({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Page Delete Confirmation */}
+      <AlertDialog
+        open={deletingPageId !== null}
+        onOpenChange={(open) => { if (!open) setDeletingPageId(null) }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Seite löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Die Seite &quot;
+              {localPages.find((p) => p.id === deletingPageId)?.title ?? 'Seite'}&quot; wird dauerhaft gelöscht.
+              Diese Aktion kann nicht rückgängig gemacht werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingPage}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isDeletingPage}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!deletingPageId) return
+                setIsDeletingPage(true)
+                toast({ title: 'Lösche Seite...', description: 'Bitte einen Moment.' })
+                try {
+                  const res = await fetch(`/api/pages/${deletingPageId}`, { method: 'DELETE' })
+                  if (!res.ok) throw new Error('Löschen fehlgeschlagen')
+                  setLocalPages((prev) => prev.filter((p) => p.id !== deletingPageId))
+                  setItems((prev) => prev.filter((i) => i.id !== `page:${deletingPageId}`))
+                  toast({ title: 'Seite gelöscht', description: 'Die Seite wurde entfernt.' })
+                  if (pathname === `/mentorship/page/${localPages.find((p) => p.id === deletingPageId)?.slug}`) {
+                    router.push('/mentorship')
+                  } else {
+                    router.refresh()
+                  }
+                } catch (err: unknown) {
+                  const message = err instanceof Error ? err.message : String(err)
+                  toast({ variant: 'destructive', title: 'Fehler', description: message })
+                } finally {
+                  setIsDeletingPage(false)
+                  setDeletingPageId(null)
+                }
+              }}
+            >
+              {isDeletingPage ? 'Lösche...' : 'Löschen'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Page Create/Edit Modal */}
+      <Dialog open={isPageModalOpen} onOpenChange={(open) => { if (!open) closePageModal() }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{pageModalMode === 'create' ? 'Neue Seite erstellen' : 'Seite bearbeiten'}</DialogTitle>
+            <DialogDescription>
+              {pageModalMode === 'create' ? 'Erstelle eine neue Rich-Text-Seite.' : 'Bearbeite die Seitendetails.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={(e) => { e.preventDefault(); void handleSavePage() }} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="page-title">Titel *</Label>
+              <Input
+                id="page-title"
+                value={pageName}
+                onChange={(e) => setPageName(e.target.value)}
+                placeholder="z.B. Glossar, FAQ, Leitfaden..."
+                required
+                disabled={isSavingPage}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="page-description">Beschreibung</Label>
+              <Textarea
+                id="page-description"
+                value={pageDescription}
+                onChange={(e) => setPageDescription(e.target.value)}
+                placeholder="Kurze Beschreibung der Seite..."
+                rows={3}
+                disabled={isSavingPage}
+              />
+            </div>
+
+            {/* Icon Upload */}
+            <div className="space-y-2">
+              <Label>Icon (optional)</Label>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-700/80 to-emerald-600/70 flex items-center justify-center overflow-hidden flex-shrink-0 border">
+                  {pageIconPreviewUrl ? (
+                    <img src={pageIconPreviewUrl} alt="Vorschau" className="w-full h-full object-cover" />
+                  ) : existingPageIconUrl && !removePageIcon ? (
+                    <img src={existingPageIconUrl} alt="Aktuelles Icon" className="w-full h-full object-cover" />
+                  ) : (
+                    <FileText className="h-5 w-5 text-white" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={isSavingPage}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      if (pageIconPreviewUrl) URL.revokeObjectURL(pageIconPreviewUrl)
+                      setPageIconFile(file)
+                      setPageIconPreviewUrl(URL.createObjectURL(file))
+                      setRemovePageIcon(false)
+                    }}
+                    className="text-sm file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {(existingPageIconUrl || pageIconFile) && !removePageIcon && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isSavingPage}
+                  onClick={() => {
+                    setRemovePageIcon(true)
+                    setExistingPageIconUrl(null)
+                    if (pageIconPreviewUrl) URL.revokeObjectURL(pageIconPreviewUrl)
+                    setPageIconPreviewUrl(null)
+                    setPageIconFile(null)
+                  }}
+                >
+                  Icon entfernen
+                </Button>
+              )}
+              {pageIconFile && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={isSavingPage}
+                  onClick={() => {
+                    if (pageIconPreviewUrl) URL.revokeObjectURL(pageIconPreviewUrl)
+                    setPageIconPreviewUrl(null)
+                    setPageIconFile(null)
+                  }}
+                >
+                  Auswahl zurücksetzen
+                </Button>
+              )}
+              <p className="text-xs text-muted-foreground">Tipp: Quadratische Bilder sehen am besten aus.</p>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closePageModal} disabled={isSavingPage}>
+                Abbrechen
+              </Button>
+              <Button type="submit" disabled={isSavingPage}>
+                {isSavingPage
+                  ? pageModalMode === 'create' ? 'Erstelle...' : 'Speichere...'
+                  : pageModalMode === 'create' ? 'Seite erstellen' : 'Speichern'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
