@@ -1,0 +1,115 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Nord Stream 1", "type": "gas", "status": "Destroyed", "route": "Russia → Germany (Baltic Sea)", "color": "#f38ba8" },
+      "geometry": { "type": "LineString", "coordinates": [[29.8,60.0],[22.0,59.5],[17.0,57.5],[14.5,55.5],[12.5,54.5]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Nord Stream 2", "type": "gas", "status": "Destroyed", "route": "Russia → Germany (Baltic Sea)", "color": "#f38ba8" },
+      "geometry": { "type": "LineString", "coordinates": [[28.9,59.8],[21.0,59.2],[16.5,57.2],[14.0,55.2],[12.2,54.3]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "TurkStream", "type": "gas", "status": "Active", "route": "Russia → Turkey (Black Sea)", "color": "#a6e3a1" },
+      "geometry": { "type": "LineString", "coordinates": [[37.5,45.0],[34.0,43.0],[31.0,41.5],[28.8,41.0],[27.5,40.8]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Blue Stream", "type": "gas", "status": "Active", "route": "Russia → Turkey (Black Sea)", "color": "#a6e3a1" },
+      "geometry": { "type": "LineString", "coordinates": [[37.9,45.3],[37.0,44.0],[36.5,42.5],[36.2,41.5],[36.0,41.0]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Trans-Adriatic Pipeline (TAP)", "type": "gas", "status": "Active", "route": "Azerbaijan → Italy", "color": "#a6e3a1" },
+      "geometry": { "type": "LineString", "coordinates": [[49.7,40.4],[46.0,41.0],[41.0,41.5],[36.0,40.5],[21.0,40.5],[19.5,41.0],[16.0,41.5]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Trans-Anatolian Pipeline (TANAP)", "type": "gas", "status": "Active", "route": "Azerbaijan → Turkey", "color": "#a6e3a1" },
+      "geometry": { "type": "LineString", "coordinates": [[49.7,40.4],[46.3,40.6],[42.0,40.8],[38.5,40.5],[35.0,40.0],[31.0,40.5],[28.0,40.8],[26.5,41.0]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Yamal-Europe Pipeline", "type": "gas", "status": "Suspended", "route": "Russia → Poland → Germany", "color": "#f9e2af" },
+      "geometry": { "type": "LineString", "coordinates": [[55.0,55.0],[45.0,54.5],[30.0,54.0],[20.0,52.5],[14.5,52.0],[12.0,52.5]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Brotherhood Pipeline", "type": "gas", "status": "Active", "route": "Russia → Ukraine → Europe", "color": "#a6e3a1" },
+      "geometry": { "type": "LineString", "coordinates": [[55.0,52.0],[42.0,51.0],[32.0,50.5],[25.0,50.0],[18.0,49.0],[14.0,48.5],[12.0,48.5],[9.0,48.0]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Druzhba Pipeline", "type": "oil", "status": "Active", "route": "Russia → Europe", "color": "#fab387" },
+      "geometry": { "type": "LineString", "coordinates": [[55.0,52.0],[44.0,51.5],[32.0,51.0],[24.0,51.0],[18.0,50.5],[15.0,50.0],[12.0,49.5],[9.0,48.5]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "BTC Pipeline (Baku-Tbilisi-Ceyhan)", "type": "oil", "status": "Active", "route": "Azerbaijan → Turkey", "color": "#fab387" },
+      "geometry": { "type": "LineString", "coordinates": [[49.9,40.4],[46.5,41.5],[43.5,42.0],[41.0,41.5],[38.5,39.5],[36.0,37.5],[35.8,36.8]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Kirkuk-Ceyhan Pipeline", "type": "oil", "status": "Active", "route": "Iraq → Turkey", "color": "#fab387" },
+      "geometry": { "type": "LineString", "coordinates": [[44.4,35.5],[43.0,37.0],[40.5,38.5],[38.0,38.0],[36.5,37.0],[35.9,36.8]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "ESPO Pipeline", "type": "oil", "status": "Active", "route": "East Siberia → Pacific Ocean", "color": "#fab387" },
+      "geometry": { "type": "LineString", "coordinates": [[52.5,61.0],[65.0,58.0],[80.0,55.0],[100.0,53.0],[115.0,52.0],[126.0,50.5],[130.7,42.0]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "EastMed Pipeline", "type": "gas", "status": "Planned", "route": "Israel → Cyprus → Greece → Italy", "color": "#cba6f7" },
+      "geometry": { "type": "LineString", "coordinates": [[34.8,31.5],[33.0,34.5],[28.0,36.5],[25.0,36.0],[23.0,36.5],[20.0,38.5],[15.5,37.5],[12.5,37.5]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Trans-Arabian Pipeline (Tapline)", "type": "oil", "status": "Decommissioned", "route": "Saudi Arabia → Lebanon", "color": "#f38ba8" },
+      "geometry": { "type": "LineString", "coordinates": [[50.0,26.5],[47.0,28.0],[43.0,30.0],[38.5,31.5],[36.0,32.5],[35.5,33.5]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "NordLink (Power Cable)", "type": "power", "status": "Active", "route": "Norway → Germany", "color": "#89b4fa" },
+      "geometry": { "type": "LineString", "coordinates": [[5.8,58.0],[5.5,57.0],[5.8,55.5],[6.5,54.5],[8.0,53.5],[9.0,53.0]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "BritNed (Power Cable)", "type": "power", "status": "Active", "route": "UK → Netherlands", "color": "#89b4fa" },
+      "geometry": { "type": "LineString", "coordinates": [[0.5,51.5],[1.0,52.0],[2.5,52.5],[4.0,52.0]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Medgaz", "type": "gas", "status": "Active", "route": "Algeria → Spain", "color": "#a6e3a1" },
+      "geometry": { "type": "LineString", "coordinates": [[2.8,36.5],[1.5,37.5],[-0.2,38.5],[-1.0,37.9]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Transmed (ENI)", "type": "gas", "status": "Active", "route": "Algeria → Italy (via Tunisia)", "color": "#a6e3a1" },
+      "geometry": { "type": "LineString", "coordinates": [[7.0,35.0],[9.0,37.0],[10.0,37.5],[11.5,38.0],[12.5,38.0],[13.5,37.5],[14.5,38.5],[15.5,38.0],[16.5,38.5]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "West-East Gas Pipeline (China)", "type": "gas", "status": "Active", "route": "Xinjiang → Shanghai", "color": "#a6e3a1" },
+      "geometry": { "type": "LineString", "coordinates": [[80.0,39.5],[90.0,39.0],[100.0,36.0],[108.0,34.5],[114.0,33.0],[118.0,32.0],[121.5,31.2]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Power of Siberia", "type": "gas", "status": "Active", "route": "Russia → China", "color": "#a6e3a1" },
+      "geometry": { "type": "LineString", "coordinates": [[130.0,52.0],[128.0,50.0],[126.5,48.5],[125.0,47.0],[123.0,48.0],[122.0,50.5],[120.0,53.0]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Iran-Pakistan Pipeline", "type": "gas", "status": "Partial", "route": "Iran → Pakistan", "color": "#f9e2af" },
+      "geometry": { "type": "LineString", "coordinates": [[52.5,27.5],[57.0,26.0],[60.0,25.5],[62.5,25.5],[67.0,25.0]] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "GALSI (Planned)", "type": "gas", "status": "Planned", "route": "Algeria → Sardinia → Italy", "color": "#cba6f7" },
+      "geometry": { "type": "LineString", "coordinates": [[3.0,36.5],[5.0,38.0],[9.0,39.5],[9.5,40.5],[9.7,41.0],[10.5,41.5]] }
+    }
+  ]
+}
