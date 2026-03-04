@@ -243,6 +243,94 @@ export default function WorldWatchClient() {
       .catch(() => {});
   }, []);
 
+  // AIS maritime tracking: poll every 2 min, maintain ship trails
+  useEffect(() => {
+    const TRAIL_MAX = 40;
+    const STALE_SHIP_MS = 30 * 60 * 1000; // 30 min
+
+    const fetchAIS = async () => {
+      try {
+        const res = await fetch('/api/world-watch/ais');
+        if (!res.ok) return;
+        const fc = await res.json() as { type: string; features: { properties: { id: string; mmsi: string; name: string; heading: number; speed: number; color: string; flag: string; shipType: number }; geometry: { coordinates: [number, number] } }[] };
+
+        const now = Date.now();
+        const trails = shipTrailHistoryRef.current;
+        const seenMmsi = new Set<string>();
+
+        for (const feature of fc.features) {
+          const { mmsi, color } = feature.properties;
+          const [lng, lat] = feature.geometry.coordinates;
+          seenMmsi.add(mmsi);
+          const history = trails.get(mmsi) ?? [];
+          const last = history[history.length - 1];
+          const moved = !last || Math.abs(lng - last[0]) > 0.005 || Math.abs(lat - last[1]) > 0.005;
+          if (moved) {
+            history.push([lng, lat, now]);
+            if (history.length > TRAIL_MAX) history.shift();
+          }
+          trails.set(mmsi, history);
+        }
+
+        // Prune stale ships
+        for (const [mmsi, history] of trails.entries()) {
+          if (!seenMmsi.has(mmsi)) {
+            const lastTs = history[history.length - 1]?.[2] ?? 0;
+            if (now - lastTs > STALE_SHIP_MS) trails.delete(mmsi);
+          }
+        }
+
+        // Build trail GeoJSON
+        const trailFeatures: { type: 'Feature'; geometry: { type: 'LineString'; coordinates: [number, number][] }; properties: { color: string } }[] = [];
+        for (const feature of fc.features) {
+          const { mmsi, color } = feature.properties;
+          const history = trails.get(mmsi);
+          if (!history || history.length < 2) continue;
+          trailFeatures.push({
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: history.map(([lng, lat]) => [lng, lat]) },
+            properties: { color },
+          });
+        }
+        setShipTrails({ type: 'FeatureCollection', features: trailFeatures });
+
+        // Merge AIS positions into naval-forces ships layer
+        // AIS data adds heading property and updates positions of live-tracked ships
+        setLayers(prev => prev.map(l => {
+          if (l.id !== 'ships') return l;
+          const aisMap = new Map(fc.features.map(f => [f.properties.mmsi, f]));
+          // Add new AIS-only commercial vessels not in static naval-forces data
+          const existingIds = new Set(l.points?.map(p => p.id) ?? []);
+          const newPoints = fc.features
+            .filter(f => !existingIds.has(`ship-${f.properties.mmsi}`) && !existingIds.has(f.properties.id))
+            .map(f => ({
+              id: f.properties.id,
+              lat: f.geometry.coordinates[1],
+              lng: f.geometry.coordinates[0],
+              label: f.properties.name,
+              subLabel: `${f.properties.flag} · ${f.properties.speed}kt · HDG ${f.properties.heading}°`,
+              color: f.properties.color,
+              meta: {
+                heading: f.properties.heading,
+                mmsi: f.properties.mmsi,
+                flag: f.properties.flag,
+                shipType: String(f.properties.shipType),
+                isLive: true,
+              },
+            }));
+          return { ...l, points: [...(l.points ?? []), ...newPoints] };
+        }));
+      } catch (e) {
+        console.warn('[AIS] poll error', e);
+      }
+    };
+
+    fetchAIS();
+    const interval = setInterval(fetchAIS, 120_000); // every 2 min
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Fetch FR24 military aircraft feed (proxied server-side to avoid CORS)
   useEffect(() => {
     // Military ICAO hex ranges (3fc-3fe REMOVED: catches German civilian ultralights D-M*)
@@ -811,6 +899,7 @@ export default function WorldWatchClient() {
                 onRotationChange={setIsRotating}
                 aircraftDataRef={aircraftDataRef}
                 aircraftTrails={aircraftTrails}
+                shipTrails={shipTrails}
                 selectedNews={selectedNews}
                 aiBrief={aiBrief}
               />

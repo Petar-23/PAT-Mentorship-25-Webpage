@@ -77,6 +77,7 @@ interface Props {
   onRotationChange?: (rotating: boolean) => void;
   aircraftDataRef?: React.RefObject<Map<string, AircraftInfo>>;
   aircraftTrails?: { type: 'FeatureCollection'; features: TrailFeature[] };
+  shipTrails?: { type: 'FeatureCollection'; features: TrailFeature[] };
   selectedNews?: NewsItem | null;
   aiBrief?: AIBrief | null;
 }
@@ -101,7 +102,7 @@ function getDisasterType(title: string, category: string): string {
 }
 
 export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
-  { events, layers, onSelect, focusEvent, focusCounter, theme, onRotationChange, aircraftDataRef, aircraftTrails, selectedNews, aiBrief },
+  { events, layers, onSelect, focusEvent, focusCounter, theme, onRotationChange, aircraftDataRef, aircraftTrails, shipTrails, selectedNews, aiBrief },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -746,12 +747,35 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       shipImg.src = shipUrl;
 
       // Ship positions source
+      // Ship trails source (populated by AIS polling in world-watch-client)
+      map.addSource('ship-trails', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+
+      // Ship trail lines (rendered below ship icons)
+      map.addLayer({
+        id: 'ship-trail-lines',
+        type: 'line',
+        source: 'ship-trails',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+        },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': 1.2,
+          'line-opacity': 0.35,
+          'line-dasharray': [3, 2],
+        },
+      });
+
       map.addSource('ships-live', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
       });
 
-      // Ship icons
+      // Ship icons (rotated by heading from AIS data)
       map.addLayer({
         id: 'ship-icons',
         type: 'symbol',
@@ -761,6 +785,8 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           'icon-size': 0.9,
           'icon-allow-overlap': true,
           'icon-ignore-placement': true,
+          'icon-rotate': ['coalesce', ['get', 'heading'], 0],
+          'icon-rotation-alignment': 'map',
         },
         paint: {
           'icon-color': ['get', 'color'],
@@ -2619,6 +2645,14 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
     src.setData(aircraftTrails ?? { type: 'FeatureCollection', features: [] });
   }, [aircraftTrails]);
 
+  // Update ship-trails source when shipTrails prop changes
+  useEffect(() => {
+    if (!mapRef.current || !styleReadyRef.current) return;
+    const src = mapRef.current.getSource('ship-trails') as mapboxgl.GeoJSONSource | undefined;
+    if (!src) return;
+    src.setData(shipTrails ?? { type: 'FeatureCollection', features: [] });
+  }, [shipTrails]);
+
   // Update ships-live source when ships layer points change
   useEffect(() => {
     if (!mapRef.current) return;
@@ -2646,6 +2680,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
           label: p.label,
           subLabel: p.subLabel || '',
           color: p.color,
+          heading: typeof p.meta?.heading === 'number' ? p.meta.heading : 0,
           meta: p.meta ? JSON.stringify(p.meta) : '',
         },
       }));
@@ -2655,6 +2690,7 @@ export const Globe = forwardRef<GlobeHandle, Props>(function Globe(
       // Toggle visibility
       const visibility = shipLayer.enabled ? 'visible' : 'none';
       try {
+        if (map.getLayer('ship-trail-lines')) map.setLayoutProperty('ship-trail-lines', 'visibility', visibility);
         if (map.getLayer('ship-icons')) map.setLayoutProperty('ship-icons', 'visibility', visibility);
         if (map.getLayer('ship-labels')) map.setLayoutProperty('ship-labels', 'visibility', visibility);
       } catch (_) {}
