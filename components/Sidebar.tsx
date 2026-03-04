@@ -16,15 +16,25 @@ type Kurs = {
   iconUrl?: string | null
 }
 
+type Page = {
+  id: string
+  title: string
+  slug: string
+  description?: string | null
+  iconUrl?: string | null
+  published: boolean
+}
+
 type Props = {
   kurse: Kurs[]
+  pages?: Page[]
   savedSidebarOrder?: string[] | null
   activeCourseId?: string | null
   isAdmin: boolean
   openCreateCourseModal?: boolean
 }
 
-export function Sidebar({ kurse, savedSidebarOrder, activeCourseId, isAdmin, openCreateCourseModal }: Props) {
+export function Sidebar({ kurse, pages = [], savedSidebarOrder, activeCourseId, isAdmin, openCreateCourseModal }: Props) {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const showAdminUi = isAdmin && isDesktop
 
@@ -32,6 +42,7 @@ export function Sidebar({ kurse, savedSidebarOrder, activeCourseId, isAdmin, ope
     return (
       <SidebarAdmin
         kurse={kurse}
+        pages={pages}
         savedSidebarOrder={savedSidebarOrder}
         activeCourseId={activeCourseId}
         isAdmin={isAdmin}
@@ -40,5 +51,5 @@ export function Sidebar({ kurse, savedSidebarOrder, activeCourseId, isAdmin, ope
     )
   }
 
-  return <SidebarUser kurse={kurse} savedSidebarOrder={savedSidebarOrder} activeCourseId={activeCourseId} />
+  return <SidebarUser kurse={kurse} pages={pages.filter(p => p.published)} savedSidebarOrder={savedSidebarOrder} activeCourseId={activeCourseId} />
 }

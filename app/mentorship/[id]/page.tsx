@@ -26,7 +26,7 @@ export default async function DynamicCoursePage({ params }: Props) {
   const { userId } = await auth()
 
   // Sidebar-Daten — shared cached helper (deduplicated across routes per request)
-  const { kurseForSidebar, savedSidebarOrder } = await getSidebarData()
+  const { kurseForSidebar, pagesForSidebar, savedSidebarOrder } = await getSidebarData()
 
   // Erst prüfen: Ist das ID eine Playlist (Kurs)?
   const kurs = await prisma.playlist.findUnique({
@@ -157,6 +157,7 @@ export default async function DynamicCoursePage({ params }: Props) {
         <div className="hidden lg:block">
           <Sidebar
             kurse={kurseForSidebar}
+            pages={pagesForSidebar}
             savedSidebarOrder={savedSidebarOrder}
             activeCourseId={kurs.id}
             isAdmin={isAdmin}
@@ -177,6 +178,7 @@ export default async function DynamicCoursePage({ params }: Props) {
                 <MobileCoursesDrawer
                   variant="icon"
                   kurse={kurseForSidebar}
+                  pages={pagesForSidebar}
                   savedSidebarOrder={savedSidebarOrder}
                   activeCourseId={kurs.id}
                   isAdmin={isAdmin}
@@ -249,6 +251,7 @@ export default async function DynamicCoursePage({ params }: Props) {
       <div className="hidden lg:block">
         <Sidebar
           kurse={kurseForSidebar}
+          pages={pagesForSidebar}
           savedSidebarOrder={savedSidebarOrder}
           activeCourseId={modul.playlist?.id ?? null}
           isAdmin={isAdmin}

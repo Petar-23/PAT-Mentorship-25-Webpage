@@ -213,7 +213,7 @@ export default async function MentorshipDashboard({ searchParams = Promise.resol
   const onboardingExpired = isOnboardingVideoExpired()
   const onboardingExpiryLabel = formatOnboardingExpiryLabel(getOnboardingVideoExpiryDate())
 
-  const [{ kurseForSidebar, savedSidebarOrder }, continueLearning, newContent, onboardingVideoId] = await Promise.all([
+  const [{ kurseForSidebar, pagesForSidebar, savedSidebarOrder }, continueLearning, newContent, onboardingVideoId] = await Promise.all([
     getSidebarData(),
     getContinueLearning(userId ?? null, isAdmin),
     getNewContent(3),
@@ -225,6 +225,7 @@ export default async function MentorshipDashboard({ searchParams = Promise.resol
       <div className="hidden lg:block">
         <Sidebar
           kurse={kurseForSidebar}
+          pages={pagesForSidebar}
           savedSidebarOrder={savedSidebarOrder}
           isAdmin={isAdmin}
           openCreateCourseModal={isAdmin && openCreateCourseModal}
@@ -238,6 +239,7 @@ export default async function MentorshipDashboard({ searchParams = Promise.resol
             <MobileCoursesDrawer
               variant="icon"
               kurse={kurseForSidebar}
+              pages={pagesForSidebar}
               savedSidebarOrder={savedSidebarOrder}
               isAdmin={isAdmin}
               openCreateCourseModal={isAdmin && openCreateCourseModal}
