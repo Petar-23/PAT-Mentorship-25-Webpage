@@ -41,13 +41,6 @@ export function TopBar({ theme, currentTheme, setCurrentTheme }: Props) {
     return `${String(minsLeft).padStart(2, '0')}:${String(secsLeft).padStart(2, '0')}`;
   })();
 
-  const themeOptions: { value: Theme; label: string }[] = [
-    { value: 'gotham', label: 'Gotham' },
-    { value: 'mocha', label: 'Catppuccin Mocha' },
-    { value: 'latte', label: 'Catppuccin Latte' },
-    { value: 'bloomberg', label: 'Bloomberg Green' },
-  ];
-
   return (
     <div style={{
       height: 48,
@@ -109,26 +102,6 @@ export function TopBar({ theme, currentTheme, setCurrentTheme }: Props) {
 
       {/* Right: Theme + Live + Clock */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        {/* Theme Switcher */}
-        <select
-          value={currentTheme}
-          onChange={e => setCurrentTheme(e.target.value as Theme)}
-          style={{
-            background: theme.surface0,
-            color: theme.subtext0,
-            border: `1px solid ${theme.surface1}`,
-            fontSize: 10,
-            padding: '3px 6px',
-            fontFamily: 'inherit',
-            cursor: 'pointer',
-            letterSpacing: '0.5px',
-          }}
-        >
-          {themeOptions.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
-
         {/* LIVE indicator */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{
@@ -145,8 +118,10 @@ export function TopBar({ theme, currentTheme, setCurrentTheme }: Props) {
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
           {/* Next brief update countdown */}
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: theme.blue, fontVariantNumeric: 'tabular-nums', fontFamily: "'GeistMono', monospace" }}>
-              {nextUpdateCountdown}
+            <div style={{ fontSize: 13, fontWeight: 600, color: theme.blue, fontVariantNumeric: 'tabular-nums', fontFamily: "monospace", letterSpacing: '0.5px' }}>
+              {nextUpdateCountdown.split('').map((ch, i) => (
+                <span key={i} style={{ display: 'inline-block', width: ch === ':' ? '0.4em' : '0.6em', textAlign: 'center' }}>{ch}</span>
+              ))}
             </div>
             <div style={{ fontSize: 8, color: theme.overlay0, letterSpacing: '0.5px' }}>
               NEXT UPDATE
@@ -154,8 +129,10 @@ export function TopBar({ theme, currentTheme, setCurrentTheme }: Props) {
           </div>
           <div style={{ width: 1, height: 28, background: theme.surface1 }} />
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: theme.text, fontVariantNumeric: 'tabular-nums', fontFamily: "'GeistMono', monospace" }}>
-              {cetTime}{' '}
+            <div style={{ fontSize: 15, fontWeight: 700, color: theme.text, fontVariantNumeric: 'tabular-nums', fontFamily: "monospace", letterSpacing: '0.5px' }}>
+              {cetTime.split('').map((ch, i) => (
+                <span key={i} style={{ display: 'inline-block', width: ch === ':' ? '0.4em' : '0.6em', textAlign: 'center' }}>{ch}</span>
+              ))}{' '}
               <span style={{ fontSize: 9, color: theme.overlay0 }}>CET</span>
             </div>
             <div style={{ fontSize: 9, color: theme.subtext0 }}>{cetDate}</div>
