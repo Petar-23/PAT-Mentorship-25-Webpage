@@ -149,3 +149,15 @@ model PayPalSubscriber {
   @@index([paypalEmail])
   @@index([userId])
 }
+model Page {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String   @unique
+  description String?
+  iconUrl     String?
+  content     Json?
+  published   Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
