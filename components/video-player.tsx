@@ -4,7 +4,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ArrowRight, Check, FileText, Trash2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  FileText,
+  Trash as Trash2,
+} from '@phosphor-icons/react'
 import { useToast } from '@/hooks/use-toast'
 import { UploadZone } from './upload-zone'
 import { PdfUploadZone } from './pdf-upload-zone'

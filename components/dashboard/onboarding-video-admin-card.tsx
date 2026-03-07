@@ -6,7 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { getOnboardingEmbedUrl, sanitizeOnboardingVideoId } from '@/lib/onboarding-video'
-import { CheckCircle2, Loader2, Save, Trash2, UploadCloud } from 'lucide-react'
+import {
+  CheckCircle as CheckCircle2,
+  SpinnerGap as Loader2,
+  FloppyDisk as Save,
+  Trash as Trash2,
+  CloudArrowUp as UploadCloud,
+} from '@phosphor-icons/react'
 
 type OnboardingSettingsResponse = {
   videoId: string | null

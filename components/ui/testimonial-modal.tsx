@@ -1,5 +1,5 @@
 // src/components/sections/testimonials/testimonial-modal-content.tsx
-import { Quote, X } from 'lucide-react';
+import { Quotes as Quote, X } from '@phosphor-icons/react/dist/ssr'
 import { GradientCard } from '@/components/ui/gradient-card';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';

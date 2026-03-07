@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from '@phosphor-icons/react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 

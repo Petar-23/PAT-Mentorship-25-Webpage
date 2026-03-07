@@ -1,5 +1,5 @@
 import { MENTORSHIP_CONFIG } from '@/lib/config'
-import { Check } from "lucide-react"
+import { Check } from "@phosphor-icons/react/dist/ssr"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 

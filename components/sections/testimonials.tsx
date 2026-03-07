@@ -5,7 +5,12 @@ import { motion } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import Image from "next/image"
 import InfiniteScroll from "@/components/ui/infinite-scroll"
-import { TrendingUp, Receipt, ChartCandlestick, Star } from "lucide-react"
+import {
+  TrendUp as TrendingUp,
+  Receipt,
+  ChartLineUp as ChartCandlestick,
+  Star,
+} from "@phosphor-icons/react"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { TestimonialModal } from "../ui/testimonial-modal"
 import { TestimonialCard } from "../ui/testimonial-card"

@@ -3,7 +3,12 @@
 import { motion } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Users, Clock, Trophy } from "lucide-react"
+import {
+  ArrowRight,
+  Users,
+  Clock,
+  Trophy,
+} from "@phosphor-icons/react"
 import { GlowingCard } from "@/components/ui/glowing-card"
 import { Vortex } from "@/components/ui/vortex"
 import { Countdown } from "@/components/ui/countdown"

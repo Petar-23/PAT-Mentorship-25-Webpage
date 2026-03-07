@@ -7,7 +7,15 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { Menu, X, Home, Settings, Notebook, Gauge, PenLine } from 'lucide-react'
+import {
+  List as Menu,
+  X,
+  House as Home,
+  GearSix as Settings,
+  Notebook,
+  Gauge,
+  PencilLine as PenLine,
+} from '@phosphor-icons/react'
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MENTORSHIP_CONFIG } from '@/lib/config'

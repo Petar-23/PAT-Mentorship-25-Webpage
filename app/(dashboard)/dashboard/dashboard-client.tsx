@@ -3,7 +3,14 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { CalendarCheck, LockIcon, CircleCheckBig, CreditCard, BookOpen, Ticket } from 'lucide-react'
+import {
+  CalendarCheck,
+  LockIcon,
+  CheckCircle as CircleCheckBig,
+  CreditCard,
+  BookOpen,
+  Ticket,
+} from '@phosphor-icons/react'
 import { CheckoutButton } from '@/components/ui/checkout-button'
 import { Button } from '@/components/ui/button'
 import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'

@@ -4,7 +4,12 @@ import { useEffect, useState } from 'react'
 import * as tus from 'tus-js-client'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
-import { Upload, Film, AlertCircle, CheckCircle } from 'lucide-react'
+import {
+  Upload,
+  FilmStrip as Film,
+  WarningCircle as AlertCircle,
+  CheckCircle,
+} from '@phosphor-icons/react'
 
 type Props = {
   videoId: string

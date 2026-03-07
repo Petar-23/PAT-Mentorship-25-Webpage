@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Image from 'next/image'
-import { Play } from 'lucide-react'
+import { Play } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 
 type LazyYouTubeEmbedProps = {

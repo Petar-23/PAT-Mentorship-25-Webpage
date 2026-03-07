@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreVertical, Trash2, Edit } from 'lucide-react'
+import { DotsThreeVertical as MoreVertical, Trash as Trash2, PencilSimple as Edit } from '@phosphor-icons/react'
 import { useToast } from '@/hooks/use-toast'
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,

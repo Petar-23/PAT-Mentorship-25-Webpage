@@ -2,7 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Star, Users, Award, LineChart, BadgeCheck } from "lucide-react"
+import {
+  ArrowRight,
+  Star,
+  Users,
+  Medal as Award,
+  ChartLine as LineChart,
+  SealCheck as BadgeCheck,
+} from "@phosphor-icons/react"
 import Link from "next/link"
 import { GLSLHills } from "../ui/glsl-hills"
 import { Countdown } from "@/components/ui/countdown"

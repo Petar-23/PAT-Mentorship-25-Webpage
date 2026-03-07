@@ -1,13 +1,13 @@
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 // import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { 
-  Users, 
-  Target, 
-  Calendar, 
-  MessageSquare, 
-  BookOpen, 
-  Award 
-} from "lucide-react"
+import {
+  Users,
+  Target,
+  Calendar,
+  ChatText as MessageSquare,
+  BookOpen,
+  Medal as Award,
+} from "@phosphor-icons/react/dist/ssr"
 
 const features = [
   {

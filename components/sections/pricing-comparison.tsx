@@ -2,7 +2,7 @@
 "use client"
 import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { Card } from "@/components/ui/card"
-import { Check, X, ArrowRight } from "lucide-react"
+import { Check, X, ArrowRight } from "@phosphor-icons/react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { SignInButton, useUser } from '@clerk/nextjs'

@@ -1,7 +1,13 @@
 'use client'
 
 import Image from 'next/image'
-import { Award, Play, Users, LineChart, Star } from "lucide-react"
+import {
+  Medal as Award,
+  Play,
+  Users,
+  ChartLine as LineChart,
+  Star,
+} from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { CardWithMatrix } from "@/components/ui/card-with-matrix"
 import { AreaChart, Area, ReferenceLine, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'

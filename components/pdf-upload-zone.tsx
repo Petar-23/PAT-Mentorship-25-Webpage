@@ -4,7 +4,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Upload } from 'lucide-react'
+import { Upload } from '@phosphor-icons/react'
 import { useToast } from '@/hooks/use-toast'
 
 type Props = {
