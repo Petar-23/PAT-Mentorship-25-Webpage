@@ -1,7 +1,13 @@
 // src/components/sections/program-structure.tsx
 'use client'
 
-import { CheckCircle, Users, BrainCircuit, LineChart, Calendar } from "lucide-react"
+import {
+  CheckCircle,
+  Users,
+  HeadCircuit as BrainCircuit,
+  ChartLine as LineChart,
+  Calendar,
+} from "@phosphor-icons/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { CardWithMatrix } from '@/components/ui/card-with-matrix'
 import { GradientCard } from '@/components/ui/gradient-card'

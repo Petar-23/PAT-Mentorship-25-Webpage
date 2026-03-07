@@ -4,7 +4,7 @@
 import { useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { CheckCircle } from 'lucide-react'
+import { CheckCircle } from '@phosphor-icons/react'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
 import confetti from 'canvas-confetti'
 

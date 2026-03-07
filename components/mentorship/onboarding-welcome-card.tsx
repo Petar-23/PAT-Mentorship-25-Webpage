@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getOnboardingDismissStorageKey, getOnboardingEmbedUrl } from '@/lib/onboarding-video'
-import { CalendarDays, CheckCircle2, ChevronDown } from 'lucide-react'
+import { CalendarDots as CalendarDays, CheckCircle as CheckCircle2, CaretDown as ChevronDown } from '@phosphor-icons/react'
 
 type OnboardingWelcomeCardProps = {
   videoId: string

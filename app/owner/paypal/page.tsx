@@ -7,7 +7,12 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Pencil, Check, X, UserPlus } from 'lucide-react'
+import {
+  Pencil,
+  Check,
+  X,
+  UserPlus,
+} from '@phosphor-icons/react'
 
 type PayPalSubscriber = {
   id: string

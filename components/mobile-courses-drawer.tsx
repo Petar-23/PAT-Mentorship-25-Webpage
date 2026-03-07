@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowLeft, BookOpen } from "lucide-react"
+import { ArrowLeft, BookOpen } from "@phosphor-icons/react"
 
 import { Sidebar } from "@/components/Sidebar"
 import { Button } from "@/components/ui/button"

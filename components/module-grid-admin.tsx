@@ -36,7 +36,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { upload } from '@vercel/blob/client'
 import Image from 'next/image'
-import { Grip } from 'lucide-react'
+import { DotsSix as Grip } from '@phosphor-icons/react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
