@@ -536,7 +536,7 @@ function WhopRatingCard({ count, average, isLive }: { count: number | null; aver
               </p>
               <div className="mt-0.5 sm:mt-1 flex items-center gap-0.5 sm:gap-1 text-amber-500">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="h-3 w-3 sm:h-4 sm:w-4 fill-current" />
+                  <Star key={i} weight="fill" className="h-3 w-3 sm:h-4 sm:w-4 fill-current" />
                 ))}
               </div>
               <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-gray-600 tabular-nums truncate leading-tight">
