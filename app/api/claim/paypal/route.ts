@@ -1,9 +1,40 @@
 import { auth } from '@clerk/nextjs/server'
+import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getPayPalSubscription } from '@/lib/paypal'
 
 export const dynamic = 'force-dynamic'
+
+const CLAIM_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
+const CLAIM_RATE_LIMIT_MAX_ATTEMPTS = 5
+const claimAttempts = new Map<string, { count: number; resetAt: number }>()
+
+function getClientIp(headersList: Headers) {
+  const forwardedFor = headersList.get('x-forwarded-for')
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0]?.trim() || 'unknown'
+  }
+
+  return headersList.get('x-real-ip') || headersList.get('cf-connecting-ip') || 'unknown'
+}
+
+function isRateLimited(key: string) {
+  const now = Date.now()
+  const current = claimAttempts.get(key)
+
+  if (!current || current.resetAt <= now) {
+    claimAttempts.set(key, { count: 1, resetAt: now + CLAIM_RATE_LIMIT_WINDOW_MS })
+    return false
+  }
+
+  if (current.count >= CLAIM_RATE_LIMIT_MAX_ATTEMPTS) {
+    return true
+  }
+
+  current.count += 1
+  return false
+}
 
 /**
  * PayPal Claim API: User verknuepft seinen PayPal-Account mit seinem Webapp-Account.
@@ -23,8 +54,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Nicht eingeloggt' }, { status: 401 })
     }
 
-    const body = await req.json()
-    const paypalEmail = typeof body.paypalEmail === 'string' ? body.paypalEmail.trim().toLowerCase() : ''
+    const headersList = await headers()
+    const clientIp = getClientIp(headersList)
+    const rateLimitKey = `${userId}:${clientIp}`
+    if (isRateLimited(rateLimitKey)) {
+      return NextResponse.json(
+        { error: 'Zu viele Versuche. Bitte warte kurz und versuche es dann erneut.' },
+        { status: 429 }
+      )
+    }
+
+    const body = (await req.json().catch(() => null)) as { paypalEmail?: unknown } | null
+    const paypalEmail = typeof body?.paypalEmail === 'string' ? body.paypalEmail.trim().toLowerCase() : ''
 
     if (!paypalEmail) {
       return NextResponse.json(
@@ -59,9 +100,9 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            'Diese Email-Adresse wurde nicht gefunden. Stelle sicher, dass du die Email verwendest, mit der du bei PayPal bezahlst. Bei Fragen kontaktiere den Support.',
+            'Wir konnten dein PayPal-Abo nicht eindeutig bestätigen. Prüfe bitte deine PayPal-Email oder kontaktiere den Support.',
         },
-        { status: 404 }
+        { status: 400 }
       )
     }
 
@@ -86,9 +127,9 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            'Dein PayPal-Abonnement ist nicht aktiv. Bitte stelle sicher, dass dein Abo aktiv ist und versuche es erneut.',
+            'Wir konnten dein PayPal-Abo nicht eindeutig bestätigen. Prüfe bitte deine PayPal-Email oder kontaktiere den Support.',
         },
-        { status: 403 }
+        { status: 400 }
       )
     }
 
