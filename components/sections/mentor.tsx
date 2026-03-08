@@ -280,7 +280,7 @@ export default function MentorSection() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-0.5 sm:gap-1 text-amber-400">
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className="h-3 w-3 sm:h-4 sm:w-4 fill-current" />
+                          <Star key={i} weight="fill" className="h-3 w-3 sm:h-4 sm:w-4 fill-current" />
                         ))}
                       </div>
                       <p className="text-xs sm:text-sm text-gray-400 mt-0.5 sm:mt-1">
@@ -611,7 +611,7 @@ export default function MentorSection() {
                         <div className="min-w-0">
                           <div className="flex items-center gap-1 text-amber-400">
                             {Array.from({ length: 5 }).map((_, i) => (
-                              <Star key={i} className="h-4 w-4 fill-current" />
+                              <Star key={i} weight="fill" className="h-4 w-4 fill-current" />
                             ))}
                           </div>
                           <p className="text-sm text-gray-400 mt-1">

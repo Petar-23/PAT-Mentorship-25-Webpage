@@ -50,7 +50,7 @@ export function TestimonialCard({ testimonial, isMobile, onClick }: TestimonialC
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="flex items-center gap-0.5 sm:gap-1 text-amber-500">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="h-3 w-3 sm:h-4 sm:w-4 fill-current" />
+                    <Star key={i} weight="fill" className="h-3 w-3 sm:h-4 sm:w-4 fill-current" />
                   ))}
                 </div>
                 <span className="inline-flex items-center gap-0.5 sm:gap-1 rounded-full bg-emerald-50 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[11px] font-semibold text-emerald-700 border border-emerald-200">
