@@ -5,16 +5,16 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
   BookOpen,
-  ChevronDown,
+  CaretDown as ChevronDown,
   FileText,
   Users,
-  GripVertical,
+  DotsSixVertical as GripVertical,
   Plus,
-  MoreVertical,
-  Trash2,
+  DotsThreeVertical as MoreVertical,
+  Trash as Trash2,
   Pencil,
-  SquareKanban,
-} from 'lucide-react'
+  Kanban as SquareKanban,
+} from '@phosphor-icons/react'
 import patBanner from '@/public/images/pat-banner.jpeg'
 import { UserButton, useUser } from '@clerk/nextjs'
 import {

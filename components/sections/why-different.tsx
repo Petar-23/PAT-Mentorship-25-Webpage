@@ -1,7 +1,14 @@
 'use client'
 
 import { MENTORSHIP_CONFIG } from '@/lib/config'
-import { PlayCircle, Users, Calendar, ChartSpline, Trophy, CreditCard } from "lucide-react"
+import {
+  PlayCircle,
+  Users,
+  Calendar,
+  ChartLine as ChartSpline,
+  Trophy,
+  CreditCard,
+} from "@phosphor-icons/react"
 import { GlowingEffect } from "@/components/ui/glowing-effect"
 
 const features = [

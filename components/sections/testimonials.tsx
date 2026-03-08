@@ -5,7 +5,12 @@ import { motion } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import Image from "next/image"
 import InfiniteScroll from "@/components/ui/infinite-scroll"
-import { TrendingUp, Receipt, ChartCandlestick, Star } from "lucide-react"
+import {
+  TrendUp as TrendingUp,
+  Receipt,
+  ChartLineUp as ChartCandlestick,
+  Star,
+} from "@phosphor-icons/react"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { TestimonialModal } from "../ui/testimonial-modal"
 import { TestimonialCard } from "../ui/testimonial-card"
@@ -531,7 +536,7 @@ function WhopRatingCard({ count, average, isLive }: { count: number | null; aver
               </p>
               <div className="mt-0.5 sm:mt-1 flex items-center gap-0.5 sm:gap-1 text-amber-500">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="h-3 w-3 sm:h-4 sm:w-4 fill-current" />
+                  <Star key={i} weight="fill" className="h-3 w-3 sm:h-4 sm:w-4 fill-current" />
                 ))}
               </div>
               <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-gray-600 tabular-nums truncate leading-tight">

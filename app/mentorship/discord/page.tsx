@@ -7,7 +7,7 @@ import { fetchDiscordGuildMember } from '@/lib/discord'
 import { DiscordLinkButton } from '@/components/discord/discord-link-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getIsAdmin } from '@/lib/authz'
-import { Check, Link2 } from 'lucide-react'
+import { Check, LinkSimple as Link2 } from '@phosphor-icons/react/dist/ssr'
 import { MobileCoursesDrawer } from '@/components/mobile-courses-drawer'
 
 type SearchParams = { [key: string]: string | string[] | undefined }

@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useToast } from "@/hooks/use-toast"
-import { CreditCard } from 'lucide-react'
+import { CreditCard } from '@phosphor-icons/react'
 import { useAuth } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 

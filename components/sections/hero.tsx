@@ -2,7 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Star, Users, Award, LineChart, BadgeCheck } from "lucide-react"
+import {
+  ArrowRight,
+  Star,
+  Users,
+  Medal as Award,
+  ChartLine as LineChart,
+  SealCheck as BadgeCheck,
+} from "@phosphor-icons/react"
 import Link from "next/link"
 import { GLSLHills } from "../ui/glsl-hills"
 import { Countdown } from "@/components/ui/countdown"
@@ -196,7 +203,7 @@ export default function Hero() {
                       />
                       <span className="flex items-center gap-0.5">
                         {[1, 2, 3, 4, 5].map((star) => (
-                          <Star key={star} className="h-3 w-3 fill-amber-500 text-amber-500" />
+                          <Star key={star} weight="fill" className="h-3 w-3 fill-amber-500 text-amber-500" />
                         ))}
                       </span>
                     </span>
@@ -314,7 +321,7 @@ export default function Hero() {
                           />
                           <span className="flex items-center gap-0.5">
                             {[1, 2, 3, 4, 5].map((star) => (
-                              <Star key={`mobile-top-star-${star}`} className="h-3 w-3 fill-amber-500 text-amber-500" />
+                              <Star key={`mobile-top-star-${star}`} weight="fill" className="h-3 w-3 fill-amber-500 text-amber-500" />
                             ))}
                           </span>
                         </span>
@@ -424,7 +431,7 @@ export default function Hero() {
                       </div>
                       <div className="mt-2 flex items-center gap-1 text-amber-500">
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className="h-4 w-4 fill-current" />
+                          <Star key={i} weight="fill" className="h-4 w-4 fill-current" />
                         ))}
                       </div>
                     </div>
