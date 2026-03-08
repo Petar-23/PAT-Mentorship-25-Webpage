@@ -203,7 +203,7 @@ export default function Hero() {
                       />
                       <span className="flex items-center gap-0.5">
                         {[1, 2, 3, 4, 5].map((star) => (
-                          <Star key={star} className="h-3 w-3 fill-amber-500 text-amber-500" />
+                          <Star key={star} weight="fill" className="h-3 w-3 fill-amber-500 text-amber-500" />
                         ))}
                       </span>
                     </span>
