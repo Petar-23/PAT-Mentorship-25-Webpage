@@ -1,11 +1,14 @@
 // src/app/api/customer-count/route.ts
 import { stripe } from '@/lib/stripe'
 import { NextResponse } from 'next/server'
+import { requireAdminApiAccess } from '@/lib/authz'
 
-// Cache the response for 5 minutes
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
+  const guard = await requireAdminApiAccess()
+  if (!guard.ok) return guard.response
+
   try {
     // Get customers that are on the waitlist
     const customerList = await stripe.customers.list({

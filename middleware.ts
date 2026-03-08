@@ -24,11 +24,9 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   // Restrict admin routes to users with specific permissions
-  if (
-    (isProtectedRoute(req) && !has({ permission: 'org:admin:access' }))
-  ) {
-    // Add logic to run if the user does not have the required permissions
-    console.log(has)
+  if (isProtectedRoute(req) && !has({ permission: 'org:admin:access' })) {
+    const dashboardUrl = new URL('/dashboard', req.url)
+    return NextResponse.redirect(dashboardUrl)
   }
 })
 
