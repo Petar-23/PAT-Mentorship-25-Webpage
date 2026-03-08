@@ -12,6 +12,7 @@ const isAuthRequiredRoute = createRouteMatcher([
 
 export default clerkMiddleware(async (auth, req) => {
   const { userId, has } = await auth()
+  const isOrgAdmin = has({ role: 'org:admin' }) || has({ permission: 'org:admin:access' })
 
   // UX: Wenn jemand ohne Login einen Deep-Link (z.B. aus Discord) öffnet,
   // leiten wir auf /sign-in weiter, aber behalten die ursprüngliche URL,
@@ -24,7 +25,7 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   // Restrict admin routes to users with specific permissions
-  if (isProtectedRoute(req) && !has({ permission: 'org:admin:access' })) {
+  if (isProtectedRoute(req) && !isOrgAdmin) {
     const dashboardUrl = new URL('/dashboard', req.url)
     return NextResponse.redirect(dashboardUrl)
   }
