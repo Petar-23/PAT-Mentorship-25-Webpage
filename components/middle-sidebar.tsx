@@ -11,14 +11,14 @@ import Image from 'next/image'
 import {
   ArrowLeft,
   Check,
-  ChevronDown,
-  ChevronRight,
-  ChevronUp,
-  Film,
-  GripVertical,
+  CaretDown as ChevronDown,
+  CaretRight as ChevronRight,
+  CaretUp as ChevronUp,
+  FilmStrip as Film,
+  DotsSixVertical as GripVertical,
   Plus,
-  Trash2,
-} from 'lucide-react'
+  Trash as Trash2,
+} from '@phosphor-icons/react'
 import {
   AlertDialog,
   AlertDialogAction,

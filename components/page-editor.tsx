@@ -17,30 +17,30 @@ import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import { upload } from '@vercel/blob/client'
 import {
-  Bold,
-  Italic,
-  Underline as UnderlineIcon,
-  Strikethrough,
+  TextB as Bold,
+  TextItalic as Italic,
+  TextUnderline as UnderlineIcon,
+  TextStrikethrough as Strikethrough,
   Highlighter,
   List,
-  ListOrdered,
-  Quote,
+  ListNumbers as ListOrdered,
+  Quotes as Quote,
   Image as ImageIcon,
   Link as LinkIcon,
   Table as TableIcon,
   Minus,
-  Undo,
-  Redo,
-  Heading1,
-  Heading2,
-  Heading3,
+  ArrowCounterClockwise as Undo,
+  ArrowClockwise as Redo,
+  TextHOne as Heading1,
+  TextHTwo as Heading2,
+  TextHThree as Heading3,
   AlignLeft,
-  AlignCenter,
+  TextAlignCenter as AlignCenter,
   AlignRight,
   Eye,
-  EyeOff,
-  Save,
-} from 'lucide-react'
+  EyeSlash as EyeOff,
+  FloppyDisk as Save,
+} from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 

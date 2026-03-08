@@ -3,7 +3,14 @@
 
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { CalendarIcon, CheckCircle2, AlertTriangle, XCircle, Armchair, Clock } from 'lucide-react'
+import {
+  CalendarIcon,
+  CheckCircle as CheckCircle2,
+  Warning as AlertTriangle,
+  XCircle,
+  Armchair,
+  Clock,
+} from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { CountdownProgress } from './countdown-progress'

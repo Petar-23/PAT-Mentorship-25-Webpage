@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Sidebar } from './Sidebar'
 import { Button } from '@/components/ui/button'
 import { SlideOver, SlideOverContent } from '@/components/ui/slide-over'
-import { BookOpen, ListVideo } from 'lucide-react'
+import { BookOpen, FileVideo as ListVideo } from '@phosphor-icons/react'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { useSearchParams } from 'next/navigation'
 

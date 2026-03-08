@@ -1,5 +1,5 @@
 import Image from "next/image"
-import { BadgeCheck, Quote, Star } from "lucide-react"
+import { SealCheck as BadgeCheck, Quotes as Quote, Star } from "@phosphor-icons/react/dist/ssr"
 import { GradientCard } from "@/components/ui/gradient-card"
 
 interface TestimonialCardProps {

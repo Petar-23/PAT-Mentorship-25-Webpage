@@ -2,7 +2,13 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { BookOpen, ChevronDown, FileText, SquareKanban, Users } from 'lucide-react'
+import {
+  BookOpen,
+  CaretDown as ChevronDown,
+  FileText,
+  Kanban as SquareKanban,
+  Users,
+} from '@phosphor-icons/react'
 import patBanner from '@/public/images/pat-banner.jpeg'
 import { UserButton, useUser } from '@clerk/nextjs'
 import {

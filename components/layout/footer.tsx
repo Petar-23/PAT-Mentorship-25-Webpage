@@ -7,7 +7,7 @@ import {
   SiX, 
   SiDiscord 
 } from '@icons-pack/react-simple-icons'
-import { Cookie, LineChart, BookOpen } from "lucide-react"
+import { Cookie, ChartLine as LineChart, BookOpen } from "@phosphor-icons/react"
 import { useCookieSettings } from "@/lib/cookie-settings"
 
 export function Footer() {

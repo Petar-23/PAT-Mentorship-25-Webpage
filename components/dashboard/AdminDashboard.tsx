@@ -5,7 +5,16 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, TooltipProps, Legend, PieChart, Pie, Cell, ResponsiveContainer, Line, ComposedChart } from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { FilterX, TrendingUp, Calendar, AlertCircle, CreditCard, ArrowUpCircle, Wallet, Users } from 'lucide-react'
+import {
+  FunnelX as FilterX,
+  TrendUp as TrendingUp,
+  Calendar,
+  WarningCircle as AlertCircle,
+  CreditCard,
+  ArrowCircleUp as ArrowUpCircle,
+  Wallet,
+  Users,
+} from '@phosphor-icons/react'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d']
 
