@@ -285,6 +285,7 @@ function VideoRow({
     >
       <VideoThumbnail
         bunnyGuid={video.bunnyGuid}
+        thumbnailUrl={video.thumbnailUrl}
         title={video.title}
         isProcessing={isProcessing}
         isWatched={isWatched}
