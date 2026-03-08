@@ -59,6 +59,7 @@ type Video = {
   id: string
   title: string
   bunnyGuid: string | null
+  thumbnailUrl: string | null
   pdfUrl: string | null
   order: number
 }
@@ -123,17 +124,22 @@ function formatDuration(seconds: number | null | undefined) {
 
 function VideoThumbnail({
   bunnyGuid,
+  thumbnailUrl,
   title,
   isProcessing,
   isWatched,
 }: {
   bunnyGuid: string | null
+  thumbnailUrl: string | null
   title: string
   isProcessing: boolean
   isWatched?: boolean
 }) {
   const [errorGuid, setErrorGuid] = useState<string | null>(null)
-  const hasError = Boolean(bunnyGuid && errorGuid === bunnyGuid)
+  const fallbackThumbnailUrl = null
+  const resolvedThumbnailUrl = thumbnailUrl || fallbackThumbnailUrl
+  const errorKey = thumbnailUrl || bunnyGuid
+  const hasError = Boolean(errorKey && errorGuid === errorKey)
 
   useEffect(() => {
     if (!hasError) return
@@ -152,13 +158,13 @@ function VideoThumbnail({
             <div className="absolute inset-0 w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
           </div>
         </div>
-      ) : !bunnyGuid || hasError ? (
+      ) : !resolvedThumbnailUrl || hasError ? (
         <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
           <Film className="h-5 w-5 text-muted-foreground/70" />
         </div>
       ) : (
         <Image
-          src={`https://vz-dc8da426-d71.b-cdn.net/${bunnyGuid}/thumbnail.jpg`}
+          src={resolvedThumbnailUrl}
           alt={title}
           fill
           sizes="96px"
@@ -167,7 +173,7 @@ function VideoThumbnail({
           // sonst können Thumbnails je nach CDN/Hotlink-Settings leer bleiben.
           unoptimized
           referrerPolicy="origin"
-          onError={() => setErrorGuid(bunnyGuid)}
+          onError={() => errorKey && setErrorGuid(errorKey)}
         />
       )}
 
@@ -234,6 +240,7 @@ function SortableVideo({
 
         <VideoThumbnail
           bunnyGuid={video.bunnyGuid}
+          thumbnailUrl={video.thumbnailUrl}
           title={video.title}
           isProcessing={isProcessing}
           isWatched={isWatched}

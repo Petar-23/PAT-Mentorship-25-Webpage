@@ -110,3 +110,25 @@ export async function deleteVideo(videoGuid: string): Promise<void> {
 }
 
 // Weitere: addVideoToCollection, createPlaylist, etc. können erweitert werden
+
+
+export async function resolveBunnyThumbnailUrl(
+  videoGuid: string,
+  options: { libraryId?: string; referer?: string } = {}
+): Promise<string | null> {
+  const libraryId = options.libraryId || process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID || process.env.BUNNY_LIBRARY_ID
+  if (!libraryId || !videoGuid) return null
+
+  const res = await fetch(`https://iframe.mediadelivery.net/embed/${libraryId}/${videoGuid}`, {
+    headers: {
+      Referer: options.referer || process.env.NEXT_PUBLIC_APP_URL || 'https://www.price-action-trader.de/',
+      'User-Agent': 'Mozilla/5.0 OpenClaw Bunny Thumbnail Resolver',
+    },
+    cache: 'no-store',
+  })
+
+  if (!res.ok) return null
+  const html = await res.text()
+  const match = html.match(/https:\/\/[^"'\s>]+\/thumbnail\.jpg/)
+  return match?.[0] || null
+}
