@@ -19,6 +19,7 @@ type Video = {
   id: string
   title: string
   bunnyGuid: string | null
+  thumbnailUrl: string | null
   pdfUrl: string | null
   order: number
 }
@@ -78,34 +79,39 @@ function formatDuration(seconds: number | null | undefined) {
 
 function VideoThumbnail({
   bunnyGuid,
+  thumbnailUrl,
   title,
   isWatched,
 }: {
   bunnyGuid: string | null
+  thumbnailUrl: string | null
   title: string
   isWatched?: boolean
 }) {
   const [errorGuid, setErrorGuid] = useState<string | null>(null)
-  const hasError = Boolean(bunnyGuid && errorGuid === bunnyGuid)
+  const fallbackThumbnailUrl = null
+  const resolvedThumbnailUrl = thumbnailUrl || fallbackThumbnailUrl
+  const errorKey = thumbnailUrl || bunnyGuid
+  const hasError = Boolean(errorKey && errorGuid === errorKey)
 
   const showWatchedOverlay = Boolean(isWatched)
 
   return (
     <div className="relative w-24 h-14 flex-shrink-0 cursor-pointer">
-      {!bunnyGuid || hasError ? (
+      {!resolvedThumbnailUrl || hasError ? (
         <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
           <Film className="h-5 w-5 text-muted-foreground/70" />
         </div>
       ) : (
         <Image
-          src={`https://vz-dc8da426-d71.b-cdn.net/${bunnyGuid}/thumbnail.jpg`}
+          src={resolvedThumbnailUrl}
           alt={title}
           fill
           sizes="96px"
           className="object-cover rounded-md"
           referrerPolicy="origin"
           unoptimized
-          onError={() => setErrorGuid(bunnyGuid)}
+          onError={() => errorKey && setErrorGuid(errorKey)}
         />
       )}
 
@@ -144,7 +150,7 @@ function VideoRow({
       onClick={onClick}
       aria-current={isActive ? 'true' : undefined}
     >
-      <VideoThumbnail bunnyGuid={video.bunnyGuid} title={video.title} isWatched={isWatched} />
+      <VideoThumbnail bunnyGuid={video.bunnyGuid} thumbnailUrl={video.thumbnailUrl} title={video.title} isWatched={isWatched} />
 
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium leading-snug overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">

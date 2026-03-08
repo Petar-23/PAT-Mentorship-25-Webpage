@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth, clerkClient } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { sendDiscordChannelMessage, sendDiscordChannelMessageWithAttachment } from '@/lib/discord'
+import { resolveBunnyThumbnailUrl } from '@/lib/bunny'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -137,15 +138,13 @@ export async function POST(req: Request) {
 
         const message = await sendDiscordChannelMessageWithAttachment({
           channelId,
-          content: '', // Remove separate content, everything goes in embed
+          content: '@everyone',
           allowedMentions: { parse: ['everyone'] },
           embeds: [
             {
               title: `Neues Video: ${video.title}`,
               url: videoUrl,
-              description: `@everyone
-
-Moin zusammen, ich habe soeben ein neues Video veröffentlicht.
+              description: `Moin zusammen, ich habe soeben ein neues Video veröffentlicht.
 Ihr findet das Video in der **${courseForText}**.
 
 ${videoUrl}
@@ -178,7 +177,7 @@ Petar`,
 
         await prisma.video.update({
           where: { id: video.id },
-          data: { announcementMessageId: messageId },
+          data: { announcementMessageId: messageId, thumbnailUrl: thumbnailUrl || video.thumbnailUrl },
         })
 
         return NextResponse.json({ ok: true, messageId, thumbnail: 'attached' })
@@ -187,15 +186,13 @@ Petar`,
 
         const message = await sendDiscordChannelMessage({
           channelId,
-          content: '', // Remove separate content, everything goes in embed
+          content: '@everyone',
           allowedMentions: { parse: ['everyone'] },
           embeds: [
             {
               title: `Neues Video: ${video.title}`,
               url: videoUrl,
-              description: `@everyone
-
-Moin zusammen, ich habe soeben ein neues Video veröffentlicht.
+              description: `Moin zusammen, ich habe soeben ein neues Video veröffentlicht.
 Ihr findet das Video in der **${courseForText}**.
 
 ${videoUrl}

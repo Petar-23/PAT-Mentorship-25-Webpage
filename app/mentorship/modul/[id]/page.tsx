@@ -50,6 +50,7 @@ export default async function MentorshipModulPage({
               id: true,
               title: true,
               bunnyGuid: true,
+              thumbnailUrl: true,
               pdfUrl: true,
               order: true,
             },
