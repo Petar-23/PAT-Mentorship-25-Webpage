@@ -128,7 +128,7 @@ export function OnboardingWelcomeCard({ videoId, expiresAtLabel }: OnboardingWel
                   src={embedUrl}
                   title="Onboarding Video PAT Mentorship 2026"
                   className="h-full w-full"
-                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                  allow="accelerometer; gyroscope; encrypted-media; picture-in-picture"
                   allowFullScreen
                   loading="lazy"
                   referrerPolicy="strict-origin-when-cross-origin"
