@@ -137,15 +137,13 @@ export async function POST(req: Request) {
 
         const message = await sendDiscordChannelMessageWithAttachment({
           channelId,
-          content: '', // Remove separate content, everything goes in embed
+          content: '@everyone',
           allowedMentions: { parse: ['everyone'] },
           embeds: [
             {
               title: `Neues Video: ${video.title}`,
               url: videoUrl,
-              description: `@everyone
-
-Moin zusammen, ich habe soeben ein neues Video veröffentlicht.
+              description: `Moin zusammen, ich habe soeben ein neues Video veröffentlicht.
 Ihr findet das Video in der **${courseForText}**.
 
 ${videoUrl}
@@ -187,15 +185,13 @@ Petar`,
 
         const message = await sendDiscordChannelMessage({
           channelId,
-          content: '', // Remove separate content, everything goes in embed
+          content: '@everyone',
           allowedMentions: { parse: ['everyone'] },
           embeds: [
             {
               title: `Neues Video: ${video.title}`,
               url: videoUrl,
-              description: `@everyone
-
-Moin zusammen, ich habe soeben ein neues Video veröffentlicht.
+              description: `Moin zusammen, ich habe soeben ein neues Video veröffentlicht.
 Ihr findet das Video in der **${courseForText}**.
 
 ${videoUrl}
