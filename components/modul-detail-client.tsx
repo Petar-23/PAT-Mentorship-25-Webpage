@@ -691,7 +691,7 @@ export function ModulDetailClient({
                 : undefined
             }
             nextVideoDisabled={!nextVideoId}
-            autoPlay={!isDesktop}
+            autoPlay={false}
           />
         </div>
       </div>
