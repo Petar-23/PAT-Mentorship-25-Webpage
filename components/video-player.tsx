@@ -74,7 +74,7 @@ export function VideoPlayer({
 
   const iframeSrc =
     activeVideo?.bunnyGuid
-      ? `https://iframe.mediadelivery.net/embed/${process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID}/${activeVideo.bunnyGuid}?autoplay=${
+      ? `https://player.mediadelivery.net/embed/${process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID}/${activeVideo.bunnyGuid}?autoplay=${
           autoPlay ? 'true' : 'false'
         }`
       : null
@@ -145,8 +145,8 @@ export function VideoPlayer({
 
     const message = { method: 'addEventListener', value: 'ended' }
     try {
-      win.postMessage(message, 'https://iframe.mediadelivery.net')
-      win.postMessage(JSON.stringify(message), 'https://iframe.mediadelivery.net')
+      win.postMessage(message, 'https://player.mediadelivery.net')
+      win.postMessage(JSON.stringify(message), 'https://player.mediadelivery.net')
     } catch {
       // ignore
     }

@@ -119,7 +119,7 @@ export async function POST(req: Request) {
       // damit Discord es sicher anzeigen kann.
       try {
         const thumbRes = await fetch(thumbnailUrl, {
-          headers: { Referer: 'https://iframe.mediadelivery.net/' },
+          headers: { Referer: 'https://player.mediadelivery.net/' },
           cache: 'no-store',
         })
 

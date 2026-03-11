@@ -49,5 +49,5 @@ export function getOnboardingDismissStorageKey(videoId: string): string {
 }
 
 export function getOnboardingEmbedUrl(videoId: string): string {
-  return `https://iframe.mediadelivery.net/embed/${ONBOARDING_VIDEO_BUNNY_LIBRARY_ID}/${videoId}?autoplay=false`
+  return `https://player.mediadelivery.net/embed/${ONBOARDING_VIDEO_BUNNY_LIBRARY_ID}/${videoId}?autoplay=false`
 }
