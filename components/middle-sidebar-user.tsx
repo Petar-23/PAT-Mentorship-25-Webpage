@@ -3,24 +3,24 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Progress } from '@/components/ui/progress'
-import Image from 'next/image'
 import {
   ArrowLeft,
-  Check,
   CaretDown as ChevronDown,
   CaretRight as ChevronRight,
-  FilmStrip as Film,
 } from '@phosphor-icons/react'
-import { useMemo, useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { VideoThumbnail } from '@/components/mentorship/video-thumbnail'
 
 type Video = {
   id: string
   title: string
   bunnyGuid: string | null
   pdfUrl: string | null
+  duration?: number | null
   order: number
+  updatedAt?: string | Date
 }
 
 type Chapter = {
@@ -76,50 +76,6 @@ function formatDuration(seconds: number | null | undefined) {
   return `${s}s`
 }
 
-function VideoThumbnail({
-  bunnyGuid,
-  title,
-  isWatched,
-}: {
-  bunnyGuid: string | null
-  title: string
-  isWatched?: boolean
-}) {
-  const [errorGuid, setErrorGuid] = useState<string | null>(null)
-  const hasError = Boolean(bunnyGuid && errorGuid === bunnyGuid)
-
-  const showWatchedOverlay = Boolean(isWatched)
-
-  return (
-    <div className="relative w-24 h-14 flex-shrink-0 cursor-pointer">
-      {!bunnyGuid || hasError ? (
-        <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
-          <Film className="h-5 w-5 text-muted-foreground/70" />
-        </div>
-      ) : (
-        <Image
-          src={`https://vz-dc8da426-d71.b-cdn.net/${bunnyGuid}/thumbnail.jpg`}
-          alt={title}
-          fill
-          sizes="96px"
-          className="object-cover rounded-md"
-          referrerPolicy="origin"
-          unoptimized
-          onError={() => setErrorGuid(bunnyGuid)}
-        />
-      )}
-
-      {showWatchedOverlay ? (
-        <div className="pointer-events-none absolute inset-0 rounded-md bg-gray-600/30 flex items-center justify-center">
-          <div className="h-7 w-7 rounded-full bg-white/40 border border-white/60 flex items-center justify-center shadow-sm">
-            <Check className="h-4 w-4 text-black/70" />
-          </div>
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
 function VideoRow({
   video,
   isActive,
@@ -144,7 +100,12 @@ function VideoRow({
       onClick={onClick}
       aria-current={isActive ? 'true' : undefined}
     >
-      <VideoThumbnail bunnyGuid={video.bunnyGuid} title={video.title} isWatched={isWatched} />
+      <VideoThumbnail
+        bunnyGuid={video.bunnyGuid}
+        title={video.title}
+        isWatched={isWatched}
+        updatedAt={video.updatedAt ?? null}
+      />
 
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium leading-snug overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
@@ -171,57 +132,21 @@ export function MiddleSidebarUser({
     return [...(modul.chapters || [])].sort((a, b) => (a.order || 0) - (b.order || 0))
   }, [modul.chapters])
 
-  const [openChapters, setOpenChapters] = useState<Set<string>>(
-    new Set(sortedChapters.map((ch) => ch.id))
+  const initiallyOpenChapterId = useMemo(() => {
+    return (
+      sortedChapters.find((chapter) => chapter.videos.some((video) => video.id === activeVideoId))?.id ??
+      sortedChapters[0]?.id ??
+      null
+    )
+  }, [activeVideoId, sortedChapters])
+
+  const [openChapters, setOpenChapters] = useState<Set<string>>(() =>
+    initiallyOpenChapterId ? new Set([initiallyOpenChapterId]) : new Set()
   )
 
-  // Durations (leicht, ohne aggressive Retries)
-  const bunnyGuids = useMemo(() => {
-    const guids = sortedChapters
-      .flatMap((ch) => ch.videos)
-      .map((v) => v.bunnyGuid)
-      .filter((g): g is string => typeof g === 'string' && g.length > 0)
-    return Array.from(new Set(guids))
-  }, [sortedChapters])
-
-  const [videoDurations, setVideoDurations] = useState<Record<string, number | null>>({})
-
   useEffect(() => {
-    let cancelled = false
-
-    const missing = bunnyGuids.filter((guid) => videoDurations[guid] === undefined)
-    if (missing.length === 0) return
-
-    const fetchGuids = async (guids: string[]) => {
-      const results = await Promise.all(
-        guids.map(async (guid) => {
-          try {
-            const res = await fetch(`/api/videos/duration/${guid}`)
-            if (!res.ok) return [guid, null] as const
-            const data = (await res.json()) as { durationSeconds?: unknown }
-            const seconds = typeof data.durationSeconds === 'number' ? data.durationSeconds : null
-            return [guid, seconds] as const
-          } catch {
-            return [guid, null] as const
-          }
-        })
-      )
-
-      if (cancelled) return
-
-      setVideoDurations((prev) => {
-        const next = { ...prev }
-        for (const [guid, seconds] of results) next[guid] = seconds
-        return next
-      })
-    }
-
-    void fetchGuids(missing)
-
-    return () => {
-      cancelled = true
-    }
-  }, [bunnyGuids, videoDurations])
+    setOpenChapters(initiallyOpenChapterId ? new Set([initiallyOpenChapterId]) : new Set())
+  }, [initiallyOpenChapterId, modul.id])
 
   const toggleChapter = (chapterId: string) => {
     setOpenChapters((prev) => {
@@ -233,11 +158,7 @@ export function MiddleSidebarUser({
   }
 
   const getDurationText = (video: Video) => {
-    if (!video.bunnyGuid) return '—'
-    const seconds = videoDurations[video.bunnyGuid]
-    if (seconds === undefined) return 'Lädt...'
-    if (seconds === null) return '—'
-    return formatDuration(seconds)
+    return formatDuration(video.duration ?? null)
   }
 
   return (
@@ -351,5 +272,3 @@ export function MiddleSidebarUser({
     </div>
   )
 }
-
-

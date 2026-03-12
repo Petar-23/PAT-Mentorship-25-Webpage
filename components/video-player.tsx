@@ -20,7 +20,9 @@ type Video = {
   title: string
   bunnyGuid: string | null
   pdfUrl: string | null
+  duration?: number | null
   order: number
+  updatedAt?: string | Date
 }
 
 type Props = {

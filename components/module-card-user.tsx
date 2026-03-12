@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
@@ -34,20 +35,35 @@ type Props = {
 
 export function ModuleCardUser({ modul, progress = null }: Props) {
   const router = useRouter()
+  const desktopHref = `/mentorship/modul/${modul.id}`
+  const mobileHref = `${desktopHref}?view=content`
 
   return (
-    <div className="relative group w-full">
+    <Link
+      href={desktopHref}
+      prefetch
+      className="relative group block w-full h-full"
+      onClick={(event) => {
+        if (
+          typeof window === 'undefined' ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey ||
+          event.button !== 0
+        ) {
+          return
+        }
+
+        const isDesktop = window.matchMedia('(min-width: 1024px)').matches
+        if (!isDesktop) {
+          event.preventDefault()
+          router.push(mobileHref)
+        }
+      }}
+    >
       <Card
         className="overflow-hidden h-full flex flex-col transition-all border-gray-200 hover:border-gray-500/50 cursor-pointer"
-        onClick={() => {
-          if (typeof window === 'undefined') {
-            router.push(`/mentorship/modul/${modul.id}`)
-            return
-          }
-
-          const isDesktop = window.matchMedia('(min-width: 1024px)').matches
-          router.push(isDesktop ? `/mentorship/modul/${modul.id}` : `/mentorship/modul/${modul.id}?view=content`)
-        }}
       >
         {/* Bild oben */}
         <div className="relative aspect-video bg-gradient-to-br from-primary/20 to-primary/10 overflow-hidden flex items-center justify-center cursor-pointer">
@@ -104,8 +120,7 @@ export function ModuleCardUser({ modul, progress = null }: Props) {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </Link>
   )
 }
-
 

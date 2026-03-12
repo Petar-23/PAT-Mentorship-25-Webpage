@@ -28,7 +28,9 @@ type Video = {
   title: string
   bunnyGuid: string | null
   pdfUrl: string | null
+  duration?: number | null
   order: number
+  updatedAt?: string | Date
 }
 
 type Chapter = {
@@ -121,6 +123,16 @@ export function ModulDetailClient({
   // Zustand für Kapitel-Edit
   const [editingChapterId, setEditingChapterId] = useState<string | null>(null)
   const [tempChapterName, setTempChapterName] = useState('')
+
+  // Bei Modulwechsel Server-Props wieder zur Quelle der Wahrheit machen.
+  useEffect(() => {
+    setLocalModul(modul)
+    setActiveVideoId(initialVideoId)
+    setWatchedVideoIds(initialWatchedVideoIds ?? [])
+    setEditingChapterId(null)
+    setTempChapterName('')
+    lastViewedSentRef.current = null
+  }, [initialVideoId, initialWatchedVideoIds, modul])
 
   // Automatisch das erste Video mit bunnyGuid auswählen (beim initialen Laden)
   // Oder das Video aus dem URL-Parameter verwenden (z.B. von Discord-Links)

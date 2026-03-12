@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react'
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
-import { hasActiveSubscription } from '@/lib/stripe'
-import { getIsAdmin, isMentorshipAccessible } from '@/lib/authz'
+import { getMentorshipAccessState } from '@/lib/mentorship-access'
 
 export default async function CoursesLayout({ children }: { children: ReactNode }) {
   const { userId } = await auth()
@@ -11,22 +10,10 @@ export default async function CoursesLayout({ children }: { children: ReactNode 
     redirect('/sign-in')
   }
 
-  // Email fuer Stripe-Fallback (M25-Migration): Falls kein DB-Record existiert,
-  // sucht hasActiveSubscription per Email nach dem Stripe-Kunden.
-  const user = await currentUser()
-  const email = user?.primaryEmailAddress?.emailAddress
+  const access = await getMentorshipAccessState(userId)
 
-  // Performance/UX: Erst Subscription prüfen (meist DB-fast) und nur im "kein Abo" Fall
-  // noch den Admin-Check gegen Clerk machen.
-  const hasSub = await hasActiveSubscription(userId, email ?? undefined)
-  const isAdmin = await getIsAdmin()
-  const mentorshipAccessible = isMentorshipAccessible()
-
-  // User kann Abo haben, aber Zugang ist zeitlich blockiert
-  const allowed = isAdmin || (hasSub && mentorshipAccessible)
-
-  if (!allowed) {
-    if (!mentorshipAccessible && hasSub) {
+  if (!access.allowed) {
+    if (!access.mentorshipAccessible && access.hasSubscription) {
       // User hat Abo, aber Mentorship startet erst später
       redirect('/dashboard?message=mentorship-not-started')
     } else {
