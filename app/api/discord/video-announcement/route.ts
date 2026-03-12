@@ -19,6 +19,13 @@ function getStringProp(value: unknown, key: string): string | null {
   return typeof v === 'string' ? v : null
 }
 
+function getBooleanProp(value: unknown, key: string): boolean | null {
+  if (!value || typeof value !== 'object') return null
+  const record = value as Record<string, unknown>
+  const v = record[key]
+  return typeof v === 'boolean' ? v : null
+}
+
 export async function POST(req: Request) {
   try {
     const { userId } = await auth()
@@ -110,10 +117,23 @@ export async function POST(req: Request) {
     const thumbnailUrl = `https://vz-dc8da426-d71.b-cdn.net/${video.bunnyGuid}/thumbnail.jpg`
 
     const courseForText = playlistName ?? moduleName
+    const announcementContent = [
+      '@everyone',
+      `Moin zusammen, ich habe soeben ein neues Video (**${video.title}**) veröffentlicht.`,
+      `Ihr findet das Video in der **${courseForText}**.`,
+      '',
+      videoUrl,
+      '',
+      'Passt auf euch auf,',
+      'Petar',
+    ].join('\n')
+    const embedDescription = [
+      `Neue Lektion aus **${courseForText}**.`,
+      'Der Direktlink steht direkt im Text ueber dieser Vorschau.',
+    ].join('\n')
 
     let messageSent = false
     try {
-
       // Hotlink-Protection: Die Bunny Thumbnail-URLs liefern oft 403 ohne passenden Referer.
       // Deshalb laden wir das Thumbnail serverseitig (mit Referer) und schicken es als Attachment,
       // damit Discord es sicher anzeigen kann.
@@ -137,19 +157,13 @@ export async function POST(req: Request) {
 
         const message = await sendDiscordChannelMessageWithAttachment({
           channelId,
-          content: '@everyone',
+          content: announcementContent,
           allowedMentions: { parse: ['everyone'] },
           embeds: [
             {
               title: `Neues Video: ${video.title}`,
               url: videoUrl,
-              description: `Moin zusammen, ich habe soeben ein neues Video veröffentlicht.
-Ihr findet das Video in der **${courseForText}**.
-
-${videoUrl}
-
-Passt auf euch auf,
-Petar`,
+              description: embedDescription,
               color: 0x24fc35,
               image: { url: embedImageUrl },
               fields: [
@@ -173,31 +187,39 @@ Petar`,
         messageSent = true
 
         const messageId = getStringProp(message, 'id')
+        const mentionEveryone = getBooleanProp(message, 'mention_everyone')
+
+        if (mentionEveryone !== true) {
+          console.warn('Discord announcement posted without mention_everyone ping.', {
+            videoId: video.id,
+            messageId,
+            channelId,
+          })
+        }
 
         await prisma.video.update({
           where: { id: video.id },
           data: { announcementMessageId: messageId },
         })
 
-        return NextResponse.json({ ok: true, messageId, thumbnail: 'attached' })
+        return NextResponse.json({
+          ok: true,
+          messageId,
+          thumbnail: 'attached',
+          mentionEveryone: mentionEveryone === true,
+        })
       } catch (thumbErr) {
         console.warn('Thumbnail attachment failed, falling back to no-thumbnail message:', thumbErr)
 
         const message = await sendDiscordChannelMessage({
           channelId,
-          content: '@everyone',
+          content: announcementContent,
           allowedMentions: { parse: ['everyone'] },
           embeds: [
             {
               title: `Neues Video: ${video.title}`,
               url: videoUrl,
-              description: `Moin zusammen, ich habe soeben ein neues Video veröffentlicht.
-Ihr findet das Video in der **${courseForText}**.
-
-${videoUrl}
-
-Passt auf euch auf,
-Petar`,
+              description: embedDescription,
               color: 0x2563eb,
               fields: [
                 ...(playlistName ? [{ name: 'Kurs', value: playlistName, inline: true }] : []),
@@ -214,14 +236,28 @@ Petar`,
 
         messageSent = true
 
-      const messageId = getStringProp(message, 'id')
+        const messageId = getStringProp(message, 'id')
+        const mentionEveryone = getBooleanProp(message, 'mention_everyone')
 
-      await prisma.video.update({
-        where: { id: video.id },
-        data: { announcementMessageId: messageId },
-      })
+        if (mentionEveryone !== true) {
+          console.warn('Discord announcement posted without mention_everyone ping.', {
+            videoId: video.id,
+            messageId,
+            channelId,
+          })
+        }
 
-        return NextResponse.json({ ok: true, messageId, thumbnail: 'none' })
+        await prisma.video.update({
+          where: { id: video.id },
+          data: { announcementMessageId: messageId },
+        })
+
+        return NextResponse.json({
+          ok: true,
+          messageId,
+          thumbnail: 'none',
+          mentionEveryone: mentionEveryone === true,
+        })
       }
     } catch (err) {
       // Wenn wir noch nichts gepostet haben, "unclaim", damit ein späterer Retry möglich ist.
@@ -242,5 +278,4 @@ Petar`,
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
-
 
