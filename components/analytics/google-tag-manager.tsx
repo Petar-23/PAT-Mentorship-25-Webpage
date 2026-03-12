@@ -1,6 +1,7 @@
 'use client'
 
 import { MENTORSHIP_CONFIG } from '@/lib/config'
+import { sanitizePublicEnv } from '@/lib/public-env'
 import { useEffect, useState, useRef } from 'react'
 import Script from 'next/script'
 
@@ -28,8 +29,8 @@ export function GoogleTagManager() {
     marketing: 'pending',
   })
   const hasInitialized = useRef(false)
-  const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID
-  const googleAnalyticsId = process.env.NEXT_PUBLIC_GA_ID
+  const googleAdsId = sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID)
+  const googleAnalyticsId = sanitizePublicEnv(process.env.NEXT_PUBLIC_GA_ID)
 
   useEffect(() => {
     // Prüfe initialen Consent
@@ -187,10 +188,11 @@ export const trackConversion = {
 
   // Wenn jemand sich für den Lead Magnet (Quick Guide) anmeldet
   leadMagnetSignup: () => {
-    const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID
+    const googleAdsId = sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID)
     // Nutzt eigenes Label falls vorhanden, sonst das Standard-Conversion-Label
-    const conversionLabel = process.env.NEXT_PUBLIC_GOOGLE_ADS_LEAD_CONVERSION_LABEL 
-      ?? process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL
+    const conversionLabel =
+      sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_LEAD_CONVERSION_LABEL) ??
+      sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL)
 
     // Standard Event-Tracking
     trackEvent('generate_lead', {
@@ -212,8 +214,8 @@ export const trackConversion = {
 
   // Wenn jemand erfolgreich kauft - das ist die wichtigste Conversion!
   purchase: (value?: number) => {
-    const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID
-    const conversionLabel = process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL
+    const googleAdsId = sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID)
+    const conversionLabel = sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL)
 
     // Standard Event-Tracking
     trackEvent('purchase', {

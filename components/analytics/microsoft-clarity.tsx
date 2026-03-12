@@ -1,5 +1,6 @@
 'use client'
 
+import { sanitizePublicEnv } from '@/lib/public-env'
 import { useEffect, useState } from 'react'
 import Script from 'next/script'
 
@@ -11,7 +12,7 @@ interface CookieConsent {
 
 export function MicrosoftClarity() {
   const [isAnalyticsGranted, setIsAnalyticsGranted] = useState(false)
-  const clarityId = process.env.NEXT_PUBLIC_CLARITY_ID
+  const clarityId = sanitizePublicEnv(process.env.NEXT_PUBLIC_CLARITY_ID)
 
   useEffect(() => {
     const checkConsent = () => {
@@ -67,4 +68,3 @@ export function MicrosoftClarity() {
     />
   )
 }
-
