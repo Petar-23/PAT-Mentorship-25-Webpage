@@ -115,7 +115,12 @@ export function VideoPlayer({
         })
 
         const payload = (await res.json().catch(() => null)) as
-          | { ok?: boolean; alreadyAnnounced?: boolean; error?: string | undefined }
+          | {
+              ok?: boolean
+              alreadyAnnounced?: boolean
+              error?: string | undefined
+              mentionEveryone?: boolean
+            }
           | null
 
         if (!res.ok) {
@@ -126,7 +131,9 @@ export function VideoPlayer({
           title: 'Discord',
           description: payload?.alreadyAnnounced
             ? 'Dieses Video wurde bereits angekündigt.'
-            : 'Announcement wurde gepostet.',
+            : payload?.mentionEveryone === false
+              ? 'Announcement wurde gepostet, aber Discord hat @everyone nicht als Ping akzeptiert.'
+              : 'Announcement wurde gepostet und @everyone wurde ausgelöst.',
         })
       } catch (e: unknown) {
         console.error('Discord announcement error:', e)
