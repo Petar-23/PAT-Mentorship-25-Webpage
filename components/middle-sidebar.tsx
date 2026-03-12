@@ -289,16 +289,53 @@ export function MiddleSidebar({
     setOpenChapters(initiallyOpenChapterId ? new Set([initiallyOpenChapterId]) : new Set())
   }, [initiallyOpenChapterId, modul.id])
 
-  const [videoDurations, setVideoDurations] = useState<Record<string, number | null>>({})
+  const initialVideoDurations = useMemo(() => {
+    const entries = sortedChapters
+      .flatMap((chapter) => chapter.videos)
+      .flatMap((video) =>
+        video.bunnyGuid && typeof video.duration === 'number' && video.duration > 0
+          ? [[video.bunnyGuid, video.duration] as const]
+          : []
+      )
+
+    return Object.fromEntries(entries) as Record<string, number>
+  }, [sortedChapters])
+
+  const [videoDurations, setVideoDurations] = useState<Record<string, number | null>>(
+    initialVideoDurations
+  )
   const durationAttemptsRef = useRef<Record<string, number>>({})
   const [durationAttempts, setDurationAttempts] = useState<Record<string, number>>({})
   const [videoStatuses, setVideoStatuses] = useState<Record<string, BunnyStatus | null>>({})
   const statusAttemptsRef = useRef<Record<string, number>>({})
 
+  useEffect(() => {
+    setVideoDurations(initialVideoDurations)
+    setDurationAttempts({})
+    durationAttemptsRef.current = {}
+    setVideoStatuses({})
+    statusAttemptsRef.current = {}
+  }, [initialVideoDurations, modul.id])
+
+  const videosMissingDuration = useMemo(() => {
+    return sortedChapters.flatMap((chapter) =>
+      chapter.videos.filter((video) => video.bunnyGuid && !(typeof video.duration === 'number' && video.duration > 0))
+    )
+  }, [sortedChapters])
+
   const bunnyGuids = useMemo(() => {
+    const guids = videosMissingDuration
+      .map((video) => video.bunnyGuid)
+      .filter((g): g is string => typeof g === 'string' && g.length > 0)
+
+    return Array.from(new Set(guids))
+  }, [videosMissingDuration])
+
+  const durationCandidateGuids = useMemo(() => {
     const guids = sortedChapters
-      .flatMap((ch) => ch.videos)
-      .map((v) => v.bunnyGuid)
+      .flatMap((chapter) => chapter.videos)
+      .filter((video) => video.bunnyGuid && !(typeof video.duration === 'number' && video.duration > 0))
+      .map((video) => video.bunnyGuid)
       .filter((g): g is string => typeof g === 'string' && g.length > 0)
 
     return Array.from(new Set(guids))
@@ -308,8 +345,18 @@ export function MiddleSidebar({
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | null = null
 
-    const missing = bunnyGuids.filter((guid) => videoDurations[guid] === undefined)
-    const pending = bunnyGuids.filter((guid) => {
+    const fetchableGuids = durationCandidateGuids.filter((guid) => {
+      const status = videoStatuses[guid]
+      if (!status) return true
+
+      const failed =
+        status.transcodingFailed === true || status.status === 5 || status.status === 6
+      const finished = status.status === 4 && (status.encodeProgress ?? 0) === 100
+      return !failed && finished
+    })
+
+    const missing = fetchableGuids.filter((guid) => videoDurations[guid] === undefined)
+    const pending = fetchableGuids.filter((guid) => {
       const value = videoDurations[guid]
       if (value !== null) return false
       const attempts = durationAttemptsRef.current[guid] ?? 0
@@ -363,7 +410,7 @@ export function MiddleSidebar({
       cancelled = true
       if (timer) clearTimeout(timer)
     }
-  }, [bunnyGuids, videoDurations])
+  }, [durationCandidateGuids, videoDurations, videoStatuses])
 
   useEffect(() => {
     if (!isAdmin) return
@@ -451,6 +498,11 @@ export function MiddleSidebar({
       return { isProcessing: false, progress: null as number | null }
     }
 
+    const knownDuration = videoDurations[video.bunnyGuid] ?? video.duration ?? null
+    if (typeof knownDuration === 'number' && knownDuration > 0) {
+      return { isProcessing: false, progress: null as number | null }
+    }
+
     const s = videoStatuses[video.bunnyGuid]
     if (!s) {
       return { isProcessing: false, progress: null as number | null }
@@ -479,7 +531,7 @@ export function MiddleSidebar({
 
     if (!video.bunnyGuid) return '—'
 
-    const seconds = videoDurations[video.bunnyGuid]
+    const seconds = videoDurations[video.bunnyGuid] ?? video.duration ?? undefined
     if (seconds === undefined) return 'Lädt...'
 
     if (seconds === null) {
