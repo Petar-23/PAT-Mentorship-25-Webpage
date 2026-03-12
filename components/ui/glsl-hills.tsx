@@ -27,6 +27,19 @@ const GLSLHills = ({
   useEffect(() => {
     if (!canvasRef.current || !containerRef.current) return
 
+    const supportsWebGL = () => {
+      try {
+        const probe = document.createElement('canvas')
+        return Boolean(probe.getContext('webgl') || probe.getContext('experimental-webgl'))
+      } catch {
+        return false
+      }
+    }
+
+    if (!supportsWebGL()) {
+      return
+    }
+
     // Plane class
     class Plane {
       uniforms: { time: { type: string; value: number } }
@@ -192,21 +205,16 @@ const GLSLHills = ({
       }
     }
 
-    // Three.js setup
-    const renderer = new THREE.WebGLRenderer({ 
-      canvas: canvasRef.current, 
-      antialias: false,
-      alpha: true,
-      powerPreference: 'low-power'
-    })
-    const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(45, 1, 1, 10000)
-    const clock = new THREE.Clock()
-    const plane = new Plane()
+    let renderer: THREE.WebGLRenderer | null = null
+    let scene: THREE.Scene | null = null
+    let camera: THREE.PerspectiveCamera | null = null
+    let clock: THREE.Clock | null = null
+    let plane: Plane | null = null
 
     const resize = () => {
-      if (!containerRef.current || !canvasRef.current) return
+      if (!containerRef.current || !canvasRef.current || !camera || !renderer) return
       const rect = containerRef.current.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) return
       canvasRef.current.width = rect.width
       canvasRef.current.height = rect.height
       camera.aspect = rect.width / rect.height
@@ -216,8 +224,14 @@ const GLSLHills = ({
     }
 
     const render = () => {
-      plane.render(clock.getDelta())
-      renderer.render(scene, camera)
+      if (!plane || !clock || !renderer || !scene || !camera) return
+      try {
+        plane.render(clock.getDelta())
+        renderer.render(scene, camera)
+      } catch (error) {
+        console.warn('GLSLHills render loop stopped after a WebGL error.', error)
+        cancelAnimationFrame(frameRef.current)
+      }
     }
 
     const renderLoop = () => {
@@ -226,6 +240,23 @@ const GLSLHills = ({
     }
 
     const init = () => {
+      try {
+        renderer = new THREE.WebGLRenderer({
+          canvas: canvasRef.current!,
+          antialias: false,
+          alpha: true,
+          powerPreference: 'low-power',
+        })
+      } catch (error) {
+        console.warn('GLSLHills disabled because WebGL could not be initialized.', error)
+        return false
+      }
+
+      scene = new THREE.Scene()
+      camera = new THREE.PerspectiveCamera(45, 1, 1, 10000)
+      clock = new THREE.Clock()
+      plane = new Plane()
+
       renderer.setClearColor(0x000000, 0)
       camera.position.set(0, 16, cameraZ)
       camera.lookAt(new THREE.Vector3(0, 28, 0))
@@ -233,14 +264,18 @@ const GLSLHills = ({
       window.addEventListener('resize', resize)
       resize()
       renderLoop()
+      return true
     }
 
-    init()
+    const initialized = init()
+    if (!initialized) {
+      return
+    }
 
     return () => {
       window.removeEventListener('resize', resize)
       cancelAnimationFrame(frameRef.current)
-      renderer.dispose()
+      renderer?.dispose()
     }
   }, [cameraZ, planeSize, speed])
 
