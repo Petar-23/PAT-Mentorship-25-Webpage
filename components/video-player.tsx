@@ -19,6 +19,7 @@ type Video = {
   id: string
   title: string
   bunnyGuid: string | null
+  thumbnailUrl: string | null
   pdfUrl: string | null
   duration?: number | null
   order: number

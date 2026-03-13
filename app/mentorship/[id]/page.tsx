@@ -216,6 +216,7 @@ export default async function DynamicCoursePage({ params }: Props) {
               id: true,
               title: true,
               bunnyGuid: true,
+              thumbnailUrl: true,
               pdfUrl: true,
               duration: true,
               order: true,

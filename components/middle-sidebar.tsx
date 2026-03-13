@@ -58,6 +58,7 @@ type Video = {
   id: string
   title: string
   bunnyGuid: string | null
+  thumbnailUrl: string | null
   pdfUrl: string | null
   duration?: number | null
   order: number
@@ -174,6 +175,7 @@ function SortableVideo({
 
         <VideoThumbnail
           bunnyGuid={video.bunnyGuid}
+          thumbnailUrl={video.thumbnailUrl}
           title={video.title}
           isProcessing={isProcessing}
           isWatched={isWatched}
@@ -219,6 +221,7 @@ function VideoRow({
     >
       <VideoThumbnail
         bunnyGuid={video.bunnyGuid}
+        thumbnailUrl={video.thumbnailUrl}
         title={video.title}
         isProcessing={isProcessing}
         isWatched={isWatched}

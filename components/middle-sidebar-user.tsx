@@ -17,6 +17,7 @@ type Video = {
   id: string
   title: string
   bunnyGuid: string | null
+  thumbnailUrl: string | null
   pdfUrl: string | null
   duration?: number | null
   order: number
@@ -102,6 +103,7 @@ function VideoRow({
     >
       <VideoThumbnail
         bunnyGuid={video.bunnyGuid}
+        thumbnailUrl={video.thumbnailUrl}
         title={video.title}
         isWatched={isWatched}
         updatedAt={video.updatedAt ?? null}

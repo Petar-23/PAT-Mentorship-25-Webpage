@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth, clerkClient } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { sendDiscordChannelMessage, sendDiscordChannelMessageWithAttachment } from '@/lib/discord'
+import { resolveBunnyThumbnailUrl } from '@/lib/bunny'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -114,7 +115,7 @@ export async function POST(req: Request) {
     // Vorbereitung für Schritt 5: Deep-Link auf ein konkretes Video.
     const videoUrl = `${baseUrl}/mentorship/modul/${moduleId}?video=${video.id}`
 
-    const thumbnailUrl = `https://vz-dc8da426-d71.b-cdn.net/${video.bunnyGuid}/thumbnail.jpg`
+    const thumbnailUrl = `https://vz-08bb86cc-ee1.b-cdn.net/${video.bunnyGuid}/thumbnail.jpg`
 
     const courseForText = playlistName ?? moduleName
     const announcementContent = [
@@ -199,7 +200,7 @@ export async function POST(req: Request) {
 
         await prisma.video.update({
           where: { id: video.id },
-          data: { announcementMessageId: messageId },
+          data: { announcementMessageId: messageId, thumbnailUrl: thumbnailUrl || video.thumbnailUrl },
         })
 
         return NextResponse.json({

@@ -8,6 +8,7 @@ const THUMBNAIL_RETRY_DELAYS_MS = [5000, 15000, 30000, 60000] as const
 
 type Props = {
   bunnyGuid: string | null
+  thumbnailUrl?: string | null
   title: string
   isProcessing?: boolean
   isWatched?: boolean
@@ -16,6 +17,7 @@ type Props = {
 
 export function VideoThumbnail({
   bunnyGuid,
+  thumbnailUrl = null,
   title,
   isProcessing = false,
   isWatched = false,
@@ -50,14 +52,25 @@ export function VideoThumbnail({
   }, [attempt, bunnyGuid, isProcessing, status])
 
   const thumbnailSrc = useMemo(() => {
-    if (!bunnyGuid) return null
-
     const version = updatedAt ? new Date(updatedAt).getTime() : 0
-    return `https://vz-dc8da426-d71.b-cdn.net/${bunnyGuid}/thumbnail.jpg?v=${version}-${attempt}`
-  }, [attempt, bunnyGuid, updatedAt])
+    const cacheBust = `v=${version}-${attempt}`
+
+    const appendCacheBust = (src: string) =>
+      `${src}${src.includes('?') ? '&' : '?'}${cacheBust}`
+
+    if (thumbnailUrl) {
+      return appendCacheBust(thumbnailUrl)
+    }
+
+    if (bunnyGuid) {
+      return appendCacheBust(`https://vz-dc8da426-d71.b-cdn.net/${bunnyGuid}/thumbnail.jpg`)
+    }
+
+    return null
+  }, [attempt, bunnyGuid, thumbnailUrl, updatedAt])
 
   const showWatchedOverlay = isWatched && !isProcessing
-  const showImage = Boolean(bunnyGuid && thumbnailSrc && !isProcessing && status !== 'fallback')
+  const showImage = Boolean(thumbnailSrc && !isProcessing && status !== 'fallback')
   const showRetryHint = status === 'fallback' && attempt < THUMBNAIL_RETRY_DELAYS_MS.length
 
   return (
