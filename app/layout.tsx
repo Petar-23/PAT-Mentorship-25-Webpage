@@ -101,6 +101,8 @@ export default function RootLayout({
     <ClerkProvider afterSignOutUrl={"/"} localization={deDE} signInFallbackRedirectUrl="/dashboard" signUpFallbackRedirectUrl="/dashboard">
       <html lang="de" className="h-full scroll-smooth">
         <head>
+          <link rel="preconnect" href="https://vz-dc8da426-d71.b-cdn.net" crossOrigin="" />
+          <link rel="preconnect" href="https://iframe.mediadelivery.net" crossOrigin="" />
           <JsonLd />
         </head>
         <body className={`${inter.variable} ${sora.variable} font-sans h-full overflow-x-hidden`}>

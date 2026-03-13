@@ -7,14 +7,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Progress } from '@/components/ui/progress'
-import Image from 'next/image'
 import {
   ArrowLeft,
   Check,
   CaretDown as ChevronDown,
   CaretRight as ChevronRight,
   CaretUp as ChevronUp,
-  FilmStrip as Film,
   DotsSixVertical as GripVertical,
   Plus,
   Trash as Trash2,
@@ -49,6 +47,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { CSS } from '@dnd-kit/utilities'
+import { VideoThumbnail } from '@/components/mentorship/video-thumbnail'
 
 const DURATION_RETRY_MS = 15_000
 const MAX_DURATION_ATTEMPTS = 30
@@ -61,7 +60,9 @@ type Video = {
   bunnyGuid: string | null
   thumbnailUrl: string | null
   pdfUrl: string | null
+  duration?: number | null
   order: number
+  updatedAt?: string | Date
 }
 
 type Chapter = {
@@ -122,72 +123,6 @@ function formatDuration(seconds: number | null | undefined) {
   return `${s}s`
 }
 
-function VideoThumbnail({
-  bunnyGuid,
-  thumbnailUrl,
-  title,
-  isProcessing,
-  isWatched,
-}: {
-  bunnyGuid: string | null
-  thumbnailUrl: string | null
-  title: string
-  isProcessing: boolean
-  isWatched?: boolean
-}) {
-  const [errorGuid, setErrorGuid] = useState<string | null>(null)
-  const fallbackThumbnailUrl = null
-  const resolvedThumbnailUrl = thumbnailUrl || fallbackThumbnailUrl
-  const errorKey = thumbnailUrl || bunnyGuid
-  const hasError = Boolean(errorKey && errorGuid === errorKey)
-
-  useEffect(() => {
-    if (!hasError) return
-    const t = setTimeout(() => setErrorGuid(null), 20_000)
-    return () => clearTimeout(t)
-  }, [hasError])
-
-  const showWatchedOverlay = Boolean(isWatched) && !isProcessing
-
-  return (
-    <div className="relative w-24 h-14 flex-shrink-0 cursor-pointer">
-      {isProcessing ? (
-        <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
-          <div className="relative w-6 h-6">
-            <div className="absolute inset-0 w-6 h-6 rounded-full border-2 border-gray-500"></div>
-            <div className="absolute inset-0 w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
-          </div>
-        </div>
-      ) : !resolvedThumbnailUrl || hasError ? (
-        <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
-          <Film className="h-5 w-5 text-muted-foreground/70" />
-        </div>
-      ) : (
-        <Image
-          src={resolvedThumbnailUrl}
-          alt={title}
-          fill
-          sizes="96px"
-          className="object-cover rounded-md"
-          // Wichtig: direkt vom Bunny-CDN laden (nicht über Next Image Proxy),
-          // sonst können Thumbnails je nach CDN/Hotlink-Settings leer bleiben.
-          unoptimized
-          referrerPolicy="origin"
-          onError={() => errorKey && setErrorGuid(errorKey)}
-        />
-      )}
-
-      {showWatchedOverlay ? (
-        <div className="pointer-events-none absolute inset-0 rounded-md bg-gray-600/30 flex items-center justify-center">
-          <div className="h-7 w-7 rounded-full bg-white/40 border border-white/60 flex items-center justify-center shadow-sm">
-            <Check className="h-4 w-4 text-black/70" />
-          </div>
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
 function SortableVideo({
   video,
   isActive,
@@ -244,6 +179,7 @@ function SortableVideo({
           title={video.title}
           isProcessing={isProcessing}
           isWatched={isWatched}
+          updatedAt={video.updatedAt ?? null}
         />
 
         <div className="flex-1 min-w-0">
@@ -289,6 +225,7 @@ function VideoRow({
         title={video.title}
         isProcessing={isProcessing}
         isWatched={isWatched}
+        updatedAt={video.updatedAt ?? null}
       />
 
       <div className="flex-1 min-w-0">
@@ -338,21 +275,70 @@ export function MiddleSidebar({
     return [...(modul.chapters || [])].sort((a, b) => (a.order || 0) - (b.order || 0))
   }, [modul.chapters])
 
-  const [openChapters, setOpenChapters] = useState<Set<string>>(
-    new Set(sortedChapters.map((ch) => ch.id))
+  const initiallyOpenChapterId = useMemo(() => {
+    return (
+      sortedChapters.find((chapter) => chapter.videos.some((video) => video.id === activeVideoId))?.id ??
+      sortedChapters[0]?.id ??
+      null
+    )
+  }, [activeVideoId, sortedChapters])
+
+  const [openChapters, setOpenChapters] = useState<Set<string>>(() =>
+    initiallyOpenChapterId ? new Set([initiallyOpenChapterId]) : new Set()
   )
   const [deleteDialogChapterId, setDeleteDialogChapterId] = useState<string | null>(null)
 
-  const [videoDurations, setVideoDurations] = useState<Record<string, number | null>>({})
+  useEffect(() => {
+    setOpenChapters(initiallyOpenChapterId ? new Set([initiallyOpenChapterId]) : new Set())
+  }, [initiallyOpenChapterId, modul.id])
+
+  const initialVideoDurations = useMemo(() => {
+    const entries = sortedChapters
+      .flatMap((chapter) => chapter.videos)
+      .flatMap((video) =>
+        video.bunnyGuid && typeof video.duration === 'number' && video.duration > 0
+          ? [[video.bunnyGuid, video.duration] as const]
+          : []
+      )
+
+    return Object.fromEntries(entries) as Record<string, number>
+  }, [sortedChapters])
+
+  const [videoDurations, setVideoDurations] = useState<Record<string, number | null>>(
+    initialVideoDurations
+  )
   const durationAttemptsRef = useRef<Record<string, number>>({})
   const [durationAttempts, setDurationAttempts] = useState<Record<string, number>>({})
   const [videoStatuses, setVideoStatuses] = useState<Record<string, BunnyStatus | null>>({})
   const statusAttemptsRef = useRef<Record<string, number>>({})
 
+  useEffect(() => {
+    setVideoDurations(initialVideoDurations)
+    setDurationAttempts({})
+    durationAttemptsRef.current = {}
+    setVideoStatuses({})
+    statusAttemptsRef.current = {}
+  }, [initialVideoDurations, modul.id])
+
+  const videosMissingDuration = useMemo(() => {
+    return sortedChapters.flatMap((chapter) =>
+      chapter.videos.filter((video) => video.bunnyGuid && !(typeof video.duration === 'number' && video.duration > 0))
+    )
+  }, [sortedChapters])
+
   const bunnyGuids = useMemo(() => {
+    const guids = videosMissingDuration
+      .map((video) => video.bunnyGuid)
+      .filter((g): g is string => typeof g === 'string' && g.length > 0)
+
+    return Array.from(new Set(guids))
+  }, [videosMissingDuration])
+
+  const durationCandidateGuids = useMemo(() => {
     const guids = sortedChapters
-      .flatMap((ch) => ch.videos)
-      .map((v) => v.bunnyGuid)
+      .flatMap((chapter) => chapter.videos)
+      .filter((video) => video.bunnyGuid && !(typeof video.duration === 'number' && video.duration > 0))
+      .map((video) => video.bunnyGuid)
       .filter((g): g is string => typeof g === 'string' && g.length > 0)
 
     return Array.from(new Set(guids))
@@ -362,8 +348,18 @@ export function MiddleSidebar({
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | null = null
 
-    const missing = bunnyGuids.filter((guid) => videoDurations[guid] === undefined)
-    const pending = bunnyGuids.filter((guid) => {
+    const fetchableGuids = durationCandidateGuids.filter((guid) => {
+      const status = videoStatuses[guid]
+      if (!status) return true
+
+      const failed =
+        status.transcodingFailed === true || status.status === 5 || status.status === 6
+      const finished = status.status === 4 && (status.encodeProgress ?? 0) === 100
+      return !failed && finished
+    })
+
+    const missing = fetchableGuids.filter((guid) => videoDurations[guid] === undefined)
+    const pending = fetchableGuids.filter((guid) => {
       const value = videoDurations[guid]
       if (value !== null) return false
       const attempts = durationAttemptsRef.current[guid] ?? 0
@@ -417,7 +413,7 @@ export function MiddleSidebar({
       cancelled = true
       if (timer) clearTimeout(timer)
     }
-  }, [bunnyGuids, videoDurations])
+  }, [durationCandidateGuids, videoDurations, videoStatuses])
 
   useEffect(() => {
     if (!isAdmin) return
@@ -505,6 +501,11 @@ export function MiddleSidebar({
       return { isProcessing: false, progress: null as number | null }
     }
 
+    const knownDuration = videoDurations[video.bunnyGuid] ?? video.duration ?? null
+    if (typeof knownDuration === 'number' && knownDuration > 0) {
+      return { isProcessing: false, progress: null as number | null }
+    }
+
     const s = videoStatuses[video.bunnyGuid]
     if (!s) {
       return { isProcessing: false, progress: null as number | null }
@@ -533,7 +534,7 @@ export function MiddleSidebar({
 
     if (!video.bunnyGuid) return '—'
 
-    const seconds = videoDurations[video.bunnyGuid]
+    const seconds = videoDurations[video.bunnyGuid] ?? video.duration ?? undefined
     if (seconds === undefined) return 'Lädt...'
 
     if (seconds === null) {

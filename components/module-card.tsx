@@ -26,7 +26,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle
 } from '@/components/ui/alert-dialog'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 function formatModuleDuration(totalSeconds: number | null | undefined) {
   if (!totalSeconds || !Number.isFinite(totalSeconds) || totalSeconds <= 0) return '—'
@@ -65,6 +65,22 @@ export function ModuleCard({ modul, progress = null }: Props) {
     const [loading, setLoading] = useState(false)
     const { user, isLoaded } = useUser()
     const isAdmin = isLoaded && user?.organizationMemberships?.some(m => m.role === 'org:admin')
+    const desktopHref = `/mentorship/modul/${modul.id}`
+    const mobileHref = `${desktopHref}?view=content`
+
+    useEffect(() => {
+      router.prefetch(desktopHref)
+    }, [desktopHref, router])
+
+    const navigateToModule = () => {
+      if (typeof window === 'undefined') {
+        router.push(desktopHref)
+        return
+      }
+
+      const isDesktop = window.matchMedia('(min-width: 1024px)').matches
+      router.push(isDesktop ? desktopHref : mobileHref)
+    }
   
     const handleEdit = async (formData: FormData) => {
       setLoading(true)
@@ -104,15 +120,8 @@ export function ModuleCard({ modul, progress = null }: Props) {
         <div className="relative group w-full">  {/* group für Hover */}
             <Card
               className="overflow-hidden h-full flex flex-col transition-all border-gray-200 hover:border-gray-500/50 cursor-pointer"
-              onClick={() => {
-                if (typeof window === 'undefined') {
-                  router.push(`/mentorship/modul/${modul.id}`)
-                  return
-                }
-
-                const isDesktop = window.matchMedia('(min-width: 1024px)').matches
-                router.push(isDesktop ? `/mentorship/modul/${modul.id}` : `/mentorship/modul/${modul.id}?view=content`)
-              }}
+              onMouseEnter={() => router.prefetch(desktopHref)}
+              onClick={navigateToModule}
             >
             {/* 3-Punkte-Menü – unverändert */}
             {isAdmin && (

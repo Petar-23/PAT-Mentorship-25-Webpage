@@ -52,7 +52,9 @@ export default async function MentorshipModulPage({
               bunnyGuid: true,
               thumbnailUrl: true,
               pdfUrl: true,
+              duration: true,
               order: true,
+              updatedAt: true,
             },
           },
         },
@@ -111,5 +113,4 @@ export default async function MentorshipModulPage({
     </div>
   )
 }
-
 
