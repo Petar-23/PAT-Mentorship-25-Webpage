@@ -13,6 +13,7 @@ import { GoogleTagManager } from '@/components/analytics/google-tag-manager'
 import { MicrosoftClarity } from '@/components/analytics/microsoft-clarity'
 import { JsonLd } from '@/components/seo/json-ld'
 import { Suspense, lazy } from 'react'
+import { CURRENT_BUNNY_THUMBNAIL_HOST } from '@/lib/bunny-thumbnail'
 
 // Agentation nur in Development laden (ist devDependency)
 const Agentation = process.env.NODE_ENV === 'development' 
@@ -101,7 +102,7 @@ export default function RootLayout({
     <ClerkProvider afterSignOutUrl={"/"} localization={deDE} signInFallbackRedirectUrl="/dashboard" signUpFallbackRedirectUrl="/dashboard">
       <html lang="de" className="h-full scroll-smooth">
         <head>
-          <link rel="preconnect" href="https://vz-dc8da426-d71.b-cdn.net" crossOrigin="" />
+          <link rel="preconnect" href={`https://${CURRENT_BUNNY_THUMBNAIL_HOST}`} crossOrigin="" />
           <link rel="preconnect" href="https://iframe.mediadelivery.net" crossOrigin="" />
           <JsonLd />
         </head>

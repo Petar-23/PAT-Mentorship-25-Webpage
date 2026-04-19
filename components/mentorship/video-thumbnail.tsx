@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { Check, FilmStrip as Film } from '@phosphor-icons/react'
+import { normalizeBunnyThumbnailUrl } from '@/lib/bunny-thumbnail'
 
 const THUMBNAIL_RETRY_DELAYS_MS = [5000, 15000, 30000, 60000] as const
 
@@ -58,12 +59,9 @@ export function VideoThumbnail({
     const appendCacheBust = (src: string) =>
       `${src}${src.includes('?') ? '&' : '?'}${cacheBust}`
 
-    if (thumbnailUrl) {
-      return appendCacheBust(thumbnailUrl)
-    }
-
-    if (bunnyGuid) {
-      return appendCacheBust(`https://vz-dc8da426-d71.b-cdn.net/${bunnyGuid}/thumbnail.jpg`)
+    const normalizedThumbnailUrl = normalizeBunnyThumbnailUrl(thumbnailUrl, bunnyGuid)
+    if (normalizedThumbnailUrl) {
+      return appendCacheBust(normalizedThumbnailUrl)
     }
 
     return null
