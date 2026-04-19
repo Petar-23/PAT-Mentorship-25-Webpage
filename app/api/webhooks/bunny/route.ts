@@ -23,6 +23,13 @@ function getStringProp(value: unknown, key: string): string | null {
   return typeof v === 'string' ? v : null
 }
 
+function getBooleanProp(value: unknown, key: string): boolean | null {
+  if (!value || typeof value !== 'object') return null
+  const record = value as Record<string, unknown>
+  const v = record[key]
+  return typeof v === 'boolean' ? v : null
+}
+
 export async function POST(req: Request) {
   try {
     let body: unknown
@@ -97,6 +104,20 @@ export async function POST(req: Request) {
     const courseForText = playlistName ?? moduleName
     const videoUrl = `${baseUrl}/mentorship/modul/${moduleId}?video=${video.id}`
     const thumbnailUrl = `https://${BUNNY_CDN_HOST}/${video.bunnyGuid}/thumbnail.jpg`
+    const announcementContent = [
+      '@everyone',
+      `Moin zusammen, ich habe soeben ein neues Video (**${video.title}**) veröffentlicht.`,
+      `Ihr findet das Video in der **${courseForText}**.`,
+      '',
+      videoUrl,
+      '',
+      'Passt auf euch auf,',
+      'Petar',
+    ].join('\n')
+    const embedDescription = [
+      `Neue Lektion aus **${courseForText}**.`,
+      'Der Direktlink steht direkt im Text ueber dieser Vorschau.',
+    ].join('\n')
 
     let messageSent = false
 
@@ -117,13 +138,13 @@ export async function POST(req: Request) {
 
         const message = await sendDiscordChannelMessageWithAttachment({
           channelId,
-          content: '',
+          content: announcementContent,
           allowedMentions: { parse: ['everyone'] },
           embeds: [
             {
               title: `Neues Video: ${video.title}`,
               url: videoUrl,
-              description: `@everyone\n\nMoin zusammen, ich habe soeben ein neues Video veröffentlicht.\nIhr findet das Video in der **${courseForText}**.\n\n${videoUrl}\n\nPasst auf euch auf,\nPetar`,
+              description: embedDescription,
               color: 0x24fc35,
               image: { url: `attachment://${fileName}` },
               fields: [
@@ -146,25 +167,41 @@ export async function POST(req: Request) {
 
         messageSent = true
         const messageId = getStringProp(message, 'id')
+        const mentionEveryone = getBooleanProp(message, 'mention_everyone')
+
+        if (mentionEveryone !== true) {
+          console.warn('Bunny webhook: Discord announcement posted without mention_everyone ping.', {
+            videoId: video.id,
+            messageId,
+            channelId,
+          })
+        }
+
         await prisma.video.update({
           where: { id: video.id },
           data: { announcementMessageId: messageId },
         })
 
-        return NextResponse.json({ ok: true, action: 'announced', messageId, thumbnail: 'attached' })
+        return NextResponse.json({
+          ok: true,
+          action: 'announced',
+          messageId,
+          thumbnail: 'attached',
+          mentionEveryone: mentionEveryone === true,
+        })
       } catch (thumbErr) {
         console.warn('Bunny webhook: Thumbnail failed, sending without:', thumbErr)
 
         // Fallback: no thumbnail
         const message = await sendDiscordChannelMessage({
           channelId,
-          content: '',
+          content: announcementContent,
           allowedMentions: { parse: ['everyone'] },
           embeds: [
             {
               title: `Neues Video: ${video.title}`,
               url: videoUrl,
-              description: `@everyone\n\nMoin zusammen, ich habe soeben ein neues Video veröffentlicht.\nIhr findet das Video in der **${courseForText}**.\n\n${videoUrl}\n\nPasst auf euch auf,\nPetar`,
+              description: embedDescription,
               color: 0x2563eb,
               fields: [
                 ...(playlistName ? [{ name: 'Kurs', value: playlistName, inline: true }] : []),
@@ -181,12 +218,28 @@ export async function POST(req: Request) {
 
         messageSent = true
         const messageId = getStringProp(message, 'id')
+        const mentionEveryone = getBooleanProp(message, 'mention_everyone')
+
+        if (mentionEveryone !== true) {
+          console.warn('Bunny webhook: Discord announcement posted without mention_everyone ping.', {
+            videoId: video.id,
+            messageId,
+            channelId,
+          })
+        }
+
         await prisma.video.update({
           where: { id: video.id },
           data: { announcementMessageId: messageId },
         })
 
-        return NextResponse.json({ ok: true, action: 'announced', messageId, thumbnail: 'none' })
+        return NextResponse.json({
+          ok: true,
+          action: 'announced',
+          messageId,
+          thumbnail: 'none',
+          mentionEveryone: mentionEveryone === true,
+        })
       }
     } catch (err) {
       // Rollback claim if message wasn't sent
