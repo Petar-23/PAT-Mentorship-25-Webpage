@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Sora } from 'next/font/google'
+import localFont from 'next/font/local'
+import { Sora } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import { Navbar } from '@/components/layout/navbar'
@@ -19,9 +20,16 @@ const Agentation = process.env.NODE_ENV === 'development'
   ? lazy(() => import('agentation').then(mod => ({ default: mod.Agentation })))
   : () => null
 
-const inter = Inter({ 
-  subsets: ['latin'],
-  variable: '--font-inter',
+const geistSans = localFont({
+  src: './fonts/GeistVF.woff',
+  variable: '--font-geist-sans',
+  display: 'swap',
+})
+
+const geistMono = localFont({
+  src: './fonts/GeistMonoVF.woff',
+  variable: '--font-geist-mono',
+  display: 'swap',
 })
 
 const sora = Sora({ 
@@ -105,7 +113,7 @@ export default function RootLayout({
           <link rel="preconnect" href="https://iframe.mediadelivery.net" crossOrigin="" />
           <JsonLd />
         </head>
-        <body className={`${inter.variable} ${sora.variable} font-sans h-full overflow-x-hidden`}>
+        <body className={`${geistSans.variable} ${geistMono.variable} ${sora.variable} font-sans antialiased h-full overflow-x-hidden`}>
           <a
             href="#main-content"
             className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-slate-900 focus:shadow-lg"
