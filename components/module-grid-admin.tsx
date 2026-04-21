@@ -213,7 +213,7 @@ export function ModuleGridAdmin({ modules, playlistId, playlistName, mobileCours
                 </Card>
               </DialogTrigger>
 
-              <DialogContent className="sm:max-w-lg">
+              <DialogContent className="mentorship-typography sm:max-w-lg">
                 <DialogHeader>
                   <DialogTitle>Neues Modul zu {playlistId || 'Playlist'}</DialogTitle>
                   <DialogDescription>
@@ -280,5 +280,4 @@ export function ModuleGridAdmin({ modules, playlistId, playlistName, mobileCours
     </DndContext>
   )
 }
-
 

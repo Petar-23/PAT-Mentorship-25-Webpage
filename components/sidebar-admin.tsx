@@ -739,7 +739,7 @@ export function SidebarAdmin({
           setIsCourseModalOpen(true)
         }}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="mentorship-typography sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {courseModalMode === 'create' ? 'Neuen Kurs anlegen' : 'Kurs bearbeiten'}
@@ -894,7 +894,7 @@ export function SidebarAdmin({
         <Accordion type="single" collapsible defaultValue="mentorship">
           <AccordionItem value="mentorship">
             <AccordionTrigger className="text-gray-400 font-medium py-3 px-4 hover:text-black rounded-lg transition-colors [&&]:hover:no-underline justify-between">
-              <span>PAT Mentorship 2026</span>
+              <span className="mentorship-ui-heading">PAT Mentorship 2026</span>
 
               {/* Plus-Button – nur für Admin */}
               {isAdmin && (
@@ -959,7 +959,7 @@ export function SidebarAdmin({
                           {item.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{item.title}</p>
+                          <p className="mentorship-ui-heading font-medium text-sm truncate">{item.title}</p>
                           <p className="text-xs text-muted-foreground">{item.subtitle}</p>
                         </div>
                       </div>
@@ -1102,7 +1102,7 @@ export function SidebarAdmin({
           if (!open) setDeleteCourseId(null)
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="mentorship-typography">
           <AlertDialogHeader>
             <AlertDialogTitle>Kurs löschen?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1133,7 +1133,7 @@ export function SidebarAdmin({
         open={deletingPageId !== null}
         onOpenChange={(open) => { if (!open) setDeletingPageId(null) }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="mentorship-typography">
           <AlertDialogHeader>
             <AlertDialogTitle>Seite löschen?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1179,7 +1179,7 @@ export function SidebarAdmin({
 
       {/* Page Create/Edit Modal */}
       <Dialog open={isPageModalOpen} onOpenChange={(open) => { if (!open) closePageModal() }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="mentorship-typography sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{pageModalMode === 'create' ? 'Neue Seite erstellen' : 'Seite bearbeiten'}</DialogTitle>
             <DialogDescription>
@@ -1294,5 +1294,4 @@ export function SidebarAdmin({
     </div>
   )
 }
-
 

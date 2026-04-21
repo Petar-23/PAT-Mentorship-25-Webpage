@@ -179,7 +179,7 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
         <Accordion type="single" collapsible defaultValue="mentorship">
           <AccordionItem value="mentorship">
             <AccordionTrigger className="text-gray-400 font-medium py-3 px-4 hover:text-black rounded-lg transition-colors [&&]:hover:no-underline justify-between">
-              <span>PAT Mentorship 2026</span>
+              <span className="mentorship-ui-heading">PAT Mentorship 2026</span>
             </AccordionTrigger>
 
             <AccordionContent className="px-1">
@@ -205,7 +205,7 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
                         {item.icon}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-[13px] sm:text-sm truncate">{item.title}</p>
+                        <p className="mentorship-ui-heading font-medium text-[13px] sm:text-sm truncate">{item.title}</p>
                         <p className="text-[11px] sm:text-xs text-muted-foreground">{item.subtitle}</p>
                       </div>
                     </div>
@@ -343,5 +343,4 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
     </div>
   )
 }
-
 

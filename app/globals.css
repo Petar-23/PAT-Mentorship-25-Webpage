@@ -23,7 +23,17 @@ body {
   }
 }
 
-.mentorship-typography :is(h1, h2, h3, h4, h5, h6) {
+.mentorship-typography :is(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  [data-slot='dialog-title'],
+  [data-slot='alert-dialog-title'],
+  .mentorship-ui-heading
+) {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   letter-spacing: -0.02em;
 }

@@ -829,7 +829,7 @@ export function MiddleSidebar({
             open={deleteDialogChapterId !== null}
             onOpenChange={() => setDeleteDialogChapterId(null)}
           >
-            <AlertDialogContent>
+            <AlertDialogContent className="mentorship-typography">
               <AlertDialogHeader>
                 <AlertDialogTitle>Kapitel löschen?</AlertDialogTitle>
                 <AlertDialogDescription>

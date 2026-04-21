@@ -226,7 +226,7 @@ export function ModuleCard({ modul, progress = null }: Props) {
           {/* Modals außerhalb – safe */}
           {isAdmin && (
           <Dialog open={editOpen} onOpenChange={setEditOpen}>
-            <DialogContent>
+            <DialogContent className="mentorship-typography">
                 <DialogHeader>
                 <DialogTitle>Modul bearbeiten</DialogTitle>
                 <DialogDescription>Ändere Name & Beschreibung.</DialogDescription>
@@ -281,7 +281,7 @@ export function ModuleCard({ modul, progress = null }: Props) {
             )}
           {isAdmin && (
           <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-            <AlertDialogContent>
+            <AlertDialogContent className="mentorship-typography">
                 <AlertDialogHeader>
                 <AlertDialogTitle>Modul löschen?</AlertDialogTitle>
                 <AlertDialogDescription>
