@@ -49,11 +49,11 @@ async function BunnyTest() {
 export default async function EnvCheck() {
   // Security: /env-check in Production nur für Admins
   if (process.env.NODE_ENV === 'production') {
-    const { userId } = await auth()
+    const { userId, sessionClaims } = await auth()
     if (!userId) {
       redirect('/sign-in?redirect_url=/env-check')
     }
-    const isAdmin = await getIsAdmin()
+    const isAdmin = await getIsAdmin(userId, sessionClaims)
     if (!isAdmin) {
       redirect('/dashboard')
     }
@@ -118,6 +118,24 @@ DISCORD_MOD_CHANNEL_ID: ${isSet('DISCORD_MOD_CHANNEL_ID') ? '✓' : '—'}
         <pre className="bg-gray-100 p-6 rounded-lg font-mono text-sm whitespace-pre-wrap">
           {`
 BLOB_READ_WRITE_TOKEN: ${isSet('BLOB_READ_WRITE_TOKEN') ? '✓' : '❌'}
+          `.trim()}
+        </pre>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">Security</h2>
+        <pre className="bg-gray-100 p-6 rounded-lg font-mono text-sm whitespace-pre-wrap">
+          {`
+CRON_SECRET: ${isSet('CRON_SECRET') ? '✓' : '❌'}
+GITHUB_BLOG_TOKEN: ${isSet('GITHUB_BLOG_TOKEN') ? '✓' : '❌'}
+VERCEL_AUTOMATION_BYPASS_SECRET: ${isSet('VERCEL_AUTOMATION_BYPASS_SECRET') ? '✓' : '—'}
+BUNNY_WEBHOOK_SIGNING_SECRET: ${
+            isSet('BUNNY_WEBHOOK_SIGNING_SECRET') ||
+            isSet('BUNNY_STREAM_READ_ONLY_API_KEY') ||
+            isSet('BUNNY_READ_ONLY_API_KEY')
+              ? '✓'
+              : '❌'
+          }
           `.trim()}
         </pre>
       </section>

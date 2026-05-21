@@ -1,6 +1,5 @@
 'use client'
 
-import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { sanitizePublicEnv } from '@/lib/public-env'
 import { useEffect, useState, useRef } from 'react'
 import Script from 'next/script'
@@ -101,7 +100,7 @@ export function GoogleTagManager() {
       {/* Google Consent Mode v2 - Default auf "denied" setzen BEVOR gtag.js lädt */}
       <Script
         id="google-consent-init"
-        strategy="beforeInteractive"
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `
             window.dataLayer = window.dataLayer || [];
@@ -138,108 +137,4 @@ export function GoogleTagManager() {
       />
     </>
   )
-}
-
-/**
- * Hilfsfunktion um Events an gtag zu senden
- * Kann von überall in der App aufgerufen werden
- */
-export function trackEvent(eventName: string, eventParams?: Record<string, unknown>) {
-  if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
-    window.gtag('event', eventName, eventParams)
-  }
-}
-
-/**
- * Spezifische Conversion-Events für Google Ads
- */
-export const trackConversion = {
-  // Wenn jemand auf "Sichere dir deinen Platz" klickt
-  ctaClick: () => {
-    trackEvent('cta_click', {
-      event_category: 'engagement',
-      event_label: 'hero_cta',
-    })
-  },
-
-  // Wenn jemand den Sign-In Dialog öffnet
-  signInStart: () => {
-    trackEvent('sign_in_start', {
-      event_category: 'engagement',
-      event_label: 'begin_sign_in',
-    })
-  },
-
-  // Wenn jemand sich erfolgreich einloggt/registriert
-  signInComplete: () => {
-    trackEvent('sign_in_complete', {
-      event_category: 'conversion',
-      event_label: 'user_authenticated',
-    })
-  },
-
-  // Wenn jemand den Checkout startet
-  checkoutStart: () => {
-    trackEvent('begin_checkout', {
-      event_category: 'conversion',
-      event_label: 'checkout_initiated',
-    })
-  },
-
-  // Wenn jemand sich für den Lead Magnet (Quick Guide) anmeldet
-  leadMagnetSignup: () => {
-    const googleAdsId = sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID)
-    // Nutzt eigenes Label falls vorhanden, sonst das Standard-Conversion-Label
-    const conversionLabel =
-      sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_LEAD_CONVERSION_LABEL) ??
-      sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL)
-
-    // Standard Event-Tracking
-    trackEvent('generate_lead', {
-      event_category: 'conversion',
-      event_label: 'quick_guide_signup',
-      value: 0,
-      currency: 'EUR',
-    })
-
-    // Google Ads Conversion Tracking (wenn Label konfiguriert ist)
-    if (googleAdsId && conversionLabel && typeof window !== 'undefined' && typeof window.gtag === 'function') {
-      window.gtag('event', 'conversion', {
-        send_to: `${googleAdsId}/${conversionLabel}`,
-        value: 0,
-        currency: 'EUR',
-      })
-    }
-  },
-
-  // Wenn jemand erfolgreich kauft - das ist die wichtigste Conversion!
-  purchase: (value?: number) => {
-    const googleAdsId = sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID)
-    const conversionLabel = sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL)
-
-    // Standard Event-Tracking
-    trackEvent('purchase', {
-      event_category: 'conversion',
-      event_label: 'subscription_started',
-      value: value ?? MENTORSHIP_CONFIG.price,
-      currency: MENTORSHIP_CONFIG.currency,
-    })
-
-    // Google Ads Conversion Tracking (wenn Label konfiguriert ist)
-    if (googleAdsId && conversionLabel && typeof window !== 'undefined' && typeof window.gtag === 'function') {
-      window.gtag('event', 'conversion', {
-        send_to: `${googleAdsId}/${conversionLabel}`,
-        value: value ?? MENTORSHIP_CONFIG.price,
-        currency: MENTORSHIP_CONFIG.currency,
-      })
-    }
-  },
-}
-
-// TypeScript Deklaration für window.gtag
-declare global {
-  interface Window {
-    dataLayer?: unknown[]
-    gtag?: (...args: unknown[]) => void
-  }
 }

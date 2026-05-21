@@ -12,7 +12,8 @@ import { getIsAdmin } from '@/lib/authz'
 import { MobileCoursesDrawer } from '@/components/mobile-courses-drawer'
 import { Progress } from '@/components/ui/progress'
 import { auth } from '@clerk/nextjs/server'
-import { ArrowRight, Sparkle as Sparkles } from '@phosphor-icons/react/dist/ssr'
+import { ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight'
+import { Sparkle as Sparkles } from '@phosphor-icons/react/dist/ssr/Sparkle'
 import { MentorshipWelcomeName } from '@/components/mentorship/welcome-name'
 import { OnboardingWelcomeCard } from '@/components/mentorship/onboarding-welcome-card'
 import { getSidebarData } from '@/lib/sidebar-data'
@@ -75,29 +76,39 @@ async function getContinueLearning(userId: string | null, isAdmin: boolean): Pro
   try {
     const state = await prisma.userPlaybackState.findUnique({
       where: { userId },
-      select: { lastVideoId: true },
-    })
-
-    const lastVideoId = state?.lastVideoId ?? null
-    if (lastVideoId) {
-      lastViewedVideo = await prisma.video.findUnique({
-        where: { id: lastVideoId },
-        select: {
-          id: true,
-          title: true,
-          chapter: {
-            select: {
-              module: {
-                select: {
-                  id: true,
-                  name: true,
-                  playlist: { select: { id: true, name: true } },
+      select: {
+        lastVideo: {
+          select: {
+            id: true,
+            title: true,
+            chapter: {
+              select: {
+                module: {
+                  select: {
+                    id: true,
+                    name: true,
+                    playlist: { select: { id: true, name: true } },
+                  },
                 },
               },
             },
           },
         },
-      })
+      },
+    })
+
+    if (state?.lastVideo) {
+      lastViewedVideo = {
+        id: state.lastVideo.id,
+        title: state.lastVideo.title,
+        chapter: {
+          module: {
+            id: state.lastVideo.chapter.module.id,
+            name: state.lastVideo.chapter.module.name,
+            playlist: state.lastVideo.chapter.module.playlist,
+          },
+        },
+      }
     }
   } catch {
     // Falls die Migration noch nicht gelaufen ist, soll das Dashboard trotzdem funktionieren.
@@ -203,22 +214,35 @@ async function getOnboardingVideoId(): Promise<string | null> {
 }
 
 export default async function MentorshipDashboard({ searchParams = Promise.resolve({}) }: PageProps) {
-  const isAdmin = await getIsAdmin()
-  const { userId } = await auth()
-
-  const resolvedParams = await searchParams
-  const create = typeof resolvedParams.create === 'string' ? resolvedParams.create : undefined
-  const openCreateCourseModal = create === '1' || create === 'true'
+  const { userId, sessionClaims } = await auth()
+  const isAdminPromise = getIsAdmin(userId ?? undefined, sessionClaims)
+  const sidebarDataPromise = getSidebarData()
+  const newContentPromise = getNewContent(3)
 
   const onboardingExpired = isOnboardingVideoExpired()
   const onboardingExpiryLabel = formatOnboardingExpiryLabel(getOnboardingVideoExpiryDate())
+  const onboardingVideoIdPromise = onboardingExpired ? Promise.resolve(null) : getOnboardingVideoId()
+  const continueLearningPromise = isAdminPromise.then((isAdmin) =>
+    getContinueLearning(userId ?? null, isAdmin)
+  )
 
-  const [{ kurseForSidebar, pagesForSidebar, savedSidebarOrder }, continueLearning, newContent, onboardingVideoId] = await Promise.all([
-    getSidebarData(),
-    getContinueLearning(userId ?? null, isAdmin),
-    getNewContent(3),
-    onboardingExpired ? Promise.resolve(null) : getOnboardingVideoId(),
+  const [
+    resolvedParams,
+    isAdmin,
+    { kurseForSidebar, pagesForSidebar, savedSidebarOrder },
+    continueLearning,
+    newContent,
+    onboardingVideoId,
+  ] = await Promise.all([
+    searchParams,
+    isAdminPromise,
+    sidebarDataPromise,
+    continueLearningPromise,
+    newContentPromise,
+    onboardingVideoIdPromise,
   ])
+  const create = typeof resolvedParams.create === 'string' ? resolvedParams.create : undefined
+  const openCreateCourseModal = create === '1' || create === 'true'
 
   return (
     <div className="flex h-full min-h-0 bg-background">
@@ -335,6 +359,7 @@ export default async function MentorshipDashboard({ searchParams = Promise.resol
                       <Link
                         key={item.videoId}
                         href={`/mentorship/modul/${item.moduleId}?video=${item.videoId}`}
+                        prefetch={false}
                         className="block rounded-md border border-border p-3 hover:bg-muted/40 transition-colors"
                       >
                         <p className="text-sm font-medium leading-snug overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">

@@ -1,20 +1,18 @@
 'use client'
 
-import { useEffect, useRef, useState } from "react"
-import { motion } from "framer-motion"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Card } from "@/components/ui/card"
 import Image from "next/image"
 import InfiniteScroll from "@/components/ui/infinite-scroll"
-import {
-  TrendUp as TrendingUp,
-  Receipt,
-  ChartLineUp as ChartCandlestick,
-  Star,
-} from "@phosphor-icons/react"
+import { ChartLineUp as ChartCandlestick } from "@phosphor-icons/react/ChartLineUp"
+import { Receipt } from "@phosphor-icons/react/Receipt"
+import { Star } from "@phosphor-icons/react/Star"
+import { TrendUp as TrendingUp } from "@phosphor-icons/react/TrendUp"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { TestimonialModal } from "../ui/testimonial-modal"
 import { TestimonialCard } from "../ui/testimonial-card"
 import { LazyYouTubeEmbed } from "../ui/lazy-youtube-embed"
+import { getWhopReviews } from "@/lib/whop-review-stats"
 
 const WHOP_REVIEWS_URL = "https://whop.com/price-action-trader-mentorship-24-d9/pat-mentorship-2025/"
 const PAT_MEETUP_VIDEO_ID = process.env.NEXT_PUBLIC_PAT_MEETUP_VIDEO_ID?.trim()
@@ -29,16 +27,6 @@ type Testimonial = {
     description: string
   }
   gradientColor: string
-}
-
-type WhopReview = {
-  id: string
-  rating: number | null
-  title: string | null
-  body: string
-  author: string
-  createdAt: string | null
-  source: 'whop'
 }
 
 const staticTestimonials: Testimonial[] = [
@@ -196,21 +184,50 @@ export default function Testimonials() {
   const [selectedTestimonial, setSelectedTestimonial] = useState<Testimonial | null>(null)
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [touchStart, setTouchStart] = useState(0)
+  const sectionRef = useRef<HTMLElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  const [shouldLoadWhopReviews, setShouldLoadWhopReviews] = useState(false)
   const [whopTestimonials, setWhopTestimonials] = useState<Testimonial[]>([])
   const [whopStats, setWhopStats] = useState<{ count: number; average: number } | null>(null)
 
   useEffect(() => {
+    const node = sectionRef.current
+    if (!node) {
+      const raf = requestAnimationFrame(() => setShouldLoadWhopReviews(true))
+      return () => cancelAnimationFrame(raf)
+    }
+
+    if (typeof IntersectionObserver === 'undefined') {
+      const raf = requestAnimationFrame(() => setShouldLoadWhopReviews(true))
+      return () => cancelAnimationFrame(raf)
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldLoadWhopReviews(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '800px 0px' }
+    )
+
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!shouldLoadWhopReviews) return
+
     let cancelled = false
 
     async function loadWhopReviews() {
       try {
-        const res = await fetch('/api/whop/reviews?limit=200&per=50')
-        if (!res.ok) return
+        const data = await getWhopReviews()
+        if (!data) return
 
-        const data = (await res.json()) as { reviews?: WhopReview[] }
-        const reviews = Array.isArray(data?.reviews) ? data.reviews : []
+        const reviews = data.reviews
 
         const ratingValues = reviews
           .map((review) => (typeof review.rating === 'number' && Number.isFinite(review.rating) ? review.rating : null))
@@ -255,7 +272,7 @@ export default function Testimonials() {
         })
 
         if (!cancelled) {
-          setWhopStats({ count: reviews.length, average })
+          setWhopStats({ count: data.count, average })
           setWhopTestimonials(mapped)
           setCurrentIndex(0)
         }
@@ -293,9 +310,9 @@ export default function Testimonials() {
       cancelled = true
       cleanup?.()
     }
-  }, [])
+  }, [shouldLoadWhopReviews])
 
-  const allTestimonials = (() => {
+  const allTestimonials = useMemo(() => {
     if (whopTestimonials.length === 0) return staticTestimonials
     const mixed: Testimonial[] = []
     const maxLength = Math.max(whopTestimonials.length, staticTestimonials.length)
@@ -310,7 +327,7 @@ export default function Testimonials() {
     }
 
     return mixed
-  })()
+  }, [whopTestimonials])
 
   const isWhopReview = (testimonial: Testimonial) => testimonial.role.toLowerCase().includes("whop")
 
@@ -323,8 +340,13 @@ export default function Testimonials() {
   }
 
   // Split testimonials for desktop scroll
-  const firstHalf = allTestimonials.slice(0, Math.ceil(allTestimonials.length / 2))
-  const secondHalf = allTestimonials.slice(Math.ceil(allTestimonials.length / 2))
+  const [firstHalf, secondHalf] = useMemo(() => {
+    const splitIndex = Math.ceil(allTestimonials.length / 2)
+    return [
+      allTestimonials.slice(0, splitIndex),
+      allTestimonials.slice(splitIndex),
+    ] as const
+  }, [allTestimonials])
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.touches[0].clientX)
@@ -347,7 +369,7 @@ export default function Testimonials() {
   }
 
   return (
-    <section className="py-24 bg-white">
+    <section ref={sectionRef} className="py-24 bg-white">
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-blue-50 ring-1 ring-blue-200 mb-4">
@@ -406,10 +428,9 @@ export default function Testimonials() {
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
             >
-              <motion.div
-                className="flex"
-                animate={{ x: `-${currentIndex * 100}%` }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
+              <div
+                className="flex transition-transform duration-300 ease-out"
+                style={{ transform: `translateX(-${currentIndex * 100}%)` }}
               >
                 {allTestimonials.map((testimonial, index) => (
                   <div 
@@ -423,7 +444,7 @@ export default function Testimonials() {
                     />
                   </div>
                 ))}
-              </motion.div>
+              </div>
             </div>
 
             <div className="mt-6 flex flex-col items-center gap-2">

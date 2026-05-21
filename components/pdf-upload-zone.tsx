@@ -2,9 +2,9 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Upload } from '@phosphor-icons/react'
+import { Upload } from '@phosphor-icons/react/Upload'
 import { useToast } from '@/hooks/use-toast'
 
 type Props = {
@@ -15,8 +15,16 @@ type Props = {
 export function PdfUploadZone({ videoId, onUploadSuccess }: Props) {
   const { toast } = useToast()
   const [isUploading, setIsUploading] = useState(false)
+  const uploadAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      uploadAbortRef.current?.abort()
+    }
+  }, [])
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.currentTarget
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -41,6 +49,9 @@ export function PdfUploadZone({ videoId, onUploadSuccess }: Props) {
     }
 
     setIsUploading(true)
+    uploadAbortRef.current?.abort()
+    const controller = new AbortController()
+    uploadAbortRef.current = controller
 
     const formData = new FormData()
     formData.append('pdf', file)
@@ -50,9 +61,11 @@ export function PdfUploadZone({ videoId, onUploadSuccess }: Props) {
       const res = await fetch('/api/upload/pdf', {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       })
 
       const data = await res.json()
+      if (controller.signal.aborted) return
 
       if (res.ok) {
         onUploadSuccess(data.pdfUrl)
@@ -64,15 +77,21 @@ export function PdfUploadZone({ videoId, onUploadSuccess }: Props) {
         throw new Error(data.error || 'Upload fehlgeschlagen')
       }
     } catch  {
+      if (controller.signal.aborted) return
       toast({
         variant: 'destructive',
         title: 'Upload fehlgeschlagen',
         description: 'Bitte versuche es später erneut.',
       })
     } finally {
-      setIsUploading(false)
-      // Input zurücksetzen, damit derselbe Dateiname erneut hochgeladen werden kann
-      e.target.value = ''
+      if (uploadAbortRef.current === controller) {
+        uploadAbortRef.current = null
+      }
+      if (!controller.signal.aborted) {
+        setIsUploading(false)
+        // Input zurücksetzen, damit derselbe Dateiname erneut hochgeladen werden kann
+        input.value = ''
+      }
     }
   }
 

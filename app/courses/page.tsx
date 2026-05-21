@@ -1,5 +1,6 @@
 // app/courses/page.tsx
 
+import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { Sidebar } from '@/components/Sidebar'
@@ -14,20 +15,30 @@ interface PageProps {
 }
 
 async function getKurse() {
-  const kurse = await prisma.playlist.findMany({
-    include: {
-      modules: {
-        include: { chapters: true },
-        orderBy: { order: 'asc' },
+  const [kurse, savedSetting] = await Promise.all([
+    prisma.playlist.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        iconUrl: true,
+        modules: {
+          select: {
+            id: true,
+            name: true,
+            _count: { select: { chapters: true } },
+          },
+          orderBy: { order: 'asc' },
+        },
       },
-    },
-    orderBy: { createdAt: 'desc' },
-  })
-
-  // Lade gespeicherte Sidebar-Reihenfolge (falls vorhanden)
-  const savedSetting = await prisma.adminSetting.findUnique({
-    where: { key: 'sidebarOrder' },
-  })
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.adminSetting.findUnique({
+      where: { key: 'sidebarOrder' },
+      select: { value: true },
+    }),
+  ])
 
   const savedSidebarOrder: string[] | null = savedSetting 
     ? (savedSetting.value as string[]) 
@@ -47,9 +58,15 @@ async function getKurse() {
 }
 
 export default async function CoursesDashboard({ searchParams = Promise.resolve({}) }: PageProps) {
-  const { kurse, kurseForSidebar, savedSidebarOrder } = await getKurse()
-  const isAdmin = await getIsAdmin()
-  const resolvedParams = await searchParams
+  const authPromise = auth()
+  const isAdminPromise = authPromise.then(({ userId, sessionClaims }) =>
+    userId ? getIsAdmin(userId, sessionClaims) : false
+  )
+  const [{ kurse, kurseForSidebar, savedSidebarOrder }, isAdmin, resolvedParams] = await Promise.all([
+    getKurse(),
+    isAdminPromise,
+    searchParams,
+  ])
   const create = typeof resolvedParams.create === 'string' ? resolvedParams.create : undefined
   const openCreateCourseModal = create === '1' || create === 'true'
 
@@ -71,7 +88,7 @@ export default async function CoursesDashboard({ searchParams = Promise.resolve(
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {kurse.flatMap((kurs) =>
               kurs.modules.map((modul) => (
-                <Link key={modul.id} href={`/courses/${modul.id}`} className="block">
+                <Link key={modul.id} href={`/courses/${modul.id}`} prefetch={false} className="block">
                   <Card className="overflow-hidden hover:shadow-xl transition-shadow cursor-pointer">
                     <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
                       <span className="text-5xl">📚</span>
@@ -80,7 +97,7 @@ export default async function CoursesDashboard({ searchParams = Promise.resolve(
                     <CardHeader>
                       <CardTitle className="text-xl">{modul.name}</CardTitle>
                       <CardDescription>
-                        {modul.chapters.length} Kapitel • Kurs: {kurs.name}
+                        {modul._count.chapters} Kapitel • Kurs: {kurs.name}
                       </CardDescription>
                     </CardHeader>
 

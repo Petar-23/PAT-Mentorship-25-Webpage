@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
@@ -12,14 +12,24 @@ type Props = {
 export function DiscordLinkButton({ connected }: Props) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
+  const redirectTimeoutRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current != null) {
+        window.clearTimeout(redirectTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const handleConnect = useCallback(() => {
     if (pending) return
     setPending(true)
 
     // Wir warten einen Tick, damit React den Loading-State rendern kann.
-    setTimeout(() => {
+    redirectTimeoutRef.current = window.setTimeout(() => {
       window.location.href = '/api/discord/oauth/start'
+      redirectTimeoutRef.current = null
     }, 0)
   }, [pending])
 
@@ -59,5 +69,4 @@ export function DiscordLinkButton({ connected }: Props) {
     </Button>
   )
 }
-
 

@@ -2,7 +2,6 @@
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import Link from 'next/link'
-import { motion } from "framer-motion";
 
 
 export default function FAQs() {
@@ -75,7 +74,7 @@ export default function FAQs() {
           </div>
 
           <p className="text-slate-500 mt-6 md:hidden dark:text-slate-400">
-            Can't find what you're looking for? Contact our{''}
+            Can&apos;t find what you&apos;re looking for? Contact our{''}
             <Link
               href="#"
               className="text-slate-900 font-medium hover:underline dark:text-slate-50">
@@ -94,50 +93,11 @@ export const BlurredStagger = ({
 }: {
   text: string;
 }) => {
-  const headingText = text;
- 
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.015,
-      },
-    },
-  };
- 
-  const letterAnimation = {
-    hidden: {
-      opacity: 0,
-      filter: "blur(10px)",
-    },
-    show: {
-      opacity: 1,
-      filter: "blur(0px)",
-    },
-  };
- 
   return (
-    <>
-      <div className="w-full">
-        <motion.p
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="text-base leading-relaxed break-words whitespace-normal"
-        >
-          {headingText.split("").map((char, index) => (
-            <motion.span
-              key={index}
-              variants={letterAnimation}
-              transition={{ duration: 0.3 }}
-              className="inline-block"
-            >
-              {char === "" ? "" : char}
-            </motion.span>
-          ))}
-        </motion.p>
-      </div>
-    </>
+    <div className="w-full">
+      <p className="text-base leading-relaxed break-words whitespace-normal animate-in fade-in duration-300">
+        {text}
+      </p>
+    </div>
   );
 };

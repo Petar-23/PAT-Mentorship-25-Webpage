@@ -1,14 +1,36 @@
 // src/lib/stripe.ts
+import 'server-only'
+
 import Stripe from 'stripe'
 import { prisma } from './prisma'
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing STRIPE_SECRET_KEY')
+declare global {
+  var stripeClient: Stripe | undefined
 }
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-10-28.acacia',
-  typescript: true,
+export function getStripe() {
+  if (!global.stripeClient) {
+    const secretKey = process.env.STRIPE_SECRET_KEY
+    if (!secretKey) {
+      throw new Error('Missing STRIPE_SECRET_KEY')
+    }
+
+    global.stripeClient = new Stripe(secretKey, {
+      apiVersion: '2024-10-28.acacia',
+      typescript: true,
+    })
+  }
+
+  return global.stripeClient
+}
+
+export const stripe = new Proxy({} as Stripe, {
+  get(_target, prop) {
+    const client = getStripe()
+    const value = Reflect.get(client, prop, client) as unknown
+
+    return typeof value === 'function' ? value.bind(client) : value
+  },
 })
 
 const PROGRAM_START_DATE = new Date('2026-03-01T00:00:00+01:00')
@@ -207,8 +229,11 @@ export async function getSubscriptionSnapshot(
   userId: string,
   options: { retryCount?: number; checkForRecentCheckout?: boolean; email?: string } = {}
 ): Promise<SubscriptionSnapshot> {
-  // Schneller PayPal-Check vor allem anderen (fuer M24-Subscriber).
-  const paypalResult = await checkPayPalAccess(userId)
+  // Schnelle DB-Fast-Paths parallel starten: PayPal-Zugang gewinnt weiter vor Stripe/DB-Subscription.
+  const paypalAccessPromise = checkPayPalAccess(userId)
+  const dbSubscriptionPromise = readSubscriptionFromDb(userId)
+
+  const paypalResult = await paypalAccessPromise
   if (paypalResult) return paypalResult
 
   const requiredPriceIds = getAccessPriceIdsFromEnv()
@@ -216,7 +241,7 @@ export async function getSubscriptionSnapshot(
   const checkForRecentCheckout = options.checkForRecentCheckout === true
   const email = options.email
 
-  const db = await readSubscriptionFromDb(userId)
+  const db = await dbSubscriptionPromise
   if (db) {
     // Wenn wir schon sicher wissen, dass es kein Abo gibt, wollen wir NICHT jedes Mal Stripe abfragen.
     // Ausnahme: direkt nach Checkout (success=true) erlauben wir Retries zu Stripe.

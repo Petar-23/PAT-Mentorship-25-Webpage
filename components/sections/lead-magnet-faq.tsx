@@ -1,6 +1,3 @@
-"use client"
-
-import { motion } from "framer-motion"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 
 const faqs = [
@@ -22,48 +19,9 @@ const faqs = [
 ]
 
 const BlurredStagger = ({ text }: { text: string }) => {
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.03,
-      },
-    },
-  }
-
-  const wordAnimation = {
-    hidden: {
-      opacity: 0,
-      filter: "blur(10px)",
-    },
-    show: {
-      opacity: 1,
-      filter: "blur(0px)",
-    },
-  }
-
-  const words = text.split(" ")
-
   return (
     <div className="w-full">
-      <motion.p
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="text-base leading-relaxed text-neutral-700"
-      >
-        {words.map((word, index) => (
-          <motion.span
-            key={index}
-            variants={wordAnimation}
-            transition={{ duration: 0.3 }}
-            className="inline-block mr-[0.25em]"
-          >
-            {word}
-          </motion.span>
-        ))}
-      </motion.p>
+      <p className="text-base leading-relaxed text-neutral-700">{text}</p>
     </div>
   )
 }

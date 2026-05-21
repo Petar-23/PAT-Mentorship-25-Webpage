@@ -1,22 +1,57 @@
 // src/components/sections/final-cta.tsx
 "use client"
-import { motion } from "motion/react"
-import { useEffect, useRef, useState } from "react"
+import dynamic from "next/dynamic"
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import {
-  ArrowRight,
-  Users,
-  Clock,
-  Trophy,
-} from "@phosphor-icons/react"
-import { GlowingCard } from "@/components/ui/glowing-card"
-import { Vortex } from "@/components/ui/vortex"
+import { ArrowRight } from "@phosphor-icons/react/ArrowRight"
+import { Clock } from "@phosphor-icons/react/Clock"
+import { Trophy } from "@phosphor-icons/react/Trophy"
+import { Users } from "@phosphor-icons/react/Users"
 import { Countdown } from "@/components/ui/countdown"
 import { useUser, SignInButton } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { trackConversion } from '@/components/analytics/google-tag-manager'
+import { trackConversion } from '@/components/analytics/tracking'
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { MENTORSHIP_CONFIG } from '@/lib/config'
+
+const Vortex = dynamic(
+    () => import("@/components/ui/vortex").then((mod) => mod.Vortex),
+    {
+        ssr: false,
+        loading: () => null,
+    }
+)
+
+function FinalCtaInfoCard({
+    icon,
+    title,
+    description,
+    glowColor,
+}: {
+    icon: ReactNode
+    title: string
+    description: string
+    glowColor: string
+}) {
+    const style = { "--final-cta-card-glow": glowColor } as CSSProperties
+
+    return (
+        <div
+            style={style}
+            className="group relative h-full rounded-xl border border-slate-700/90 bg-slate-900 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03),0_18px_45px_rgba(15,23,42,0.45)] transition-colors duration-300 before:absolute before:inset-0 before:rounded-[inherit] before:bg-[radial-gradient(circle_at_35%_0%,var(--final-cta-card-glow),transparent_38%)] before:opacity-15 before:transition-opacity before:duration-300 hover:border-slate-500/80 hover:before:opacity-25"
+        >
+            <div className="relative">
+                {icon}
+                <h3 className="text-lg font-semibold text-white mb-2">
+                    {title}
+                </h3>
+                <p className="text-gray-300">
+                    {description}
+                </p>
+            </div>
+        </div>
+    )
+}
 
 export default function FinalCTA() {
     const { isSignedIn } = useUser()
@@ -24,6 +59,7 @@ export default function FinalCTA() {
     const isMobile = useMediaQuery("(max-width: 768px)")
     const sectionRef = useRef<HTMLElement>(null)
     const [isInView, setIsInView] = useState(false)
+    const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
     const vortexConfig = isMobile
         ? {
             particleCount: 150,
@@ -75,6 +111,17 @@ export default function FinalCTA() {
         return () => observer.disconnect()
     }, [])
 
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+
+        const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+        const updatePreference = () => setPrefersReducedMotion(media.matches)
+
+        updatePreference()
+        media.addEventListener('change', updatePreference)
+        return () => media.removeEventListener('change', updatePreference)
+    }, [])
+
     const ctaButton = isSignedIn ? (
         <Button
             onClick={handleJoinClick}
@@ -108,7 +155,7 @@ export default function FinalCTA() {
         <section ref={sectionRef} className="relative py-12 sm:py-24 overflow-hidden">
             {/* Vortex Background */}
             <div className="absolute inset-0 bg-slate-950">
-                {isInView && (
+                {isInView && !prefersReducedMotion && (
                     <Vortex
                         particleCount={vortexConfig.particleCount}
                         baseHue={vortexConfig.baseHue}
@@ -125,11 +172,7 @@ export default function FinalCTA() {
             {/* Content */}
             <div className="container relative z-10 mx-auto px-4 max-w-6xl">
                 <div className="text-center mb-8 sm:mb-16">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                    >
+                    <div className="motion-safe:animate-[final-cta-fade-up_600ms_ease-out_both]">
                         <div className="flex justify-center mb-4 sm:mb-6">
                             <div className="inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-white/10 ring-1 ring-white/20">
                                 <div className="bg-blue-500/20 text-blue-400 rounded-full px-2 py-0.5 text-xs sm:text-sm">🚀</div>
@@ -146,7 +189,7 @@ export default function FinalCTA() {
                             Werde einer von {MENTORSHIP_CONFIG.maxSpots} ambitionierten Tradern und erlebe ein transformatives Jahr 
                             mit Live-Marktanalysen, Echtzeit-Trading und messbarem Wachstum.
                         </p>
-                    </motion.div>
+                    </div>
                     <div className="mt-6 sm:mt-8 flex justify-center">
                         <div className="max-w-md w-full">
                             <p className="text-xs sm:text-sm text-gray-200 mb-2 sm:mb-3">
@@ -177,27 +220,18 @@ export default function FinalCTA() {
                             description: "Schließe das Jahr ab und erhalte permanenten Zugriff auf alle Materialien und Aufzeichnungen",
                             glowColor: "#4ADE80" // green-400
                         }
-                    ].map((card, index) => (
-                        <GlowingCard key={index} glowColor={card.glowColor}>
-                            <div className="p-6">
-                                {card.icon}
-                                <h3 className="text-lg font-semibold text-white mb-2">
-                                    {card.title}
-                                </h3>
-                                <p className="text-gray-300">
-                                    {card.description}
-                                </p>
-                            </div>
-                        </GlowingCard>
+                    ].map((card) => (
+                        <FinalCtaInfoCard
+                            key={card.title}
+                            icon={card.icon}
+                            title={card.title}
+                            description={card.description}
+                            glowColor={card.glowColor}
+                        />
                     ))}
                 </div>
 
-                <motion.div
-                    className="text-center mt-6 sm:mt-8 md:mt-0"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.2 }}
-                >
+                <div className="text-center mt-6 sm:mt-8 md:mt-0 motion-safe:animate-[final-cta-pop_500ms_ease-out_200ms_both]">
                     {ctaButton}
                     
                     <p className="mt-4 sm:mt-6 text-xs sm:text-base text-gray-400">
@@ -208,7 +242,7 @@ export default function FinalCTA() {
                         <div className="bg-amber-500/20 text-amber-400 rounded-full px-2 py-0.5 text-xs sm:text-sm">⚡</div>
                         <span className="text-xs sm:text-sm font-medium text-amber-300">Nur die ersten {MENTORSHIP_CONFIG.maxSpots} Anmeldungen werden akzeptiert</span>
                     </div>
-                </motion.div>
+                </div>
             </div>
         </section>
     )

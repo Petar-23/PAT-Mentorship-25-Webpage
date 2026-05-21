@@ -1,5 +1,7 @@
 import Image from "next/image"
-import { SealCheck as BadgeCheck, Quotes as Quote, Star } from "@phosphor-icons/react/dist/ssr"
+import { Quotes as Quote } from "@phosphor-icons/react/dist/ssr/Quotes"
+import { SealCheck as BadgeCheck } from "@phosphor-icons/react/dist/ssr/SealCheck"
+import { Star } from "@phosphor-icons/react/dist/ssr/Star"
 import { GradientCard } from "@/components/ui/gradient-card"
 
 interface TestimonialCardProps {

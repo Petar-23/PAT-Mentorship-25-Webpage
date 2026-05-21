@@ -1,9 +1,22 @@
 // src/app/tools/equity-calculator/page.tsx
 'use client'
 
-import React, { useState, useMemo } from "react";
+import React, { useDeferredValue, useState, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, ComposedChart} from "recharts";
+import type { EquityChartPoint } from "@/components/tools/equity-growth-chart";
+
+const EquityGrowthChart = dynamic(
+  () => import("@/components/tools/equity-growth-chart").then((mod) => mod.EquityGrowthChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-80 items-center justify-center rounded-md bg-gray-50 text-sm text-gray-500">
+        Chart wird geladen...
+      </div>
+    ),
+  }
+);
 
 // Type definitions
 type FuturesSymbol = 'MNQ' | 'MES';
@@ -20,7 +33,7 @@ interface FuturesContract {
   
   type FuturesCharacteristics = Record<FuturesSymbol, FuturesContract>;
   
-  interface MonthlyData {
+  interface MonthlyData extends EquityChartPoint {
     month: number;
     capital: number;
     contracts: number;
@@ -100,6 +113,139 @@ const FUTURES_DATA: FuturesCharacteristics = {
     }
   } as const;
 
+const TRADES_PER_MONTH = 10;
+
+const TRANSLATIONS: Record<Language, Translation> = {
+  en: {
+    title: "Micro E-mini Futures Trading Dashboard",
+    parameters: "Trading Parameters",
+    statistics: "Position Sizing Analysis",
+    characteristics: "Contract Specifications",
+    chart: "Account Growth Projection",
+    progress: "Monthly Progress",
+    symbol: "Symbol",
+    initialCapital: "Initial Capital",
+    tickValue: "Tick Value",
+    margin: "Day Trading Margin",
+    exchange: "Exchange",
+    description: "Description",
+    currentPositionSize: "Current Position Size",
+    maxRiskPerTrade: "Max Risk per Trade",
+    nextContractAt: "Capital for Next Contract",
+    winRate: "Win Rate",
+    riskReward: "Risk/Reward",
+    riskTrade: "Risk per Trade",
+    monthlyReturn: "Monthly Return",
+    yearlyReturn: "Yearly Return",
+    month: "Month",
+    capital: "Capital",
+    contracts: "Contracts",
+    stopLoss: "Stop Loss (Ticks)",
+    takeProfit: "Take Profit (Ticks)",
+    monthlyPnL: "Monthly P&L",
+    risk: "Risk",
+    minCapitalWarning: "Minimum capital required for {risk}% risk with {stopLoss} ticks SL is ${capital}",
+    minimumStopLoss: "Minimum SL",
+    perContract: "per contract",
+    coreAssumptions: "Core Assumptions",
+    tradesPerMonth: "Trades per Month",
+    stopLossSize: "Stop Loss Size",
+  },
+  de: {
+    title: "Micro E-mini Futures Handelsdashboard",
+    parameters: "Handelsparameter",
+    statistics: "Positionsgrößenanalyse",
+    characteristics: "Kontraktspezifikationen",
+    chart: "Kontoentwicklung",
+    progress: "Monatlicher Fortschritt",
+    symbol: "Symbol",
+    initialCapital: "Startkapital",
+    tickValue: "Tick-Wert",
+    margin: "Daytrading-Margin",
+    exchange: "Börse",
+    description: "Beschreibung",
+    currentPositionSize: "Aktuelle Positionsgröße",
+    maxRiskPerTrade: "Max. Risiko pro Trade",
+    nextContractAt: "Kapital für nächsten Kontrakt",
+    winRate: "Gewinnrate",
+    riskReward: "Risiko/Rendite",
+    riskTrade: "Risiko pro Trade",
+    monthlyReturn: "Monatliche Rendite",
+    yearlyReturn: "Jährliche Rendite",
+    month: "Monat",
+    capital: "Kapital",
+    contracts: "Kontrakte",
+    stopLoss: "Stop Loss (Ticks)",
+    takeProfit: "Take Profit (Ticks)",
+    monthlyPnL: "Monatlicher G/V",
+    risk: "Risiko",
+    minCapitalWarning: "Mindestkapital für {risk}% Risiko mit {stopLoss} Ticks SL beträgt ${capital}",
+    minimumStopLoss: "Mindest-SL",
+    perContract: "pro Kontrakt",
+    coreAssumptions: "Grundannahmen",
+    tradesPerMonth: "Trades pro Monat",
+    stopLossSize: "Stop Loss Größe",
+  }
+} as const;
+
+function calculateMinimumCapital(symbol: FuturesSymbol, riskPercentage: number) {
+  const contract = FUTURES_DATA[symbol];
+  const minRiskAmount = contract.minStopLoss * contract.tickValue;
+  return Math.ceil((minRiskAmount / (riskPercentage / 100)));
+}
+
+function calculateSafeContractSize(
+  capital: number,
+  selectedSymbol: FuturesSymbol,
+  riskPercentage: number
+) {
+  const minRequiredCapital = calculateMinimumCapital(selectedSymbol, riskPercentage);
+
+  if (capital < minRequiredCapital) {
+    return 0;
+  }
+
+  const maxRiskAmount = capital * (riskPercentage / 100);
+  const riskPerContract = FUTURES_DATA[selectedSymbol].minStopLoss * FUTURES_DATA[selectedSymbol].tickValue;
+  return Math.floor(maxRiskAmount / riskPerContract);
+}
+
+function calculatePositionRisk(
+  capital: number,
+  selectedSymbol: FuturesSymbol,
+  contracts: number
+) {
+  const riskPerContract = FUTURES_DATA[selectedSymbol].minStopLoss * FUTURES_DATA[selectedSymbol].tickValue;
+  const totalRisk = contracts * riskPerContract;
+  const riskPercentage = (totalRisk / capital) * 100;
+  return { totalRisk, riskPercentage };
+}
+
+function calculateCapitalForNextContract(
+  selectedSymbol: FuturesSymbol,
+  currentContracts: number,
+  riskPercentage: number
+) {
+  const nextContractCount = currentContracts + 1;
+  const totalRiskRequired = nextContractCount * FUTURES_DATA[selectedSymbol].minStopLoss * FUTURES_DATA[selectedSymbol].tickValue;
+  return Math.ceil((totalRiskRequired / riskPercentage) * 100);
+}
+
+function getCapitalWarning(
+  capital: number,
+  selectedSymbol: FuturesSymbol,
+  riskPercentage: number,
+  t: Translation
+) {
+  const minCapital = calculateMinimumCapital(selectedSymbol, riskPercentage);
+  if (capital >= minCapital) return null;
+
+  return t.minCapitalWarning
+    .replace('{risk}', riskPercentage.toString())
+    .replace('{stopLoss}', FUTURES_DATA[selectedSymbol].minStopLoss.toString())
+    .replace('{capital}', minCapital.toLocaleString());
+}
+
 // 2. Calculation functions outside the component
 const calculateMonthlyResults = (
     startingCapital: number,
@@ -110,34 +256,12 @@ const calculateMonthlyResults = (
     tradesPerMonth: number
   ) => {
     // Helper calculation functions
-    const calculateSafeContractSize = (capital: number) => {
-      const contract = FUTURES_DATA[selectedSymbol];
-      const minRiskAmount = capital * (riskPercentage / 100);
-      const riskPerContract = contract.minStopLoss * contract.tickValue;
-      return Math.floor(minRiskAmount / riskPerContract);
-    };
-  
-    const calculatePositionRisk = (capital: number, contracts: number) => {
-      const contract = FUTURES_DATA[selectedSymbol];
-      const riskPerContract = contract.minStopLoss * contract.tickValue;
-      const totalRisk = contracts * riskPerContract;
-      const riskPercentage = (totalRisk / capital) * 100;
-      return { totalRisk, riskPercentage };
-    };
-  
-    const calculateCapitalForNextContract = (currentContracts: number) => {
-      const contract = FUTURES_DATA[selectedSymbol];
-      const nextContractCount = currentContracts + 1;
-      const totalRiskRequired = nextContractCount * contract.minStopLoss * contract.tickValue;
-      return Math.ceil((totalRiskRequired / riskPercentage) * 100);
-    };
-  
     const monthlyData: MonthlyData[] = [];
     let runningCapital = startingCapital;
       
     for (let month = 1; month <= 12; month++) {
-      const safeContracts = calculateSafeContractSize(runningCapital);
-      const riskMetrics = calculatePositionRisk(runningCapital, safeContracts);
+      const safeContracts = calculateSafeContractSize(runningCapital, selectedSymbol, riskPercentage);
+      const riskMetrics = calculatePositionRisk(runningCapital, selectedSymbol, safeContracts);
       const contract = FUTURES_DATA[selectedSymbol];
       const takeProfitTicks = contract.minStopLoss * riskReward;
         
@@ -160,7 +284,7 @@ const calculateMonthlyResults = (
         riskPercent: riskMetrics.riskPercentage.toFixed(2),
         pnl: Math.round(monthlyPnL),
         monthlyReturn: monthlyReturn.toFixed(2),
-        nextContractAt: calculateCapitalForNextContract(safeContracts)
+        nextContractAt: calculateCapitalForNextContract(selectedSymbol, safeContracts, riskPercentage)
       });
     }
     return monthlyData;
@@ -176,151 +300,61 @@ export default function EquityCalculatorPage() {
   const [winRate, setWinRate] = useState(40);
   const [riskReward, setRiskReward] = useState(3);
   const [riskPercentage, setRiskPercentage] = useState(2);
-  const [tradesPerMonth, ] = useState(10);
+  const deferredSelectedSymbol = useDeferredValue(selectedSymbol);
+  const deferredStartingCapital = useDeferredValue(startingCapital);
+  const deferredWinRate = useDeferredValue(winRate);
+  const deferredRiskReward = useDeferredValue(riskReward);
+  const deferredRiskPercentage = useDeferredValue(riskPercentage);
+  const isCalculationPending =
+    deferredSelectedSymbol !== selectedSymbol ||
+    deferredStartingCapital !== startingCapital ||
+    deferredWinRate !== winRate ||
+    deferredRiskReward !== riskReward ||
+    deferredRiskPercentage !== riskPercentage;
 
    // Memoized calculations
    const monthlyData = useMemo(
     () => calculateMonthlyResults(
-      startingCapital,
-      selectedSymbol,
-      winRate,
-      riskReward,
-      riskPercentage,
-      tradesPerMonth
+      deferredStartingCapital,
+      deferredSelectedSymbol,
+      deferredWinRate,
+      deferredRiskReward,
+      deferredRiskPercentage,
+      TRADES_PER_MONTH
     ),
     [
-      startingCapital,
-      selectedSymbol,
-      winRate,
-      riskReward,
-      riskPercentage,
-      tradesPerMonth
+      deferredStartingCapital,
+      deferredSelectedSymbol,
+      deferredWinRate,
+      deferredRiskReward,
+      deferredRiskPercentage,
     ]
   );
 
-  const translations: Record<Language, Translation> = {
-    en: {
-      title: "Micro E-mini Futures Trading Dashboard",
-      parameters: "Trading Parameters",
-      statistics: "Position Sizing Analysis",
-      characteristics: "Contract Specifications",
-      chart: "Account Growth Projection",
-      progress: "Monthly Progress",
-      symbol: "Symbol",
-      initialCapital: "Initial Capital",
-      tickValue: "Tick Value",
-      margin: "Day Trading Margin",
-      exchange: "Exchange",
-      description: "Description",
-      currentPositionSize: "Current Position Size",
-      maxRiskPerTrade: "Max Risk per Trade",
-      nextContractAt: "Capital for Next Contract",
-      winRate: "Win Rate",
-      riskReward: "Risk/Reward",
-      riskTrade: "Risk per Trade",
-      monthlyReturn: "Monthly Return",
-      yearlyReturn: "Yearly Return",
-      month: "Month",
-      capital: "Capital",
-      contracts: "Contracts",
-      stopLoss: "Stop Loss (Ticks)",
-      takeProfit: "Take Profit (Ticks)",
-      monthlyPnL: "Monthly P&L",
-      risk: "Risk",
-      minCapitalWarning: "Minimum capital required for {risk}% risk with {stopLoss} ticks SL is ${capital}",
-      minimumStopLoss: "Minimum SL",
-      perContract: "per contract",
-      coreAssumptions: "Core Assumptions",
-      tradesPerMonth: "Trades per Month",
-      stopLossSize: "Stop Loss Size",
-    },
-    de: {
-      title: "Micro E-mini Futures Handelsdashboard",
-      parameters: "Handelsparameter",
-      statistics: "Positionsgrößenanalyse",
-      characteristics: "Kontraktspezifikationen",
-      chart: "Kontoentwicklung",
-      progress: "Monatlicher Fortschritt",
-      symbol: "Symbol",
-      initialCapital: "Startkapital",
-      tickValue: "Tick-Wert",
-      margin: "Daytrading-Margin",
-      exchange: "Börse",
-      description: "Beschreibung",
-      currentPositionSize: "Aktuelle Positionsgröße",
-      maxRiskPerTrade: "Max. Risiko pro Trade",
-      nextContractAt: "Kapital für nächsten Kontrakt",
-      winRate: "Gewinnrate",
-      riskReward: "Risiko/Rendite",
-      riskTrade: "Risiko pro Trade",
-      monthlyReturn: "Monatliche Rendite",
-      yearlyReturn: "Jährliche Rendite",
-      month: "Monat",
-      capital: "Kapital",
-      contracts: "Kontrakte",
-      stopLoss: "Stop Loss (Ticks)",
-      takeProfit: "Take Profit (Ticks)",
-      monthlyPnL: "Monatlicher G/V",
-      risk: "Risiko",
-      minCapitalWarning: "Mindestkapital für {risk}% Risiko mit {stopLoss} Ticks SL beträgt ${capital}",
-      minimumStopLoss: "Mindest-SL",
-      perContract: "pro Kontrakt",
-      coreAssumptions: "Grundannahmen",
-      tradesPerMonth: "Trades pro Monat",
-      stopLossSize: "Stop Loss Größe",
-    }
-  } as const;
-  const t = translations[language];
-  const currentSymbol = FUTURES_DATA[selectedSymbol];
+  const t = TRANSLATIONS[language];
+  const selectedContract = FUTURES_DATA[selectedSymbol];
+  const calculatedSymbol = FUTURES_DATA[deferredSelectedSymbol];
 
-  // Update the calculation functions to handle minimum capital requirements
-  const calculateMinimumCapital = (symbol: FuturesSymbol, riskPercentage: number) => {
-    const contract = FUTURES_DATA[symbol];
-    const minRiskAmount = contract.minStopLoss * contract.tickValue;
-    return Math.ceil((minRiskAmount / (riskPercentage / 100)));
+  const currentContracts = calculateSafeContractSize(
+    deferredStartingCapital,
+    deferredSelectedSymbol,
+    deferredRiskPercentage
+  );
+  const { totalRisk, riskPercentage: actualRiskPercent } = calculatePositionRisk(
+    deferredStartingCapital,
+    deferredSelectedSymbol,
+    currentContracts
+  );
+  const yearlyReturn = ((monthlyData[11].capital - deferredStartingCapital) / deferredStartingCapital * 100).toFixed(2);
+  const capitalWarning = getCapitalWarning(startingCapital, selectedSymbol, riskPercentage, t);
+  const chartLabels = {
+    month: t.month,
+    capital: t.capital,
+    contracts: t.contracts,
+    risk: t.risk,
+    monthlyReturn: t.monthlyReturn,
+    monthlyPnL: t.monthlyPnL,
   };
-
-  const calculateSafeContractSize = (capital: number) => {
-    const minRequiredCapital = calculateMinimumCapital(selectedSymbol, riskPercentage);
-    
-    if (capital < minRequiredCapital) {
-      return 0;
-    }
-
-    const maxRiskAmount = capital * (riskPercentage / 100);
-    const riskPerContract = FUTURES_DATA[selectedSymbol].minStopLoss * FUTURES_DATA[selectedSymbol].tickValue;
-    return Math.floor(maxRiskAmount / riskPerContract);
-  };
-
-  const calculatePositionRisk = (capital: number, contracts: number) => {
-    const riskPerContract = FUTURES_DATA[selectedSymbol].minStopLoss * FUTURES_DATA[selectedSymbol].tickValue;
-    const totalRisk = contracts * riskPerContract;
-    const riskPercentage = (totalRisk / capital) * 100;
-    return { totalRisk, riskPercentage };
-  };
-
-  const calculateCapitalForNextContract = (currentContracts: number) => {
-    const nextContractCount = currentContracts + 1;
-    const totalRiskRequired = nextContractCount * FUTURES_DATA[selectedSymbol].minStopLoss * FUTURES_DATA[selectedSymbol].tickValue;
-    return Math.ceil((totalRiskRequired / riskPercentage) * 100);
-  };
-
-  const getCapitalWarning = (capital: number) => {
-    const minCapital = calculateMinimumCapital(selectedSymbol, riskPercentage);
-    if (capital < minCapital) {
-      return t.minCapitalWarning
-        .replace('{risk}', riskPercentage.toString())
-        .replace('{stopLoss}', FUTURES_DATA[selectedSymbol].minStopLoss.toString())
-        .replace('{capital}', minCapital.toLocaleString());
-    }
-    return null;
-  };
-
-
-  const currentContracts = calculateSafeContractSize(startingCapital);
-  const { totalRisk, riskPercentage: actualRiskPercent } = calculatePositionRisk(startingCapital, currentContracts);
-  const yearlyReturn = ((monthlyData[11].capital - startingCapital) / startingCapital * 100).toFixed(2);
-  const capitalWarning = getCapitalWarning(startingCapital);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -358,9 +392,9 @@ export default function EquityCalculatorPage() {
           </label>
           <div className="space-y-1 mt-3">
             <p><strong>{FUTURES_DATA[selectedSymbol].name}</strong></p>
-            <p>{t.exchange}: {FUTURES_DATA[selectedSymbol].exchange}</p>
-            <p>{t.tickValue}: ${FUTURES_DATA[selectedSymbol].tickValue}</p>
-            <p>{t.margin}: ${FUTURES_DATA[selectedSymbol].margin}</p>
+            <p>{t.exchange}: {selectedContract.exchange}</p>
+            <p>{t.tickValue}: ${selectedContract.tickValue}</p>
+            <p>{t.margin}: ${selectedContract.margin}</p>
           </div>
         </div>
       </div>
@@ -371,7 +405,7 @@ export default function EquityCalculatorPage() {
         <div>
           <h4 className="font-medium mb-2">{t.description}:</h4>
           <p className="text-gray-600">
-            {FUTURES_DATA[selectedSymbol].descriptions[language]}
+            {selectedContract.descriptions[language]}
           </p>
         </div>
 
@@ -381,7 +415,7 @@ export default function EquityCalculatorPage() {
           <div className="bg-gray-50 p-4 rounded-lg">
             <ul className="text-sm text-gray-600 space-y-2">
               <li>
-                <span className="font-medium">{t.tradesPerMonth}:</span> {tradesPerMonth}
+                <span className="font-medium">{t.tradesPerMonth}:</span> {TRADES_PER_MONTH}
               </li>
               <li>
                 <span className="font-medium">{t.stopLossSize}:</span>
@@ -466,7 +500,7 @@ export default function EquityCalculatorPage() {
     className="w-full"
   />
   <p className="text-sm text-gray-600 mt-1">
-    {t.minimumStopLoss}: {currentSymbol.minStopLoss} ticks (${(currentSymbol.minStopLoss * currentSymbol.tickValue).toFixed(2)} {t.perContract})
+    {t.minimumStopLoss}: {selectedContract.minStopLoss} ticks (${(selectedContract.minStopLoss * selectedContract.tickValue).toFixed(2)} {t.perContract})
   </p>
     </div>
             </CardContent>
@@ -474,14 +508,17 @@ export default function EquityCalculatorPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>{t.statistics}</CardTitle>
+            <CardTitle>{t.statistics}</CardTitle>
             </CardHeader>
             <CardContent>
+              {isCalculationPending && (
+                <p className="mb-3 text-sm text-gray-500">Berechnung wird aktualisiert...</p>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <h4 className="font-semibold">{t.currentPositionSize}</h4>
                   <p>{currentContracts} {t.contracts}</p>
-                  <p className="text-sm text-gray-600">@ {currentSymbol.minStopLoss} ticks SL</p>
+                  <p className="text-sm text-gray-600">@ {calculatedSymbol.minStopLoss} ticks SL</p>
                 </div>
                 <div className="p-4 bg-green-50 rounded-lg">
                   <h4 className="font-semibold">{t.maxRiskPerTrade}</h4>
@@ -495,7 +532,7 @@ export default function EquityCalculatorPage() {
                 </div>
                 <div className="p-4 bg-orange-50 rounded-lg">
                   <h4 className="font-semibold">{t.nextContractAt}</h4>
-                  <p>${calculateCapitalForNextContract(currentContracts).toLocaleString()}</p>
+                  <p>${calculateCapitalForNextContract(deferredSelectedSymbol, currentContracts, deferredRiskPercentage).toLocaleString()}</p>
                   <p className="text-sm text-gray-600">{t.contracts}: {currentContracts + 1}</p>
                 </div>
               </div>
@@ -510,68 +547,7 @@ export default function EquityCalculatorPage() {
         </CardHeader>
         <CardContent>
             <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart 
-                data={monthlyData}
-                margin={{ top: 20, right: 30, left: 60, bottom: 20 }}
-                >
-                <defs>
-                    <linearGradient id="colorCapital" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                    </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                    dataKey="month" 
-                    label={{ 
-                    value: t.month, 
-                    position: 'insideBottom',
-                    offset: -10
-                    }}
-                    padding={{ left: 0, right: 0 }}
-                />
-                <YAxis
-                    label={{ 
-                    value: t.capital, 
-                    angle: -90, 
-                    position: 'insideLeft',
-                    offset: -40,
-                    style: { textAnchor: 'middle' }
-                    }}
-                    tickFormatter={(value) => `$${(value).toLocaleString()}`}
-                />
-                <Tooltip content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                    const data = payload[0].payload;
-                    return (
-                        <div className="bg-white p-4 border rounded shadow-lg">
-                        <p className="font-bold">{t.month} {data.month}</p>
-                        <p>{t.capital}: ${data.capital.toLocaleString()}</p>
-                        <p>{t.contracts}: {data.contracts}</p>
-                        <p>{t.risk}: {data.riskPercent}%</p>
-                        <p>{t.monthlyReturn}: {data.monthlyReturn}%</p>
-                        <p>{t.monthlyPnL}: ${data.pnl.toLocaleString()}</p>
-                        </div>
-                    );
-                    }
-                    return null;
-                }} />
-                <Area 
-                    type="monotone"
-                    dataKey="capital"
-                    fill="url(#colorCapital)"
-                />
-                <Line 
-                    type="monotone" 
-                    dataKey="capital" 
-                    stroke="#3b82f6" 
-                    strokeWidth={2}
-                    dot={false}
-                    name={t.capital}
-                />
-                </ComposedChart>
-            </ResponsiveContainer>
+            <EquityGrowthChart data={monthlyData} labels={chartLabels} />
             </div>
         </CardContent>
         </Card>

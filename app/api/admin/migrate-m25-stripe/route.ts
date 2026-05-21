@@ -1,7 +1,8 @@
-import { auth, clerkClient } from '@clerk/nextjs/server'
+import { clerkClient } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
+import { requireAdminApiAccess } from '@/lib/authz'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -20,20 +21,11 @@ const M25_PRICE_ID = 'price_1QNjN2I298HTtkSKnHPKgskR'
  */
 export async function GET() {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const admin = await requireAdminApiAccess()
+    if (!admin.ok) {
+      return admin.response
     }
-
     const client = await clerkClient()
-    const memberships = await client.users.getOrganizationMembershipList({
-      userId,
-      limit: 100,
-    })
-    const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-    if (!isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
 
     const results = {
       total: 0,

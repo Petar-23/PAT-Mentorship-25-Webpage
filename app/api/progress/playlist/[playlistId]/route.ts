@@ -18,54 +18,66 @@ export async function GET(_req: Request, { params }: RouteParams) {
   const { playlistId } = await params
   if (!playlistId) return NextResponse.json({ error: 'Missing playlistId' }, { status: 400 })
 
-  const playlist = await prisma.playlist.findUnique({
-    where: { id: playlistId },
-    select: {
-      id: true,
-      modules: {
-        select: {
-          id: true,
-          chapters: {
-            select: {
-              videos: { select: { id: true } },
-            },
-          },
+  const [playlist, chapters, videoCountsByChapter, watchedRows] = await Promise.all([
+    prisma.playlist.findUnique({
+      where: { id: playlistId },
+      select: {
+        id: true,
+        modules: {
+          select: { id: true },
         },
       },
-    },
-  })
+    }),
+    prisma.chapter.findMany({
+      where: { module: { playlistId } },
+      select: { id: true, moduleId: true },
+    }),
+    prisma.video.groupBy({
+      by: ['chapterId'],
+      where: { chapter: { module: { playlistId } } },
+      _count: { _all: true },
+    }),
+    prisma.videoProgress.findMany({
+      where: {
+        userId,
+        watched: true,
+        video: { chapter: { module: { playlistId } } },
+      },
+      select: {
+        video: { select: { chapter: { select: { moduleId: true } } } },
+      },
+    }),
+  ])
 
   if (!playlist) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const moduleVideoIds = new Map<string, string[]>()
-  const allVideoIds: string[] = []
+  const moduleIdByChapterId = new Map(chapters.map((chapter) => [chapter.id, chapter.moduleId]))
+  const totalLessonsByModuleId = new Map<string, number>()
+  const completedLessonsByModuleId = new Map<string, number>()
 
-  for (const m of playlist.modules) {
-    const ids = m.chapters.flatMap((ch) => ch.videos.map((v) => v.id))
-    moduleVideoIds.set(m.id, ids)
-    allVideoIds.push(...ids)
+  for (const row of videoCountsByChapter) {
+    const moduleId = moduleIdByChapterId.get(row.chapterId)
+    if (!moduleId) continue
+    totalLessonsByModuleId.set(
+      moduleId,
+      (totalLessonsByModuleId.get(moduleId) ?? 0) + (row._count._all ?? 0)
+    )
   }
 
-  const uniqueAllVideoIds = Array.from(new Set(allVideoIds))
-
-  const watched = uniqueAllVideoIds.length
-    ? await prisma.videoProgress.findMany({
-        where: { userId, watched: true, videoId: { in: uniqueAllVideoIds } },
-        select: { videoId: true },
-      })
-    : []
-
-  const watchedSet = new Set(watched.map((r) => r.videoId))
+  for (const row of watchedRows) {
+    const moduleId = row.video.chapter.moduleId
+    completedLessonsByModuleId.set(moduleId, (completedLessonsByModuleId.get(moduleId) ?? 0) + 1)
+  }
 
   const modules: Record<
     string,
     { totalLessons: number; completedLessons: number; percent: number }
   > = {}
 
-  for (const [moduleId, ids] of moduleVideoIds.entries()) {
-    const totalLessons = ids.length
-    const completedLessons = ids.reduce((sum, id) => sum + (watchedSet.has(id) ? 1 : 0), 0)
-    modules[moduleId] = {
+  for (const moduleRow of playlist.modules) {
+    const totalLessons = totalLessonsByModuleId.get(moduleRow.id) ?? 0
+    const completedLessons = completedLessonsByModuleId.get(moduleRow.id) ?? 0
+    modules[moduleRow.id] = {
       totalLessons,
       completedLessons,
       percent: percent(completedLessons, totalLessons),
@@ -74,5 +86,3 @@ export async function GET(_req: Request, { params }: RouteParams) {
 
   return NextResponse.json({ playlistId, modules })
 }
-
-

@@ -1,8 +1,4 @@
-"use client"
-
 import { MENTORSHIP_CONFIG } from '@/lib/config'
-import { motion } from "framer-motion"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 
 const faqs = [
   {
@@ -83,49 +79,9 @@ const faqs = [
 ]
 
 const BlurredStagger = ({ text }: { text: string }) => {
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.03,
-      },
-    },
-  }
-
-  const wordAnimation = {
-    hidden: {
-      opacity: 0,
-      filter: "blur(10px)",
-    },
-    show: {
-      opacity: 1,
-      filter: "blur(0px)",
-    },
-  }
-
-  // Teile in Wörter auf, um korrekten Umbruch zu gewährleisten
-  const words = text.split(" ")
-
   return (
     <div className="w-full">
-      <motion.p
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="text-sm sm:text-base leading-relaxed text-gray-600"
-      >
-        {words.map((word, index) => (
-          <motion.span
-            key={index}
-            variants={wordAnimation}
-            transition={{ duration: 0.3 }}
-            className="inline-block mr-[0.25em]"
-          >
-            {word}
-          </motion.span>
-        ))}
-      </motion.p>
+      <p className="text-sm sm:text-base leading-relaxed text-gray-600">{text}</p>
     </div>
   )
 }
@@ -149,22 +105,25 @@ export default function FAQ() {
           </div>
 
           <div className="md:col-span-3">
-            <Accordion type="single" collapsible defaultValue="item-1">
+            <div>
               {faqs.map((item) => (
-                <AccordionItem
+                <details
                   key={item.id}
-                  value={item.id}
-                  className="border-b border-gray-200"
+                  open={item.id === 'item-1'}
+                  className="group border-b border-gray-200"
                 >
-                  <AccordionTrigger className="cursor-pointer text-sm sm:text-base font-medium text-gray-900 hover:no-underline py-3 sm:py-4 text-left">
-                    {item.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="pb-3 sm:pb-4">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-3 text-left text-sm font-medium text-gray-900 sm:py-4 sm:text-base [&::-webkit-details-marker]:hidden">
+                    <span>{item.question}</span>
+                    <span className="shrink-0 text-lg leading-none text-gray-400 transition-transform group-open:rotate-45">
+                      +
+                    </span>
+                  </summary>
+                  <div className="pb-3 sm:pb-4">
                     <BlurredStagger text={item.answer} />
-                  </AccordionContent>
-                </AccordionItem>
+                  </div>
+                </details>
               ))}
-            </Accordion>
+            </div>
           </div>
         </div>
       </div>

@@ -4,7 +4,7 @@
 import { useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { CheckCircle } from '@phosphor-icons/react'
+import { CheckCircle } from '@phosphor-icons/react/CheckCircle'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
 import confetti from 'canvas-confetti'
 
@@ -15,42 +15,45 @@ interface SuccessModalProps {
 
 export function SubscriptionSuccessModal({ isOpen, onClose }: SuccessModalProps) {
   useEffect(() => {
-    if (isOpen) {
-      // Fire confetti from the left
+    if (!isOpen) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    // Fire confetti from both sides.
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { x: 0.1, y: 0.5 }
+    })
+
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { x: 0.9, y: 0.5 }
+    })
+
+    const interval = window.setInterval(() => {
       confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { x: 0.1, y: 0.5 }
+        particleCount: 50,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.6 }
       })
 
-      // Fire confetti from the right
       confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { x: 0.9, y: 0.5 }
+        particleCount: 50,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.6 }
       })
+    }, 650)
 
-      // Create a confetti interval
-      const interval = setInterval(() => {
-        confetti({
-          particleCount: 50,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0, y: 0.6 }
-        })
+    const timeout = window.setTimeout(() => {
+      window.clearInterval(interval)
+    }, 3000)
 
-        confetti({
-          particleCount: 50,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1, y: 0.6 }
-        })
-      }, 650)
-
-      // Cleanup
-      setTimeout(() => {
-        clearInterval(interval)
-      }, 3000)
+    return () => {
+      window.clearInterval(interval)
+      window.clearTimeout(timeout)
     }
   }, [isOpen])
 

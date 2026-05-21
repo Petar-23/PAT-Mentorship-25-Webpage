@@ -15,6 +15,8 @@ model Playlist {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   modules   Module[]
+
+  @@index([createdAt])
 }
 
 model Module {
@@ -28,6 +30,9 @@ model Module {
   updatedAt   DateTime  @updatedAt
   description   String?
   imageUrl String?
+
+  @@index([playlistId, order])
+  @@index([createdAt])
 }
 
 model Chapter {
@@ -39,6 +44,8 @@ model Chapter {
   videos    Video[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([moduleId, order])
 }
 
 model Video {
@@ -57,6 +64,10 @@ model Video {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   duration     Int?
+
+  @@index([bunnyGuid])
+  @@index([chapterId, order])
+  @@index([createdAt])
 }
 
 model VideoProgress {
@@ -73,6 +84,7 @@ model VideoProgress {
 
   @@unique([userId, videoId])
   @@index([userId])
+  @@index([userId, watched, watchedAt])
   @@index([videoId])
 }
 
@@ -160,4 +172,6 @@ model Page {
   order       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([order, createdAt])
 }

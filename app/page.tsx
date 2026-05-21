@@ -4,22 +4,22 @@ import ProgramStructure from '@/components/sections/program-structure'
 import Mentor from '@/components/sections/mentor'
 import Pricing from '@/components/sections/pricing'
 import PricingComparison from '@/components/sections/pricing-comparison'
-import Testimonials from '@/components/sections/testimonials'
+import LazyTestimonialsSection from '@/components/sections/lazy-testimonials-section'
 import Faq from '@/components/sections/faq'
-import FinalCTA from '@/components/sections/final-cta'
+import LazyFinalCtaSection from '@/components/sections/lazy-final-cta-section'
 
 export default function HomePage() {
   return (
     <main className="bg-white text-slate-900">
       <Hero />
       <WhyDifferent />
-      <Testimonials />
+      <LazyTestimonialsSection />
       <Pricing />
       <Mentor />
       <PricingComparison />
       <ProgramStructure />
       <Faq />
-      <FinalCTA />
+      <LazyFinalCtaSection />
     </main>
   )
 }

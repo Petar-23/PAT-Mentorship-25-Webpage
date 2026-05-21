@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react'
+import React, { useRef, useEffect, useMemo, useState } from 'react'
 
 interface InfiniteScrollProps {
   children: React.ReactNode[]
@@ -27,6 +27,11 @@ export default function InfiniteScroll({
   const lastTimeRef = useRef<number>(0)
   const velocityRef = useRef(0)
   const targetVelocityRef = useRef(0)
+  const [isInView, setIsInView] = useState(false)
+  const [isDocumentVisible, setIsDocumentVisible] = useState(() =>
+    typeof document === 'undefined' ? true : document.visibilityState === 'visible'
+  )
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
 
   const baseItems = useMemo(() => React.Children.toArray(children), [children])
   const baseCount = baseItems.length
@@ -75,7 +80,49 @@ export default function InfiniteScroll({
   }, [direction, baseCount, gap])
 
   useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    if (typeof IntersectionObserver === 'undefined') {
+      const frame = window.requestAnimationFrame(() => setIsInView(true))
+      return () => window.cancelAnimationFrame(frame)
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting)
+      },
+      { rootMargin: '600px 0px', threshold: 0.01 }
+    )
+
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const updateVisibility = () => {
+      setIsDocumentVisible(document.visibilityState === 'visible')
+    }
+
+    updateVisibility()
+    document.addEventListener('visibilitychange', updateVisibility)
+    return () => document.removeEventListener('visibilitychange', updateVisibility)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const updatePreference = () => setPrefersReducedMotion(media.matches)
+
+    updatePreference()
+    media.addEventListener('change', updatePreference)
+    return () => media.removeEventListener('change', updatePreference)
+  }, [])
+
+  useEffect(() => {
     if (!baseCount) return
+    if (!isInView || !isDocumentVisible || prefersReducedMotion) return
 
     // Reset timing when (re)starting the animation to avoid huge elapsed deltas.
     lastTimeRef.current = 0
@@ -120,7 +167,7 @@ export default function InfiniteScroll({
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [direction, speed, pauseOnHover, baseCount])
+  }, [direction, speed, pauseOnHover, baseCount, isInView, isDocumentVisible, prefersReducedMotion])
 
   return (
     <div

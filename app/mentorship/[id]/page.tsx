@@ -22,78 +22,69 @@ function percent(completed: number, total: number) {
 
 export default async function DynamicCoursePage({ params }: Props) {
   const { id } = await params
-  const isAdmin = await getIsAdmin()
-  const { userId } = await auth()
-
-  // Sidebar-Daten — shared cached helper (deduplicated across routes per request)
-  const { kurseForSidebar, pagesForSidebar, savedSidebarOrder } = await getSidebarData()
-
-  // Erst prüfen: Ist das ID eine Playlist (Kurs)?
-  const kurs = await prisma.playlist.findUnique({
+  const authPromise = auth()
+  const sidebarDataPromise = getSidebarData()
+  const kursPromise = prisma.playlist.findUnique({
     where: { id },
     select: {
       id: true,
       name: true,
     },
   })
+  const { userId, sessionClaims } = await authPromise
+  const isAdminPromise = userId ? getIsAdmin(userId, sessionClaims) : Promise.resolve(false)
+  const [isAdmin, { kurseForSidebar, pagesForSidebar, savedSidebarOrder }, kurs] =
+    await Promise.all([isAdminPromise, sidebarDataPromise, kursPromise])
 
   if (kurs) {
     // Es ist ein Kurs → Module-Grid
     // Schlank: Module + Kapitel-Count und Video-Dauer Summen (ohne alle Kapitel/Videos zu laden)
-    const [modules, chapters, chapterDurationSums, videoCountsByChapter, watchedProgressRows] =
+    const [modules, chapters, videoStatsByChapter, watchedProgressRows] =
       await Promise.all([
-      prisma.module.findMany({
-        where: { playlistId: kurs.id },
-        orderBy: { order: 'asc' },
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          imageUrl: true,
-          _count: { select: { chapters: true } },
-        },
-      }),
-      prisma.chapter.findMany({
-        where: { module: { playlistId: kurs.id } },
-        select: { id: true, moduleId: true },
-      }),
-      prisma.video.groupBy({
-        by: ['chapterId'],
-        where: {
-          chapter: { module: { playlistId: kurs.id } },
-          duration: { not: null },
-        },
-        _sum: { duration: true },
-      }),
-      // Für Progress: Anzahl Videos pro Kapitel (daraus pro Modul summieren)
-      prisma.video.groupBy({
-        by: ['chapterId'],
-        where: {
-          chapter: { module: { playlistId: kurs.id } },
-        },
-        _count: { _all: true },
-      }),
-      // Für Progress: nur "watched" Rows laden (deutlich weniger als alle Video-IDs)
-      !isAdmin && userId
-        ? prisma.videoProgress.findMany({
-            where: {
-              userId,
-              watched: true,
-              video: { chapter: { module: { playlistId: kurs.id } } },
-            },
-            select: {
-              video: { select: { chapter: { select: { moduleId: true } } } },
-            },
-          })
-        : Promise.resolve([]),
-    ])
+        prisma.module.findMany({
+          where: { playlistId: kurs.id },
+          orderBy: { order: 'asc' },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            imageUrl: true,
+            _count: { select: { chapters: true } },
+          },
+        }),
+        prisma.chapter.findMany({
+          where: { module: { playlistId: kurs.id } },
+          select: { id: true, moduleId: true },
+        }),
+        prisma.video.groupBy({
+          by: ['chapterId'],
+          where: {
+            chapter: { module: { playlistId: kurs.id } },
+          },
+          _count: { _all: true },
+          _sum: { duration: true },
+        }),
+        // Für Progress: nur "watched" Rows laden (deutlich weniger als alle Video-IDs)
+        !isAdmin && userId
+          ? prisma.videoProgress.findMany({
+              where: {
+                userId,
+                watched: true,
+                video: { chapter: { module: { playlistId: kurs.id } } },
+              },
+              select: {
+                video: { select: { chapter: { select: { moduleId: true } } } },
+              },
+            })
+          : Promise.resolve([]),
+      ])
 
     const moduleIdByChapterId = new Map(chapters.map((c) => [c.id, c.moduleId]))
     const durationByModuleId: Record<string, number> = {}
 
     for (const m of modules) durationByModuleId[m.id] = 0
 
-    for (const row of chapterDurationSums) {
+    for (const row of videoStatsByChapter) {
       const moduleId = moduleIdByChapterId.get(row.chapterId)
       if (!moduleId) continue
       const seconds = row._sum.duration ?? 0
@@ -109,7 +100,7 @@ export default async function DynamicCoursePage({ params }: Props) {
       completedLessonsByModuleId[m.id] = 0
     }
 
-    for (const row of videoCountsByChapter) {
+    for (const row of videoStatsByChapter) {
       const moduleId = moduleIdByChapterId.get(row.chapterId)
       if (!moduleId) continue
       totalLessonsByModuleId[moduleId] =
@@ -193,7 +184,7 @@ export default async function DynamicCoursePage({ params }: Props) {
   }
 
   // Wenn nicht Kurs → prüfe, ob es ein Modul ist
-  const modul = await prisma.module.findUnique({
+  const modulPromise = prisma.module.findUnique({
     where: { id },
     select: {
       id: true,
@@ -227,6 +218,21 @@ export default async function DynamicCoursePage({ params }: Props) {
       },
     },
   })
+  const watchedProgressRowsPromise =
+    !isAdmin && userId
+      ? prisma.videoProgress.findMany({
+          where: {
+            userId,
+            watched: true,
+            video: { chapter: { moduleId: id } },
+          },
+          select: { videoId: true },
+        })
+      : Promise.resolve([])
+  const [modul, watchedProgressRows] = await Promise.all([
+    modulPromise,
+    watchedProgressRowsPromise,
+  ])
 
   if (!modul) notFound()
 
@@ -234,20 +240,8 @@ export default async function DynamicCoursePage({ params }: Props) {
   const initialVideoId =
     allVideos.find((v) => v.bunnyGuid !== null)?.id ?? allVideos[0]?.id ?? null
 
-  // Performance: Fortschritt direkt serverseitig laden → kein extra Client-Fetch nötig.
-  const initialWatchedVideoIds =
-    !isAdmin && userId && allVideos.length
-      ? (
-          await prisma.videoProgress.findMany({
-            where: {
-              userId,
-              watched: true,
-              videoId: { in: allVideos.map((v) => v.id) },
-            },
-            select: { videoId: true },
-          })
-        ).map((r) => r.videoId)
-      : []
+  // Performance: Fortschritt direkt serverseitig und parallel laden → kein extra Client-Fetch nötig.
+  const initialWatchedVideoIds = watchedProgressRows.map((r) => r.videoId)
 
   return (
     <div className="flex h-full min-h-0 bg-background">

@@ -1,186 +1,15 @@
-'use client'
-
 import Image from 'next/image'
+import { Users } from "@phosphor-icons/react/dist/ssr/Users"
 import {
-  Medal as Award,
-  Play,
-  Users,
-  ChartLine as LineChart,
-  Star,
-} from "@phosphor-icons/react"
-import { Button } from "@/components/ui/button"
-import { CardWithMatrix } from "@/components/ui/card-with-matrix"
-import { AreaChart, Area, ReferenceLine, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
-import { useState, useEffect } from 'react'
-import { processedTradingData } from '@/components/tradingData/trading-performance-data'
-
-// Trading performance component
-function TradingPerformance() {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => setIsMounted(true))
-    return () => cancelAnimationFrame(raf)
-  }, []);
-
-  if (!isMounted) {
-    return null;
-  }
-
-  const winRate = '41'
-  const roiPerMonth = '36,8'
-  const accountSize = '2.000'
-  const totalReturn = '73,6'
-
-  return (
-    <CardWithMatrix
-      icon={<LineChart className="h-full w-full" />}
-      title="Live Trading Performance"
-      iconColor="text-emerald-400"
-      rainColor="#10B981"
-      gradientColor="rgba(16, 185, 129, 0.2)"
-    >
-      <div className="p-3 sm:p-6">
-        {/* Header */}
-        <div className="flex justify-between items-start mb-4 sm:mb-6">
-          <div>
-            <p className="text-gray-400 text-xs sm:text-sm">Meine aktuelle Statistik</p>
-            <p className="text-gray-500 text-[10px] sm:text-xs mt-0.5 sm:mt-1">
-              FK-Konto mit 2000 USD Max Drawdown
-            </p>
-          </div>
-          <div className="flex flex-col items-end">
-            <span className="text-green-400 text-xl sm:text-2xl font-semibold">+{roiPerMonth}%</span>
-            <span className="text-gray-400 text-[10px] sm:text-xs">Ø ROI / Monat</span>
-          </div>
-        </div>
-
-        {/* Chart */}
-        <div className="w-full h-[180px] sm:h-[200px] relative">
-          <ResponsiveContainer width="100%" height="100%" minHeight={100}>
-            <AreaChart 
-              data={processedTradingData}
-              margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
-            >
-              <defs>
-                <linearGradient id="colorEquity" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis 
-                dataKey="date" 
-                stroke="#475569"
-                tickFormatter={(dateStr: string) => {
-                  if (!dateStr) return '';
-                  // Parse date in YYYY-MM-DD format
-                  const [year, month, day] = dateStr.split('-').map((num) => parseInt(num, 10));
-                  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return '';
-                  return `${day}.${month}.`;
-                }}
-                tick={{ fontSize: 10 }}
-                tickLine={{ stroke: '#1E293B' }}
-                axisLine={{ stroke: '#1E293B' }}
-                interval={'preserveStartEnd'}
-              />
-              <YAxis 
-                stroke="#475569"
-                domain={[0, 'dataMax']}
-                tickFormatter={(value) => {
-                  const abs = Math.abs(value)
-                  if (abs >= 1000) return `$${(value / 1000).toFixed(1)}k`
-                  return `$${Math.round(value)}`
-                }}
-                tick={{ fontSize: 12 }}
-                tickLine={{ stroke: '#1E293B' }}
-                axisLine={{ stroke: '#1E293B' }}
-                width={45}
-                tickCount={5}
-              />
-              <ReferenceLine
-                y={2000}
-                stroke="#94A3B8"
-                strokeDasharray="6 6"
-                label={{
-                  value: 'Reales Startkapital',
-                  position: 'insideTopLeft',
-                  fill: '#94A3B8',
-                  fontSize: 11,
-                }}
-              />
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: '#0F172A',
-                  border: '1px solid #1E293B',
-                  borderRadius: '0.5rem',
-                  color: '#F8FAFC'
-                }}
-                formatter={(value: number) => [`$${value.toLocaleString()}`, 'Balance']}
-                labelFormatter={(label: string) => {
-                  const date = new Date(label);
-                  return date.toLocaleDateString('de-DE', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  });
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="equity"
-                stroke="#10B981"
-                fill="url(#colorEquity)"
-                strokeWidth={2}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-4 mt-3 sm:mt-4 px-1 sm:px-2">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
-            <span className="text-gray-400 text-[10px] sm:text-xs md:text-sm">Total Return:</span>
-            <span className="text-white text-sm sm:text-base font-medium">+{totalReturn}%</span>
-          </div>
-          <div className="flex items-center justify-start sm:justify-end">
-            <span className="text-gray-400 text-[10px] sm:text-xs md:text-sm">
-              Live auf YouTube eingeloggt & alle Trades veröffentlicht
-            </span>
-          </div>
-        </div>
-      </div>
-    </CardWithMatrix>
-  );
-}
+  LazyTradingPerformance,
+  MentorLessonCard,
+  MentorPayoutCard,
+  MentorStatsCards,
+  MentorWhopReviewCard,
+} from "@/components/sections/mentor-cards"
 
 // Main Mentor Section
 export default function MentorSection() {
-  const [whopReviewCount, setWhopReviewCount] = useState<number | null>(null)
-  const [whopReviewsError, setWhopReviewsError] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadWhopReviewCount() {
-      try {
-        // Max: 200 (Route capped). Reicht für die Landing Page; bei sehr vielen Reviews zeigen wir "200+".
-        const res = await fetch('/api/whop/reviews?limit=200&per=50')
-        const data = await res.json().catch(() => null)
-        if (!res.ok) throw new Error(data?.error || 'Failed to load reviews')
-        const count = typeof data?.count === 'number' ? data.count : null
-        if (!cancelled) setWhopReviewCount(count)
-      } catch (e) {
-        console.error('Failed to load Whop reviews count:', e)
-        if (!cancelled) setWhopReviewsError(true)
-      }
-    }
-
-    loadWhopReviewCount()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
   return (
     <section className="py-12 sm:py-24 bg-slate-950 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950 to-slate-950/20" />
@@ -208,92 +37,17 @@ export default function MentorSection() {
                 alt="Trading Mentor"
                 fill
                 className="object-cover"
-                priority
+                sizes="(max-width: 1024px) 100vw, 520px"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-4">
-              <CardWithMatrix
-                icon={<Users className="h-full w-full" />}
-                value="130+"
-                subtitle="Erfolgreiche Mentees"
-                iconColor="text-blue-400"
-                rainColor="#60A5FA"
-                gradientColor="rgba(96, 165, 250, 0.2)"
-              />
-              <CardWithMatrix
-                icon={<Award className="h-full w-full" />}
-                title="Mentor-Erfahrung"
-                iconColor="text-purple-400"
-                rainColor="#A78BFA"
-                gradientColor="rgba(167, 139, 250, 0.2)"
-              >
-                <div className="p-2.5 sm:p-6">
-                  <div className="flex items-center gap-2 sm:gap-4">
-                    <div className="h-6 w-6 sm:h-10 sm:w-10 text-purple-400">
-                      <Award className="h-full w-full" />
-                    </div>
-                    <div>
-                      <p className="text-sm sm:text-2xl font-bold text-white whitespace-nowrap">
-                        2 Jahre
-                      </p>
-                      <p className="text-[10px] sm:text-sm text-gray-400">Mentor-Erfahrung</p>
-                    </div>
-                  </div>
-                </div>
-              </CardWithMatrix>
+              <MentorStatsCards compact />
             </div>
 
             <div className="mt-4">
-              <CardWithMatrix
-                icon={
-                  <div className="relative h-full w-full">
-                    <Image
-                      src="/images/whop-logo.png"
-                      alt="Whop"
-                      fill
-                      className="object-contain"
-                      sizes="40px"
-                    />
-                  </div>
-                }
-                title="Whop Reviews"
-                iconColor="text-yellow-300"
-                rainColor="#FBBF24"
-                gradientColor="rgba(251, 191, 36, 0.18)"
-                className="lg:min-h-[130px]"
-              >
-                <div className="p-3 sm:p-6 flex items-center lg:min-h-[130px]">
-                  <div className="flex items-center gap-2 sm:gap-4">
-                    <div className="h-8 w-8 sm:h-10 sm:w-10">
-                      <div className="relative h-8 w-8 sm:h-10 sm:w-10">
-                        <Image
-                          src="/images/whop-logo.png"
-                          alt="Whop"
-                          fill
-                          className="object-contain"
-                          sizes="40px"
-                        />
-                      </div>
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-0.5 sm:gap-1 text-amber-400">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} weight="fill" className="h-3 w-3 sm:h-4 sm:w-4 fill-current" />
-                        ))}
-                      </div>
-                      <p className="text-xs sm:text-sm text-gray-400 mt-0.5 sm:mt-1">
-                        {whopReviewsError
-                          ? 'Whop Reviews aktuell nicht verfügbar'
-                          : whopReviewCount == null
-                            ? 'Bewertungen werden geladen…'
-                            : `${whopReviewCount >= 200 ? '200+' : whopReviewCount} Bewertungen (Whop)`}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardWithMatrix>
+              <MentorWhopReviewCard compact />
             </div>
           </div>
 
@@ -319,98 +73,15 @@ export default function MentorSection() {
 
           <div className="space-y-4 sm:space-y-8">
             <div data-mentor-target="performance" data-mentor-viewport="mobile">
-              <TradingPerformance />
+              <LazyTradingPerformance />
             </div>
 
             <div data-mentor-target="payout" data-mentor-viewport="mobile">
-              <CardWithMatrix
-                icon={<LineChart className="h-full w-full" />}
-                title="Topstep Payout"
-                iconColor="text-green-400"
-                rainColor="#34D399"
-                gradientColor="rgba(52, 211, 153, 0.2)"
-                className="overflow-hidden"
-              >
-              <a
-                href="https://x.com/Topstep/status/1960336160917479927?s=20"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block"
-              >
-                <div className="relative">
-                  <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 sm:py-4">
-                    <div className="h-7 w-7 sm:h-9 sm:w-9 text-green-400">
-                      <LineChart className="h-full w-full" />
-                    </div>
-                    <div>
-                      <p className="text-xs sm:text-sm font-semibold text-white">Payout Nachweis</p>
-                      <p className="text-[10px] sm:text-xs text-gray-400">Offizieller Topstep X Account</p>
-                    </div>
-                  </div>
-
-                  <div className="relative w-full overflow-hidden px-3 sm:px-5 pb-3 sm:pb-4">
-                    <div className="relative w-full h-[100px] sm:h-[150px] md:h-[160px] overflow-hidden rounded-md sm:rounded-lg">
-                      <Image
-                        src="/images/ts_payout.png"
-                        alt="Topstep Payout Screenshot"
-                        fill
-                        className="object-contain object-left"
-                        sizes="(max-width: 768px) 90vw, 520px"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </a>
-              </CardWithMatrix>
+              <MentorPayoutCard compact />
             </div>
           </div>
 
-          <CardWithMatrix
-            icon={<Play className="h-full w-full" />}
-            title="Trading Range Analyse"
-            iconColor="text-red-400"
-            rainColor="#60A5FA"
-            gradientColor="rgba(96, 165, 250, 0.2)"
-            className="overflow-hidden"
-          >
-            <div className="relative p-3 sm:p-6">
-              <div className="aspect-[16/8] relative bg-slate-900">
-                <Image
-                  src="https://i.ytimg.com/vi/63V_7Ji_omw/hqdefault.jpg"
-                  alt="Trading Range Analyse"
-                  fill
-                  className="object-cover"
-                  priority
-                />
-                <div className="absolute inset-0 bg-black/40" />
-                <Button
-                  aria-label="Video abspielen"
-                  onClick={() => {
-                    window.open('https://www.youtube.com/watch?v=63V_7Ji_omw', '_blank')
-                  }}
-                  className="absolute inset-0 m-auto w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center group border-2 border-white/20"
-                >
-                  <Play className="h-5 w-5 sm:h-7 sm:w-7 text-white group-hover:scale-110 transition-transform" />
-                </Button>
-              </div>
-              <div className="pt-3 sm:pt-6">
-                <p className="font-semibold text-white text-sm sm:text-lg mb-2 sm:mb-4">
-                  Beispiel Lektion aus der PAT Mentorship 2025
-                </p>
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-slate-800 rounded-md text-blue-400 text-[10px] sm:text-sm">
-                    Live Ausführung
-                  </span>
-                  <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-slate-800 rounded-md text-blue-400 text-[10px] sm:text-sm">
-                    ICT Modell 22
-                  </span>
-                  <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-slate-800 rounded-md text-blue-400 text-[10px] sm:text-sm">
-                    Lektion
-                  </span>
-                </div>
-              </div>
-            </div>
-          </CardWithMatrix>
+          <MentorLessonCard compact />
         </div>
 
         {/* Desktop Layout */}
@@ -418,97 +89,14 @@ export default function MentorSection() {
           {/* Left Column - Text and Trading Performance */}
           <div className="space-y-6 sm:space-y-8">
             <div data-mentor-target="performance" data-mentor-viewport="desktop">
-              <TradingPerformance />
+              <LazyTradingPerformance />
             </div>
 
             <div data-mentor-target="payout" data-mentor-viewport="desktop">
-              <CardWithMatrix
-                icon={<LineChart className="h-full w-full" />}
-                title="Topstep Payout"
-                iconColor="text-green-400"
-                rainColor="#34D399"
-                gradientColor="rgba(52, 211, 153, 0.2)"
-                className="overflow-hidden"
-              >
-              <a
-                href="https://x.com/Topstep/status/1960336160917479927?s=20"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block"
-              >
-                <div className="relative">
-                  <div className="flex items-center gap-3 px-5 py-4">
-                    <div className="h-9 w-9 text-green-400">
-                      <LineChart className="h-full w-full" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-white">Payout Nachweis</p>
-                      <p className="text-xs text-gray-400">Offizieller Topstep X Account</p>
-                    </div>
-                  </div>
-
-                  <div className="relative w-full overflow-hidden px-5 pb-4">
-                    <div className="relative w-full h-[130px] sm:h-[150px] md:h-[160px] overflow-hidden rounded-lg">
-                      <Image
-                        src="/images/ts_payout.png"
-                        alt="Topstep Payout Screenshot"
-                        fill
-                        className="object-contain object-left"
-                        sizes="(max-width: 768px) 90vw, 520px"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </a>
-              </CardWithMatrix>
+              <MentorPayoutCard />
             </div>
 
-            <CardWithMatrix
-              icon={<Play className="h-full w-full" />}
-              title="Trading Range Analyse"
-              iconColor="text-red-400"
-              rainColor="#60A5FA"
-              gradientColor="rgba(96, 165, 250, 0.2)"
-              className="overflow-hidden"
-            >
-              <div className="relative p-6">
-                <div className="aspect-[16/8] relative bg-slate-900">
-                  <Image
-                    src="https://i.ytimg.com/vi/63V_7Ji_omw/hqdefault.jpg"
-                    alt="Trading Range Analyse"
-                    fill
-                    className="object-cover"
-                    priority
-                  />
-                  <div className="absolute inset-0 bg-black/40" />
-                  <Button
-                    aria-label="Video abspielen"
-                    onClick={() => {
-                      window.open('https://www.youtube.com/watch?v=63V_7Ji_omw', '_blank')
-                    }}
-                    className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center group border-2 border-white/20"
-                  >
-                    <Play className="h-7 w-7 text-white group-hover:scale-110 transition-transform" />
-                  </Button>
-                </div>
-                <div className="pt-6">
-                  <p className="font-semibold text-white text-lg mb-4">
-                    Beispiel Lektion aus der PAT Mentorship 2025
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-2 py-1 bg-slate-800 rounded-md text-blue-400 text-sm">
-                      Live Ausführung
-                    </span>
-                    <span className="px-2 py-1 bg-slate-800 rounded-md text-blue-400 text-sm">
-                      ICT Modell 22
-                    </span>
-                    <span className="px-2 py-1 bg-slate-800 rounded-md text-blue-400 text-sm">
-                      Lektion
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardWithMatrix>
+            <MentorLessonCard />
           </div>
 
           {/* Right Column - Image and Stats */}
@@ -520,41 +108,13 @@ export default function MentorSection() {
                   alt="Trading Mentor"
                   fill
                   className="object-cover"
-                  priority
+                  sizes="520px"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
               </div>
 
               <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4">
-                <CardWithMatrix
-                  icon={<Users className="h-full w-full" />}
-                  value="130+"
-                  subtitle="Erfolgreiche Mentees"
-                  iconColor="text-blue-400"
-                  rainColor="#60A5FA"
-                  gradientColor="rgba(96, 165, 250, 0.2)"
-                />
-                <CardWithMatrix
-                  icon={<Award className="h-full w-full" />}
-                  title="Mentor-Erfahrung"
-                  iconColor="text-purple-400"
-                  rainColor="#A78BFA"
-                  gradientColor="rgba(167, 139, 250, 0.2)"
-                >
-                  <div className="p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 text-purple-400">
-                        <Award className="h-full w-full" />
-                      </div>
-                      <div>
-                        <p className="text-lg sm:text-2xl font-bold text-white whitespace-nowrap">
-                          2 Jahre
-                        </p>
-                        <p className="text-sm text-gray-400">Mentor-Erfahrung</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardWithMatrix>
+                <MentorStatsCards />
               </div>
 
               <div className="mt-6">
@@ -577,54 +137,7 @@ export default function MentorSection() {
                 </p>
 
                 <div className="mt-6">
-                  <CardWithMatrix
-                    icon={
-                      <div className="relative h-full w-full">
-                        <Image
-                          src="/images/whop-logo.png"
-                          alt="Whop"
-                          fill
-                          className="object-contain"
-                          sizes="40px"
-                        />
-                      </div>
-                    }
-                    title="Whop Reviews"
-                    iconColor="text-yellow-300"
-                    rainColor="#FBBF24"
-                    gradientColor="rgba(251, 191, 36, 0.18)"
-                    className="lg:min-h-[130px]"
-                  >
-                    <div className="p-6 flex items-center lg:min-h-[130px]">
-                      <div className="flex items-center gap-4">
-                        <div className="h-10 w-10">
-                          <div className="relative h-10 w-10">
-                            <Image
-                              src="/images/whop-logo.png"
-                              alt="Whop"
-                              fill
-                              className="object-contain"
-                              sizes="40px"
-                            />
-                          </div>
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1 text-amber-400">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star key={i} weight="fill" className="h-4 w-4 fill-current" />
-                            ))}
-                          </div>
-                          <p className="text-sm text-gray-400 mt-1">
-                            {whopReviewsError
-                              ? 'Whop Reviews aktuell nicht verfügbar'
-                              : whopReviewCount == null
-                                ? 'Bewertungen werden geladen…'
-                                : `${whopReviewCount >= 200 ? '200+' : whopReviewCount} Bewertungen (Whop)`}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardWithMatrix>
+                  <MentorWhopReviewCard />
                 </div>
               </div>
             </div>

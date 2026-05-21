@@ -7,7 +7,8 @@ import { fetchDiscordGuildMember } from '@/lib/discord'
 import { DiscordLinkButton } from '@/components/discord/discord-link-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getIsAdmin } from '@/lib/authz'
-import { Check, LinkSimple as Link2 } from '@phosphor-icons/react/dist/ssr'
+import { Check } from '@phosphor-icons/react/dist/ssr/Check'
+import { LinkSimple as Link2 } from '@phosphor-icons/react/dist/ssr/LinkSimple'
 import { MobileCoursesDrawer } from '@/components/mobile-courses-drawer'
 
 type SearchParams = { [key: string]: string | string[] | undefined }
@@ -16,13 +17,75 @@ interface PageProps {
   searchParams: Promise<SearchParams> | undefined
 }
 
+async function getConnectedDiscordAccount(userId: string | null): Promise<{
+  userId: string | null
+  label: string | null
+}> {
+  if (!userId) {
+    return { userId: null, label: null }
+  }
+
+  try {
+    // Prefer DB-cached customerId, fallback to Stripe search
+    const sub = await prisma.userSubscription.findUnique({
+      where: { userId },
+      select: { stripeCustomerId: true },
+    })
+
+    let stripeCustomerId = sub?.stripeCustomerId ?? null
+
+    if (!stripeCustomerId) {
+      const customers = await stripe.customers.search({
+        query: `metadata['userId']:'${userId}'`,
+      })
+      stripeCustomerId = customers.data[0]?.id ?? null
+    }
+
+    let connectedDiscordUserId: string | null = null
+
+    if (stripeCustomerId) {
+      const customer = await stripe.customers.retrieve(stripeCustomerId)
+      if (!('deleted' in customer && customer.deleted)) {
+        const raw = customer.metadata?.discordUserId
+        connectedDiscordUserId = typeof raw === 'string' && raw.length > 0 ? raw : null
+      }
+    }
+
+    if (!connectedDiscordUserId) {
+      return { userId: null, label: null }
+    }
+
+    const guildId = process.env.DISCORD_GUILD_ID
+    if (!guildId) {
+      return { userId: connectedDiscordUserId, label: 'Discord verbunden' }
+    }
+
+    try {
+      const member = await fetchDiscordGuildMember({
+        guildId,
+        discordUserId: connectedDiscordUserId,
+      })
+      const user = member.user
+      return {
+        userId: connectedDiscordUserId,
+        label: member.nick ?? (user?.global_name ?? user?.username ?? null),
+      }
+    } catch {
+      return { userId: connectedDiscordUserId, label: 'Discord verbunden' }
+    }
+  } catch (err) {
+    console.error('Failed to resolve connected Discord account:', err)
+    return { userId: null, label: null }
+  }
+}
+
 export default async function DiscordPage({
   searchParams = Promise.resolve({}),
 }: PageProps) {
-  const { userId } = await auth()
-  const isAdmin = await getIsAdmin()
+  const authPromise = auth()
+  const searchParamsPromise = searchParams
   // Performance: Für Sidebar nur Counts laden (keine Module/Chapters übertragen)
-  const [kurse, savedSetting] = await Promise.all([
+  const sidebarPromise = Promise.all([
     prisma.playlist.findMany({
       select: {
         id: true,
@@ -36,7 +99,17 @@ export default async function DiscordPage({
     }),
     prisma.adminSetting.findUnique({
       where: { key: 'sidebarOrder' },
+      select: { value: true },
     }),
+  ])
+  const { userId, sessionClaims } = await authPromise
+  const isAdminPromise = userId ? getIsAdmin(userId, sessionClaims) : Promise.resolve(false)
+  const connectedDiscordPromise = getConnectedDiscordAccount(userId)
+  const [[kurse, savedSetting], resolvedParams, isAdmin, connectedDiscord] = await Promise.all([
+    sidebarPromise,
+    searchParamsPromise,
+    isAdminPromise,
+    connectedDiscordPromise,
   ])
 
   const savedSidebarOrder: string[] | null = savedSetting
@@ -53,60 +126,11 @@ export default async function DiscordPage({
     modulesLength: kurs._count.modules,
   }))
 
-  const resolvedParams = await searchParams
   const discord = typeof resolvedParams.discord === 'string' ? resolvedParams.discord : undefined
   const reason = typeof resolvedParams.reason === 'string' ? resolvedParams.reason : undefined
 
-  // Falls User bereits Discord verknüpft hat: Account-Namen anzeigen
-  let connectedDiscordUserId: string | null = null
-  let connectedDiscordLabel: string | null = null
-
-  if (userId) {
-    try {
-      // Prefer DB-cached customerId, fallback to Stripe search
-      const sub = await prisma.userSubscription.findUnique({
-        where: { userId },
-        select: { stripeCustomerId: true },
-      })
-
-      let stripeCustomerId = sub?.stripeCustomerId ?? null
-
-      if (!stripeCustomerId) {
-        const customers = await stripe.customers.search({
-          query: `metadata['userId']:'${userId}'`,
-        })
-        stripeCustomerId = customers.data[0]?.id ?? null
-      }
-
-      if (stripeCustomerId) {
-        const customer = await stripe.customers.retrieve(stripeCustomerId)
-        if (!('deleted' in customer && customer.deleted)) {
-          const raw = customer.metadata?.discordUserId
-          connectedDiscordUserId = typeof raw === 'string' && raw.length > 0 ? raw : null
-        }
-      }
-
-      if (connectedDiscordUserId) {
-        const guildId = process.env.DISCORD_GUILD_ID
-        if (guildId) {
-          try {
-            const member = await fetchDiscordGuildMember({
-              guildId,
-              discordUserId: connectedDiscordUserId,
-            })
-            const u = member.user
-            connectedDiscordLabel = member.nick ?? (u?.global_name ?? u?.username ?? null)
-          } catch {
-            connectedDiscordLabel = 'Discord verbunden'
-          }
-        } else {
-          connectedDiscordLabel = 'Discord verbunden'
-        }
-      }
-    } catch (err) {
-      console.error('Failed to resolve connected Discord account:', err)
-    }
-  }
+  const connectedDiscordUserId = connectedDiscord.userId
+  const connectedDiscordLabel = connectedDiscord.label
 
   return (
     <div className="flex h-full min-h-0 bg-background">

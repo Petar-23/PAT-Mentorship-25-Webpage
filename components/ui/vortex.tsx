@@ -1,10 +1,9 @@
 import { cn } from "@/lib/utils";
-import React, { useEffect, useRef, ReactNode } from "react"; // Added ReactNode
+import { useEffect, useRef, type ReactNode } from "react";
 import { createNoise3D } from "simplex-noise";
-import { motion } from "framer-motion";
 
 interface VortexProps {
-  children?: ReactNode; // Changed from any to ReactNode
+  children?: ReactNode;
   className?: string;
   containerClassName?: string;
   particleCount?: number;
@@ -19,7 +18,12 @@ interface VortexProps {
 
 export const Vortex = (props: VortexProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const isAnimatingRef = useRef(false);
+  const isInViewRef = useRef(false);
+  const isDocumentVisibleRef = useRef(true);
+  const prefersReducedMotionRef = useRef(false);
   const particleCount = props.particleCount || 700;
   const particlePropCount = 9;
   const particlePropsLength = particleCount * particlePropCount;
@@ -140,7 +144,24 @@ export const Vortex = (props: VortexProps) => {
     }
   };
 
+  const shouldAnimate = () => {
+    return isInViewRef.current && isDocumentVisibleRef.current && !prefersReducedMotionRef.current;
+  };
+
+  const stopAnimation = () => {
+    if (animationFrameRef.current != null) {
+      window.cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    isAnimatingRef.current = false;
+  };
+
   const draw = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
+    if (!shouldAnimate()) {
+      stopAnimation();
+      return;
+    }
+
     tick++;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -152,7 +173,13 @@ export const Vortex = (props: VortexProps) => {
     renderGlow(canvas, ctx);
     renderToScreen(canvas, ctx);
 
-    window.requestAnimationFrame(() => draw(canvas, ctx));
+    animationFrameRef.current = window.requestAnimationFrame(() => draw(canvas, ctx));
+  };
+
+  const startAnimation = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
+    if (isAnimatingRef.current || !shouldAnimate()) return;
+    isAnimatingRef.current = true;
+    animationFrameRef.current = window.requestAnimationFrame(() => draw(canvas, ctx));
   };
 
   const resize = (canvas: HTMLCanvasElement) => {
@@ -183,7 +210,7 @@ export const Vortex = (props: VortexProps) => {
       if (ctx) {
         resize(canvas);
         initParticles();
-        draw(canvas, ctx);
+        startAnimation(canvas, ctx);
       }
     }
   };
@@ -220,28 +247,73 @@ export const Vortex = (props: VortexProps) => {
   };
 
   useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+
+    isDocumentVisibleRef.current = document.visibilityState === "visible";
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    prefersReducedMotionRef.current = reducedMotionQuery.matches;
+
     setup();
-    const handleResize = () => {
-      const canvas = canvasRef.current;
-      if (canvas) {
-        resize(canvas);
+
+    const updatePlayback = () => {
+      if (shouldAnimate()) {
+        startAnimation(canvas, ctx);
+      } else {
+        stopAnimation();
       }
     };
+
+    let visibilityObserver: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver === "undefined") {
+      isInViewRef.current = true;
+      updatePlayback();
+    } else if (containerRef.current) {
+      visibilityObserver = new IntersectionObserver(
+        ([entry]) => {
+          isInViewRef.current = entry.isIntersecting;
+          updatePlayback();
+        },
+        { rootMargin: "200px 0px", threshold: 0.01 }
+      );
+      visibilityObserver.observe(containerRef.current);
+    }
+
+    const handleResize = () => {
+      resize(canvas);
+    };
+    const handleVisibilityChange = () => {
+      isDocumentVisibleRef.current = document.visibilityState === "visible";
+      updatePlayback();
+    };
+    const handleReducedMotionChange = () => {
+      prefersReducedMotionRef.current = reducedMotionQuery.matches;
+      updatePlayback();
+    };
+
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    reducedMotionQuery.addEventListener?.("change", handleReducedMotionChange);
+
+    return () => {
+      visibilityObserver?.disconnect();
+      window.removeEventListener("resize", handleResize);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      reducedMotionQuery.removeEventListener?.("change", handleReducedMotionChange);
+      stopAnimation();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <div className={cn("relative h-full w-full", props.containerClassName)}>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+      <div
         ref={containerRef}
-        className="absolute h-full w-full inset-0 z-0 bg-transparent flex items-center justify-center"
+        className="absolute h-full w-full inset-0 z-0 bg-transparent flex items-center justify-center transition-opacity duration-500"
       >
         <canvas ref={canvasRef}></canvas>
-      </motion.div>
+      </div>
 
       <div className={cn("relative z-10", props.className)}>
         {props.children}

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { evaluate } from '@mdx-js/mdx'
 import * as jsxRuntime from 'react/jsx-runtime'
 import { getAllSlugs, getPostBySlug, formatDateDE } from '@/lib/blog'
-import { useMDXComponents } from '@/components/blog/mdx-components'
+import { getMDXComponents } from '@/components/blog/mdx-components'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -67,7 +67,7 @@ export default async function BlogPostPage({ params }: PageProps) {
   if (!post) notFound()
 
   const toc = extractTOC(post.content)
-  const components = useMDXComponents()
+  const components = getMDXComponents()
 
   // Compile and evaluate MDX using React 19's JSX runtime directly
   const { default: MDXContent } = await evaluate(post.content, {

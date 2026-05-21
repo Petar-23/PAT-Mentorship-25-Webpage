@@ -1,20 +1,31 @@
 // src/app/api/create-checkout/route.ts
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
+import { getEmailFromSessionClaims } from '@/lib/clerk-claims'
 import { createCheckoutSession } from '@/lib/stripe'
 
 export async function POST() {
   try {
-    const { userId } = await auth()
-    const user = await currentUser()
-    
-    if (!userId || !user) {
+    const { userId, sessionClaims } = await auth()
+
+    if (!userId) {
       return new NextResponse('Unauthorized', { status: 401 })
     }
 
-    const primaryEmail = user.emailAddresses.find(
-      email => email.id === user.primaryEmailAddressId
-    )?.emailAddress
+    let primaryEmail = getEmailFromSessionClaims(sessionClaims)
+    if (!primaryEmail) {
+      const user = await currentUser()
+
+      if (!user) {
+        return new NextResponse('Unauthorized', { status: 401 })
+      }
+
+      primaryEmail =
+        user.primaryEmailAddress?.emailAddress ??
+        user.emailAddresses.find((email) => email.id === user.primaryEmailAddressId)
+          ?.emailAddress ??
+        null
+    }
 
     if (!primaryEmail) {
       return new NextResponse('No email address found', { status: 400 })

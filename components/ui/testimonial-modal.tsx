@@ -1,5 +1,6 @@
 // src/components/sections/testimonials/testimonial-modal-content.tsx
-import { Quotes as Quote, X } from '@phosphor-icons/react/dist/ssr'
+import { Quotes as Quote } from '@phosphor-icons/react/dist/ssr/Quotes'
+import { X } from '@phosphor-icons/react/dist/ssr/X'
 import { GradientCard } from '@/components/ui/gradient-card';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';

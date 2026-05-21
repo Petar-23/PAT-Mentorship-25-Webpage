@@ -1,7 +1,7 @@
 "use client"
 
 import type { CSSProperties } from "react"
-import { CheckCircle as CheckCircle2 } from "@phosphor-icons/react"
+import { CheckCircle as CheckCircle2 } from "@phosphor-icons/react/CheckCircle"
 import { useToast } from "@/hooks/use-toast"
 import {
   Toast,

@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { SpinnerGap as Loader2 } from '@phosphor-icons/react'
+import { useEffect, useRef, useState } from 'react'
+import { SpinnerGap as Loader2 } from '@phosphor-icons/react/SpinnerGap'
 import { Button } from '@/components/ui/button'
-import { trackConversion } from '@/components/analytics/google-tag-manager'
+import { trackConversion } from '@/components/analytics/tracking'
 
 interface CheckoutButtonProps {
   disabled?: boolean
@@ -11,9 +11,20 @@ interface CheckoutButtonProps {
 
 export function CheckoutButton({ disabled = false }: CheckoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const checkoutAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      checkoutAbortRef.current?.abort()
+    }
+  }, [])
 
   const handleCheckout = async () => {
     if (isLoading || disabled) return
+
+    checkoutAbortRef.current?.abort()
+    const controller = new AbortController()
+    checkoutAbortRef.current = controller
 
     setIsLoading(true)
     
@@ -23,6 +34,7 @@ export function CheckoutButton({ disabled = false }: CheckoutButtonProps) {
     try {
       const response = await fetch('/api/create-checkout', {
         method: 'POST',
+        signal: controller.signal,
       })
 
       if (!response.ok) {
@@ -30,14 +42,22 @@ export function CheckoutButton({ disabled = false }: CheckoutButtonProps) {
       }
 
       const { url } = await response.json()
+      if (controller.signal.aborted) return
 
-      if (url) {
-        window.location.href = url
+      if (!url) {
+        throw new Error('Checkout-URL fehlt')
       }
+
+      window.location.href = url
     } catch (error) {
+      if (controller.signal.aborted) return
       console.error('Error starting checkout:', error)
       setIsLoading(false)
       alert('Fehler beim Starten des Checkouts. Bitte versuche es später erneut.')
+    } finally {
+      if (checkoutAbortRef.current === controller) {
+        checkoutAbortRef.current = null
+      }
     }
   }
 

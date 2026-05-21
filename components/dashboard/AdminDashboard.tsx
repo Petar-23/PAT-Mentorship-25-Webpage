@@ -5,16 +5,14 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, TooltipProps, Legend, PieChart, Pie, Cell, ResponsiveContainer, Line, ComposedChart } from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import {
-  FunnelX as FilterX,
-  TrendUp as TrendingUp,
-  Calendar,
-  WarningCircle as AlertCircle,
-  CreditCard,
-  ArrowCircleUp as ArrowUpCircle,
-  Wallet,
-  Users,
-} from '@phosphor-icons/react'
+import { ArrowCircleUp as ArrowUpCircle } from '@phosphor-icons/react/ArrowCircleUp'
+import { Calendar } from '@phosphor-icons/react/Calendar'
+import { CreditCard } from '@phosphor-icons/react/CreditCard'
+import { FunnelX as FilterX } from '@phosphor-icons/react/FunnelX'
+import { TrendUp as TrendingUp } from '@phosphor-icons/react/TrendUp'
+import { Users } from '@phosphor-icons/react/Users'
+import { Wallet } from '@phosphor-icons/react/Wallet'
+import { WarningCircle as AlertCircle } from '@phosphor-icons/react/WarningCircle'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d']
 

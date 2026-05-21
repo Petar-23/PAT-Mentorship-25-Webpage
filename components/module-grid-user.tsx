@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ModuleCardUser } from './module-card-user'
 import type { ReactNode } from 'react'
 
@@ -32,6 +32,7 @@ export function ModuleGridUser({
   const [fetchedProgressByModuleId, setFetchedProgressByModuleId] = useState<
     Record<string, { percent: number; completedLessons: number; totalLessons: number }>
   >({})
+  const progressAbortRef = useRef<AbortController | null>(null)
 
   const progressByModuleId = initialProgressByModuleId ?? fetchedProgressByModuleId
 
@@ -41,10 +42,19 @@ export function ModuleGridUser({
     let cancelled = false
 
     const load = async () => {
+      const controller = new AbortController()
+      progressAbortRef.current?.abort()
+      progressAbortRef.current = controller
+
       try {
-        const res = await fetch(`/api/progress/playlist/${playlistId}`, { cache: 'no-store' })
+        const res = await fetch(`/api/progress/playlist/${playlistId}`, {
+          cache: 'no-store',
+          signal: controller.signal,
+        })
         if (!res.ok) return
         const data = (await res.json()) as { modules?: unknown }
+        if (cancelled || controller.signal.aborted) return
+
         const raw = data.modules
         if (!raw || typeof raw !== 'object') return
 
@@ -64,9 +74,14 @@ export function ModuleGridUser({
           next[moduleId] = { percent, completedLessons, totalLessons }
         }
 
-        if (!cancelled) setFetchedProgressByModuleId(next)
-      } catch {
-        // ignore
+        setFetchedProgressByModuleId(next)
+      } catch (error) {
+        if (controller.signal.aborted) return
+        // Progress is non-critical; keep the existing UI state on transient failures.
+      } finally {
+        if (progressAbortRef.current === controller) {
+          progressAbortRef.current = null
+        }
       }
     }
 
@@ -82,6 +97,7 @@ export function ModuleGridUser({
 
     return () => {
       cancelled = true
+      progressAbortRef.current?.abort()
       window.removeEventListener('focus', onFocus)
       document.removeEventListener('visibilitychange', onVisibility)
     }
@@ -106,5 +122,4 @@ export function ModuleGridUser({
     </div>
   )
 }
-
 

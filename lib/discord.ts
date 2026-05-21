@@ -1,4 +1,5 @@
 const DISCORD_API_BASE = 'https://discord.com/api/v10'
+const DISCORD_API_TIMEOUT_MS = 10_000
 
 function requireEnv(name: string): string {
   const value = process.env[name]
@@ -8,9 +9,29 @@ function requireEnv(name: string): string {
   return value
 }
 
-const DISCORD_BOT_TOKEN = requireEnv('DISCORD_BOT_TOKEN')
-const DISCORD_CLIENT_ID = requireEnv('DISCORD_CLIENT_ID')
-const DISCORD_CLIENT_SECRET = requireEnv('DISCORD_CLIENT_SECRET')
+async function fetchWithTimeout(
+  input: string,
+  init: RequestInit,
+  timeoutMs: number,
+  label: string
+) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    })
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error(`${label} timed out after ${timeoutMs}ms`)
+    }
+    throw error
+  } finally {
+    clearTimeout(timeout)
+  }
+}
 
 export type DiscordOAuthTokenResponse = {
   access_token: string
@@ -38,7 +59,7 @@ export function buildDiscordAuthorizeUrl(params: {
   state: string
 }) {
   const search = new URLSearchParams({
-    client_id: DISCORD_CLIENT_ID,
+    client_id: requireEnv('DISCORD_CLIENT_ID'),
     redirect_uri: params.redirectUri,
     response_type: 'code',
     scope: 'identify guilds.join',
@@ -54,18 +75,23 @@ export async function exchangeDiscordCodeForToken(params: {
   redirectUri: string
 }): Promise<DiscordOAuthTokenResponse> {
   const body = new URLSearchParams({
-    client_id: DISCORD_CLIENT_ID,
-    client_secret: DISCORD_CLIENT_SECRET,
+    client_id: requireEnv('DISCORD_CLIENT_ID'),
+    client_secret: requireEnv('DISCORD_CLIENT_SECRET'),
     grant_type: 'authorization_code',
     code: params.code,
     redirect_uri: params.redirectUri,
   })
 
-  const res = await fetch('https://discord.com/api/oauth2/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body,
-  })
+  const res = await fetchWithTimeout(
+    'https://discord.com/api/oauth2/token',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    },
+    DISCORD_API_TIMEOUT_MS,
+    'Discord token exchange'
+  )
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -76,9 +102,14 @@ export async function exchangeDiscordCodeForToken(params: {
 }
 
 export async function fetchDiscordUser(accessToken: string): Promise<DiscordUser> {
-  const res = await fetch(`${DISCORD_API_BASE}/users/@me`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
+  const res = await fetchWithTimeout(
+    `${DISCORD_API_BASE}/users/@me`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+    DISCORD_API_TIMEOUT_MS,
+    'Discord /users/@me'
+  )
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -90,7 +121,7 @@ export async function fetchDiscordUser(accessToken: string): Promise<DiscordUser
 
 async function discordBotFetch(path: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers)
-  headers.set('Authorization', `Bot ${DISCORD_BOT_TOKEN}`)
+  headers.set('Authorization', `Bot ${requireEnv('DISCORD_BOT_TOKEN')}`)
 
   // Wenn wir FormData senden, darf Content-Type nicht manuell gesetzt werden
   // (sonst fehlt der multipart boundary).
@@ -99,10 +130,15 @@ async function discordBotFetch(path: string, init: RequestInit = {}) {
     headers.set('Content-Type', 'application/json')
   }
 
-  const res = await fetch(`${DISCORD_API_BASE}${path}`, {
-    ...init,
-    headers,
-  })
+  const res = await fetchWithTimeout(
+    `${DISCORD_API_BASE}${path}`,
+    {
+      ...init,
+      headers,
+    },
+    DISCORD_API_TIMEOUT_MS,
+    `Discord API ${path}`
+  )
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')

@@ -4,10 +4,7 @@ import { auth, clerkClient } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { cache } from 'react'
 
-export const getIsAdmin = cache(async () => {
-  const { userId } = await auth()
-  if (!userId) return false
-
+const getIsAdminForUserId = cache(async (userId: string) => {
   const client = await clerkClient()
   const memberships = await client.users.getOrganizationMembershipList({
     userId,
@@ -17,8 +14,30 @@ export const getIsAdmin = cache(async () => {
   return memberships.data.some((m) => m.role === 'org:admin')
 })
 
+function hasAdminSessionClaim(sessionClaims: unknown) {
+  if (!sessionClaims || typeof sessionClaims !== 'object') return false
+
+  const claims = sessionClaims as Record<string, unknown>
+  return claims.org_role === 'org:admin' || claims.orgRole === 'org:admin'
+}
+
+export async function getIsAdmin(userId?: string, sessionClaims?: unknown) {
+  if (userId) {
+    if (hasAdminSessionClaim(sessionClaims)) return true
+    return getIsAdminForUserId(userId)
+  }
+
+  const authState = await auth()
+  const resolvedUserId = authState.userId
+  if (!resolvedUserId) return false
+
+  if (hasAdminSessionClaim(authState.sessionClaims)) return true
+
+  return getIsAdminForUserId(resolvedUserId)
+}
+
 export async function requireAdminApiAccess() {
-  const { userId } = await auth()
+  const { userId, sessionClaims } = await auth()
   if (!userId) {
     return {
       ok: false as const,
@@ -26,7 +45,11 @@ export async function requireAdminApiAccess() {
     }
   }
 
-  const isAdmin = await getIsAdmin()
+  if (hasAdminSessionClaim(sessionClaims)) {
+    return { ok: true as const, userId }
+  }
+
+  const isAdmin = await getIsAdminForUserId(userId)
   if (!isAdmin) {
     return {
       ok: false as const,
@@ -53,4 +76,3 @@ export function isMentorshipAccessible(): boolean {
     return true // Ungültiges Datum = freier Zugang (sicherer Fallback)
   }
 }
-

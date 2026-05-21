@@ -1,15 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as tus from 'tus-js-client'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
-import {
-  Upload,
-  FilmStrip as Film,
-  WarningCircle as AlertCircle,
-  CheckCircle,
-} from '@phosphor-icons/react'
+import { CheckCircle } from '@phosphor-icons/react/CheckCircle'
+import { FilmStrip as Film } from '@phosphor-icons/react/FilmStrip'
+import { Upload } from '@phosphor-icons/react/Upload'
+import { WarningCircle as AlertCircle } from '@phosphor-icons/react/WarningCircle'
 
 type Props = {
   videoId: string
@@ -31,6 +29,10 @@ type StatusResponse = {
   transcodingFailed: boolean
 }
 
+type AbortableTusUpload = {
+  abort: () => Promise<void>
+}
+
 export function UploadZone({ videoId, onUploadSuccess, onUploadStart, onBunnyGuidReady }: Props) {
   const [isDragging, setIsDragging] = useState(false)
   const [status, setStatus] = useState<
@@ -39,18 +41,39 @@ export function UploadZone({ videoId, onUploadSuccess, onUploadStart, onBunnyGui
   const [progress, setProgress] = useState(0)
   const [currentGuid, setCurrentGuid] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string>('')
+  const uploadAbortRef = useRef<AbortController | null>(null)
+  const tusUploadRef = useRef<AbortableTusUpload | null>(null)
+
+  useEffect(() => {
+    return () => {
+      uploadAbortRef.current?.abort()
+
+      try {
+        void tusUploadRef.current?.abort()
+      } catch {
+        // Ignore best-effort upload cancellation during unmount.
+      }
+    }
+  }, [])
 
   // Polling (serverseitig) bis Bunny fertig transcodiert hat
   useEffect(() => {
     if (status !== 'processing' || !currentGuid) return
 
     let cancelled = false
+    let controller: AbortController | null = null
 
     const tick = async () => {
+      if (document.visibilityState === 'hidden') return
+
+      controller?.abort()
+      controller = new AbortController()
+
       try {
         const res = await fetch(`/api/videos/status/${currentGuid}`, {
           method: 'GET',
           cache: 'no-store',
+          signal: controller.signal,
         })
 
         if (!res.ok) {
@@ -79,6 +102,7 @@ export function UploadZone({ videoId, onUploadSuccess, onUploadStart, onBunnyGui
         }
       } catch (err: unknown) {
         if (cancelled) return
+        if (err instanceof DOMException && err.name === 'AbortError') return
         setErrorMessage(err instanceof Error ? err.message : String(err))
         setStatus('error')
       }
@@ -86,10 +110,18 @@ export function UploadZone({ videoId, onUploadSuccess, onUploadStart, onBunnyGui
 
     tick()
     const interval = setInterval(tick, 8000)
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void tick()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
 
     return () => {
       cancelled = true
+      controller?.abort()
       clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [status, currentGuid, onUploadSuccess])
 
@@ -128,6 +160,18 @@ export function UploadZone({ videoId, onUploadSuccess, onUploadStart, onBunnyGui
       return
     }
 
+    uploadAbortRef.current?.abort()
+
+    try {
+      void tusUploadRef.current?.abort()
+    } catch {
+      // Ignore stale upload cancellation before replacing it.
+    }
+
+    const controller = new AbortController()
+    uploadAbortRef.current = controller
+    let startedTusUpload = false
+
     setStatus('uploading')
     setProgress(0)
     setErrorMessage('')
@@ -138,6 +182,7 @@ export function UploadZone({ videoId, onUploadSuccess, onUploadStart, onBunnyGui
       const res = await fetch('/api/videos/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           title: file.name.replace(/\.[^/.]+$/, ''),
           description: '',
@@ -147,15 +192,20 @@ export function UploadZone({ videoId, onUploadSuccess, onUploadStart, onBunnyGui
       if (!res.ok) throw new Error(await res.text())
 
       const data: UploadResponse = await res.json()
+      if (controller.signal.aborted) return
+
       setCurrentGuid(data.guid)
 
       // 2) GUID in DB speichern (damit es nach Reload passt)
       const patchRes = await fetch(`/api/videos/${videoId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({ bunnyGuid: data.guid }),
       })
       if (!patchRes.ok) throw new Error('Konnte Video nicht in der DB verknüpfen.')
+      if (controller.signal.aborted) return
+
       onBunnyGuidReady?.(data.guid)
 
       // 3) Upload per TUS
@@ -173,26 +223,42 @@ export function UploadZone({ videoId, onUploadSuccess, onUploadStart, onBunnyGui
           filetype: file.type,
         },
         onError: (err) => {
+          if (controller.signal.aborted) return
           console.error('Upload error:', err)
           setErrorMessage(err.message)
           setStatus('error')
+          if (uploadAbortRef.current === controller) uploadAbortRef.current = null
+          if (tusUploadRef.current === upload) tusUploadRef.current = null
         },
         onProgress: (bytesUploaded, bytesTotal) => {
+          if (controller.signal.aborted) return
           const percent = Math.round((bytesUploaded / bytesTotal) * 100)
           setProgress(percent)
         },
         onSuccess: () => {
+          if (controller.signal.aborted) return
           // Upload fertig -> jetzt transcoding progress anzeigen (Polling)
           setStatus('processing')
           setProgress(0)
+          if (uploadAbortRef.current === controller) uploadAbortRef.current = null
+          if (tusUploadRef.current === upload) tusUploadRef.current = null
         },
       })
 
+      tusUploadRef.current = upload
       upload.start()
+      startedTusUpload = true
     } catch (err: unknown) {
+      if (controller.signal.aborted) return
+
       console.error('Upload error:', err)
       setErrorMessage(err instanceof Error ? err.message : String(err))
       setStatus('error')
+    } finally {
+      if ((controller.signal.aborted || !startedTusUpload) && uploadAbortRef.current === controller) {
+        uploadAbortRef.current = null
+      }
+      if (!startedTusUpload) tusUploadRef.current = null
     }
   }
 

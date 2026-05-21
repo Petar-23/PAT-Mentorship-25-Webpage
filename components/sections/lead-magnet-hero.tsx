@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { GlassCard } from '@/components/ui/glass-card'
 import { HeroPill } from '@/components/ui/hero-pill'
 import LeadMagnetSignupForm from '@/components/sections/lead-magnet-signup-form'
+import { LeadMagnetWhopPill } from '@/components/sections/lead-magnet-whop-pill'
 import { AuroraBackground } from '@/components/ui/aurora-background'
 
 const videoThumbnailSrc = '/images/lead-magnet/thumbnail_002.png'
@@ -66,7 +67,11 @@ export default function LeadMagnetHero() {
                   Videos & Trading‑Plan kommen per E‑Mail.
                 </p>
                 <Suspense fallback={null}>
-                  <LeadMagnetSignupForm className="mt-4" idPrefix="lead-magnet-inline" />
+                  <LeadMagnetSignupForm
+                    className="mt-4"
+                    idPrefix="lead-magnet-inline"
+                    socialProof={<LeadMagnetWhopPill />}
+                  />
                 </Suspense>
               </GlassCard>
             </div>
@@ -98,7 +103,11 @@ export default function LeadMagnetHero() {
                   Videos & Trading‑Plan kommen per E‑Mail.
                 </p>
                 <Suspense fallback={null}>
-                  <LeadMagnetSignupForm className="mt-4" idPrefix="lead-magnet-inline" />
+                  <LeadMagnetSignupForm
+                    className="mt-4"
+                    idPrefix="lead-magnet-inline"
+                    socialProof={<LeadMagnetWhopPill />}
+                  />
                 </Suspense>
               </GlassCard>
             </div>
@@ -112,6 +121,7 @@ export default function LeadMagnetHero() {
                   width={520}
                   height={320}
                   className="h-auto w-full"
+                  loading="eager"
                   sizes="(max-width: 1024px) 100vw, 520px"
                 />
               </div>

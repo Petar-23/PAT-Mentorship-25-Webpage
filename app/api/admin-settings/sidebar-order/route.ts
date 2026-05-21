@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 import { requireAdminApiAccess } from '@/lib/authz'
+import { revalidateSidebarData } from '@/lib/sidebar-data'
 
 // GET: Hole die gespeicherte Reihenfolge
 export async function GET() {
@@ -11,6 +12,7 @@ export async function GET() {
 
   const setting = await prisma.adminSetting.findUnique({
     where: { key: 'sidebarOrder' },
+    select: { value: true },
   })
 
   if (!setting) {
@@ -38,5 +40,6 @@ export async function POST(request: Request) {
     create: { key: 'sidebarOrder', value: order },
   })
 
+  revalidateSidebarData()
   return NextResponse.json({ success: true })
 }

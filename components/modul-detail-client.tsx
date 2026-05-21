@@ -16,10 +16,6 @@ const VideoPlayer = dynamic(
   }
 )
 import { useToast } from '@/hooks/use-toast'
-import { Sidebar } from './Sidebar'
-import { Button } from '@/components/ui/button'
-import { SlideOver, SlideOverContent } from '@/components/ui/slide-over'
-import { BookOpen, FileVideo as ListVideo } from '@phosphor-icons/react'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { useSearchParams } from 'next/navigation'
 
@@ -120,10 +116,30 @@ export function ModulDetailClient({
   )
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const lastViewedSentRef = useRef<string | null>(null)
+  const adminMutationControllersRef = useRef<Set<AbortController>>(new Set())
+
+  const trackAdminMutation = () => {
+    const controller = new AbortController()
+    adminMutationControllersRef.current.add(controller)
+    return controller
+  }
+
+  const releaseAdminMutation = (controller: AbortController) => {
+    adminMutationControllersRef.current.delete(controller)
+  }
+
+  const isAbortError = (error: unknown) =>
+    error instanceof Error && error.name === 'AbortError'
 
   // Zustand für Kapitel-Edit
   const [editingChapterId, setEditingChapterId] = useState<string | null>(null)
   const [tempChapterName, setTempChapterName] = useState('')
+
+  const allVideos = useMemo(
+    () => localModul.chapters.flatMap((chapter) => chapter.videos),
+    [localModul.chapters]
+  )
+  const watchedVideoIdSet = useMemo(() => new Set(watchedVideoIds), [watchedVideoIds])
 
   // Bei Modulwechsel Server-Props wieder zur Quelle der Wahrheit machen.
   useEffect(() => {
@@ -135,6 +151,14 @@ export function ModulDetailClient({
     lastViewedSentRef.current = null
   }, [initialVideoId, initialWatchedVideoIds, modul])
 
+  useEffect(() => {
+    const controllers = adminMutationControllersRef.current
+    return () => {
+      controllers.forEach((controller) => controller.abort())
+      controllers.clear()
+    }
+  }, [])
+
   // Automatisch das erste Video mit bunnyGuid auswählen (beim initialen Laden)
   // Oder das Video aus dem URL-Parameter verwenden (z.B. von Discord-Links)
   useEffect(() => {
@@ -142,9 +166,7 @@ export function ModulDetailClient({
 
     // Prüfe zuerst, ob ein video Parameter in der URL vorhanden ist
     if (videoParam) {
-      const videoFromUrl = localModul.chapters
-        .flatMap((ch) => ch.videos)
-        .find((v) => v.id === videoParam)
+      const videoFromUrl = allVideos.find((v) => v.id === videoParam)
 
       if (videoFromUrl) {
         setActiveVideoId(videoFromUrl.id)
@@ -153,14 +175,12 @@ export function ModulDetailClient({
     }
 
     // Fallback: Erstes Video mit bunnyGuid
-    const firstVideoWithGuid = localModul.chapters
-      .flatMap((ch) => ch.videos)
-      .find((v) => v.bunnyGuid !== null)
+    const firstVideoWithGuid = allVideos.find((v) => v.bunnyGuid !== null)
 
     if (firstVideoWithGuid) {
       setActiveVideoId(firstVideoWithGuid.id)
     }
-  }, [localModul, activeVideoId, videoParam])
+  }, [activeVideoId, allVideos, videoParam])
 
   // URL → State sync (z.B. wenn User direkt /...?view=content öffnet)
   useEffect(() => {
@@ -188,12 +208,14 @@ export function ModulDetailClient({
     }
   }, [activeVideoId, isAdmin])
 
-  const activeVideo = localModul.chapters
-    .flatMap((ch) => ch.videos)
-    .find((v) => v.id === activeVideoId)
+  const activeVideo = useMemo(
+    () => allVideos.find((video) => video.id === activeVideoId),
+    [activeVideoId, allVideos]
+  )
 
-  const activeChapter = localModul.chapters.find((ch) =>
-    ch.videos.some((v) => v.id === activeVideoId)
+  const activeChapter = useMemo(
+    () => localModul.chapters.find((chapter) => chapter.videos.some((video) => video.id === activeVideoId)),
+    [activeVideoId, localModul.chapters]
   )
 
   const orderedVideoIds = useMemo(() => {
@@ -210,7 +232,7 @@ export function ModulDetailClient({
     return orderedVideoIds[idx + 1] ?? null
   }, [activeVideoId, orderedVideoIds])
 
-  const totalLessons = localModul.chapters.reduce((sum, ch) => sum + ch.videos.length, 0)
+  const totalLessons = allVideos.length
   const completedLessons = watchedVideoIds.length
   const progressPercent =
     totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
@@ -239,6 +261,8 @@ export function ModulDetailClient({
 
   // Videos innerhalb eines Kapitels umsortieren
   const handleVideosReorder = async (chapterId: string, newVideoOrder: Video[]) => {
+    const controller = trackAdminMutation()
+
     // Optimistisches Update – sofort in UI anzeigen
     setLocalModul((prev) => ({
       ...prev,
@@ -260,18 +284,22 @@ export function ModulDetailClient({
       const res = await fetch('/api/videos/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           videoIds: newVideoOrder.map((v) => v.id),
         }),
       })
 
       if (!res.ok) throw new Error()
+      if (controller.signal.aborted) return
 
       toast({
         title: 'Video-Reihenfolge gespeichert',
         description: 'Die neue Anordnung wurde übernommen.',
       })
     } catch (err) {
+      if (controller.signal.aborted || isAbortError(err)) return
+
       console.error('Video Reorder Fehler:', err)
       toast({
         variant: 'destructive',
@@ -279,10 +307,14 @@ export function ModulDetailClient({
         description: 'Reihenfolge konnte nicht gespeichert werden.',
       })
       // Optional: Zurückrollen (laden neue Daten)
+    } finally {
+      releaseAdminMutation(controller)
     }
   }
 
   const handleChaptersReorder = async (newChapterOrder: Chapter[]) => {
+    const controller = trackAdminMutation()
+
     // Optimistisches Update – sofort in UI anzeigen
     setLocalModul((prev) => ({
       ...prev,
@@ -297,18 +329,22 @@ export function ModulDetailClient({
       const res = await fetch('/api/chapters/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           chapterIds: newChapterOrder.map((ch) => ch.id),
         }),
       })
 
       if (!res.ok) throw new Error()
+      if (controller.signal.aborted) return
 
       toast({
         title: 'Kapitel-Reihenfolge gespeichert',
         description: 'Die neue Anordnung wurde übernommen.',
       })
     } catch (err) {
+      if (controller.signal.aborted || isAbortError(err)) return
+
       console.error('Kapitel Reorder Fehler:', err)
       toast({
         variant: 'destructive',
@@ -317,6 +353,8 @@ export function ModulDetailClient({
       })
 
       // Optional: Bei Fehler zurückrollen – aber für jetzt reicht der Toast
+    } finally {
+      releaseAdminMutation(controller)
     }
   }
 
@@ -352,39 +390,49 @@ export function ModulDetailClient({
     }))
 
     // API
+    const controller = trackAdminMutation()
+
     try {
       const res = await fetch('/api/chapters/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           chapterIds: newChapters.map((ch) => ch.id),
         }),
       })
 
       if (!res.ok) throw new Error()
+      if (controller.signal.aborted) return
 
       toast({
         title: 'Kapitel verschoben',
         description: `Kapitel wurde ${direction === 'up' ? 'hoch' : 'runter'} verschoben.`,
       })
     } catch (err) {
+      if (controller.signal.aborted || isAbortError(err)) return
+
       console.error('Move Chapter Fehler:', err)
       toast({
         variant: 'destructive',
         title: 'Fehler',
         description: 'Verschiebung konnte nicht gespeichert werden.',
       })
+    } finally {
+      releaseAdminMutation(controller)
     }
   }
 
   // Neues Video anlegen und sofort sichtbar + ausgewählt machen
   const handleAddVideo = async (chapterId: string) => {
     const defaultTitle = 'Neues Video'
+    const controller = trackAdminMutation()
 
     try {
       const res = await fetch('/api/videos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({ title: defaultTitle, chapterId }),
       })
 
@@ -394,6 +442,7 @@ export function ModulDetailClient({
       }
 
       const newVideo = await res.json()
+      if (controller.signal.aborted) return
 
       // 1. Neues Video manuell in den lokalen State einfügen
       setLocalModul((prev) => ({
@@ -413,12 +462,16 @@ export function ModulDetailClient({
         description: 'Du kannst jetzt die Datei hochladen.',
       })
     } catch (err) {
+      if (controller.signal.aborted || isAbortError(err)) return
+
       console.error('Fehler beim Anlegen des Videos:', err)
       toast({
         variant: 'destructive',
         title: 'Fehler',
         description: 'Video konnte nicht angelegt werden.',
       })
+    } finally {
+      releaseAdminMutation(controller)
     }
   }
 
@@ -447,10 +500,13 @@ export function ModulDetailClient({
       }
 
       const handleAddChapter = async () => {
+        const controller = trackAdminMutation()
+
         try {
           const res = await fetch('/api/chapters', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
             body: JSON.stringify({
               name: 'Neues Kapitel',
               moduleId: modul.id,  // ← wichtig: moduleId (wie in Prisma)
@@ -463,6 +519,7 @@ export function ModulDetailClient({
           }
     
           const newChapter = await res.json()
+          if (controller.signal.aborted) return
 
             // Optimistisches Update: sofort in UI anzeigen (mit videos: [] für Sicherheit)
             setLocalModul((prev) => ({
@@ -479,12 +536,16 @@ export function ModulDetailClient({
         setEditingChapterId(newChapter.id)
         setTempChapterName(newChapter.name)
         } catch (err) {
+          if (controller.signal.aborted || isAbortError(err)) return
+
           console.error('Fehler beim Anlegen des Kapitels:', err)
           toast({
             variant: 'destructive',
             title: 'Fehler',
             description: 'Kapitel konnte nicht angelegt werden.',
           })
+        } finally {
+          releaseAdminMutation(controller)
         }
       }
     
@@ -498,6 +559,7 @@ export function ModulDetailClient({
     }
 
     const neuerName = tempChapterName.trim()
+    const controller = trackAdminMutation()
 
     // Sofort lokal anzeigen
     setLocalModul((prev) => ({
@@ -512,8 +574,11 @@ export function ModulDetailClient({
       const res = await fetch(`/api/chapters/${editingChapterId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({ name: neuerName }),
       })
+
+      if (controller.signal.aborted) return
 
       if (res.ok) {
         toast({
@@ -524,12 +589,16 @@ export function ModulDetailClient({
         throw new Error()
       }
     } catch (err) {
+      if (controller.signal.aborted || isAbortError(err)) return
+
       console.error('Fehler beim Speichern des Kapitelnamens:', err)
       toast({
         variant: 'destructive',
         title: 'Fehler',
         description: 'Kapitelname konnte nicht gespeichert werden.',
       })
+    } finally {
+      releaseAdminMutation(controller)
     }
 
     setEditingChapterId(null)
@@ -537,15 +606,20 @@ export function ModulDetailClient({
   }
 
   const handleChapterDelete = async (chapterId: string) => {
+    const controller = trackAdminMutation()
+
     try {
       const res = await fetch(`/api/chapters/${chapterId}`, {
         method: 'DELETE',
+        signal: controller.signal,
       })
 
       if (!res.ok) {
         const errorText = await res.text()
         throw new Error(errorText || 'Löschen fehlgeschlagen')
       }
+
+      if (controller.signal.aborted) return
 
       // Optimistisch entfernen
       setLocalModul((prev) => ({
@@ -563,12 +637,16 @@ export function ModulDetailClient({
         description: 'Kapitel und Videos wurden entfernt.',
       })
     } catch (err) {
+      if (controller.signal.aborted || isAbortError(err)) return
+
       console.error('Kapitel löschen Fehler:', err)
       toast({
         variant: 'destructive',
         title: 'Fehler',
         description: 'Kapitel konnte nicht gelöscht werden.',
       })
+    } finally {
+      releaseAdminMutation(controller)
     }
   }
 
@@ -690,7 +768,7 @@ export function ModulDetailClient({
             activeChapterName={activeChapter?.name || null}
             onVideoUpdate={handleVideoUpdate}
             onVideoDelete={handleVideoDelete}
-            activeVideoWatched={activeVideoId ? watchedVideoIds.includes(activeVideoId) : false}
+            activeVideoWatched={activeVideoId ? watchedVideoIdSet.has(activeVideoId) : false}
             onVideoWatchedChange={handleWatchedChange}
             isAdmin={isAdmin}
             onBack={!isDesktop ? () => setMobileView('content') : undefined}

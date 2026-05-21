@@ -29,6 +29,7 @@ function YouTubeEmbed({ videoId }: { videoId: string }) {
         title="YouTube Video"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
+        loading="lazy"
         className="absolute inset-0 h-full w-full"
       />
     </div>
@@ -58,7 +59,7 @@ export const customComponents = {
   CTABanner,
 }
 
-export function useMDXComponents(): MDXComponents {
+export function getMDXComponents(): MDXComponents {
   return {
     ...customComponents,
     h1: ({ children }) => (

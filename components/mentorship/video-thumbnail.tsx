@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
-import { Check, FilmStrip as Film } from '@phosphor-icons/react'
+import { Check } from '@phosphor-icons/react/Check'
+import { FilmStrip as Film } from '@phosphor-icons/react/FilmStrip'
 import { normalizeBunnyThumbnailUrl } from '@/lib/bunny-thumbnail'
 
 const THUMBNAIL_RETRY_DELAYS_MS = [5000, 15000, 30000, 60000] as const
@@ -16,6 +17,12 @@ type Props = {
   updatedAt?: string | Date | null
 }
 
+type ThumbnailLoadState = {
+  key: string
+  attempt: number
+  status: 'idle' | 'loading' | 'loaded' | 'fallback'
+}
+
 export function VideoThumbnail({
   bunnyGuid,
   thumbnailUrl = null,
@@ -24,19 +31,16 @@ export function VideoThumbnail({
   isWatched = false,
   updatedAt = null,
 }: Props) {
-  const [attempt, setAttempt] = useState(0)
-  const [status, setStatus] = useState<'idle' | 'loading' | 'loaded' | 'fallback'>('idle')
+  const stateKey = `${bunnyGuid ?? 'none'}:${thumbnailUrl ?? 'none'}:${isProcessing ? 'processing' : 'ready'}:${updatedAt ? new Date(updatedAt).getTime() : 0}`
+  const initialStatus: ThumbnailLoadState['status'] = !bunnyGuid || isProcessing ? 'idle' : 'loading'
+  const [loadState, setLoadState] = useState<ThumbnailLoadState>(() => ({
+    key: stateKey,
+    attempt: 0,
+    status: initialStatus,
+  }))
 
-  useEffect(() => {
-    if (!bunnyGuid || isProcessing) {
-      setAttempt(0)
-      setStatus('idle')
-      return
-    }
-
-    setAttempt(0)
-    setStatus('loading')
-  }, [bunnyGuid, isProcessing, updatedAt])
+  const attempt = loadState.key === stateKey ? loadState.attempt : 0
+  const status = loadState.key === stateKey ? loadState.status : initialStatus
 
   useEffect(() => {
     if (!bunnyGuid || isProcessing || status !== 'fallback') return
@@ -45,12 +49,15 @@ export function VideoThumbnail({
     if (delay == null) return
 
     const timer = window.setTimeout(() => {
-      setAttempt((prev) => prev + 1)
-      setStatus('loading')
+      setLoadState((prev) => ({
+        key: stateKey,
+        attempt: prev.key === stateKey ? prev.attempt + 1 : 1,
+        status: 'loading',
+      }))
     }, delay)
 
     return () => window.clearTimeout(timer)
-  }, [attempt, bunnyGuid, isProcessing, status])
+  }, [attempt, bunnyGuid, isProcessing, stateKey, status])
 
   const thumbnailSrc = useMemo(() => {
     const version = updatedAt ? new Date(updatedAt).getTime() : 0
@@ -93,8 +100,8 @@ export function VideoThumbnail({
           ].join(' ')}
           unoptimized
           referrerPolicy="origin"
-          onLoad={() => setStatus('loaded')}
-          onError={() => setStatus('fallback')}
+          onLoad={() => setLoadState({ key: stateKey, attempt, status: 'loaded' })}
+          onError={() => setLoadState({ key: stateKey, attempt, status: 'fallback' })}
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center">

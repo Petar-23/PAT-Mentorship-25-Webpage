@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 
@@ -94,12 +94,31 @@ export default function BlogEditor({ slug, initialContent = '', initialSha, isNe
   const [dragOver, setDragOver] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const redirectTimeoutRef = useRef<number | null>(null)
+  const uploadAbortRef = useRef<AbortController | null>(null)
+  const saveAbortRef = useRef<AbortController | null>(null)
+  const deleteAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current != null) {
+        window.clearTimeout(redirectTimeoutRef.current)
+      }
+      uploadAbortRef.current?.abort()
+      saveAbortRef.current?.abort()
+      deleteAbortRef.current?.abort()
+    }
+  }, [])
 
   const updateFm = useCallback((key: keyof Frontmatter, value: string | boolean) => {
     setFm(prev => ({ ...prev, [key]: value }))
   }, [])
 
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = useCallback(async (file: File) => {
+    uploadAbortRef.current?.abort()
+    const controller = new AbortController()
+    uploadAbortRef.current = controller
+
     setUploading(true)
     setMessage(null)
 
@@ -110,18 +129,27 @@ export default function BlogEditor({ slug, initialContent = '', initialSha, isNe
       const res = await fetch('/api/owner/blog/upload', {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       })
       const data = await res.json()
+      if (controller.signal.aborted) return
+
       if (!res.ok) throw new Error(data.error)
 
       updateFm('image', data.path)
       setMessage({ type: 'success', text: `Bild hochgeladen: ${data.fileName}` })
     } catch (err) {
+      if (controller.signal.aborted) return
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Upload fehlgeschlagen' })
     } finally {
-      setUploading(false)
+      if (uploadAbortRef.current === controller) {
+        uploadAbortRef.current = null
+      }
+      if (!controller.signal.aborted) {
+        setUploading(false)
+      }
     }
-  }
+  }, [updateFm])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -130,7 +158,7 @@ export default function BlogEditor({ slug, initialContent = '', initialSha, isNe
     if (file && file.type.startsWith('image/')) {
       handleImageUpload(file)
     }
-  }, [])
+  }, [handleImageUpload])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -154,31 +182,50 @@ export default function BlogEditor({ slug, initialContent = '', initialSha, isNe
       return
     }
 
+    saveAbortRef.current?.abort()
+    const controller = new AbortController()
+    saveAbortRef.current = controller
+
     try {
       if (isNew) {
         const res = await fetch('/api/owner/blog', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ slug: targetSlug, content }),
+          signal: controller.signal,
         })
         const data = await res.json()
+        if (controller.signal.aborted) return
+
         if (!res.ok) throw new Error(data.error)
         setMessage({ type: 'success', text: 'Artikel erstellt! Vercel deployt in ~1 Min.' })
-        setTimeout(() => router.push('/owner/blog'), 2000)
+        redirectTimeoutRef.current = window.setTimeout(() => {
+          router.push('/owner/blog')
+          redirectTimeoutRef.current = null
+        }, 2000)
       } else {
         const res = await fetch(`/api/owner/blog/${slug}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content, sha: initialSha }),
+          signal: controller.signal,
         })
         const data = await res.json()
+        if (controller.signal.aborted) return
+
         if (!res.ok) throw new Error(data.error)
         setMessage({ type: 'success', text: 'Gespeichert! Vercel deployt in ~1 Min.' })
       }
     } catch (err) {
+      if (controller.signal.aborted) return
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Fehler beim Speichern' })
     } finally {
-      setSaving(false)
+      if (saveAbortRef.current === controller) {
+        saveAbortRef.current = null
+      }
+      if (!controller.signal.aborted) {
+        setSaving(false)
+      }
     }
   }
 
@@ -188,16 +235,34 @@ export default function BlogEditor({ slug, initialContent = '', initialSha, isNe
     setDeleting(true)
     setMessage(null)
 
+    deleteAbortRef.current?.abort()
+    const controller = new AbortController()
+    deleteAbortRef.current = controller
+
     try {
-      const res = await fetch(`/api/owner/blog/${slug}`, { method: 'DELETE' })
+      const res = await fetch(`/api/owner/blog/${slug}`, {
+        method: 'DELETE',
+        signal: controller.signal,
+      })
       const data = await res.json()
+      if (controller.signal.aborted) return
+
       if (!res.ok) throw new Error(data.error)
       setMessage({ type: 'success', text: 'Artikel gelöscht.' })
-      setTimeout(() => router.push('/owner/blog'), 1500)
+      redirectTimeoutRef.current = window.setTimeout(() => {
+        router.push('/owner/blog')
+        redirectTimeoutRef.current = null
+      }, 1500)
     } catch (err) {
+      if (controller.signal.aborted) return
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Fehler beim Löschen' })
     } finally {
-      setDeleting(false)
+      if (deleteAbortRef.current === controller) {
+        deleteAbortRef.current = null
+      }
+      if (!controller.signal.aborted) {
+        setDeleting(false)
+      }
     }
   }
 

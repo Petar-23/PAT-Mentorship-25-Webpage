@@ -1,7 +1,7 @@
-import { auth, clerkClient } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getPayPalSubscription } from '@/lib/paypal'
+import { requireAdminApiAccess } from '@/lib/authz'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -19,19 +19,9 @@ export const maxDuration = 60
  */
 export async function POST(req: Request) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const client = await clerkClient()
-    const memberships = await client.users.getOrganizationMembershipList({
-      userId,
-      limit: 100,
-    })
-    const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-    if (!isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const admin = await requireAdminApiAccess()
+    if (!admin.ok) {
+      return admin.response
     }
 
     const body = await req.json()
@@ -43,6 +33,24 @@ export async function POST(req: Request) {
         { status: 400 }
       )
     }
+
+    const normalizedIds = subscriptionIds
+      .map((subId) => (typeof subId === 'string' ? subId.trim() : ''))
+      .filter(Boolean)
+    const uniqueIds = Array.from(new Set(normalizedIds))
+    const existingRows = uniqueIds.length > 0
+      ? await prisma.payPalSubscriber.findMany({
+          where: { paypalSubscriptionId: { in: uniqueIds } },
+          select: {
+            paypalSubscriptionId: true,
+            paypalEmail: true,
+            status: true,
+          },
+        })
+      : []
+    const importedBySubscriptionId = new Map(
+      existingRows.map((row) => [row.paypalSubscriptionId, row])
+    )
 
     const results = {
       total: subscriptionIds.length,
@@ -59,15 +67,11 @@ export async function POST(req: Request) {
       }>,
     }
 
-    for (const subId of subscriptionIds) {
-      const trimmedId = subId.trim()
-      if (!trimmedId) continue
-
+    for (const trimmedId of normalizedIds) {
       try {
-        // Pruefen ob schon importiert
-        const existing = await prisma.payPalSubscriber.findUnique({
-          where: { paypalSubscriptionId: trimmedId },
-        })
+        // Pruefen ob schon importiert. Die Map enthaelt DB-Treffer und IDs,
+        // die in diesem Request bereits erfolgreich angelegt wurden.
+        const existing = importedBySubscriptionId.get(trimmedId)
 
         if (existing) {
           results.alreadyExists++
@@ -90,7 +94,20 @@ export async function POST(req: Request) {
             paypalEmail: info.subscriberEmail,
             status: info.status,
           },
+          select: { id: true },
         })
+        importedBySubscriptionId.set(info.id, {
+          paypalSubscriptionId: info.id,
+          paypalEmail: info.subscriberEmail,
+          status: info.status,
+        })
+        if (info.id !== trimmedId) {
+          importedBySubscriptionId.set(trimmedId, {
+            paypalSubscriptionId: info.id,
+            paypalEmail: info.subscriberEmail,
+            status: info.status,
+          })
+        }
 
         results.imported++
         if (info.status === 'ACTIVE') {

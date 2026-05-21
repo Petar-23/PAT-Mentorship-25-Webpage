@@ -1,5 +1,3 @@
-'use client'
-
 import Link from "next/link"
 import Image from "next/image"
 import { 
@@ -7,12 +5,11 @@ import {
   SiX, 
   SiDiscord 
 } from '@icons-pack/react-simple-icons'
-import { Cookie, ChartLine as LineChart, BookOpen } from "@phosphor-icons/react"
-import { useCookieSettings } from "@/lib/cookie-settings"
+import { BookOpen } from "@phosphor-icons/react/dist/ssr/BookOpen"
+import { ChartLine as LineChart } from "@phosphor-icons/react/dist/ssr/ChartLine"
+import { FooterCookieSettingsButton } from "@/components/layout/footer-cookie-settings-button"
 
 export function Footer() {
-  const { openSettings } = useCookieSettings()
-  
   const toolLinks = [
     {
       title: "Wachstumsrechner",
@@ -80,7 +77,7 @@ export function Footer() {
   ]
 
   return (
-    <footer className="border-t border-slate-800 bg-slate-950">
+    <footer id="site-footer" className="border-t border-slate-800 bg-slate-950">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
@@ -94,7 +91,8 @@ export function Footer() {
                 alt="PAT Mentorship Logo"
                 width={40}
                 height={40}
-                className="rounded-lg"
+                className="h-10 w-10 rounded-lg"
+                sizes="40px"
               />
               <h3 className="font-semibold text-white group-hover:text-blue-400 transition-colors">
                 PRICE ACTION TRADER
@@ -217,26 +215,7 @@ export function Footer() {
 
             {/* Cookie Settings */}
             <div>
-              <button
-                onClick={openSettings}
-                className="flex items-center gap-3 text-gray-400 hover:text-gray-300 transition-colors group"
-              >
-                <Cookie className="h-5 w-5" />
-                <span className="text-sm font-medium">Cookie-Einstellungen</span>
-                <svg
-                  className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
+              <FooterCookieSettingsButton />
             </div>
           </div>
         </div>

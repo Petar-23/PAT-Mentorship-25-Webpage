@@ -1,10 +1,13 @@
 // lib/sidebar-data.ts
-// Shared sidebar data fetcher — cached per request via React cache()
-// Eliminates duplicate DB queries across mentorship routes.
+// Shared sidebar data fetcher — cached per request and briefly across requests.
+// Admin mutations call revalidateSidebarData() so navigation does not keep stale sidebars.
 
 import 'server-only'
 import { cache } from 'react'
+import { revalidateTag, unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/prisma'
+
+export const SIDEBAR_DATA_CACHE_TAG = 'mentorship-sidebar-data'
 
 export type SidebarKurs = {
   id: string
@@ -30,7 +33,7 @@ export type SidebarData = {
   savedSidebarOrder: string[] | null
 }
 
-export const getSidebarData = cache(async (): Promise<SidebarData> => {
+async function loadSidebarData(): Promise<SidebarData> {
   const [kurse, pages, savedSetting] = await Promise.all([
     prisma.playlist.findMany({
       select: {
@@ -56,6 +59,7 @@ export const getSidebarData = cache(async (): Promise<SidebarData> => {
     }).catch(() => [] as any[]),
     prisma.adminSetting.findUnique({
       where: { key: 'sidebarOrder' },
+      select: { value: true },
     }),
   ])
 
@@ -80,4 +84,19 @@ export const getSidebarData = cache(async (): Promise<SidebarData> => {
   const savedSidebarOrder: string[] | null = savedSetting ? (savedSetting.value as string[]) : null
 
   return { kurseForSidebar, pagesForSidebar, savedSidebarOrder }
-})
+}
+
+const getCachedSidebarData = unstable_cache(
+  loadSidebarData,
+  [SIDEBAR_DATA_CACHE_TAG],
+  {
+    revalidate: 60,
+    tags: [SIDEBAR_DATA_CACHE_TAG],
+  }
+)
+
+export const getSidebarData = cache(() => getCachedSidebarData())
+
+export function revalidateSidebarData() {
+  revalidateTag(SIDEBAR_DATA_CACHE_TAG, { expire: 0 })
+}

@@ -3,22 +3,37 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import Script from 'next/script'
 import { Button } from '@/components/ui/button'
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  FastForward,
-  FileText,
-  Pause,
-  Play,
-  Rewind,
-  Trash as Trash2,
-} from '@phosphor-icons/react'
+import { ArrowLeft } from '@phosphor-icons/react/ArrowLeft'
+import { ArrowRight } from '@phosphor-icons/react/ArrowRight'
+import { Check } from '@phosphor-icons/react/Check'
+import { FastForward } from '@phosphor-icons/react/FastForward'
+import { FileText } from '@phosphor-icons/react/FileText'
+import { Pause } from '@phosphor-icons/react/Pause'
+import { Play } from '@phosphor-icons/react/Play'
+import { Rewind } from '@phosphor-icons/react/Rewind'
+import { Trash as Trash2 } from '@phosphor-icons/react/Trash'
 import { useToast } from '@/hooks/use-toast'
-import { UploadZone } from './upload-zone'
-import { PdfUploadZone } from './pdf-upload-zone'
+
+const UploadZone = dynamic(() => import('./upload-zone').then((mod) => mod.UploadZone), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center bg-gray-200 text-sm text-muted-foreground">
+      Upload wird geladen...
+    </div>
+  ),
+})
+
+const PdfUploadZone = dynamic(() => import('./pdf-upload-zone').then((mod) => mod.PdfUploadZone), {
+  ssr: false,
+  loading: () => (
+    <Button variant="secondary" disabled>
+      PDF-Upload wird geladen...
+    </Button>
+  ),
+})
 
 type Video = {
   id: string
@@ -116,6 +131,7 @@ export function VideoPlayer({
     (bunnyStatus != null && bunnyStatus.status === 4 && (bunnyStatus.encodeProgress ?? 0) === 100)
 
   const playbackReadyForEmbed = Boolean(activeVideo?.bunnyGuid) && (!isAdmin || adminPlaybackReady)
+  const shouldLoadPlayerJs = !isAdmin && Boolean(activeVideo?.bunnyGuid)
 
   // UX: Kein extra Klick. Player wird automatisch geladen.
   useEffect(() => {
@@ -404,15 +420,22 @@ export function VideoPlayer({
 
     let cancelled = false
     let interval: ReturnType<typeof setInterval> | null = null
+    let controller: AbortController | null = null
 
     setBunnyStatus(null)
     setBunnyStatusError(null)
 
     const tick = async () => {
+      if (document.visibilityState === 'hidden') return
+
+      controller?.abort()
+      controller = new AbortController()
+
       try {
         const res = await fetch(`/api/videos/status/${activeVideo.bunnyGuid}`, {
           method: 'GET',
           cache: 'no-store',
+          signal: controller.signal,
         })
 
         if (!res.ok) {
@@ -449,6 +472,7 @@ export function VideoPlayer({
         }
       } catch (err: unknown) {
         if (cancelled) return
+        if (err instanceof DOMException && err.name === 'AbortError') return
         const message = err instanceof Error ? err.message : String(err)
         setBunnyStatusError(message)
 
@@ -461,10 +485,18 @@ export function VideoPlayer({
 
     void tick()
     interval = setInterval(tick, 8000)
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void tick()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
 
     return () => {
       cancelled = true
+      controller?.abort()
       if (interval) clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [isAdmin, activeVideo?.bunnyGuid, activeVideo?.id, triggerDiscordAnnouncement, uploadViewVideoId])
 
@@ -610,12 +642,14 @@ export function VideoPlayer({
 
   return (
     <>
-      <Script
-        src="https://assets.mediadelivery.net/playerjs/playerjs-latest.min.js"
-        strategy="afterInteractive"
-        onLoad={() => setIsPlayerJsLoaded(true)}
-        onReady={() => setIsPlayerJsLoaded(true)}
-      />
+      {shouldLoadPlayerJs ? (
+        <Script
+          src="https://assets.mediadelivery.net/playerjs/playerjs-latest.min.js"
+          strategy="afterInteractive"
+          onLoad={() => setIsPlayerJsLoaded(true)}
+          onReady={() => setIsPlayerJsLoaded(true)}
+        />
+      ) : null}
 
       <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 flex flex-col max-w-7xl">
       {/* Header (wie Middle-Sidebar): Back + Chapter + Video Titel */}

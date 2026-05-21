@@ -2,21 +2,13 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import {
-  BookOpen,
-  CaretDown as ChevronDown,
-  FileText,
-  Kanban as SquareKanban,
-  Users,
-} from '@phosphor-icons/react'
+import { BookOpen } from '@phosphor-icons/react/BookOpen'
+import { CaretDown as ChevronDown } from '@phosphor-icons/react/CaretDown'
+import { FileText } from '@phosphor-icons/react/FileText'
+import { Kanban as SquareKanban } from '@phosphor-icons/react/Kanban'
+import { Users } from '@phosphor-icons/react/Users'
 import patBanner from '@/public/images/pat-banner.jpeg'
 import { UserButton, useUser } from '@clerk/nextjs'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
 import { cn } from '@/lib/utils'
 import { useMemo, useState, type ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
@@ -176,45 +168,43 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
       </div>
 
       <div className="flex-1 min-h-0 mt-1 overflow-y-auto">
-        <Accordion type="single" collapsible defaultValue="mentorship">
-          <AccordionItem value="mentorship">
-            <AccordionTrigger className="text-gray-400 font-medium py-3 px-4 hover:text-black rounded-lg transition-colors [&&]:hover:no-underline justify-between">
-              <span className="mentorship-ui-heading">PAT Mentorship 2026</span>
-            </AccordionTrigger>
+        <details className="group" open>
+          <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-400 transition-colors hover:text-black [&::-webkit-details-marker]:hidden">
+            <span className="mentorship-ui-heading">PAT Mentorship 2026</span>
+            <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-open:rotate-180" />
+          </summary>
 
-            <AccordionContent className="px-1">
-              <div className="space-y-1.5 pt-3 sm:space-y-2 sm:pt-4">
-                {items.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className="block"
-                    aria-current={item.id === activeItemId ? 'page' : undefined}
+          <div className="space-y-1.5 px-1 pt-3 sm:space-y-2 sm:pt-4">
+            {items.map((item) => (
+              <Link
+                key={item.id}
+                href={item.href}
+                prefetch={false}
+                className="block"
+                aria-current={item.id === activeItemId ? 'page' : undefined}
+              >
+                <div
+                  className={cn(
+                    'flex items-center space-x-3 sm:space-x-4 py-1.5 sm:py-2 px-2 rounded-lg transition-colors cursor-pointer border border-border',
+                    item.id === activeItemId
+                      ? 'bg-gray-200/50 dark:bg-gray-800/40 border-l-4 border-gray-200 dark:border-gray-700 border-l-gray-400 dark:border-l-gray-400'
+                      : 'hover:bg-gray-200/50 dark:hover:bg-gray-800/30'
+                  )}
+                >
+                  <div
+                    className={`w-9 h-9 sm:w-10 sm:h-10 border bg-gradient-to-br ${item.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden`}
                   >
-                    <div
-                      className={cn(
-                        'flex items-center space-x-3 sm:space-x-4 py-1.5 sm:py-2 px-2 rounded-lg transition-colors cursor-pointer border border-border',
-                        item.id === activeItemId
-                          ? 'bg-gray-200/50 dark:bg-gray-800/40 border-l-4 border-gray-200 dark:border-gray-700 border-l-gray-400 dark:border-l-gray-400'
-                          : 'hover:bg-gray-200/50 dark:hover:bg-gray-800/30'
-                      )}
-                    >
-                      <div
-                        className={`w-9 h-9 sm:w-10 sm:h-10 border bg-gradient-to-br ${item.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden`}
-                      >
-                        {item.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="mentorship-ui-heading font-medium text-[13px] sm:text-sm truncate">{item.title}</p>
-                        <p className="text-[11px] sm:text-xs text-muted-foreground">{item.subtitle}</p>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+                    {item.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="mentorship-ui-heading font-medium text-[13px] sm:text-sm truncate">{item.title}</p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground">{item.subtitle}</p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </details>
       </div>
 
       {isMentorship ? (
@@ -227,7 +217,7 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
               size="sm"
               className="w-full px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
             >
-              <Link href="/mentorship">
+              <Link href="/mentorship" prefetch={false}>
                 <span className="flex items-center justify-center shrink-0 w-8">
                   <SquareKanban className="!h-5 !w-5" />
                 </span>
@@ -284,7 +274,7 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
                   size="sm"
                   className="w-full px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
                 >
-                  <Link href="/mentorship">
+                  <Link href="/mentorship" prefetch={false}>
                     <span className="flex items-center justify-center shrink-0 w-8">
                       <SquareKanban className="!h-5 !w-5" />
                     </span>
@@ -343,4 +333,3 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
     </div>
   )
 }
-

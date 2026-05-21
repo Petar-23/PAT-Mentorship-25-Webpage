@@ -2,7 +2,8 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { getIsAdmin } from '@/lib/authz'
+import { getIsAdmin, requireAdminApiAccess } from '@/lib/authz'
+import { revalidateSidebarData } from '@/lib/sidebar-data'
 
 function generateSlug(title: string): string {
   return title
@@ -19,12 +20,12 @@ function generateSlug(title: string): string {
 }
 
 export async function GET() {
-  const { userId } = await auth()
+  const { userId, sessionClaims } = await auth()
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const isAdmin = await getIsAdmin()
+  const isAdmin = await getIsAdmin(userId, sessionClaims)
 
   const pages = await prisma.page.findMany({
     where: isAdmin ? undefined : { published: true },
@@ -44,14 +45,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const isAdmin = await getIsAdmin()
-  if (!isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const admin = await requireAdminApiAccess()
+  if (!admin.ok) {
+    return admin.response
   }
 
   let body: { title?: string; description?: string; iconUrl?: string }
@@ -69,7 +65,10 @@ export async function POST(request: Request) {
   let slug = generateSlug(title)
 
   // Ensure uniqueness
-  const existing = await prisma.page.findUnique({ where: { slug } })
+  const existing = await prisma.page.findUnique({
+    where: { slug },
+    select: { id: true },
+  })
   if (existing) {
     slug = `${slug}-${Date.now()}`
   }
@@ -81,7 +80,16 @@ export async function POST(request: Request) {
       description: body.description?.trim() || null,
       iconUrl: body.iconUrl || null,
     },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      description: true,
+      iconUrl: true,
+      published: true,
+    },
   })
 
+  revalidateSidebarData()
   return NextResponse.json(page, { status: 201 })
 }

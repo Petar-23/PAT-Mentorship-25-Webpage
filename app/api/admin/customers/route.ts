@@ -1,8 +1,8 @@
 // src/app/api/admin/customers/route.ts
-import { auth, clerkClient } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import type Stripe from 'stripe'
+import { requireAdminApiAccess } from '@/lib/authz'
 
 interface FormattedCustomer {
   email: string | null;
@@ -66,27 +66,19 @@ function getCustomerStatus(customer: Stripe.Customer): {
 
 export async function GET() {
   try {
-    const { userId } = await auth()
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const admin = await requireAdminApiAccess()
+    if (!admin.ok) {
+      return admin.response
     }
 
-    const client = await clerkClient()
-    const memberships = await client.users.getOrganizationMembershipList({
-      userId,
-      limit: 100,
-    })
-    const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-
-    if (!isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    const customers = await stripe.customers.list({
-      limit: 100,
-      expand: ['data.subscriptions']
-    })
+    const priceId = process.env.STRIPE_PRICE_ID!
+    const [customers, price] = await Promise.all([
+      stripe.customers.list({
+        limit: 100,
+        expand: ['data.subscriptions']
+      }),
+      stripe.prices.retrieve(priceId),
+    ])
 
     const formattedCustomers = customers.data.map((customer): FormattedCustomer => {
       const { status, displayStatus, subscriptionEnd } = getCustomerStatus(customer)
@@ -104,9 +96,6 @@ export async function GET() {
     const waitlistCustomers = formattedCustomers.filter(c => c.status === 'trialing')
     const cancelingCustomers = formattedCustomers.filter(c => c.status === 'canceling')
     const interestedCustomers = formattedCustomers.filter(c => c.status === 'custom')
-
-    const priceId = process.env.STRIPE_PRICE_ID!
-    const price = await stripe.prices.retrieve(priceId)
 
     return NextResponse.json({ 
       waitlistCustomers,

@@ -24,7 +24,7 @@ export function normalizeBunnyThumbnailUrl(
 
       return thumbnailUrl
     } catch {
-      // Historisch defekte Thumbnail-Strings sollen auf den GUID-Fallback fallen.
+      // Falls historisch ein ungueltiger String gespeichert wurde, auf den GUID-Fallback gehen.
     }
   }
 

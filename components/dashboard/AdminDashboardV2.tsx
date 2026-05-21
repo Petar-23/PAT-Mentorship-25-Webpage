@@ -1,12 +1,44 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { WarningCircle as AlertCircle, Download, ArrowsClockwise as RefreshCw } from '@phosphor-icons/react'
-import { OnboardingVideoAdminCard } from '@/components/dashboard/onboarding-video-admin-card'
+import { ArrowsClockwise as RefreshCw } from '@phosphor-icons/react/ArrowsClockwise'
+import { WarningCircle as AlertCircle } from '@phosphor-icons/react/WarningCircle'
+
+const InvoiceExportCard = dynamic(
+  () => import('@/components/dashboard/invoice-export-card').then((mod) => mod.InvoiceExportCard),
+  {
+    ssr: false,
+    loading: () => (
+      <Card className="mt-6">
+        <CardContent className="p-6 text-sm text-gray-600">
+          Rechnungs-Export wird geladen...
+        </CardContent>
+      </Card>
+    ),
+  }
+)
+
+const OnboardingVideoAdminCard = dynamic(
+  () =>
+    import('@/components/dashboard/onboarding-video-admin-card').then(
+      (mod) => mod.OnboardingVideoAdminCard
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <Card className="mt-6">
+        <CardContent className="p-6 text-sm text-gray-600">
+          Onboarding-Video-Einstellungen werden geladen...
+        </CardContent>
+      </Card>
+    ),
+  }
+)
 
 type MentorshipEventType = 'signup' | 'churn' | 'cancel_scheduled'
 
@@ -60,6 +92,11 @@ type ApiResponse = {
   }>
 }
 
+type AdminDashboardV2Props = {
+  initialMetrics?: ApiResponse | null
+  initialError?: string | null
+}
+
 function todayYmd() {
   return new Date().toISOString().slice(0, 10)
 }
@@ -83,44 +120,60 @@ function formatDateTime(iso: string) {
   }
 }
 
-export default function AdminDashboardV2() {
-  const [from, setFrom] = useState(startOfYearYmd())
-  const [to, setTo] = useState(todayYmd())
-  const [metrics, setMetrics] = useState<ApiResponse | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+export default function AdminDashboardV2({
+  initialMetrics = null,
+  initialError = null,
+}: AdminDashboardV2Props) {
+  const [from, setFrom] = useState(() => initialMetrics?.period.from ?? startOfYearYmd())
+  const [to, setTo] = useState(() => initialMetrics?.period.to ?? todayYmd())
+  const [metrics, setMetrics] = useState<ApiResponse | null>(() => initialMetrics)
+  const [isLoading, setIsLoading] = useState(() => !initialMetrics && !initialError)
+  const [error, setError] = useState<string | null>(() => initialError)
 
   const [selectedProductId, setSelectedProductId] = useState<string>('__all__')
-
-  const [exporting, setExporting] = useState(false)
-  const [exportError, setExportError] = useState<string | null>(null)
-  const [exportProductIds, setExportProductIds] = useState<string[]>([])
+  const metricsAbortRef = useRef<AbortController | null>(null)
 
   const load = async () => {
+    const controller = new AbortController()
+    metricsAbortRef.current?.abort()
+    metricsAbortRef.current = controller
+
     try {
       setIsLoading(true)
       setError(null)
       const qs = new URLSearchParams({ from, to })
-      const res = await fetch(`/api/owner/metrics?${qs.toString()}`, { cache: 'no-store' })
+      const res = await fetch(`/api/owner/metrics?${qs.toString()}`, {
+        cache: 'no-store',
+        signal: controller.signal,
+      })
       if (!res.ok) {
         const data = await res.json().catch(() => null)
         throw new Error(data?.error || `Fehler beim Laden (${res.status})`)
       }
       const data = (await res.json()) as ApiResponse
+      if (controller.signal.aborted) return
       setMetrics(data)
-
-      // Wenn wir noch keine Auswahl haben, selecte "alle" und preselecte alle Produkte für Export.
-      setExportProductIds((prev) => (prev.length > 0 ? prev : data.products.map((p) => p.productId)))
     } catch (e) {
+      if (controller.signal.aborted) return
       setMetrics(null)
       setError(e instanceof Error ? e.message : 'Unbekannter Fehler')
     } finally {
-      setIsLoading(false)
+      if (metricsAbortRef.current === controller) {
+        metricsAbortRef.current = null
+        setIsLoading(false)
+      }
     }
   }
 
   useEffect(() => {
-    load()
+    return () => {
+      metricsAbortRef.current?.abort()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (initialMetrics || initialError) return
+    void load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -175,46 +228,6 @@ export default function AdminDashboardV2() {
     if (selectedProductId === '__all__') return ev
     return ev.filter((e) => e.productId === selectedProductId)
   }, [metrics, selectedProductId])
-
-  const toggleExportProduct = (productId: string) => {
-    setExportProductIds((prev) =>
-      prev.includes(productId) ? prev.filter((x) => x !== productId) : [...prev, productId]
-    )
-  }
-
-  const downloadZip = async () => {
-    try {
-      setExporting(true)
-      setExportError(null)
-
-      const qs = new URLSearchParams({ from, to })
-      for (const pid of exportProductIds) qs.append('productId', pid)
-
-      const res = await fetch(`/api/owner/invoices/export?${qs.toString()}`, { cache: 'no-store' })
-      if (!res.ok) {
-        const data = await res.json().catch(() => null)
-        throw new Error(data?.error || `Export fehlgeschlagen (${res.status})`)
-      }
-
-      const blob = await res.blob()
-      const cd = res.headers.get('Content-Disposition') || ''
-      const m = cd.match(/filename="([^"]+)"/)
-      const filename = m?.[1] ?? `invoices_${from}_${to}.zip`
-
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = filename
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
-    } catch (e) {
-      setExportError(e instanceof Error ? e.message : 'Unbekannter Export-Fehler')
-    } finally {
-      setExporting(false)
-    }
-  }
 
   if (isLoading) {
     return (
@@ -488,68 +501,7 @@ export default function AdminDashboardV2() {
         </CardContent>
       </Card>
 
-      {/* PDF export */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="text-base">Rechnungen als ZIP exportieren (PDF)</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-gray-600">
-            Du kannst Rechnungen für einen Zeitraum als ZIP herunterladen. Wenn es zu viele Rechnungen sind, sagt dir
-            Stripe „zu viele“ – dann nimmst du bitte einen kürzeren Zeitraum oder nutzt das lokale Export‑Script.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-lg border border-gray-200 p-4">
-              <p className="text-sm font-medium">Mentorship auswählen</p>
-              <div className="mt-3 space-y-2">
-                {products.map((p) => (
-                  <label key={p.productId} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4"
-                      checked={exportProductIds.includes(p.productId)}
-                      onChange={() => toggleExportProduct(p.productId)}
-                    />
-                    <span>{p.productName}</span>
-                  </label>
-                ))}
-                {products.length === 0 && <p className="text-sm text-gray-500">Keine Produkte gefunden.</p>}
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-gray-200 p-4">
-              <p className="text-sm font-medium">Export</p>
-              <p className="text-sm text-gray-600 mt-1">
-                Zeitraum wird oben übernommen: <span className="font-medium">{from}</span> bis{' '}
-                <span className="font-medium">{to}</span>
-              </p>
-
-              {exportError && (
-                <div className="mt-3 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-                  {exportError}
-                </div>
-              )}
-
-              <div className="mt-4">
-                <Button onClick={downloadZip} disabled={exporting} className="w-full">
-                  {exporting ? (
-                    <>
-                      <LoadingSpinner className="mr-2 h-4 w-4" />
-                      Export wird erstellt…
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4 mr-2" />
-                      ZIP herunterladen
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <InvoiceExportCard from={from} to={to} products={products} />
 
       {/* Onboarding Video Settings (bewusst ganz unten) */}
       <OnboardingVideoAdminCard />
@@ -557,5 +509,3 @@ export default function AdminDashboardV2() {
     </div>
   )
 }
-
-

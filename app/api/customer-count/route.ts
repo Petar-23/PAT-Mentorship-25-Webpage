@@ -13,7 +13,6 @@ export async function GET() {
     // Get customers that are on the waitlist
     const customerList = await stripe.customers.list({
       limit: 100, // Adjust based on your needs
-      expand: ['data.subscriptions'],
     });
 
     // Get the actual count from the data array length

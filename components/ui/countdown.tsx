@@ -30,15 +30,10 @@ export function Countdown({ targetDate, className, variant = 'light' }: Countdow
   const prevRef = useRef<{ days: number; hours: number; minutes: number; seconds: number } | null>(null)
   const [pulse, setPulse] = useState({ days: false, hours: false, minutes: false, seconds: false })
 
-  // Initialisiere timeLeft nur auf dem Client
   useEffect(() => {
-    const initial = getTimeParts(target)
-    setTimeLeft(initial)
-    prevRef.current = initial
-  }, [target])
+    let interval: number | null = null
 
-  useEffect(() => {
-    const id = window.setInterval(() => {
+    const update = () => {
       const next = getTimeParts(target)
       const prev = prevRef.current
 
@@ -51,9 +46,39 @@ export function Countdown({ targetDate, className, variant = 'light' }: Countdow
         if (next.seconds !== prev.seconds) setPulse((curr) => ({ ...curr, seconds: true }))
       }
       prevRef.current = next
-    }, 1000)
+    }
 
-    return () => window.clearInterval(id)
+    const stop = () => {
+      if (interval) {
+        window.clearInterval(interval)
+        interval = null
+      }
+    }
+
+    const start = () => {
+      stop()
+      update()
+
+      if (document.visibilityState === 'visible') {
+        interval = window.setInterval(update, 1000)
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        start()
+      } else {
+        stop()
+      }
+    }
+
+    start()
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      stop()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [target])
 
   useEffect(() => {

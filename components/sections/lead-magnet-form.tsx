@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import LeadMagnetSignupForm from '@/components/sections/lead-magnet-signup-form'
+import { LeadMagnetWhopPill } from '@/components/sections/lead-magnet-whop-pill'
 import { HeroPill } from '@/components/ui/hero-pill'
 import { GlassCard } from '@/components/ui/glass-card'
 
@@ -39,7 +40,11 @@ export default function LeadMagnetForm() {
               <p className="text-pretty mt-2 text-sm text-neutral-600">
                 Trage dich ein und starte sofort.
               </p>
-              <LeadMagnetSignupForm className="mt-6" idPrefix="lead-magnet-section" />
+              <LeadMagnetSignupForm
+                className="mt-6"
+                idPrefix="lead-magnet-section"
+                socialProof={<LeadMagnetWhopPill />}
+              />
               <p className="text-pretty mt-4 text-xs text-neutral-500">
                 Mit dem Eintrag stimmst du unserer{' '}
                 <Link href="/datenschutz" className="underline underline-offset-4">

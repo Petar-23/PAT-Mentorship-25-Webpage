@@ -2,6 +2,9 @@
 
 const PAYPAL_API_BASE =
   process.env.PAYPAL_API_BASE || 'https://api-m.paypal.com'
+const PAYPAL_TOKEN_TIMEOUT_MS = 10_000
+const PAYPAL_SUBSCRIPTION_TIMEOUT_MS = 12_000
+const PAYPAL_WEBHOOK_VERIFY_TIMEOUT_MS = 10_000
 
 function requireEnv(name: string): string {
   const value = process.env[name]
@@ -9,11 +12,52 @@ function requireEnv(name: string): string {
   return value
 }
 
+async function fetchWithTimeout(
+  input: string,
+  init: RequestInit,
+  timeoutMs: number,
+  label: string
+) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    })
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error(`${label} timed out after ${timeoutMs}ms`)
+    }
+    throw error
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 // ---- OAuth2 Token ----
 
 let cachedToken: { token: string; expiresAt: number } | null = null
+let pendingTokenPromise: Promise<string> | null = null
 
 export async function getPayPalAccessToken(): Promise<string> {
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) {
+    return cachedToken.token
+  }
+
+  if (pendingTokenPromise) {
+    return pendingTokenPromise
+  }
+
+  pendingTokenPromise = fetchPayPalAccessToken().finally(() => {
+    pendingTokenPromise = null
+  })
+
+  return pendingTokenPromise
+}
+
+async function fetchPayPalAccessToken(): Promise<string> {
   if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) {
     return cachedToken.token
   }
@@ -21,14 +65,19 @@ export async function getPayPalAccessToken(): Promise<string> {
   const clientId = requireEnv('PAYPAL_CLIENT_ID')
   const clientSecret = requireEnv('PAYPAL_CLIENT_SECRET')
 
-  const res = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
+  const res = await fetchWithTimeout(
+    `${PAYPAL_API_BASE}/v1/oauth2/token`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'grant_type=client_credentials',
     },
-    body: 'grant_type=client_credentials',
-  })
+    PAYPAL_TOKEN_TIMEOUT_MS,
+    'PayPal token request'
+  )
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -66,7 +115,7 @@ export async function getPayPalSubscription(
 ): Promise<PayPalSubscriptionInfo> {
   const token = await getPayPalAccessToken()
 
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `${PAYPAL_API_BASE}/v1/billing/subscriptions/${subscriptionId}`,
     {
       method: 'GET',
@@ -74,7 +123,9 @@ export async function getPayPalSubscription(
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-    }
+    },
+    PAYPAL_SUBSCRIPTION_TIMEOUT_MS,
+    'PayPal subscription lookup'
   )
 
   if (!res.ok) {
@@ -123,7 +174,7 @@ export async function verifyPayPalWebhookSignature(params: {
 }): Promise<boolean> {
   const token = await getPayPalAccessToken()
 
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `${PAYPAL_API_BASE}/v1/notifications/verify-webhook-signature`,
     {
       method: 'POST',
@@ -140,7 +191,9 @@ export async function verifyPayPalWebhookSignature(params: {
         webhook_id: params.webhookId,
         webhook_event: JSON.parse(params.body),
       }),
-    }
+    },
+    PAYPAL_WEBHOOK_VERIFY_TIMEOUT_MS,
+    'PayPal webhook verification request'
   )
 
   if (!res.ok) {

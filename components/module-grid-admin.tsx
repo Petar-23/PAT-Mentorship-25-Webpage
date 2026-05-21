@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ModuleCard } from './module-card'
 import { useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
@@ -36,7 +36,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { upload } from '@vercel/blob/client'
 import Image from 'next/image'
-import { DotsSix as Grip } from '@phosphor-icons/react'
+import { DotsSix as Grip } from '@phosphor-icons/react/DotsSix'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
@@ -63,6 +63,21 @@ export function ModuleGridAdmin({ modules, playlistId, playlistName, mobileCours
   // Für Bild-Vorschau im Modal
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const reorderAbortRef = useRef<AbortController | null>(null)
+  const submitAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+    }
+  }, [previewUrl])
+
+  useEffect(() => {
+    return () => {
+      reorderAbortRef.current?.abort()
+      submitAbortRef.current?.abort()
+    }
+  }, [])
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -79,17 +94,27 @@ export function ModuleGridAdmin({ modules, playlistId, playlistName, mobileCours
     const newIndex = items.indexOf(over.id as string)
     const newItems = arrayMove(items, oldIndex, newIndex)
     setItems(newItems)
+    reorderAbortRef.current?.abort()
+    const controller = new AbortController()
+    reorderAbortRef.current = controller
 
     try {
       const res = await fetch('/api/modules/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({ moduleIds: newItems, playlistId }),
       })
       if (!res.ok) throw new Error()
+      if (controller.signal.aborted) return
+
       toast({ title: 'Reihenfolge gespeichert!' })
     } catch {
+      if (controller.signal.aborted) return
+
       toast({ variant: 'destructive', title: 'Fehler beim Speichern' })
+    } finally {
+      if (reorderAbortRef.current === controller) reorderAbortRef.current = null
     }
   }
 
@@ -111,6 +136,9 @@ export function ModuleGridAdmin({ modules, playlistId, playlistName, mobileCours
     }
 
     setIsUploading(true)
+    submitAbortRef.current?.abort()
+    const controller = new AbortController()
+    submitAbortRef.current = controller
 
     let imageUrl: string | null = null
     const file = formData.get('image') as File | null
@@ -120,11 +148,17 @@ export function ModuleGridAdmin({ modules, playlistId, playlistName, mobileCours
         const newBlob = await upload(`modules/${file.name}`, file, {
           access: 'public',
           handleUploadUrl: '/api/modul-upload',
+          abortSignal: controller.signal,
         })
+        if (controller.signal.aborted) return
+
         imageUrl = newBlob.url
       } catch (error) {
+        if (controller.signal.aborted) return
+
         console.error('Bild-Upload fehlgeschlagen:', error)
         toast({ variant: 'destructive', title: 'Bild konnte nicht hochgeladen werden' })
+        if (submitAbortRef.current === controller) submitAbortRef.current = null
         setIsUploading(false)
         return
       }
@@ -134,6 +168,7 @@ export function ModuleGridAdmin({ modules, playlistId, playlistName, mobileCours
       const res = await fetch('/api/modules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           name: name.trim(),
           description: (formData.get('description') as string)?.trim() || null,
@@ -143,6 +178,7 @@ export function ModuleGridAdmin({ modules, playlistId, playlistName, mobileCours
       })
 
       if (!res.ok) throw new Error()
+      if (controller.signal.aborted) return
 
       router.refresh()
       toast({ title: 'Modul erfolgreich erstellt!' })
@@ -150,9 +186,12 @@ export function ModuleGridAdmin({ modules, playlistId, playlistName, mobileCours
       setPreviewUrl(null)
       ;(e.target as HTMLFormElement).reset()
     } catch {
+      if (controller.signal.aborted) return
+
       toast({ variant: 'destructive', title: 'Fehler beim Speichern des Moduls' })
     } finally {
-      setIsUploading(false)
+      if (submitAbortRef.current === controller) submitAbortRef.current = null
+      if (!controller.signal.aborted) setIsUploading(false)
     }
   }
 
@@ -254,14 +293,22 @@ export function ModuleGridAdmin({ modules, playlistId, playlistName, mobileCours
                       accept="image/*"
                       onChange={(e) => {
                         const file = e.target.files?.[0]
-                        if (file) setPreviewUrl(URL.createObjectURL(file))
-                        else setPreviewUrl(null)
+                        setPreviewUrl((currentPreviewUrl) => {
+                          if (currentPreviewUrl) URL.revokeObjectURL(currentPreviewUrl)
+                          return file ? URL.createObjectURL(file) : null
+                        })
                       }}
                     />
 
                     {previewUrl && (
                       <div className="relative aspect-video rounded-lg overflow-hidden border">
-                        <Image src={previewUrl} alt="Vorschau" fill className="object-cover" />
+                        <Image
+                          src={previewUrl}
+                          alt="Vorschau"
+                          fill
+                          sizes="(max-width: 640px) 100vw, 512px"
+                          className="object-cover"
+                        />
                       </div>
                     )}
                   </div>
@@ -280,4 +327,3 @@ export function ModuleGridAdmin({ modules, playlistId, playlistName, mobileCours
     </DndContext>
   )
 }
-

@@ -1,4 +1,10 @@
 import { NextResponse } from 'next/server'
+
+const LEAD_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000
+const LEAD_RATE_LIMIT_MAX_ATTEMPTS = 6
+const BREVO_CONTACT_SYNC_TIMEOUT_MS = 6_000
+const leadAttempts = new Map<string, { count: number; resetAt: number }>()
+
 const isValidEmail = (value: string) => {
   const email = value.trim()
   if (!email) return false
@@ -6,26 +12,164 @@ const isValidEmail = (value: string) => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
+function getClientIp(request: Request) {
+  const forwardedFor = request.headers.get('x-forwarded-for')
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0]?.trim() || 'unknown'
+  }
+
+  return (
+    request.headers.get('x-real-ip') ||
+    request.headers.get('cf-connecting-ip') ||
+    'unknown'
+  )
+}
+
+function consumeRateLimit(key: string) {
+  const now = Date.now()
+  const current = leadAttempts.get(key)
+
+  if (!current || current.resetAt <= now) {
+    leadAttempts.set(key, {
+      count: 1,
+      resetAt: now + LEAD_RATE_LIMIT_WINDOW_MS,
+    })
+    return { limited: false, retryAfterSeconds: 0 }
+  }
+
+  if (current.count >= LEAD_RATE_LIMIT_MAX_ATTEMPTS) {
+    return {
+      limited: true,
+      retryAfterSeconds: Math.max(
+        1,
+        Math.ceil((current.resetAt - now) / 1000)
+      ),
+    }
+  }
+
+  current.count += 1
+  return { limited: false, retryAfterSeconds: 0 }
+}
+
+function sanitizeText(value: unknown, maxLength: number) {
+  if (typeof value !== 'string') return undefined
+
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+
+  return trimmed.slice(0, maxLength)
+}
+
+async function fetchWithTimeout(
+  input: string,
+  init: RequestInit,
+  timeoutMs: number,
+  label: string
+) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    })
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error(`${label} timed out after ${timeoutMs}ms`)
+    }
+    throw error
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+function matchesRequestHost(url: string | null, requestHost: string) {
+  if (!url) return false
+
+  try {
+    return new URL(url).host === requestHost
+  } catch {
+    return false
+  }
+}
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
+    const contentType = request.headers.get('content-type') || ''
+    if (!contentType.toLowerCase().includes('application/json')) {
+      return NextResponse.json(
+        { error: 'Unsupported content type.' },
+        { status: 415 }
+      )
+    }
+
+    const requestHost = new URL(request.url).host
+    const origin = request.headers.get('origin')
+    const refererHeader = request.headers.get('referer')
+    const hasTrustedSource =
+      matchesRequestHost(origin, requestHost) ||
+      matchesRequestHost(refererHeader, requestHost)
+
+    if (process.env.NODE_ENV === 'production' && !hasTrustedSource) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const rateLimit = consumeRateLimit(`${requestHost}:${getClientIp(request)}`)
+    if (rateLimit.limited) {
+      return NextResponse.json(
+        {
+          error:
+            'Zu viele Anfragen. Bitte warte kurz und versuche es dann erneut.',
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': rateLimit.retryAfterSeconds.toString(),
+          },
+        }
+      )
+    }
+
+    const body = (await request.json().catch(() => null)) as
+      | {
+          email?: unknown
+          firstName?: unknown
+          source?: unknown
+          utmSource?: unknown
+          utmMedium?: unknown
+          utmCampaign?: unknown
+          utmContent?: unknown
+          utmTerm?: unknown
+          referrer?: unknown
+          website?: unknown
+        }
+      | null
+
+    if (!body) {
+      return NextResponse.json(
+        { error: 'Ungueltige Anfrage.' },
+        { status: 400 }
+      )
+    }
+
+    // Bots fuellen versteckte Felder haeufig automatisch aus. Erfolgreich quittieren,
+    // damit wir ihnen kein verwertbares Feedback geben.
+    if (sanitizeText(body.website, 256)) {
+      return NextResponse.json({ ok: true })
+    }
 
     const email = typeof body?.email === 'string' ? body.email : ''
-    const firstName =
-      typeof body?.firstName === 'string' ? body.firstName.trim() : undefined
-    const source = typeof body?.source === 'string' ? body.source : undefined
-    const utmSource =
-      typeof body?.utmSource === 'string' ? body.utmSource : undefined
-    const utmMedium =
-      typeof body?.utmMedium === 'string' ? body.utmMedium : undefined
-    const utmCampaign =
-      typeof body?.utmCampaign === 'string' ? body.utmCampaign : undefined
-    const utmContent =
-      typeof body?.utmContent === 'string' ? body.utmContent : undefined
-    const utmTerm = typeof body?.utmTerm === 'string' ? body.utmTerm : undefined
-    const referrerHeader = request.headers.get('referer') ?? undefined
+    const firstName = sanitizeText(body.firstName, 80)
+    const source = sanitizeText(body.source, 64)
+    const utmSource = sanitizeText(body.utmSource, 120)
+    const utmMedium = sanitizeText(body.utmMedium, 120)
+    const utmCampaign = sanitizeText(body.utmCampaign, 160)
+    const utmContent = sanitizeText(body.utmContent, 160)
+    const utmTerm = sanitizeText(body.utmTerm, 160)
     const referrer =
-      typeof body?.referrer === 'string' ? body.referrer : referrerHeader
+      sanitizeText(body.referrer, 300) ||
+      sanitizeText(refererHeader, 300)
 
     if (!isValidEmail(email)) {
       return NextResponse.json(
@@ -48,19 +192,24 @@ export async function POST(request: Request) {
       }
 
       try {
-        const res = await fetch('https://api.brevo.com/v3/contacts', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'api-key': brevoApiKey,
+        const res = await fetchWithTimeout(
+          'https://api.brevo.com/v3/contacts',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'api-key': brevoApiKey,
+            },
+            body: JSON.stringify({
+              email: normalizedEmail,
+              attributes: Object.keys(attributes).length ? attributes : undefined,
+              listIds: [brevoListId],
+              updateEnabled: true,
+            }),
           },
-          body: JSON.stringify({
-            email: normalizedEmail,
-            attributes: Object.keys(attributes).length ? attributes : undefined,
-            listIds: [brevoListId],
-            updateEnabled: true,
-          }),
-        })
+          BREVO_CONTACT_SYNC_TIMEOUT_MS,
+          'Brevo contact sync'
+        )
 
         if (!res.ok) {
           const text = await res.text().catch(() => '')

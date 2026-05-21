@@ -1,53 +1,18 @@
-'use client'
-
-import { useUser } from '@clerk/nextjs'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { listOwnerBlogPosts } from '@/lib/owner-blog'
+import type { OwnerBlogPostSummary } from '@/lib/owner-blog'
 import Link from 'next/link'
 
-interface BlogPost {
-  slug: string
-  title: string
-  date: string
-  draft: boolean
-}
+export const dynamic = 'force-dynamic'
 
-export default function BlogAdminPage() {
-  const { user, isSignedIn, isLoaded } = useUser()
-  const router = useRouter()
-  const isAdmin =
-    user?.organizationMemberships?.some((membership) => membership.role === 'org:admin') || false
+export default async function BlogAdminPage() {
+  let posts: OwnerBlogPostSummary[] = []
+  let error: string | null = null
 
-  const [posts, setPosts] = useState<BlogPost[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!isLoaded) return
-    if (!isSignedIn || !isAdmin) {
-      router.replace('/')
-      return
-    }
-
-    fetch('/api/owner/blog')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
-          setError(data.error)
-        } else {
-          setPosts(data.posts)
-        }
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [isLoaded, isSignedIn, isAdmin, router])
-
-  if (!isLoaded || !isSignedIn || !isAdmin) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
-      </div>
-    )
+  try {
+    posts = await listOwnerBlogPosts()
+  } catch (err) {
+    console.error('Failed to load owner blog posts:', err)
+    error = err instanceof Error ? err.message : 'Blog-Artikel konnten nicht geladen werden'
   }
 
   return (
@@ -77,15 +42,8 @@ export default function BlogAdminPage() {
           </div>
         )}
 
-        {/* Loading */}
-        {loading && (
-          <div className="flex items-center justify-center py-20">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
-          </div>
-        )}
-
         {/* Posts Table */}
-        {!loading && !error && (
+        {!error && (
           <div className="overflow-hidden rounded-xl border border-slate-800">
             {posts.length === 0 ? (
               <div className="p-12 text-center text-gray-500">

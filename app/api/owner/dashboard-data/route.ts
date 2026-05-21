@@ -1,8 +1,8 @@
 // src/app/api/owner/dashboard-data/route.ts
-import { auth, clerkClient } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import type Stripe from 'stripe'
+import { requireAdminApiAccess } from '@/lib/authz'
 
 // Define interfaces for type safety
 interface CustomerData {
@@ -24,32 +24,40 @@ interface CustomerData {
 // Optimize the route by reducing API calls
 export async function GET() {
   try {
-    const { userId } = await auth()
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const admin = await requireAdminApiAccess()
+    if (!admin.ok) {
+      return admin.response
     }
 
     // Important date constants
     const PROGRAM_START_DATE = new Date('2025-03-01')
     const TODAY = new Date()
 
-    // Step 1: Fetch all customers with expanded subscription data and payment methods
-    const customers = await stripe.customers.list({
-      limit: 100,
-      expand: [
-        'data.subscriptions',
-        'data.subscriptions.data.default_payment_method',
-        'data.invoice_settings.default_payment_method'
-      ]
-    })
-
-    // Step 2: Fetch invoices to track SEPA payments status
-    const invoices = await stripe.invoices.list({
-      limit: 100,
-      status: 'open',
-      expand: ['data.customer', 'data.payment_intent']
-    })
+    const [customers, invoices, charges] = await Promise.all([
+      // Step 1: Fetch all customers with expanded subscription data and payment methods
+      stripe.customers.list({
+        limit: 100,
+        expand: [
+          'data.subscriptions',
+          'data.subscriptions.data.default_payment_method',
+          'data.invoice_settings.default_payment_method'
+        ]
+      }),
+      // Step 2: Fetch invoices to track SEPA payments status
+      stripe.invoices.list({
+        limit: 100,
+        status: 'open',
+        expand: ['data.customer', 'data.payment_intent']
+      }),
+      // Step 3: Fetch all charges for revenue tracking
+      stripe.charges.list({
+        limit: 100,
+        created: {
+          // Only include charges since March 2025 (program start)
+          gte: Math.floor(PROGRAM_START_DATE.getTime() / 1000)
+        }
+      }),
+    ])
     
     // Create a map of customer IDs to their open invoices for quick lookup
     const pendingInvoicesByCustomer = new Map<string, Stripe.Invoice[]>()
@@ -63,15 +71,6 @@ export async function GET() {
       }
     })
 
-    // Step 3: Fetch all charges for revenue tracking
-    const charges = await stripe.charges.list({
-      limit: 100,
-      created: {
-        // Only include charges since March 2025 (program start)
-        gte: Math.floor(PROGRAM_START_DATE.getTime() / 1000)
-      }
-    })
-    
     // Create a map of customer IDs to their charges
     const customerCharges = new Map<string, Stripe.Charge[]>()
     charges.data.forEach(charge => {

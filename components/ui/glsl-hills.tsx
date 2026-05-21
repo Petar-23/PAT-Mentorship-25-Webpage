@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from 'react'
-import * as THREE from 'three'
+import type * as Three from 'three'
 
 interface GLSLHillsProps {
   width?: string
@@ -40,29 +40,25 @@ const GLSLHills = ({
       return
     }
 
-    // Plane class
-    class Plane {
-      uniforms: { time: { type: string; value: number } }
-      mesh: THREE.Points
-      time: number
+    let disposed = false
+    let cleanupResources: (() => void) | null = null
 
-      constructor() {
-        this.uniforms = {
-          time: { type: 'f', value: 0 },
-        }
-        this.mesh = this.createMesh()
-        this.time = speed
+    const mount = async () => {
+      const THREE = await import('three')
+
+      if (disposed || !canvasRef.current || !containerRef.current) return
+
+    const createPlane = () => {
+      const uniforms = {
+        time: { type: 'f', value: 0 },
       }
-
-      createMesh() {
-        // Create points geometry instead of plane for particle effect
-        const geometry = new THREE.PlaneGeometry(planeSize, planeSize, planeSize, planeSize)
-        
-        return new THREE.Points(
-          geometry,
-          new THREE.RawShaderMaterial({
-            uniforms: this.uniforms,
-            vertexShader: `
+      // Create points geometry instead of plane for particle effect
+      const geometry = new THREE.PlaneGeometry(planeSize, planeSize, planeSize, planeSize)
+      const mesh = new THREE.Points(
+        geometry,
+        new THREE.RawShaderMaterial({
+          uniforms,
+          vertexShader: `
               #define GLSLIFY 1
               attribute vec3 position;
               uniform mat4 projectionMatrix;
@@ -198,18 +194,26 @@ const GLSLHills = ({
             transparent: true
           })
         )
-      }
 
-      render(time: number) {
-        this.uniforms.time.value += time * this.time
+      return {
+        mesh,
+        render(time: number) {
+          uniforms.time.value += time * speed
+        },
       }
     }
 
-    let renderer: THREE.WebGLRenderer | null = null
-    let scene: THREE.Scene | null = null
-    let camera: THREE.PerspectiveCamera | null = null
-    let clock: THREE.Clock | null = null
-    let plane: Plane | null = null
+    let renderer: Three.WebGLRenderer | null = null
+    let scene: Three.Scene | null = null
+    let camera: Three.PerspectiveCamera | null = null
+    let clock: Three.Clock | null = null
+    let plane: ReturnType<typeof createPlane> | null = null
+    let isAnimating = false
+    let isInView = false
+    let isDocumentVisible = document.visibilityState === 'visible'
+    let visibilityObserver: IntersectionObserver | null = null
+    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    let prefersReducedMotion = reducedMotionQuery.matches
 
     const resize = () => {
       if (!containerRef.current || !canvasRef.current || !camera || !renderer) return
@@ -223,6 +227,19 @@ const GLSLHills = ({
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
     }
 
+    function shouldAnimate() {
+      return isInView && isDocumentVisible && !prefersReducedMotion
+    }
+
+    function stopLoop() {
+      if (frameRef.current) {
+        cancelAnimationFrame(frameRef.current)
+        frameRef.current = 0
+      }
+      isAnimating = false
+      clock?.stop()
+    }
+
     const render = () => {
       if (!plane || !clock || !renderer || !scene || !camera) return
       try {
@@ -230,13 +247,43 @@ const GLSLHills = ({
         renderer.render(scene, camera)
       } catch (error) {
         console.warn('GLSLHills render loop stopped after a WebGL error.', error)
-        cancelAnimationFrame(frameRef.current)
+        stopLoop()
       }
     }
 
     const renderLoop = () => {
+      if (!shouldAnimate()) {
+        stopLoop()
+        return
+      }
       render()
       frameRef.current = requestAnimationFrame(renderLoop)
+    }
+
+    function startLoop() {
+      if (isAnimating || !shouldAnimate()) return
+      clock?.start()
+      clock?.getDelta()
+      isAnimating = true
+      frameRef.current = requestAnimationFrame(renderLoop)
+    }
+
+    function updatePlayback() {
+      if (shouldAnimate()) {
+        startLoop()
+      } else {
+        stopLoop()
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      isDocumentVisible = document.visibilityState === 'visible'
+      updatePlayback()
+    }
+
+    const handleReducedMotionChange = () => {
+      prefersReducedMotion = reducedMotionQuery.matches
+      updatePlayback()
     }
 
     const init = () => {
@@ -255,15 +302,32 @@ const GLSLHills = ({
       scene = new THREE.Scene()
       camera = new THREE.PerspectiveCamera(45, 1, 1, 10000)
       clock = new THREE.Clock()
-      plane = new Plane()
+      plane = createPlane()
 
       renderer.setClearColor(0x000000, 0)
       camera.position.set(0, 16, cameraZ)
       camera.lookAt(new THREE.Vector3(0, 28, 0))
       scene.add(plane.mesh)
       window.addEventListener('resize', resize)
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+      reducedMotionQuery.addEventListener?.('change', handleReducedMotionChange)
       resize()
-      renderLoop()
+
+      if (typeof IntersectionObserver === 'undefined') {
+        isInView = true
+      } else if (containerRef.current) {
+        visibilityObserver = new IntersectionObserver(
+          ([entry]) => {
+            isInView = entry.isIntersecting
+            updatePlayback()
+          },
+          { rootMargin: '200px 0px', threshold: 0.01 }
+        )
+        visibilityObserver.observe(containerRef.current)
+      }
+
+      render()
+      updatePlayback()
       return true
     }
 
@@ -272,10 +336,30 @@ const GLSLHills = ({
       return
     }
 
-    return () => {
+    cleanupResources = () => {
       window.removeEventListener('resize', resize)
-      cancelAnimationFrame(frameRef.current)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      reducedMotionQuery.removeEventListener?.('change', handleReducedMotionChange)
+      visibilityObserver?.disconnect()
+      stopLoop()
+      plane?.mesh.geometry.dispose()
+      const material = plane?.mesh.material
+      if (Array.isArray(material)) {
+        material.forEach((item) => item.dispose())
+      } else {
+        material?.dispose()
+      }
       renderer?.dispose()
+    }
+    }
+
+    void mount().catch((error) => {
+      console.warn('GLSLHills disabled because Three.js could not be loaded.', error)
+    })
+
+    return () => {
+      disposed = true
+      cleanupResources?.()
     }
   }, [cameraZ, planeSize, speed])
 

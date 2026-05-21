@@ -3,18 +3,16 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import {
-  BookOpen,
-  CaretDown as ChevronDown,
-  FileText,
-  Users,
-  DotsSixVertical as GripVertical,
-  Plus,
-  DotsThreeVertical as MoreVertical,
-  Trash as Trash2,
-  Pencil,
-  Kanban as SquareKanban,
-} from '@phosphor-icons/react'
+import { BookOpen } from '@phosphor-icons/react/BookOpen'
+import { CaretDown as ChevronDown } from '@phosphor-icons/react/CaretDown'
+import { DotsSixVertical as GripVertical } from '@phosphor-icons/react/DotsSixVertical'
+import { DotsThreeVertical as MoreVertical } from '@phosphor-icons/react/DotsThreeVertical'
+import { FileText } from '@phosphor-icons/react/FileText'
+import { Kanban as SquareKanban } from '@phosphor-icons/react/Kanban'
+import { Pencil } from '@phosphor-icons/react/Pencil'
+import { Plus } from '@phosphor-icons/react/Plus'
+import { Trash as Trash2 } from '@phosphor-icons/react/Trash'
+import { Users } from '@phosphor-icons/react/Users'
 import patBanner from '@/public/images/pat-banner.jpeg'
 import { UserButton, useUser } from '@clerk/nextjs'
 import {
@@ -153,6 +151,33 @@ export function SidebarAdmin({
   const [deletingPageId, setDeletingPageId] = useState<string | null>(null)
   const [isDeletingPage, setIsDeletingPage] = useState(false)
   const [localPages, setLocalPages] = useState<Page[]>(pages)
+  const deleteCourseAbortRef = useRef<AbortController | null>(null)
+  const saveCourseAbortRef = useRef<AbortController | null>(null)
+  const savePageAbortRef = useRef<AbortController | null>(null)
+  const deletePageAbortRef = useRef<AbortController | null>(null)
+  const sidebarOrderAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      deleteCourseAbortRef.current?.abort()
+      saveCourseAbortRef.current?.abort()
+      savePageAbortRef.current?.abort()
+      deletePageAbortRef.current?.abort()
+      sidebarOrderAbortRef.current?.abort()
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (iconPreviewUrl) URL.revokeObjectURL(iconPreviewUrl)
+    }
+  }, [iconPreviewUrl])
+
+  useEffect(() => {
+    return () => {
+      if (pageIconPreviewUrl) URL.revokeObjectURL(pageIconPreviewUrl)
+    }
+  }, [pageIconPreviewUrl])
 
   const resetPageModal = () => {
     if (pageIconPreviewUrl) URL.revokeObjectURL(pageIconPreviewUrl)
@@ -267,6 +292,9 @@ export function SidebarAdmin({
 
   async function confirmDeleteCourse(courseId: string) {
     setIsDeletingCourse(true)
+    deleteCourseAbortRef.current?.abort()
+    const controller = new AbortController()
+    deleteCourseAbortRef.current = controller
 
     toast({
       title: 'Lösche Kurs...',
@@ -276,6 +304,7 @@ export function SidebarAdmin({
     try {
       const res = await fetch(`/api/playlists/${courseId}`, {
         method: 'DELETE',
+        signal: controller.signal,
       })
 
       if (!res.ok) {
@@ -290,6 +319,8 @@ export function SidebarAdmin({
 
         throw new Error(message)
       }
+
+      if (controller.signal.aborted) return
 
       // Sidebar sofort aktualisieren
       setItems((prev) => prev.filter((i) => i.id !== courseId))
@@ -306,6 +337,8 @@ export function SidebarAdmin({
         router.refresh()
       }
     } catch (error: unknown) {
+      if (controller.signal.aborted) return
+
       const message = error instanceof Error ? error.message : String(error)
       toast({
         variant: 'destructive',
@@ -313,8 +346,11 @@ export function SidebarAdmin({
         description: message,
       })
     } finally {
-      setIsDeletingCourse(false)
-      setDeleteCourseId(null)
+      if (deleteCourseAbortRef.current === controller) deleteCourseAbortRef.current = null
+      if (!controller.signal.aborted) {
+        setIsDeletingCourse(false)
+        setDeleteCourseId(null)
+      }
     }
   }
 
@@ -333,6 +369,10 @@ export function SidebarAdmin({
     }
 
     setIsSavingCourse(true)
+    saveCourseAbortRef.current?.abort()
+    const controller = new AbortController()
+    saveCourseAbortRef.current = controller
+
     toast({
       title: courseModalMode === 'create' ? 'Kurs wird erstellt...' : 'Kurs wird gespeichert...',
       description: 'Bitte einen Moment.',
@@ -348,7 +388,10 @@ export function SidebarAdmin({
         const newBlob = await upload(`course-icons/${iconFile.name}`, iconFile, {
           access: 'public',
           handleUploadUrl: '/api/course-icon-upload',
+          abortSignal: controller.signal,
         })
+        if (controller.signal.aborted) return
+
         iconUrl = newBlob.url
       } else if (removeIcon) {
         iconUrl = null
@@ -361,6 +404,7 @@ export function SidebarAdmin({
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({ name, description, iconUrl }),
       })
 
@@ -375,6 +419,7 @@ export function SidebarAdmin({
       }
 
       const playlist = (await res.json()) as { id: string; name: string }
+      if (controller.signal.aborted) return
 
       toast({
         title: courseModalMode === 'create' ? 'Kurs erstellt' : 'Kurs gespeichert',
@@ -390,6 +435,8 @@ export function SidebarAdmin({
         router.refresh()
       }
     } catch (error: unknown) {
+      if (controller.signal.aborted) return
+
       const message = error instanceof Error ? error.message : String(error)
       toast({
         variant: 'destructive',
@@ -397,7 +444,8 @@ export function SidebarAdmin({
         description: message,
       })
     } finally {
-      setIsSavingCourse(false)
+      if (saveCourseAbortRef.current === controller) saveCourseAbortRef.current = null
+      if (!controller.signal.aborted) setIsSavingCourse(false)
     }
   }
 
@@ -409,6 +457,10 @@ export function SidebarAdmin({
     }
 
     setIsSavingPage(true)
+    savePageAbortRef.current?.abort()
+    const controller = new AbortController()
+    savePageAbortRef.current = controller
+
     toast({
       title: pageModalMode === 'create' ? 'Seite wird erstellt...' : 'Seite wird gespeichert...',
       description: 'Bitte einen Moment.',
@@ -422,7 +474,10 @@ export function SidebarAdmin({
         const newBlob = await upload(`page-icons/${pageIconFile.name}`, pageIconFile, {
           access: 'public',
           handleUploadUrl: '/api/page-icon-upload',
+          abortSignal: controller.signal,
         })
+        if (controller.signal.aborted) return
+
         iconUrl = newBlob.url
       } else if (removePageIcon) {
         iconUrl = null
@@ -434,6 +489,7 @@ export function SidebarAdmin({
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({ title, description, iconUrl }),
       })
 
@@ -448,6 +504,7 @@ export function SidebarAdmin({
       }
 
       const savedPage = (await res.json()) as { id: string; title: string; slug: string; description: string | null; iconUrl: string | null; published: boolean }
+      if (controller.signal.aborted) return
 
       toast({
         title: pageModalMode === 'create' ? 'Seite erstellt' : 'Seite gespeichert',
@@ -465,10 +522,13 @@ export function SidebarAdmin({
         router.refresh()
       }
     } catch (error: unknown) {
+      if (controller.signal.aborted) return
+
       const message = error instanceof Error ? error.message : String(error)
       toast({ variant: 'destructive', title: 'Fehler', description: message })
     } finally {
-      setIsSavingPage(false)
+      if (savePageAbortRef.current === controller) savePageAbortRef.current = null
+      if (!controller.signal.aborted) setIsSavingPage(false)
     }
   }
 
@@ -575,26 +635,47 @@ export function SidebarAdmin({
       // Speichere neue Reihenfolge in DB (nur für Admin)
       if (isAdmin) {
         const orderIds = newOrder.map((item) => item.id)
+        sidebarOrderAbortRef.current?.abort()
+        const controller = new AbortController()
+        sidebarOrderAbortRef.current = controller
+
         fetch('/api/admin-settings/sidebar-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({ order: orderIds }),
-        }).then((res) => {
-          if (res.ok) {
-            toast({
-              title: 'Reihenfolge gespeichert!',
-              description: 'Deine Navigation ist jetzt so sortiert.',
-              duration: 3000,
-            })
-          } else {
+        })
+          .then((res) => {
+            if (controller.signal.aborted) return
+
+            if (res.ok) {
+              toast({
+                title: 'Reihenfolge gespeichert!',
+                description: 'Deine Navigation ist jetzt so sortiert.',
+                duration: 3000,
+              })
+            } else {
+              toast({
+                title: 'Fehler beim Speichern',
+                description: 'Versuche es nochmal.',
+                variant: 'destructive',
+                duration: 5000,
+              })
+            }
+          })
+          .catch(() => {
+            if (controller.signal.aborted) return
+
             toast({
               title: 'Fehler beim Speichern',
               description: 'Versuche es nochmal.',
               variant: 'destructive',
               duration: 5000,
             })
-          }
-        })
+          })
+          .finally(() => {
+            if (sidebarOrderAbortRef.current === controller) sidebarOrderAbortRef.current = null
+          })
       }
 
       return newOrder
@@ -637,6 +718,7 @@ export function SidebarAdmin({
           {/* Klickbarer Bereich */}
           <Link
             href={item.href}
+            prefetch={false}
             className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
             aria-current={item.id === activeItemId ? 'page' : undefined}
           >
@@ -800,7 +882,13 @@ export function SidebarAdmin({
               <div className="flex items-start gap-4">
                 <div className="relative h-20 w-20 rounded-lg overflow-hidden border bg-muted/30 flex-shrink-0">
                   {iconPreviewUrl ? (
-                    <Image src={iconPreviewUrl} alt="Icon Vorschau" fill className="object-cover" />
+                    <Image
+                      src={iconPreviewUrl}
+                      alt="Icon Vorschau"
+                      fill
+                      sizes="80px"
+                      className="object-cover"
+                    />
                   ) : existingIconUrl && !removeIcon ? (
                     <Image
                       src={existingIconUrl}
@@ -942,6 +1030,7 @@ export function SidebarAdmin({
                     <Link
                       key={item.id}
                       href={item.href}
+                      prefetch={false}
                       className="block"
                       aria-current={item.id === activeItemId ? 'page' : undefined}
                     >
@@ -982,7 +1071,7 @@ export function SidebarAdmin({
               size="sm"
               className="w-full px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
             >
-              <Link href="/mentorship">
+              <Link href="/mentorship" prefetch={false}>
                 <span className="flex items-center justify-center shrink-0 w-8">
                   <SquareKanban className="!h-5 !w-5" />
                 </span>
@@ -1039,7 +1128,7 @@ export function SidebarAdmin({
                   size="sm"
                   className="w-full px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
                 >
-                  <Link href="/mentorship">
+                  <Link href="/mentorship" prefetch={false}>
                     <span className="flex items-center justify-center shrink-0 w-8">
                       <SquareKanban className="!h-5 !w-5" />
                     </span>
@@ -1149,25 +1238,40 @@ export function SidebarAdmin({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={async () => {
                 if (!deletingPageId) return
+                const pageId = deletingPageId
+                deletePageAbortRef.current?.abort()
+                const controller = new AbortController()
+                deletePageAbortRef.current = controller
+
                 setIsDeletingPage(true)
                 toast({ title: 'Lösche Seite...', description: 'Bitte einen Moment.' })
                 try {
-                  const res = await fetch(`/api/pages/${deletingPageId}`, { method: 'DELETE' })
+                  const res = await fetch(`/api/pages/${pageId}`, {
+                    method: 'DELETE',
+                    signal: controller.signal,
+                  })
                   if (!res.ok) throw new Error('Löschen fehlgeschlagen')
-                  setLocalPages((prev) => prev.filter((p) => p.id !== deletingPageId))
-                  setItems((prev) => prev.filter((i) => i.id !== `page:${deletingPageId}`))
+                  if (controller.signal.aborted) return
+
+                  setLocalPages((prev) => prev.filter((p) => p.id !== pageId))
+                  setItems((prev) => prev.filter((i) => i.id !== `page:${pageId}`))
                   toast({ title: 'Seite gelöscht', description: 'Die Seite wurde entfernt.' })
-                  if (pathname === `/mentorship/page/${localPages.find((p) => p.id === deletingPageId)?.slug}`) {
+                  if (pathname === `/mentorship/page/${localPages.find((p) => p.id === pageId)?.slug}`) {
                     router.push('/mentorship')
                   } else {
                     router.refresh()
                   }
                 } catch (err: unknown) {
+                  if (controller.signal.aborted) return
+
                   const message = err instanceof Error ? err.message : String(err)
                   toast({ variant: 'destructive', title: 'Fehler', description: message })
                 } finally {
-                  setIsDeletingPage(false)
-                  setDeletingPageId(null)
+                  if (deletePageAbortRef.current === controller) deletePageAbortRef.current = null
+                  if (!controller.signal.aborted) {
+                    setIsDeletingPage(false)
+                    setDeletingPageId(null)
+                  }
                 }
               }}
             >
@@ -1216,11 +1320,11 @@ export function SidebarAdmin({
             <div className="space-y-2">
               <Label>Icon (optional)</Label>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-700/80 to-emerald-600/70 flex items-center justify-center overflow-hidden flex-shrink-0 border">
+                <div className="relative w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-700/80 to-emerald-600/70 flex items-center justify-center overflow-hidden flex-shrink-0 border">
                   {pageIconPreviewUrl ? (
-                    <img src={pageIconPreviewUrl} alt="Vorschau" className="w-full h-full object-cover" />
+                    <Image src={pageIconPreviewUrl} alt="Vorschau" fill sizes="40px" className="object-cover" unoptimized />
                   ) : existingPageIconUrl && !removePageIcon ? (
-                    <img src={existingPageIconUrl} alt="Aktuelles Icon" className="w-full h-full object-cover" />
+                    <Image src={existingPageIconUrl} alt="Aktuelles Icon" fill sizes="40px" className="object-cover" unoptimized />
                   ) : (
                     <FileText className="h-5 w-5 text-white" />
                   )}
@@ -1294,4 +1398,3 @@ export function SidebarAdmin({
     </div>
   )
 }
-

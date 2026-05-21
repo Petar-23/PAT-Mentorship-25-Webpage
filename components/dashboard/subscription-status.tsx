@@ -1,16 +1,14 @@
 // src/components/subscription-status.tsx
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  CalendarIcon,
-  CheckCircle as CheckCircle2,
-  Warning as AlertTriangle,
-  XCircle,
-  Armchair,
-  Clock,
-} from '@phosphor-icons/react'
+import { Armchair } from '@phosphor-icons/react/Armchair'
+import { CalendarIcon } from '@phosphor-icons/react/Calendar'
+import { CheckCircle as CheckCircle2 } from '@phosphor-icons/react/CheckCircle'
+import { Clock } from '@phosphor-icons/react/Clock'
+import { Warning as AlertTriangle } from '@phosphor-icons/react/Warning'
+import { XCircle } from '@phosphor-icons/react/XCircle'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { CountdownProgress } from './countdown-progress'
@@ -43,8 +41,21 @@ export function SubscriptionStatus({
   cancelAt
 }: SubscriptionStatusProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const portalAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      portalAbortRef.current?.abort()
+    }
+  }, [])
 
   const handleReactivate = async () => {
+    if (isLoading) return
+
+    portalAbortRef.current?.abort()
+    const controller = new AbortController()
+    portalAbortRef.current = controller
+
     try {
       setIsLoading(true)
       const response = await fetch('/api/create-portal-session', {
@@ -52,9 +63,11 @@ export function SubscriptionStatus({
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
       })
 
       const data = await response.json()
+      if (controller.signal.aborted) return
 
       if (!response.ok) {
         throw new Error(data.message || 'Error accessing customer portal')
@@ -62,9 +75,15 @@ export function SubscriptionStatus({
 
       window.location.href = data.url
     } catch (error) {
+      if (controller.signal.aborted) return
       console.error('Portal access error:', error)
     } finally {
-      setIsLoading(false)
+      if (portalAbortRef.current === controller) {
+        portalAbortRef.current = null
+      }
+      if (!controller.signal.aborted) {
+        setIsLoading(false)
+      }
     }
   }
 

@@ -39,7 +39,7 @@ export default function AuthButtons() {
 
   return (
     <div className="flex items-center gap-4">
-      <Link href="/dashboard" legacyBehavior passHref>
+      <Link href="/dashboard" legacyBehavior passHref prefetch={false}>
         <Button variant="ghost" >
           Dashboard
         </Button>

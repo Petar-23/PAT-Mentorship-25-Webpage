@@ -1,12 +1,22 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import { useState } from "react"
-import { ArrowLeft, BookOpen } from "@phosphor-icons/react"
+import { ArrowLeft } from "@phosphor-icons/react/ArrowLeft"
+import { BookOpen } from "@phosphor-icons/react/BookOpen"
 
-import { Sidebar } from "@/components/Sidebar"
 import { Button } from "@/components/ui/button"
 import { SlideOver, SlideOverContent } from "@/components/ui/slide-over"
 import { cn } from "@/lib/utils"
+
+const SidebarUser = dynamic(() => import("@/components/sidebar-user").then((mod) => mod.SidebarUser), {
+  ssr: false,
+  loading: () => (
+    <div className="p-4 text-sm text-muted-foreground">
+      Kurse werden geladen...
+    </div>
+  ),
+})
 
 type Kurs = {
   id: string
@@ -42,8 +52,6 @@ export function MobileCoursesDrawer({
   pages = [],
   savedSidebarOrder,
   activeCourseId,
-  isAdmin,
-  openCreateCourseModal,
   variant = "button",
   className,
 }: Props) {
@@ -83,18 +91,16 @@ export function MobileCoursesDrawer({
 
       <SlideOver open={open} onOpenChange={setOpen}>
         <SlideOverContent side="left" title="Kurse" className="p-0 w-screen max-w-none">
-          <Sidebar
-            kurse={kurse}
-            pages={pages}
-            savedSidebarOrder={savedSidebarOrder}
-            activeCourseId={activeCourseId}
-            isAdmin={isAdmin}
-            openCreateCourseModal={openCreateCourseModal}
-          />
+          {open ? (
+            <SidebarUser
+              kurse={kurse}
+              pages={pages.filter((page) => page.published)}
+              savedSidebarOrder={savedSidebarOrder}
+              activeCourseId={activeCourseId}
+            />
+          ) : null}
         </SlideOverContent>
       </SlideOver>
     </div>
   )
 }
-
-

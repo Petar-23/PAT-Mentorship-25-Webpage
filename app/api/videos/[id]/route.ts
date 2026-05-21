@@ -2,33 +2,15 @@
 
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
-import { auth, clerkClient } from '@clerk/nextjs/server'
-
-const BUNNY_LIBRARY_ID = process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID || process.env.BUNNY_LIBRARY_ID
-const BUNNY_API_KEY = process.env.BUNNY_API_KEY
-
-// Warnung, falls Bunny-Credentials fehlen (z. B. in Dev ohne .env)
-if (!BUNNY_API_KEY || !BUNNY_LIBRARY_ID) {
-  console.warn('⚠️ Bunny.net API-Key oder Library-ID fehlt – Löschen bei Bunny wird übersprungen')
-}
+import { requireAdminApiAccess } from '@/lib/authz'
+import { deleteVideo } from '@/lib/bunny'
 
 // PATCH – Titel, PDF, bunnyGuid updaten (dein bestehender Code, leicht angepasst)
 export async function PATCH(request: Request,{ params }: { params: Promise<{ id: string }> }) {
 
-  const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  
-  const client = await clerkClient()
-  const memberships = await client.users.getOrganizationMembershipList({
-    userId,
-    limit: 100,
-  })
-  const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-  
-  if (!isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const admin = await requireAdminApiAccess()
+  if (!admin.ok) {
+    return admin.response
   }
 
   const { id } = await params
@@ -56,6 +38,16 @@ export async function PATCH(request: Request,{ params }: { params: Promise<{ id:
     const updatedVideo = await prisma.video.update({
       where: { id },
       data: updateData,
+      select: {
+        id: true,
+        title: true,
+        bunnyGuid: true,
+        thumbnailUrl: true,
+        pdfUrl: true,
+        duration: true,
+        order: true,
+        updatedAt: true,
+      },
     })
 
     return NextResponse.json(updatedVideo)
@@ -68,20 +60,9 @@ export async function PATCH(request: Request,{ params }: { params: Promise<{ id:
 // DELETE – Video aus DB + Bunny.net löschen
 export async function DELETE(_request: Request,{ params }: { params: Promise<{ id: string }> }) {
 
-  const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  
-  const client = await clerkClient()
-  const memberships = await client.users.getOrganizationMembershipList({
-    userId,
-    limit: 100,
-  })
-  const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-  
-  if (!isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const admin = await requireAdminApiAccess()
+  if (!admin.ok) {
+    return admin.response
   }
 
   const { id } = await params
@@ -98,28 +79,13 @@ export async function DELETE(_request: Request,{ params }: { params: Promise<{ i
     }
 
     // 2. Bei Bunny.net löschen – fehlertolerant!
-    if (video.bunnyGuid && BUNNY_API_KEY && BUNNY_LIBRARY_ID) {
+    if (video.bunnyGuid) {
       try {
-        const response = await fetch(
-          `https://video.bunnycdn.com/library/${BUNNY_LIBRARY_ID}/videos/${video.bunnyGuid}`,
-          {
-            method: 'DELETE',
-            headers: {
-              AccessKey: BUNNY_API_KEY,
-            },
-          }
-        )
-    
-        if (response.ok) {
-          console.log(`✅ Bunny Video gelöscht: ${video.bunnyGuid}`)
-        } else if (response.status === 404) {
-          console.warn(`ℹ️ Bunny Video ${video.bunnyGuid} war bereits gelöscht (404)`)
-        } else {
-          console.error(`❌ Bunny Fehler: ${response.status} ${await response.text()}`)
-        }
+        await deleteVideo(video.bunnyGuid)
+        console.log(`Bunny Video gelöscht oder bereits entfernt: ${video.bunnyGuid}`)
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error)
-        console.error('Netzwerkfehler beim Löschen bei Bunny:', message)
+        console.error('Fehler beim Löschen bei Bunny:', message)
         // Kein Abbruch – DB-Löschung geht weiter
       }
     }
@@ -127,6 +93,7 @@ export async function DELETE(_request: Request,{ params }: { params: Promise<{ i
     // 3. Aus Prisma-DB löschen
     await prisma.video.delete({
       where: { id },
+      select: { id: true },
     })
 
     return NextResponse.json({ success: true, message: 'Video erfolgreich gelöscht' })

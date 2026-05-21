@@ -2,16 +2,13 @@ import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
 import { Sora } from 'next/font/google'
 import './globals.css'
-import { Toaster } from '@/components/ui/toaster'
+import { ToasterLoader } from '@/components/ui/toaster-loader'
 import { Navbar } from '@/components/layout/navbar'
-import { FooterGate } from '@/components/layout/footer-gate'
+import { Footer } from '@/components/layout/footer'
 import {ClerkProvider} from '@clerk/nextjs'
 import { deDE } from '@clerk/localizations'
-import { CookieBanner } from '@/components/ui/cookie-banner'
-import { SpeedInsights } from '@vercel/speed-insights/next';
-import { Analytics } from '@vercel/analytics/react'
-import { GoogleTagManager } from '@/components/analytics/google-tag-manager'
-import { MicrosoftClarity } from '@/components/analytics/microsoft-clarity'
+import { CookieBannerLoader } from '@/components/ui/cookie-banner-loader'
+import { AnalyticsScriptsLoader } from '@/components/analytics/analytics-scripts-loader'
 import { JsonLd } from '@/components/seo/json-ld'
 import { Suspense, lazy } from 'react'
 import { CURRENT_BUNNY_THUMBNAIL_HOST } from '@/lib/bunny-thumbnail'
@@ -128,14 +125,11 @@ export default function RootLayout({
             <main id="main-content" className="flex-1 min-h-0">
               {children}
             </main>
-            <FooterGate />
+            <Footer />
           </div>
-          <Toaster />
-          <CookieBanner />
-          <GoogleTagManager />
-          <MicrosoftClarity />
-          <SpeedInsights />
-          <Analytics />
+          <ToasterLoader />
+          <CookieBannerLoader />
+          <AnalyticsScriptsLoader />
           {process.env.NODE_ENV === 'development' && (
             <Suspense fallback={null}>
               <Agentation />

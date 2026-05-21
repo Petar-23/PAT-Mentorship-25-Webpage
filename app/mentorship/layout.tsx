@@ -4,13 +4,13 @@ import { redirect } from 'next/navigation'
 import { getMentorshipAccessState } from '@/lib/mentorship-access'
 
 export default async function CoursesLayout({ children }: { children: ReactNode }) {
-  const { userId } = await auth()
+  const { userId, sessionClaims } = await auth()
 
   if (!userId) {
     redirect('/sign-in')
   }
 
-  const access = await getMentorshipAccessState(userId)
+  const access = await getMentorshipAccessState(userId, sessionClaims)
 
   if (!access.allowed) {
     if (!access.mentorshipAccessible && access.hasSubscription) {
@@ -25,5 +25,10 @@ export default async function CoursesLayout({ children }: { children: ReactNode 
   // Wichtig für UX: Mentorship ist "App-like" und braucht eine definierte Höhe,
   // damit interne ScrollAreas (MiddleSidebar) wirklich scrollen statt die Seite endlos zu verlängern.
   // 4rem = Navbar-Höhe (h-16).
-  return <div className="mentorship-typography h-[calc(100dvh-4rem)] min-h-0">{children}</div>
+  return (
+    <>
+      <div hidden data-hide-root-footer="true" />
+      <div className="mentorship-typography h-[calc(100dvh-4rem)] min-h-0">{children}</div>
+    </>
+  )
 }

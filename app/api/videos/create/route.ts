@@ -1,22 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth, clerkClient } from '@clerk/nextjs/server' // Dein Auth!
-import { createVideo, generateTusSignature } from '@/lib/bunny'
+import { requireAdminApiAccess } from '@/lib/authz'
+import { createVideo, generateTusSignature, getBunnyLibraryId } from '@/lib/bunny'
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth()
-  if (!userId) {
-   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const client = await clerkClient()
-  const memberships = await client.users.getOrganizationMembershipList({
-    userId,
-    limit: 100,
-  })
-  const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-
-  if (!isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const admin = await requireAdminApiAccess()
+  if (!admin.ok) {
+    return admin.response
   }
 
   try {
@@ -27,7 +16,7 @@ export async function POST(req: NextRequest) {
       guid,
       signature,
       expire,
-      libraryId: process.env.BUNNY_LIBRARY_ID!
+      libraryId: getBunnyLibraryId(),
     })
   } catch (error: unknown) {
     console.error('Video create failed:', error)
