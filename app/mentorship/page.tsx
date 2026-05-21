@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-import { prisma } from '@/lib/prisma'
+import { isTransientDbConnectionError, prisma, withPrismaRetry } from '@/lib/prisma'
 import Link from 'next/link'
 import { Sidebar } from '@/components/Sidebar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -74,28 +74,32 @@ async function getContinueLearning(userId: string | null, isAdmin: boolean): Pro
     | null = null
 
   try {
-    const state = await prisma.userPlaybackState.findUnique({
-      where: { userId },
-      select: {
-        lastVideo: {
+    const state = await withPrismaRetry(
+      () =>
+        prisma.userPlaybackState.findUnique({
+          where: { userId },
           select: {
-            id: true,
-            title: true,
-            chapter: {
+            lastVideo: {
               select: {
-                module: {
+                id: true,
+                title: true,
+                chapter: {
                   select: {
-                    id: true,
-                    name: true,
-                    playlist: { select: { id: true, name: true } },
+                    module: {
+                      select: {
+                        id: true,
+                        name: true,
+                        playlist: { select: { id: true, name: true } },
+                      },
+                    },
                   },
                 },
               },
             },
           },
-        },
-      },
-    })
+        }),
+      { label: 'Load playback state' }
+    )
 
     if (state?.lastVideo) {
       lastViewedVideo = {
@@ -110,7 +114,8 @@ async function getContinueLearning(userId: string | null, isAdmin: boolean): Pro
         },
       }
     }
-  } catch {
+  } catch (error) {
+    if (isTransientDbConnectionError(error)) throw error
     // Falls die Migration noch nicht gelaufen ist, soll das Dashboard trotzdem funktionieren.
     lastViewedVideo = null
   }
@@ -118,43 +123,51 @@ async function getContinueLearning(userId: string | null, isAdmin: boolean): Pro
   // 2) Fallback: zuletzt abgeschlossenes Video
   const lastWatched = lastViewedVideo
     ? null
-    : await prisma.videoProgress.findFirst({
-        where: { userId, watched: true },
-        orderBy: [{ watchedAt: 'desc' }, { updatedAt: 'desc' }],
-        select: {
-          video: {
+    : await withPrismaRetry(
+        () =>
+          prisma.videoProgress.findFirst({
+            where: { userId, watched: true },
+            orderBy: [{ watchedAt: 'desc' }, { updatedAt: 'desc' }],
             select: {
-              id: true,
-              title: true,
-              chapter: {
+              video: {
                 select: {
-                  module: {
+                  id: true,
+                  title: true,
+                  chapter: {
                     select: {
-                      id: true,
-                      name: true,
-                      playlist: { select: { id: true, name: true } },
+                      module: {
+                        select: {
+                          id: true,
+                          name: true,
+                          playlist: { select: { id: true, name: true } },
+                        },
+                      },
                     },
                   },
                 },
               },
             },
-          },
-        },
-      })
+          }),
+        { label: 'Load last watched video' }
+      )
 
   const video = lastViewedVideo ?? lastWatched?.video ?? null
   if (!video) return null
 
   const moduleId = video.chapter.module.id
 
-  const [totalLessons, watchedLessons] = await Promise.all([
-    prisma.video.count({
-      where: { chapter: { moduleId } },
-    }),
-    prisma.videoProgress.count({
-      where: { userId, watched: true, video: { chapter: { moduleId } } },
-    }),
-  ])
+  const [totalLessons, watchedLessons] = await withPrismaRetry(
+    () =>
+      Promise.all([
+        prisma.video.count({
+          where: { chapter: { moduleId } },
+        }),
+        prisma.videoProgress.count({
+          where: { userId, watched: true, video: { chapter: { moduleId } } },
+        }),
+      ]),
+    { label: 'Load learning progress counts' }
+  )
 
   const percent = totalLessons > 0 ? clampPercent((watchedLessons / totalLessons) * 100) : 0
   const mod = video.chapter.module
@@ -173,25 +186,29 @@ async function getContinueLearning(userId: string | null, isAdmin: boolean): Pro
 }
 
 async function getNewContent(limit: number): Promise<NewContentItem[]> {
-  const videos = await prisma.video.findMany({
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-    select: {
-      id: true,
-      title: true,
-      chapter: {
+  const videos = await withPrismaRetry(
+    () =>
+      prisma.video.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: limit,
         select: {
-          module: {
+          id: true,
+          title: true,
+          chapter: {
             select: {
-              id: true,
-              name: true,
-              playlist: { select: { name: true } },
+              module: {
+                select: {
+                  id: true,
+                  name: true,
+                  playlist: { select: { name: true } },
+                },
+              },
             },
           },
         },
-      },
-    },
-  })
+      }),
+    { label: 'Load new mentorship content' }
+  )
 
   return videos.map((v) => ({
     videoId: v.id,
@@ -204,10 +221,14 @@ async function getNewContent(limit: number): Promise<NewContentItem[]> {
 
 
 async function getOnboardingVideoId(): Promise<string | null> {
-  const setting = await prisma.adminSetting.findUnique({
-    where: { key: ONBOARDING_VIDEO_SETTING_KEY },
-    select: { value: true },
-  })
+  const setting = await withPrismaRetry(
+    () =>
+      prisma.adminSetting.findUnique({
+        where: { key: ONBOARDING_VIDEO_SETTING_KEY },
+        select: { value: true },
+      }),
+    { label: 'Load onboarding video setting' }
+  )
 
   const parsed = parseOnboardingVideoSetting(setting?.value)
   return parsed.videoId

@@ -5,7 +5,7 @@
 import 'server-only'
 import { cache } from 'react'
 import { revalidateTag, unstable_cache } from 'next/cache'
-import { prisma } from '@/lib/prisma'
+import { prisma, withPrismaRetry } from '@/lib/prisma'
 
 export const SIDEBAR_DATA_CACHE_TAG = 'mentorship-sidebar-data'
 
@@ -34,34 +34,38 @@ export type SidebarData = {
 }
 
 async function loadSidebarData(): Promise<SidebarData> {
-  const [kurse, pages, savedSetting] = await Promise.all([
-    prisma.playlist.findMany({
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        iconUrl: true,
-        _count: { select: { modules: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.page.findMany({
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        description: true,
-        iconUrl: true,
-        published: true,
-      },
-      orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
-    }).catch(() => [] as any[]),
-    prisma.adminSetting.findUnique({
-      where: { key: 'sidebarOrder' },
-      select: { value: true },
-    }),
-  ])
+  const [kurse, pages, savedSetting] = await withPrismaRetry(
+    () =>
+      Promise.all([
+        prisma.playlist.findMany({
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            iconUrl: true,
+            _count: { select: { modules: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.page.findMany({
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            description: true,
+            iconUrl: true,
+            published: true,
+          },
+          orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
+        }).catch(() => [] as any[]),
+        prisma.adminSetting.findUnique({
+          where: { key: 'sidebarOrder' },
+          select: { value: true },
+        }),
+      ]),
+    { label: 'Load sidebar data' }
+  )
 
   const kurseForSidebar: SidebarKurs[] = kurse.map((kurs) => ({
     id: kurs.id,

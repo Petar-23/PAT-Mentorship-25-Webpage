@@ -2,7 +2,7 @@
 import 'server-only'
 
 import Stripe from 'stripe'
-import { prisma } from './prisma'
+import { prisma, withPrismaRetry } from './prisma'
 
 declare global {
   var stripeClient: Stripe | undefined
@@ -133,16 +133,20 @@ async function readSubscriptionFromDb(userId: string): Promise<{
   priceIds: string[]
 } | null> {
   try {
-    const row = await prisma.userSubscription.findUnique({
-      where: { userId },
-      select: {
-        status: true,
-        cancelAtPeriodEnd: true,
-        cancelAt: true,
-        currentPeriodEnd: true,
-        priceIds: true,
-      },
-    })
+    const row = await withPrismaRetry(
+      () =>
+        prisma.userSubscription.findUnique({
+          where: { userId },
+          select: {
+            status: true,
+            cancelAtPeriodEnd: true,
+            cancelAt: true,
+            currentPeriodEnd: true,
+            priceIds: true,
+          },
+        }),
+      { label: 'Read subscription from DB' }
+    )
 
     if (!row) return null
 
@@ -170,28 +174,32 @@ async function writeSubscriptionToDb(params: {
   priceIds: string[]
 }) {
   try {
-    await prisma.userSubscription.upsert({
-      where: { userId: params.userId },
-      create: {
-        userId: params.userId,
-        stripeCustomerId: params.stripeCustomerId,
-        stripeSubscriptionId: params.stripeSubscriptionId,
-        status: params.status,
-        cancelAtPeriodEnd: params.cancelAtPeriodEnd,
-        cancelAt: params.cancelAt,
-        currentPeriodEnd: params.currentPeriodEnd,
-        priceIds: params.priceIds,
-      },
-      update: {
-        stripeCustomerId: params.stripeCustomerId,
-        stripeSubscriptionId: params.stripeSubscriptionId,
-        status: params.status,
-        cancelAtPeriodEnd: params.cancelAtPeriodEnd,
-        cancelAt: params.cancelAt,
-        currentPeriodEnd: params.currentPeriodEnd,
-        priceIds: params.priceIds,
-      },
-    })
+    await withPrismaRetry(
+      () =>
+        prisma.userSubscription.upsert({
+          where: { userId: params.userId },
+          create: {
+            userId: params.userId,
+            stripeCustomerId: params.stripeCustomerId,
+            stripeSubscriptionId: params.stripeSubscriptionId,
+            status: params.status,
+            cancelAtPeriodEnd: params.cancelAtPeriodEnd,
+            cancelAt: params.cancelAt,
+            currentPeriodEnd: params.currentPeriodEnd,
+            priceIds: params.priceIds,
+          },
+          update: {
+            stripeCustomerId: params.stripeCustomerId,
+            stripeSubscriptionId: params.stripeSubscriptionId,
+            status: params.status,
+            cancelAtPeriodEnd: params.cancelAtPeriodEnd,
+            cancelAt: params.cancelAt,
+            currentPeriodEnd: params.currentPeriodEnd,
+            priceIds: params.priceIds,
+          },
+        }),
+      { label: 'Write subscription to DB' }
+    )
   } catch (error) {
     // Wichtig: wir wollen die Seite nicht kaputt machen, falls DB-Write scheitert.
     console.error('Error writing subscription to DB:', error)
@@ -201,10 +209,14 @@ async function writeSubscriptionToDb(params: {
 // PayPal-Check: Hat der User einen aktiven PayPal-Subscriber-Eintrag?
 async function checkPayPalAccess(userId: string): Promise<SubscriptionSnapshot | null> {
   try {
-    const paypalSub = await prisma.payPalSubscriber.findUnique({
-      where: { userId },
-      select: { status: true },
-    })
+    const paypalSub = await withPrismaRetry(
+      () =>
+        prisma.payPalSubscriber.findUnique({
+          where: { userId },
+          select: { status: true },
+        }),
+      { label: 'Check PayPal access' }
+    )
 
     if (paypalSub?.status === 'ACTIVE') {
       return {
@@ -229,11 +241,9 @@ export async function getSubscriptionSnapshot(
   userId: string,
   options: { retryCount?: number; checkForRecentCheckout?: boolean; email?: string } = {}
 ): Promise<SubscriptionSnapshot> {
-  // Schnelle DB-Fast-Paths parallel starten: PayPal-Zugang gewinnt weiter vor Stripe/DB-Subscription.
-  const paypalAccessPromise = checkPayPalAccess(userId)
-  const dbSubscriptionPromise = readSubscriptionFromDb(userId)
-
-  const paypalResult = await paypalAccessPromise
+  // Nicht parallel gegen den kleinen Serverless-Pool schießen: direkt nach Deploys kann die erste
+  // DB-Verbindung kalt sein, und parallele Acquires treffen dann denselben Connection-Timeout.
+  const paypalResult = await checkPayPalAccess(userId)
   if (paypalResult) return paypalResult
 
   const requiredPriceIds = getAccessPriceIdsFromEnv()
@@ -241,7 +251,7 @@ export async function getSubscriptionSnapshot(
   const checkForRecentCheckout = options.checkForRecentCheckout === true
   const email = options.email
 
-  const db = await dbSubscriptionPromise
+  const db = await readSubscriptionFromDb(userId)
   if (db) {
     // Wenn wir schon sicher wissen, dass es kein Abo gibt, wollen wir NICHT jedes Mal Stripe abfragen.
     // Ausnahme: direkt nach Checkout (success=true) erlauben wir Retries zu Stripe.
