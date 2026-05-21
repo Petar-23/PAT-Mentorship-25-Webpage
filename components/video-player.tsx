@@ -3,12 +3,17 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Script from 'next/script'
 import { Button } from '@/components/ui/button'
 import {
   ArrowLeft,
   ArrowRight,
   Check,
+  FastForward,
   FileText,
+  Pause,
+  Play,
+  Rewind,
   Trash as Trash2,
 } from '@phosphor-icons/react'
 import { useToast } from '@/hooks/use-toast'
@@ -46,6 +51,26 @@ type BunnyStatusResponse = {
   transcodingFailed: boolean
 }
 
+type BunnyPlayerApi = {
+  on: (event: string, callback: (data?: unknown) => void) => void
+  off: (event: string, callback?: (data?: unknown) => void) => void
+  play: () => void
+  pause: () => void
+  getPaused: (callback: (paused: boolean) => void) => void
+  getCurrentTime: (callback: (seconds: number) => void) => void
+  setCurrentTime: (seconds: number) => void
+}
+
+type BunnyPlayerJs = {
+  Player: new (target: HTMLIFrameElement | string) => BunnyPlayerApi
+}
+
+declare global {
+  interface Window {
+    playerjs?: BunnyPlayerJs
+  }
+}
+
 export function VideoPlayer({
   activeVideo,
   activeChapterName,
@@ -70,8 +95,12 @@ export function VideoPlayer({
   const [bunnyStatus, setBunnyStatus] = useState<BunnyStatusResponse | null>(null)
   const [bunnyStatusError, setBunnyStatusError] = useState<string | null>(null)
   const [isSavingWatched, setIsSavingWatched] = useState(false)
+  const [isPlayerJsLoaded, setIsPlayerJsLoaded] = useState(false)
+  const [isPlayerApiReady, setIsPlayerApiReady] = useState(false)
+  const [isPlaybackPaused, setIsPlaybackPaused] = useState(true)
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
+  const playerApiRef = useRef<BunnyPlayerApi | null>(null)
   const autoMarkedRef = useRef<Set<string>>(new Set())
   const announcementAttemptedRef = useRef<Set<string>>(new Set())
 
@@ -106,6 +135,12 @@ export function VideoPlayer({
     const t = window.setTimeout(() => setShowPlayerLoader(true), 350)
     return () => window.clearTimeout(t)
   }, [isEmbedRequested, isPlayerLoaded, activeVideo?.id, activeVideo?.bunnyGuid])
+
+  useEffect(() => {
+    if (window.playerjs?.Player) {
+      setIsPlayerJsLoaded(true)
+    }
+  }, [])
 
   const triggerDiscordAnnouncement = useCallback(
     async (videoId: string) => {
@@ -161,6 +196,103 @@ export function VideoPlayer({
       // ignore
     }
   }
+
+  useEffect(() => {
+    playerApiRef.current = null
+    setIsPlayerApiReady(false)
+    setIsPlaybackPaused(true)
+
+    if (isAdmin) return
+    if (!isPlayerJsLoaded) return
+    if (!isPlayerLoaded) return
+    if (!activeVideo?.bunnyGuid) return
+    if (!iframeRef.current) return
+
+    const Player = window.playerjs?.Player
+    if (!Player) return
+
+    const player = new Player(iframeRef.current)
+    playerApiRef.current = player
+
+    const syncPaused = () => {
+      try {
+        player.getPaused((paused) => setIsPlaybackPaused(Boolean(paused)))
+      } catch {
+        // Player.js can throw while the iframe is still finishing its handshake.
+      }
+    }
+
+    const handleReady = () => {
+      setIsPlayerApiReady(true)
+      syncPaused()
+    }
+
+    const handlePlay = () => setIsPlaybackPaused(false)
+    const handlePause = () => setIsPlaybackPaused(true)
+    const handleEnded = () => setIsPlaybackPaused(true)
+
+    try {
+      player.on('ready', handleReady)
+      player.on('play', handlePlay)
+      player.on('pause', handlePause)
+      player.on('ended', handleEnded)
+      syncPaused()
+    } catch {
+      playerApiRef.current = null
+      return
+    }
+
+    return () => {
+      try {
+        player.off('ready', handleReady)
+        player.off('play', handlePlay)
+        player.off('pause', handlePause)
+        player.off('ended', handleEnded)
+      } catch {
+        // ignore cleanup errors from a torn-down iframe
+      }
+      if (playerApiRef.current === player) {
+        playerApiRef.current = null
+      }
+      setIsPlayerApiReady(false)
+    }
+  }, [activeVideo?.bunnyGuid, activeVideo?.id, isAdmin, isPlayerJsLoaded, isPlayerLoaded])
+
+  const seekActiveVideoBy = useCallback(
+    (secondsDelta: number) => {
+      const player = playerApiRef.current
+      if (!player || !isPlayerApiReady) return
+
+      try {
+        player.getCurrentTime((seconds) => {
+          const currentSeconds = Number.isFinite(seconds) ? seconds : 0
+          player.setCurrentTime(Math.max(0, currentSeconds + secondsDelta))
+        })
+      } catch {
+        // Native Bunny controls remain available if the API handshake is interrupted.
+      }
+    },
+    [isPlayerApiReady]
+  )
+
+  const togglePlayerPlayback = useCallback(() => {
+    const player = playerApiRef.current
+    if (!player || !isPlayerApiReady) return
+
+    try {
+      player.getPaused((paused) => {
+        if (paused) {
+          player.play()
+          setIsPlaybackPaused(false)
+        } else {
+          player.pause()
+          setIsPlaybackPaused(true)
+        }
+      })
+    } catch {
+      // Native Bunny controls remain available if the API handshake is interrupted.
+    }
+  }, [isPlayerApiReady])
 
   const persistWatched = useCallback(async (videoId: string, watched: boolean, manual: boolean) => {
     try {
@@ -477,7 +609,15 @@ export function VideoPlayer({
   }
 
   return (
-    <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 flex flex-col max-w-7xl">
+    <>
+      <Script
+        src="https://assets.mediadelivery.net/playerjs/playerjs-latest.min.js"
+        strategy="afterInteractive"
+        onLoad={() => setIsPlayerJsLoaded(true)}
+        onReady={() => setIsPlayerJsLoaded(true)}
+      />
+
+      <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 flex flex-col max-w-7xl">
       {/* Header (wie Middle-Sidebar): Back + Chapter + Video Titel */}
       <div className="mb-6 sm:mb-8 flex items-start gap-3">
         {onBack ? (
@@ -566,7 +706,7 @@ export function VideoPlayer({
                         'w-full h-full absolute inset-0 transition-opacity duration-300',
                         isPlayerLoaded ? 'opacity-100' : 'opacity-0',
                       ].join(' ')}
-                      allow="accelerometer; gyroscope; encrypted-media; picture-in-picture;"
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
                       allowFullScreen
                       loading="lazy"
                       onLoad={() => setIsPlayerLoaded(true)}
@@ -642,7 +782,7 @@ export function VideoPlayer({
                             'w-full h-full absolute inset-0 transition-opacity duration-300',
                             isPlayerLoaded ? 'opacity-100' : 'opacity-0',
                           ].join(' ')}
-                          allow="accelerometer; gyroscope; encrypted-media; picture-in-picture;"
+                          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
                           allowFullScreen
                           loading="lazy"
                           onLoad={() => setIsPlayerLoaded(true)}
@@ -673,7 +813,7 @@ export function VideoPlayer({
                       'w-full h-full absolute inset-0 transition-opacity duration-300',
                       isPlayerLoaded ? 'opacity-100' : 'opacity-0',
                     ].join(' ')}
-                    allow="accelerometer; gyroscope; encrypted-media; picture-in-picture;"
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
                     allowFullScreen
                     loading="lazy"
                     onLoad={() => {
@@ -709,6 +849,46 @@ export function VideoPlayer({
             </>
           )}
         </div>
+
+        {!isAdmin && activeVideo?.bunnyGuid ? (
+          <div className="mt-3 flex self-center rounded-full bg-neutral-950/95 p-2 shadow-lg ring-1 ring-white/10 sm:hidden">
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              className="size-14 rounded-full border border-white/30 bg-white/10 text-white shadow-sm hover:bg-white/20 hover:text-white disabled:text-white/70 disabled:opacity-60 [&_svg]:!size-6"
+              onClick={() => seekActiveVideoBy(-10)}
+              disabled={!isPlayerApiReady}
+              aria-label="10 Sekunden zurück"
+            >
+              <Rewind aria-hidden="true" />
+            </Button>
+
+            <Button
+              type="button"
+              variant="default"
+              size="icon"
+              className="mx-3 size-16 rounded-full bg-white text-neutral-950 shadow-md hover:bg-neutral-100 disabled:bg-white/70 disabled:text-neutral-950 disabled:opacity-70 [&_svg]:!size-7"
+              onClick={togglePlayerPlayback}
+              disabled={!isPlayerApiReady}
+              aria-label={isPlaybackPaused ? 'Video abspielen' : 'Video pausieren'}
+            >
+              {isPlaybackPaused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              className="size-14 rounded-full border border-white/30 bg-white/10 text-white shadow-sm hover:bg-white/20 hover:text-white disabled:text-white/70 disabled:opacity-60 [&_svg]:!size-6"
+              onClick={() => seekActiveVideoBy(10)}
+              disabled={!isPlayerApiReady}
+              aria-label="10 Sekunden vor"
+            >
+              <FastForward aria-hidden="true" />
+            </Button>
+          </div>
+        ) : null}
 
                 {/* File attachments und Delete video in einer Zeile */}
                 <div className="mt-8 sm:mt-10 lg:mt-12">
@@ -799,5 +979,6 @@ export function VideoPlayer({
         </div>
       </div>
     </div>
+    </>
   )
 }
