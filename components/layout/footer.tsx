@@ -57,7 +57,7 @@ export function Footer() {
     },
     {
       name: "X | Twitter",
-      href: "https://x.com/Petar_ICT",
+      href: "https://x.com/petar_trades",
       icon: SiX,
       color: "text-blue-400 hover:text-blue-500"
     },
