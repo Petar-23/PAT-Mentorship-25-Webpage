@@ -8,6 +8,7 @@
     "vercel-build": "prisma generate && prisma migrate deploy && next build --webpack",
     "start": "next start",
     "invoices:download": "node scripts/download-invoices.mjs --env-file .env.local",
+    "hermes:upload": "node scripts/hermes-upload.mjs",
     "lint": "eslint ."
   },
   "dependencies": {
