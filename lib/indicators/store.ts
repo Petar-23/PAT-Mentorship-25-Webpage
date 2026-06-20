@@ -97,13 +97,25 @@ function asIndicator(row: {
   createdAt: Date
   updatedAt: Date
 }): Indicator {
+  const shortDescription = row.shortDescription ?? ''
+  const detailDescription = row.detailDescription ?? ''
+
   return {
     id: row.id,
     packageId: row.packageId,
     slug: row.slug,
     name: row.name,
-    shortDescription: row.shortDescription ?? '',
-    detailDescription: row.detailDescription ?? '',
+    shortDescription:
+      shortDescription === `TradingView indicator - ${row.name}` ||
+      shortDescription === 'Imported from TradingView.'
+        ? ''
+        : shortDescription,
+    detailDescription:
+      detailDescription ===
+        'Invite-only TradingView indicator. Review copy and visibility before publishing to members.' ||
+      detailDescription === 'Imported from TradingView. Publish as invite-only before making this claimable.'
+        ? ''
+        : detailDescription,
     pineId: row.pineId ?? '',
     imageUrl: row.imageUrl,
     ready: row.ready,
@@ -691,12 +703,8 @@ export async function importTradingViewIndicators(packageId: string | null) {
             packageId,
             slug,
             name: script.scriptName || `TradingView Script ${shortId}`,
-            shortDescription: script.scriptName
-              ? `TradingView indicator - ${script.scriptName}`
-              : 'Imported from TradingView.',
-            detailDescription: isClaimable
-              ? 'Invite-only TradingView indicator. Review copy and visibility before publishing to members.'
-              : 'Imported from TradingView. Publish as invite-only before making this claimable.',
+            shortDescription: null,
+            detailDescription: null,
             pineId,
             ready: isClaimable,
             visible: false,
