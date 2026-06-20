@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import { IndicatorUsageGuide } from '@/components/indicators/indicator-usage-guide'
 import type {
   IndicatorClaim,
   IndicatorPackage,
@@ -150,9 +151,7 @@ export function IndicatorMemberBoard({ packages, claims, tradingViewAccount }: P
                           <summary className="cursor-pointer select-none text-sm font-medium">
                             Anleitung
                           </summary>
-                          <div className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground text-pretty">
-                            {indicator.usageGuide}
-                          </div>
+                          <IndicatorUsageGuide content={indicator.usageGuide} className="mt-3" />
                         </details>
                       ) : null}
 

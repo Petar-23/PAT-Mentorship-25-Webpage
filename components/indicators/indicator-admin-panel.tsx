@@ -348,7 +348,7 @@ export function IndicatorAdminPanel({ overview }: Props) {
               <Textarea name="detailDescription" placeholder="Beschreibung für Mentees" rows={3} />
               <Textarea
                 name="usageGuide"
-                placeholder="Nutzungsanleitung: Einstellungen, Werte, Interpretation"
+                placeholder="Markdown-Anleitung: Einstellungen, Werte, Interpretation"
                 rows={5}
               />
               <div className="grid gap-3 sm:grid-cols-3">
@@ -641,7 +641,7 @@ function IndicatorEditor({
           <Textarea
             name="usageGuide"
             defaultValue={indicator.usageGuide}
-            placeholder="Nutzungsanleitung: Einstellungen, Werte, Interpretation"
+            placeholder="Markdown-Anleitung: Einstellungen, Werte, Interpretation"
             rows={5}
           />
 
