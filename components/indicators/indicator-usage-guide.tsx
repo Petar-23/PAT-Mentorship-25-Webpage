@@ -1,5 +1,6 @@
 'use client'
 
+/* eslint-disable @next/next/no-img-element */
 import ReactMarkdown, { type Components } from 'react-markdown'
 import rehypeSanitize from 'rehype-sanitize'
 import remarkGfm from 'remark-gfm'
@@ -53,6 +54,20 @@ const markdownComponents: Components = {
   ),
   td: ({ children }) => <td className="border-t px-3 py-2 text-muted-foreground">{children}</td>,
   hr: () => <hr className="border-border" />,
+  img: ({ src, alt }) => {
+    if (!src) return null
+
+    return (
+      <a href={src} target="_blank" rel="noreferrer" className="block">
+        <img
+          src={src}
+          alt={alt ?? ''}
+          loading="lazy"
+          className="max-h-[520px] w-full rounded-md border bg-background object-contain"
+        />
+      </a>
+    )
+  },
 }
 
 export function IndicatorUsageGuide({ content, className }: Props) {

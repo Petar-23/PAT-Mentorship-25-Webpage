@@ -117,10 +117,37 @@ function ActionMessage({ result }: { result: IndicatorActionResult | null }) {
   )
 }
 
+function markdownImageAlt(file: File, fallback: string) {
+  const cleanName = file.name
+    .replace(/\.[^.]+$/, '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/[[\]]/g, '')
+    .trim()
+
+  return cleanName || fallback.replace(/[[\]]/g, '').trim() || 'Indikator Screenshot'
+}
+
+function insertMarkdownAtCursor(textarea: HTMLTextAreaElement, markdown: string) {
+  const start = textarea.selectionStart ?? textarea.value.length
+  const end = textarea.selectionEnd ?? textarea.value.length
+  const before = textarea.value.slice(0, start)
+  const after = textarea.value.slice(end)
+  const leadingBreak = before.length === 0 ? '' : before.endsWith('\n') ? '\n' : '\n\n'
+  const trailingBreak = after.length === 0 ? '' : after.startsWith('\n') ? '\n' : '\n\n'
+  const nextValue = `${before}${leadingBreak}${markdown}${trailingBreak}${after}`
+  const nextCursor = before.length + leadingBreak.length + markdown.length
+
+  textarea.value = nextValue
+  textarea.focus()
+  textarea.setSelectionRange(nextCursor, nextCursor)
+  textarea.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
 export function IndicatorAdminPanel({ overview }: Props) {
   const [result, setResult] = useState<IndicatorActionResult | null>(null)
   const [isPending, startTransition] = useTransition()
   const [uploadingIndicatorId, setUploadingIndicatorId] = useState<string | null>(null)
+  const [uploadingGuideImageId, setUploadingGuideImageId] = useState<string | null>(null)
   const cookieFormRef = useRef<HTMLFormElement | null>(null)
 
   const allIndicators = useMemo(() => {
@@ -189,6 +216,29 @@ export function IndicatorAdminPanel({ overview }: Props) {
       })
     } finally {
       setUploadingIndicatorId(null)
+    }
+  }
+
+  async function uploadGuideImage(indicator: Indicator, file: File | null, textarea: HTMLTextAreaElement | null) {
+    if (!file || !textarea) return
+    setUploadingGuideImageId(indicator.id)
+    setResult(null)
+
+    try {
+      const blob = await upload(`indicator-guide-images/${indicator.slug}/${file.name}`, file, {
+        access: 'public',
+        handleUploadUrl: '/api/indicator-image-upload',
+      })
+      const alt = markdownImageAlt(file, `${indicator.name} Einstellungen`)
+      insertMarkdownAtCursor(textarea, `![${alt}](${blob.url})`)
+      setResult({ ok: true, message: 'Screenshot wurde in die Anleitung eingefügt. Bitte Indikator speichern.' })
+    } catch (error) {
+      setResult({
+        ok: false,
+        message: error instanceof Error ? error.message : 'Screenshot-Upload fehlgeschlagen.',
+      })
+    } finally {
+      setUploadingGuideImageId(null)
     }
   }
 
@@ -378,8 +428,10 @@ export function IndicatorAdminPanel({ overview }: Props) {
             allIndicators={pkg.indicators}
             isPending={isPending}
             uploadingIndicatorId={uploadingIndicatorId}
+            uploadingGuideImageId={uploadingGuideImageId}
             submitForm={submitForm}
             uploadImage={uploadImage}
+            uploadGuideImage={uploadGuideImage}
             removeImage={removeImage}
           />
         ))}
@@ -399,8 +451,10 @@ export function IndicatorAdminPanel({ overview }: Props) {
             allIndicators={overview.unassignedIndicators}
             isPending={isPending}
             uploadingIndicatorId={uploadingIndicatorId}
+            uploadingGuideImageId={uploadingGuideImageId}
             submitForm={submitForm}
             uploadImage={uploadImage}
+            uploadGuideImage={uploadGuideImage}
             removeImage={removeImage}
             readonlyPackage
           />
@@ -495,8 +549,10 @@ function PackageCard({
   allIndicators,
   isPending,
   uploadingIndicatorId,
+  uploadingGuideImageId,
   submitForm,
   uploadImage,
+  uploadGuideImage,
   removeImage,
   readonlyPackage = false,
 }: {
@@ -505,8 +561,10 @@ function PackageCard({
   allIndicators: Indicator[]
   isPending: boolean
   uploadingIndicatorId: string | null
+  uploadingGuideImageId: string | null
   submitForm: (event: FormEvent<HTMLFormElement>, action: FormAction, resetOnSuccess?: boolean) => void
   uploadImage: (indicator: Indicator, file: File | null) => Promise<void>
+  uploadGuideImage: (indicator: Indicator, file: File | null, textarea: HTMLTextAreaElement | null) => Promise<void>
   removeImage: (indicatorId: string) => void
   readonlyPackage?: boolean
 }) {
@@ -542,8 +600,10 @@ function PackageCard({
                 packages={packages}
                 isPending={isPending}
                 uploading={uploadingIndicatorId === indicator.id}
+                uploadingGuideImage={uploadingGuideImageId === indicator.id}
                 submitForm={submitForm}
                 uploadImage={uploadImage}
+                uploadGuideImage={uploadGuideImage}
                 removeImage={removeImage}
               />
             ))
@@ -559,18 +619,24 @@ function IndicatorEditor({
   packages,
   isPending,
   uploading,
+  uploadingGuideImage,
   submitForm,
   uploadImage,
+  uploadGuideImage,
   removeImage,
 }: {
   indicator: Indicator
   packages: IndicatorPackage[]
   isPending: boolean
   uploading: boolean
+  uploadingGuideImage: boolean
   submitForm: (event: FormEvent<HTMLFormElement>, action: FormAction, resetOnSuccess?: boolean) => void
   uploadImage: (indicator: Indicator, file: File | null) => Promise<void>
+  uploadGuideImage: (indicator: Indicator, file: File | null, textarea: HTMLTextAreaElement | null) => Promise<void>
   removeImage: (indicatorId: string) => void
 }) {
+  const guideTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+
   return (
     <div className="rounded-md border p-3">
       <div className="grid gap-4 xl:grid-cols-[180px_1fr]">
@@ -639,11 +705,47 @@ function IndicatorEditor({
           <Input name="shortDescription" defaultValue={indicator.shortDescription} placeholder="Kurzbeschreibung" />
           <Textarea name="detailDescription" defaultValue={indicator.detailDescription} rows={3} />
           <Textarea
+            ref={guideTextareaRef}
             name="usageGuide"
             defaultValue={indicator.usageGuide}
             placeholder="Markdown-Anleitung: Einstellungen, Werte, Interpretation"
             rows={5}
           />
+          <div className="flex flex-col gap-2 rounded-md border bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Screenshot in Anleitung</p>
+              <p className="text-xs text-muted-foreground">
+                Fügt das Bild als Markdown an der Cursorposition ein.
+              </p>
+            </div>
+            <div>
+              <Label htmlFor={`guide-image-${indicator.id}`} className="sr-only">
+                Anleitungs-Screenshot
+              </Label>
+              <Input
+                id={`guide-image-${indicator.id}`}
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                disabled={uploadingGuideImage || isPending}
+                onChange={(event) => {
+                  const file = event.currentTarget.files?.[0] ?? null
+                  void uploadGuideImage(indicator, file, guideTextareaRef.current)
+                  event.currentTarget.value = ''
+                }}
+              />
+              <Label
+                htmlFor={`guide-image-${indicator.id}`}
+                className={cn(
+                  'inline-flex h-9 cursor-pointer items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground',
+                  (uploadingGuideImage || isPending) && 'pointer-events-none opacity-50'
+                )}
+              >
+                <UploadSimple className="mr-2 h-4 w-4" />
+                {uploadingGuideImage ? 'Upload...' : 'Screenshot einfügen'}
+              </Label>
+            </div>
+          </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap gap-2">
