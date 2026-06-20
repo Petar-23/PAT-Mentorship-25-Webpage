@@ -346,6 +346,11 @@ export function IndicatorAdminPanel({ overview }: Props) {
               <Input name="pineId" placeholder="PUB;..." />
               <Input name="shortDescription" placeholder="Kurzbeschreibung" />
               <Textarea name="detailDescription" placeholder="Beschreibung für Mentees" rows={3} />
+              <Textarea
+                name="usageGuide"
+                placeholder="Nutzungsanleitung: Einstellungen, Werte, Interpretation"
+                rows={5}
+              />
               <div className="grid gap-3 sm:grid-cols-3">
                 <CheckboxField name="ready" label="Claimbar" />
                 <CheckboxField name="visible" label="Sichtbar" />
@@ -633,6 +638,12 @@ function IndicatorEditor({
           <Input name="pineId" defaultValue={indicator.pineId} placeholder="PUB;..." />
           <Input name="shortDescription" defaultValue={indicator.shortDescription} placeholder="Kurzbeschreibung" />
           <Textarea name="detailDescription" defaultValue={indicator.detailDescription} rows={3} />
+          <Textarea
+            name="usageGuide"
+            defaultValue={indicator.usageGuide}
+            placeholder="Nutzungsanleitung: Einstellungen, Werte, Interpretation"
+            rows={5}
+          />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap gap-2">

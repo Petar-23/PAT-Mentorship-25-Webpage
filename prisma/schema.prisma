@@ -133,6 +133,7 @@ model Indicator {
   name              String
   shortDescription  String?
   detailDescription String?
+  usageGuide        String?
   pineId            String?
   imageUrl          String?
   ready             Boolean           @default(false)

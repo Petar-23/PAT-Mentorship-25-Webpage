@@ -145,6 +145,17 @@ export function IndicatorMemberBoard({ packages, claims, tradingViewAccount }: P
                         <p className="text-sm text-muted-foreground text-pretty">{indicator.detailDescription}</p>
                       ) : null}
 
+                      {indicator.usageGuide ? (
+                        <details className="group rounded-md border bg-muted/20 px-3 py-2">
+                          <summary className="cursor-pointer select-none text-sm font-medium">
+                            Anleitung
+                          </summary>
+                          <div className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground text-pretty">
+                            {indicator.usageGuide}
+                          </div>
+                        </details>
+                      ) : null}
+
                       {claimState?.errorMessage ? (
                         <p className="rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground text-pretty">
                           {claimState.errorMessage}

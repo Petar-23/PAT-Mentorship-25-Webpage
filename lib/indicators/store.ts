@@ -89,6 +89,7 @@ function asIndicator(row: {
   name: string
   shortDescription: string | null
   detailDescription: string | null
+  usageGuide: string | null
   pineId: string | null
   imageUrl: string | null
   ready: boolean
@@ -116,6 +117,7 @@ function asIndicator(row: {
       detailDescription === 'Imported from TradingView. Publish as invite-only before making this claimable.'
         ? ''
         : detailDescription,
+    usageGuide: row.usageGuide ?? '',
     pineId: row.pineId ?? '',
     imageUrl: row.imageUrl,
     ready: row.ready,
@@ -590,6 +592,7 @@ export async function createIndicator(input: {
   name: string
   shortDescription: string
   detailDescription: string
+  usageGuide: string
   pineId: string
   ready: boolean
   visible: boolean
@@ -608,6 +611,7 @@ export async function createIndicator(input: {
           name,
           shortDescription: input.shortDescription.trim() || null,
           detailDescription: input.detailDescription.trim() || null,
+          usageGuide: input.usageGuide.trim() || null,
           pineId: input.pineId.trim() || null,
           ready: input.ready,
           visible: input.visible,
@@ -625,6 +629,7 @@ export async function updateIndicator(
     name: string
     shortDescription: string
     detailDescription: string
+    usageGuide: string
     pineId: string
     ready: boolean
     visible: boolean
@@ -643,6 +648,7 @@ export async function updateIndicator(
           name,
           shortDescription: input.shortDescription.trim() || null,
           detailDescription: input.detailDescription.trim() || null,
+          usageGuide: input.usageGuide.trim() || null,
           pineId: input.pineId.trim() || null,
           ready: input.ready,
           visible: input.visible,

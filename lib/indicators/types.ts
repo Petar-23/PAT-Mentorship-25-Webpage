@@ -13,6 +13,7 @@ export type Indicator = {
   name: string
   shortDescription: string
   detailDescription: string
+  usageGuide: string
   pineId: string
   imageUrl: string | null
   ready: boolean
