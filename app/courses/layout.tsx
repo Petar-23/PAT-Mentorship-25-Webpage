@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { hasActiveSubscription } from '@/lib/stripe'
 import { getIsAdmin } from '@/lib/authz'
 import { getEmailFromSessionClaims } from '@/lib/clerk-claims'
+import { isMentorshipAccessOverrideEmail } from '@/lib/mentorship-access-overrides'
 
 export default async function CoursesLayout({ children }: { children: ReactNode }) {
   const { userId, sessionClaims } = await auth()
@@ -28,6 +29,11 @@ export default async function CoursesLayout({ children }: { children: ReactNode 
     const user = await currentUser()
     email = user?.primaryEmailAddress?.emailAddress ?? null
   }
+
+  if (isMentorshipAccessOverrideEmail(email)) {
+    return <>{children}</>
+  }
+
   const allowed = await hasActiveSubscription(userId, email ?? undefined)
 
   if (!allowed) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { isMentorshipAccessible } from '@/lib/authz'
+import { hasMentorshipAccessOverride } from '@/lib/mentorship-access-overrides'
 import { hasActiveSubscription } from '@/lib/stripe'
 
 export async function GET() {
@@ -8,9 +9,10 @@ export async function GET() {
 
   let hasSubscription = false
   try {
-    const { userId } = await auth()
+    const { userId, sessionClaims } = await auth()
     if (userId) {
-      hasSubscription = await hasActiveSubscription(userId)
+      hasSubscription =
+        (await hasMentorshipAccessOverride(sessionClaims)) || (await hasActiveSubscription(userId))
     }
   } catch (error) {
     console.error('Error checking subscription status:', error)
@@ -25,4 +27,3 @@ export async function GET() {
 }
 
 export const dynamic = 'force-dynamic'
-
