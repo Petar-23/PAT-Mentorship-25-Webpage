@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { BookOpen } from '@phosphor-icons/react/BookOpen'
 import { CaretDown as ChevronDown } from '@phosphor-icons/react/CaretDown'
+import { ChartLineUp } from '@phosphor-icons/react/ChartLineUp'
 import { DotsSixVertical as GripVertical } from '@phosphor-icons/react/DotsSixVertical'
 import { DotsThreeVertical as MoreVertical } from '@phosphor-icons/react/DotsThreeVertical'
 import { FileText } from '@phosphor-icons/react/FileText'
@@ -109,6 +110,8 @@ type Props = {
   isAdmin: boolean
   openCreateCourseModal?: boolean
 }
+
+const STATIC_SIDEBAR_ITEM_IDS = new Set(['discord', 'indicators'])
 
 export function SidebarAdmin({
   kurse,
@@ -276,6 +279,7 @@ export function SidebarAdmin({
 
   const activeItemId = useMemo(() => {
     if (pathname?.startsWith('/mentorship/discord')) return 'discord'
+    if (pathname?.startsWith('/mentorship/indicators')) return 'indicators'
     if (activeCourseId) return activeCourseId
 
     // Check if on a page route
@@ -547,6 +551,14 @@ export function SidebarAdmin({
         icon: <Users className="h-6 w-6 text-white" />,
         iconBg: 'from-indigo-700/80 to-indigo-600/70',
       },
+      {
+        id: 'indicators',
+        title: 'Indikatoren',
+        subtitle: 'TradingView Claims',
+        href: '/mentorship/indicators',
+        icon: <ChartLineUp className="h-6 w-6 text-white" />,
+        iconBg: 'from-zinc-700/80 to-zinc-600/70',
+      },
       ...kurse.map((kurs) => ({
         id: kurs.id,
         title: kurs.name,
@@ -735,7 +747,7 @@ export function SidebarAdmin({
           </Link>
 
           {/* 3-Dots Menü – nur Admin */}
-          {isAdmin && item.id !== 'discord' && (
+          {isAdmin && !STATIC_SIDEBAR_ITEM_IDS.has(item.id) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

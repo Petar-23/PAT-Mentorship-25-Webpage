@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { BookOpen } from '@phosphor-icons/react/BookOpen'
 import { CaretDown as ChevronDown } from '@phosphor-icons/react/CaretDown'
+import { ChartLineUp } from '@phosphor-icons/react/ChartLineUp'
 import { FileText } from '@phosphor-icons/react/FileText'
 import { Kanban as SquareKanban } from '@phosphor-icons/react/Kanban'
 import { Users } from '@phosphor-icons/react/Users'
@@ -56,6 +57,7 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
 
   const activeItemId = useMemo(() => {
     if (pathname?.startsWith('/mentorship/discord')) return 'discord'
+    if (pathname?.startsWith('/mentorship/indicators')) return 'indicators'
     if (activeCourseId) return activeCourseId
 
     const pageMatch = pathname?.match(/^\/mentorship\/page\/([^/]+)$/)
@@ -78,6 +80,14 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
         href: '/mentorship/discord',
         icon: <Users className="h-6 w-6 text-white" />,
         iconBg: 'from-indigo-700/80 to-indigo-600/70',
+      },
+      {
+        id: 'indicators',
+        title: 'Indikatoren',
+        subtitle: 'TradingView Claims',
+        href: '/mentorship/indicators',
+        icon: <ChartLineUp className="h-6 w-6 text-white" />,
+        iconBg: 'from-zinc-700/80 to-zinc-600/70',
       },
       ...kurse.map((kurs) => ({
         id: kurs.id,
