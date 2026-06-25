@@ -3,6 +3,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { revalidatePath } from 'next/cache'
 import { getIsAdmin } from '@/lib/authz'
+import { prisma } from '@/lib/prisma'
 import {
   claimIndicatorForUser,
   clearTradingViewCookie,
@@ -50,6 +51,71 @@ function revalidateIndicators() {
   revalidatePath('/mentorship/indicators')
 }
 
+async function processClaimInstantly(input: {
+  userId: string
+  indicatorId: string
+  fallbackMessage: string
+}) {
+  try {
+    const workerResult = await processTradingViewClaimQueue({
+      limit: 5,
+      workerId: 'member-claim-instant',
+    })
+
+    const claim = await prisma.indicatorClaim.findUnique({
+      where: {
+        userId_indicatorId: {
+          userId: input.userId,
+          indicatorId: input.indicatorId,
+        },
+      },
+      select: { status: true, errorMessage: true },
+    })
+
+    if (claim?.status === 'granted') {
+      return {
+        ok: true,
+        message: 'Deine TradingView-Freigabe wurde direkt aktiviert.',
+      }
+    }
+
+    if (workerResult.blockedBySession) {
+      return {
+        ok: true,
+        message:
+          'Deine Anfrage ist gespeichert. Wir müssen die TradingView-Verbindung aktualisieren, danach wird automatisch erneut versucht.',
+      }
+    }
+
+    if (claim?.status === 'processing') {
+      return {
+        ok: true,
+        message: 'Deine Anfrage ist gespeichert. Die TradingView-Freigabe wird gerade verarbeitet.',
+      }
+    }
+
+    if (claim?.status === 'failed') {
+      return {
+        ok: true,
+        message:
+          claim.errorMessage ??
+          'TradingView konnte die Aktivierung noch nicht abschließen. Wir versuchen es automatisch erneut.',
+      }
+    }
+
+    return {
+      ok: true,
+      message: claim?.errorMessage ?? input.fallbackMessage,
+    }
+  } catch (error) {
+    console.error('[tradingview-claims] Instant processing failed:', error)
+    return {
+      ok: true,
+      message: input.fallbackMessage,
+    }
+  }
+}
+
 export async function claimIndicatorAction(input: {
   indicatorId: string
   tvUsername: string
@@ -62,6 +128,16 @@ export async function claimIndicatorAction(input: {
     indicatorId: input.indicatorId,
     tvUsername: input.tvUsername,
   })
+
+  if (result.ok && result.claimStatus !== 'granted') {
+    const instantResult = await processClaimInstantly({
+      userId,
+      indicatorId: input.indicatorId,
+      fallbackMessage: result.message,
+    })
+    revalidateIndicators()
+    return instantResult
+  }
 
   revalidateIndicators()
   return { ok: result.ok, message: result.message }

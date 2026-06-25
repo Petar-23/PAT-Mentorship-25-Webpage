@@ -135,6 +135,7 @@ export class TradingViewService {
         method: 'POST',
         headers: tradingViewHeaders(this.cookieValue),
         body: formData,
+        signal: AbortSignal.timeout(12_000),
       })
 
       if (res.status === 200 || res.status === 201) {
@@ -182,6 +183,7 @@ export class TradingViewService {
         method: 'POST',
         headers: tradingViewHeaders(this.cookieValue),
         body: formData,
+        signal: AbortSignal.timeout(12_000),
       })
 
       if (res.ok) {
