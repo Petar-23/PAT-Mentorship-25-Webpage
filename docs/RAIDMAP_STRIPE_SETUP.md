@@ -10,7 +10,12 @@ Stripe-Objekte und zwei Env-Vars. Danach ist der Checkout live.
 2. Zwei wiederkehrende Preise in **USD**:
    - Monthly: **$45.00 / month**
    - Annual: **$348.00 / year**
+   (Kein Trial am Price konfigurieren — die 7 Trial-Tage setzt der Code in der
+   Checkout-Session via `trial_period_days: 7`.)
 3. Beide Price-IDs kopieren (beginnen mit `price_`).
+4. NACH den ersten 300 Mitgliedern (+20%): zwei NEUE Prices anlegen ($54/mo,
+   $420/yr — 35/mo) und nur die Env-Vars umstellen. Bestehende Abos bleiben in
+   Stripe automatisch auf ihrem alten Preis (Grandfathering wie beworben).
 
 ## 2. Env-Vars setzen (lokal in .env UND in Vercel, Production + Preview)
 

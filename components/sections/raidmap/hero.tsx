@@ -50,7 +50,9 @@ export default function RaidMapHero({ lang }: { lang: RaidMapLang }) {
           </Button>
         </div>
 
-        <p className="mt-6 text-xs text-gray-400 max-w-2xl text-pretty">{t.finePrint}</p>
+        <p className="mt-4 text-sm font-medium text-blue-700">{t.urgency}</p>
+
+        <p className="mt-4 text-xs text-gray-400 max-w-2xl text-pretty">{t.finePrint}</p>
 
         <dl className="mt-14 grid grid-cols-2 md:grid-cols-4 gap-6 border-t border-gray-100 pt-10">
           {proof.items.map((item) => (

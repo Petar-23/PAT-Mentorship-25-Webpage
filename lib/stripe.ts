@@ -721,6 +721,7 @@ export async function createRaidMapCheckoutSession(
       },
     ],
     subscription_data: {
+      trial_period_days: 7,
       metadata: {
         userId,
         product: 'raidmap',
