@@ -105,9 +105,9 @@ export const raidmapStory: L<{
     steps: [
       {
         n: '01',
-        title: 'Daily direction can’t be predicted. Session structure can.',
+        title: 'Session structure can be measured. So we measured it.',
         body:
-          'We tested every popular “daily bias” predictor — previous day, gap, overnight position, Asia, London — against 10 years of data. All of them landed at 48–53% against a 55.9% base rate. Dead. But when we asked smaller, sharper questions — which level gets hit first, and when — the data started answering with real, repeatable numbers.',
+          'Most tools guess where the day will close. We asked 10 years of NQ data (2,327 trading days, 575,439 confirmed swing levels) two smaller, sharper questions instead: which level gets hit first in each session — and when does the run start? Asked that way, the data answers with real, repeatable numbers.',
       },
       {
         n: '02',
@@ -129,9 +129,9 @@ export const raidmapStory: L<{
     steps: [
       {
         n: '01',
-        title: 'Tagesrichtung kann man nicht vorhersagen. Session-Struktur schon.',
+        title: 'Session-Struktur kann man messen. Also haben wir gemessen.',
         body:
-          'Wir haben jeden beliebten „Daily-Bias“-Prädiktor getestet — Vortag, Gap, Overnight-Lage, Asia, London — gegen 10 Jahre Daten. Alle landeten bei 48–53% gegen eine Basisrate von 55,9%. Tot. Aber als wir kleinere, schärfere Fragen stellten — welches Level fällt zuerst, und wann — begannen die Daten mit echten, wiederholbaren Zahlen zu antworten.',
+          'Die meisten Tools raten, wo der Tag schließt. Wir haben 10 Jahren NQ-Daten (2.327 Handelstage, 575.439 bestätigte Swing-Level) stattdessen zwei kleinere, schärfere Fragen gestellt: Welches Level fällt in jeder Session zuerst — und wann startet der Run? So gefragt, antworten die Daten mit echten, wiederholbaren Zahlen.',
       },
       {
         n: '02',
