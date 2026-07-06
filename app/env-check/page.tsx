@@ -93,6 +93,8 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${isSet('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY') 
           {`
 STRIPE_SECRET_KEY: ${process.env.STRIPE_SECRET_KEY ? '✓' : '❌'}
 STRIPE_PRICE_ID: ${process.env.STRIPE_PRICE_ID ? '✓' : '❌'}
+STRIPE_PRICE_ID_RAIDMAP_MONTHLY: ${process.env.STRIPE_PRICE_ID_RAIDMAP_MONTHLY ? '✓' : '❌'}
+STRIPE_PRICE_ID_RAIDMAP_ANNUAL: ${process.env.STRIPE_PRICE_ID_RAIDMAP_ANNUAL ? '✓' : '❌'}
 STRIPE_WEBHOOK_SECRET: ${process.env.STRIPE_WEBHOOK_SECRET ? '✓' : '❌'}
           `.trim()}
         </pre>
