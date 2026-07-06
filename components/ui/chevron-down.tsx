@@ -6,6 +6,7 @@ import type { HTMLAttributes } from "react";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
+import { useDocumentVisibility } from "@/components/ui/use-document-visibility";
 
 export interface ChevronDownIconHandle {
   startAnimation: () => void;
@@ -30,6 +31,7 @@ const ChevronDownIcon = forwardRef<ChevronDownIconHandle, ChevronDownIconProps>(
     const containerRef = useRef<HTMLDivElement | null>(null);
     const [isVisible, setIsVisible] = useState(true);
     const [reduceMotion, setReduceMotion] = useState(false);
+    const isDocumentVisible = useDocumentVisibility(autoPlay);
 
     useImperativeHandle(ref, () => {
       isControlledRef.current = true;
@@ -81,12 +83,12 @@ const ChevronDownIcon = forwardRef<ChevronDownIconHandle, ChevronDownIconProps>(
     }, [autoPlay]);
 
     useEffect(() => {
-      if (!autoPlay || reduceMotion || !isVisible) return;
+      if (!autoPlay || reduceMotion || !isVisible || !isDocumentVisible) return;
       const id = window.setInterval(() => {
         controls.start("animate");
       }, intervalMs);
       return () => window.clearInterval(id);
-    }, [autoPlay, controls, intervalMs, isVisible, reduceMotion]);
+    }, [autoPlay, controls, intervalMs, isDocumentVisible, isVisible, reduceMotion]);
 
     return (
       <div

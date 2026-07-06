@@ -4,13 +4,13 @@ import { redirect } from 'next/navigation'
 import { getIsAdmin } from '@/lib/authz'
 
 export default async function OwnerLayout({ children }: { children: ReactNode }) {
-  const { userId } = await auth()
+  const { userId, sessionClaims } = await auth()
 
   if (!userId) {
     redirect('/sign-in')
   }
 
-  const isAdmin = await getIsAdmin()
+  const isAdmin = await getIsAdmin(userId, sessionClaims)
   if (!isAdmin) {
     redirect('/dashboard')
   }

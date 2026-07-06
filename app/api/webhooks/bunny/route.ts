@@ -1,9 +1,17 @@
+import crypto from 'crypto'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendDiscordChannelMessage, sendDiscordChannelMessageWithAttachment } from '@/lib/discord'
+import { buildBunnyThumbnailUrl } from '@/lib/bunny-thumbnail'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+
+const BUNNY_WEBHOOK_SIGNING_SECRET =
+  process.env.BUNNY_WEBHOOK_SIGNING_SECRET ||
+  process.env.BUNNY_STREAM_READ_ONLY_API_KEY ||
+  process.env.BUNNY_READ_ONLY_API_KEY
+const THUMBNAIL_FETCH_TIMEOUT_MS = 8_000
 
 /**
  * Bunny Stream Webhook
@@ -14,8 +22,6 @@ export const dynamic = 'force-dynamic'
  * Docs: https://docs.bunny.net/stream/webhooks
  */
 
-const BUNNY_CDN_HOST = 'vz-08bb86cc-ee1.b-cdn.net'
-
 function getStringProp(value: unknown, key: string): string | null {
   if (!value || typeof value !== 'object') return null
   const record = value as Record<string, unknown>
@@ -23,11 +29,141 @@ function getStringProp(value: unknown, key: string): string | null {
   return typeof v === 'string' ? v : null
 }
 
+function getBooleanProp(value: unknown, key: string): boolean | null {
+  if (!value || typeof value !== 'object') return null
+  const record = value as Record<string, unknown>
+  const v = record[key]
+  return typeof v === 'boolean' ? v : null
+}
+
+function isValidSignatureHex(value: string) {
+  return /^[a-f0-9]{64}$/.test(value)
+}
+
+function timingSafeHexEqual(left: string, right: string) {
+  if (!isValidSignatureHex(left) || !isValidSignatureHex(right)) {
+    return false
+  }
+
+  const leftBuffer = Buffer.from(left, 'hex')
+  const rightBuffer = Buffer.from(right, 'hex')
+
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false
+  }
+
+  return crypto.timingSafeEqual(leftBuffer, rightBuffer)
+}
+
+function verifyBunnyWebhookSignature(rawBody: string, headers: Headers) {
+  if (!BUNNY_WEBHOOK_SIGNING_SECRET) {
+    return {
+      ok: true as const,
+      enforced: false as const,
+      reason: 'missing signing secret',
+    }
+  }
+
+  const version = headers.get('x-bunnystream-signature-version')
+  const algorithm = headers.get('x-bunnystream-signature-algorithm')
+  const signature = headers.get('x-bunnystream-signature')
+
+  if (version !== 'v1') {
+    return {
+      ok: false as const,
+      enforced: true as const,
+      reason: 'invalid version',
+    }
+  }
+
+  if (algorithm !== 'hmac-sha256') {
+    return {
+      ok: false as const,
+      enforced: true as const,
+      reason: 'invalid algorithm',
+    }
+  }
+
+  if (!signature) {
+    return {
+      ok: false as const,
+      enforced: true as const,
+      reason: 'missing signature',
+    }
+  }
+
+  const expectedSignature = crypto
+    .createHmac('sha256', BUNNY_WEBHOOK_SIGNING_SECRET)
+    .update(rawBody, 'utf8')
+    .digest('hex')
+
+  if (!timingSafeHexEqual(signature, expectedSignature)) {
+    return {
+      ok: false as const,
+      enforced: true as const,
+      reason: 'signature mismatch',
+    }
+  }
+
+  return { ok: true as const, enforced: true as const, reason: null }
+}
+
+async function fetchThumbnailAttachment(thumbnailUrl: string) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), THUMBNAIL_FETCH_TIMEOUT_MS)
+
+  try {
+    const response = await fetch(thumbnailUrl, {
+      headers: { Referer: 'https://iframe.mediadelivery.net/' },
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      throw new Error(`Thumbnail fetch failed (${response.status})`)
+    }
+
+    const bytes = await response.arrayBuffer()
+    if (bytes.byteLength === 0) {
+      throw new Error('Thumbnail is empty')
+    }
+
+    return {
+      bytes,
+      contentType: response.headers.get('content-type') || 'image/jpeg',
+    }
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error(`Thumbnail fetch timed out after ${THUMBNAIL_FETCH_TIMEOUT_MS}ms`)
+    }
+    throw error
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 export async function POST(req: Request) {
   try {
+    const rawBody = await req.text()
+    const signatureCheck = verifyBunnyWebhookSignature(rawBody, req.headers)
+
+    if (!signatureCheck.ok) {
+      console.error(
+        'Bunny webhook signature verification failed:',
+        signatureCheck.reason
+      )
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    }
+
+    if (!signatureCheck.enforced) {
+      console.warn(
+        'Bunny webhook signing secret is not configured. Accepting unsigned webhook.'
+      )
+    }
+
     let body: unknown
     try {
-      body = await req.json()
+      body = JSON.parse(rawBody) as unknown
     } catch {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
     }
@@ -48,12 +184,22 @@ export async function POST(req: Request) {
     // Find the video by bunnyGuid
     const video = await prisma.video.findFirst({
       where: { bunnyGuid: videoGuid },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        bunnyGuid: true,
         chapter: {
-          include: {
+          select: {
+            name: true,
             module: {
-              include: {
-                playlist: true,
+              select: {
+                id: true,
+                name: true,
+                playlist: {
+                  select: {
+                    name: true,
+                  },
+                },
               },
             },
           },
@@ -96,34 +242,46 @@ export async function POST(req: Request) {
     const chapterName = video.chapter.name
     const courseForText = playlistName ?? moduleName
     const videoUrl = `${baseUrl}/mentorship/modul/${moduleId}?video=${video.id}`
-    const thumbnailUrl = `https://${BUNNY_CDN_HOST}/${video.bunnyGuid}/thumbnail.jpg`
+    const thumbnailUrl = video.bunnyGuid
+      ? buildBunnyThumbnailUrl(video.bunnyGuid)
+      : null
+    const announcementContent = [
+      '@everyone',
+      `Moin zusammen, ich habe soeben ein neues Video (**${video.title}**) veröffentlicht.`,
+      `Ihr findet das Video in der **${courseForText}**.`,
+      '',
+      videoUrl,
+      '',
+      'Passt auf euch auf,',
+      'Petar',
+    ].join('\n')
+    const embedDescription = [
+      `Neue Lektion aus **${courseForText}**.`,
+      'Der Direktlink steht direkt im Text ueber dieser Vorschau.',
+    ].join('\n')
 
     let messageSent = false
 
     try {
       // Try with thumbnail attachment (Bunny hotlink protection requires Referer)
       try {
-        const thumbRes = await fetch(thumbnailUrl, {
-          headers: { Referer: 'https://iframe.mediadelivery.net/' },
-          cache: 'no-store',
-        })
+        if (!thumbnailUrl) {
+          throw new Error('Thumbnail URL unavailable')
+        }
 
-        if (!thumbRes.ok) throw new Error(`Thumbnail fetch failed (${thumbRes.status})`)
-
-        const bytes = await thumbRes.arrayBuffer()
-        if (bytes.byteLength === 0) throw new Error('Thumbnail is empty')
+        const thumbnail = await fetchThumbnailAttachment(thumbnailUrl)
 
         const fileName = 'thumbnail.jpg'
 
         const message = await sendDiscordChannelMessageWithAttachment({
           channelId,
-          content: '',
+          content: announcementContent,
           allowedMentions: { parse: ['everyone'] },
           embeds: [
             {
               title: `Neues Video: ${video.title}`,
               url: videoUrl,
-              description: `@everyone\n\nMoin zusammen, ich habe soeben ein neues Video veröffentlicht.\nIhr findet das Video in der **${courseForText}**.\n\n${videoUrl}\n\nPasst auf euch auf,\nPetar`,
+              description: embedDescription,
               color: 0x24fc35,
               image: { url: `attachment://${fileName}` },
               fields: [
@@ -139,32 +297,48 @@ export async function POST(req: Request) {
           ],
           file: {
             name: fileName,
-            contentType: thumbRes.headers.get('content-type') || 'image/jpeg',
-            data: bytes,
+            contentType: thumbnail.contentType,
+            data: thumbnail.bytes,
           },
         })
 
         messageSent = true
         const messageId = getStringProp(message, 'id')
+        const mentionEveryone = getBooleanProp(message, 'mention_everyone')
+
+        if (mentionEveryone !== true) {
+          console.warn('Bunny webhook: Discord announcement posted without mention_everyone ping.', {
+            videoId: video.id,
+            messageId,
+            channelId,
+          })
+        }
+
         await prisma.video.update({
           where: { id: video.id },
           data: { announcementMessageId: messageId },
         })
 
-        return NextResponse.json({ ok: true, action: 'announced', messageId, thumbnail: 'attached' })
+        return NextResponse.json({
+          ok: true,
+          action: 'announced',
+          messageId,
+          thumbnail: 'attached',
+          mentionEveryone: mentionEveryone === true,
+        })
       } catch (thumbErr) {
         console.warn('Bunny webhook: Thumbnail failed, sending without:', thumbErr)
 
         // Fallback: no thumbnail
         const message = await sendDiscordChannelMessage({
           channelId,
-          content: '',
+          content: announcementContent,
           allowedMentions: { parse: ['everyone'] },
           embeds: [
             {
               title: `Neues Video: ${video.title}`,
               url: videoUrl,
-              description: `@everyone\n\nMoin zusammen, ich habe soeben ein neues Video veröffentlicht.\nIhr findet das Video in der **${courseForText}**.\n\n${videoUrl}\n\nPasst auf euch auf,\nPetar`,
+              description: embedDescription,
               color: 0x2563eb,
               fields: [
                 ...(playlistName ? [{ name: 'Kurs', value: playlistName, inline: true }] : []),
@@ -181,12 +355,28 @@ export async function POST(req: Request) {
 
         messageSent = true
         const messageId = getStringProp(message, 'id')
+        const mentionEveryone = getBooleanProp(message, 'mention_everyone')
+
+        if (mentionEveryone !== true) {
+          console.warn('Bunny webhook: Discord announcement posted without mention_everyone ping.', {
+            videoId: video.id,
+            messageId,
+            channelId,
+          })
+        }
+
         await prisma.video.update({
           where: { id: video.id },
           data: { announcementMessageId: messageId },
         })
 
-        return NextResponse.json({ ok: true, action: 'announced', messageId, thumbnail: 'none' })
+        return NextResponse.json({
+          ok: true,
+          action: 'announced',
+          messageId,
+          thumbnail: 'none',
+          mentionEveryone: mentionEveryone === true,
+        })
       }
     } catch (err) {
       // Rollback claim if message wasn't sent

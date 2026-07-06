@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 
 interface Vector2D {
   x: number
@@ -142,7 +142,6 @@ export function ParticleTextReveal({
 
   const pixelSteps = 2 // More particles for better text quality
   const padding = 80 // Extra space around text for particles to fly into
-  const [textDimensions, setTextDimensions] = useState({ width: 0, height: 0 })
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -156,7 +155,6 @@ export function ParticleTextReveal({
     
     const textWidth = Math.ceil(metrics.width + 20)
     const textHeight = Math.ceil(fontSize * 1.3)
-    setTextDimensions({ width: textWidth, height: textHeight })
     
     // Canvas is larger with padding
     const canvasWidth = textWidth + padding * 2
@@ -226,17 +224,82 @@ export function ParticleTextReveal({
 
     particlesRef.current = particles
 
-    const animate = () => {
+    const getInitialInView = () => {
+      const rect = canvas.getBoundingClientRect()
+      return (
+        rect.bottom >= -200 &&
+        rect.top <= window.innerHeight + 200 &&
+        rect.right >= 0 &&
+        rect.left <= window.innerWidth
+      )
+    }
+
+    let isInView = typeof IntersectionObserver === "undefined" ? true : getInitialInView()
+    let isDocumentVisible = document.visibilityState === "visible"
+    let visibilityObserver: IntersectionObserver | null = null
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
+    let prefersReducedMotion = reducedMotionQuery.matches
+
+    const shouldAnimate = () => isInView && isDocumentVisible && !prefersReducedMotion
+
+    const drawFrame = (moveParticles: boolean) => {
       ctx.clearRect(0, 0, canvasWidth, canvasHeight)
 
       for (const particle of particlesRef.current) {
-        // Repel from mouse
-        particle.repel(mouseRef.current.x, mouseRef.current.y, 50, 3)
-        particle.move()
+        if (moveParticles) {
+          // Repel from mouse
+          particle.repel(mouseRef.current.x, mouseRef.current.y, 50, 3)
+          particle.move()
+        }
         particle.draw(ctx)
       }
+    }
 
+    const stopLoop = () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+        animationRef.current = 0
+      }
+    }
+
+    const animate = () => {
+      if (!shouldAnimate()) {
+        stopLoop()
+        return
+      }
+
+      drawFrame(true)
       animationRef.current = requestAnimationFrame(animate)
+    }
+
+    const startLoop = () => {
+      if (animationRef.current || !shouldAnimate()) return
+      animationRef.current = requestAnimationFrame(animate)
+    }
+
+    const settleParticlesForReducedMotion = () => {
+      for (const particle of particlesRef.current) {
+        particle.pos.x = particle.target.x
+        particle.pos.y = particle.target.y
+        particle.vel.x = 0
+        particle.vel.y = 0
+        particle.colorWeight = 1
+      }
+      drawFrame(false)
+    }
+
+    const updatePlayback = () => {
+      if (prefersReducedMotion) {
+        stopLoop()
+        settleParticlesForReducedMotion()
+        return
+      }
+
+      if (shouldAnimate()) {
+        startLoop()
+      } else {
+        stopLoop()
+      }
     }
 
     // Mouse event handlers
@@ -254,12 +317,44 @@ export function ParticleTextReveal({
     canvas.addEventListener("mousemove", handleMouseMove)
     canvas.addEventListener("mouseleave", handleMouseLeave)
 
-    animate()
+    const handleVisibilityChange = () => {
+      isDocumentVisible = document.visibilityState === "visible"
+      updatePlayback()
+    }
+
+    const handleReducedMotionChange = () => {
+      prefersReducedMotion = reducedMotionQuery.matches
+      updatePlayback()
+    }
+
+    if (typeof IntersectionObserver === "undefined") {
+      isInView = true
+    } else {
+      visibilityObserver = new IntersectionObserver(
+        ([entry]) => {
+          isInView = entry.isIntersecting
+          updatePlayback()
+        },
+        { rootMargin: "200px 0px", threshold: 0.01 }
+      )
+      visibilityObserver.observe(canvas)
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    reducedMotionQuery.addEventListener?.("change", handleReducedMotionChange)
+
+    if (prefersReducedMotion) {
+      settleParticlesForReducedMotion()
+    } else {
+      drawFrame(false)
+      updatePlayback()
+    }
 
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
-      }
+      stopLoop()
+      visibilityObserver?.disconnect()
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      reducedMotionQuery.removeEventListener?.("change", handleReducedMotionChange)
       canvas.removeEventListener("mousemove", handleMouseMove)
       canvas.removeEventListener("mouseleave", handleMouseLeave)
     }
@@ -270,9 +365,6 @@ export function ParticleTextReveal({
       className={`inline-block relative ${className}`} 
       style={{ 
         verticalAlign: "middle",
-        // Use text dimensions for sizing (not canvas dimensions)
-        width: textDimensions.width > 0 ? textDimensions.width : "auto",
-        height: textDimensions.height > 0 ? textDimensions.height : "auto",
       }}
     >
       {/* Invisible placeholder text to maintain correct inline sizing */}

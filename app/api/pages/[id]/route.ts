@@ -2,7 +2,8 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { getIsAdmin } from '@/lib/authz'
+import { getIsAdmin, requireAdminApiAccess } from '@/lib/authz'
+import { revalidateSidebarData } from '@/lib/sidebar-data'
 
 function generateSlug(title: string): string {
   return title
@@ -23,14 +24,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const { userId } = await auth()
+  const { userId, sessionClaims } = await auth()
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const isAdmin = await getIsAdmin()
-
-  const page = await prisma.page.findUnique({ where: { id } })
+  const [isAdmin, page] = await Promise.all([
+    getIsAdmin(userId, sessionClaims),
+    prisma.page.findUnique({ where: { id } }),
+  ])
 
   if (!page || (!isAdmin && !page.published)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -44,14 +46,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const isAdmin = await getIsAdmin()
-  if (!isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const admin = await requireAdminApiAccess()
+  if (!admin.ok) {
+    return admin.response
   }
 
   let body: {
@@ -67,12 +64,14 @@ export async function PATCH(
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const existing = await prisma.page.findUnique({ where: { id } })
+  const existing = await prisma.page.findUnique({
+    where: { id },
+    select: { id: true, slug: true },
+  })
   if (!existing) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateData: Record<string, any> = {}
 
   if (body.title !== undefined) {
@@ -82,6 +81,7 @@ export async function PATCH(
     if (newSlug !== existing.slug) {
       const conflict = await prisma.page.findFirst({
         where: { slug: newSlug, NOT: { id } },
+        select: { id: true },
       })
       updateData.slug = conflict ? `${newSlug}-${Date.now()}` : newSlug
     }
@@ -100,7 +100,28 @@ export async function PATCH(
     updateData.published = body.published
   }
 
-  const page = await prisma.page.update({ where: { id }, data: updateData })
+  const page = await prisma.page.update({
+    where: { id },
+    data: updateData,
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      description: true,
+      iconUrl: true,
+      published: true,
+    },
+  })
+  const sidebarVisibleChanged =
+    body.title !== undefined ||
+    body.description !== undefined ||
+    'iconUrl' in body ||
+    body.published !== undefined
+
+  if (sidebarVisibleChanged) {
+    revalidateSidebarData()
+  }
+
   return NextResponse.json(page)
 }
 
@@ -109,21 +130,20 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const admin = await requireAdminApiAccess()
+  if (!admin.ok) {
+    return admin.response
   }
 
-  const isAdmin = await getIsAdmin()
-  if (!isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
-  const existing = await prisma.page.findUnique({ where: { id } })
+  const existing = await prisma.page.findUnique({
+    where: { id },
+    select: { id: true },
+  })
   if (!existing) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  await prisma.page.delete({ where: { id } })
+  await prisma.page.delete({ where: { id }, select: { id: true } })
+  revalidateSidebarData()
   return NextResponse.json({ success: true })
 }

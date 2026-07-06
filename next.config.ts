@@ -15,6 +15,11 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'vz-08bb86cc-ee1.b-cdn.net',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'vz-dc8da426-d71.b-cdn.net',
         pathname: '/**',
       },

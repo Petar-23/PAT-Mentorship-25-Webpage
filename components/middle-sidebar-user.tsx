@@ -3,12 +3,10 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Progress } from '@/components/ui/progress'
-import {
-  ArrowLeft,
-  CaretDown as ChevronDown,
-  CaretRight as ChevronRight,
-} from '@phosphor-icons/react'
-import { useEffect, useMemo, useState } from 'react'
+import { ArrowLeft } from '@phosphor-icons/react/ArrowLeft'
+import { CaretDown as ChevronDown } from '@phosphor-icons/react/CaretDown'
+import { CaretRight as ChevronRight } from '@phosphor-icons/react/CaretRight'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { VideoThumbnail } from '@/components/mentorship/video-thumbnail'
@@ -129,6 +127,7 @@ export function MiddleSidebarUser({
   watchedVideoIds,
 }: MiddleSidebarProps) {
   const router = useRouter()
+  const watchedVideoIdSet = useMemo(() => new Set(watchedVideoIds ?? []), [watchedVideoIds])
 
   const sortedChapters = useMemo(() => {
     return [...(modul.chapters || [])].sort((a, b) => (a.order || 0) - (b.order || 0))
@@ -142,20 +141,28 @@ export function MiddleSidebarUser({
     )
   }, [activeVideoId, sortedChapters])
 
-  const [openChapters, setOpenChapters] = useState<Set<string>>(() =>
-    initiallyOpenChapterId ? new Set([initiallyOpenChapterId]) : new Set()
-  )
+  const defaultOpenChapters = useMemo(() => {
+    return initiallyOpenChapterId ? new Set([initiallyOpenChapterId]) : new Set<string>()
+  }, [initiallyOpenChapterId])
 
-  useEffect(() => {
-    setOpenChapters(initiallyOpenChapterId ? new Set([initiallyOpenChapterId]) : new Set())
-  }, [initiallyOpenChapterId, modul.id])
+  const openChaptersKey = `${modul.id}:${initiallyOpenChapterId ?? 'none'}`
+  const [openChaptersState, setOpenChaptersState] = useState<{
+    key: string
+    chapters: Set<string>
+  }>(() => ({
+    key: openChaptersKey,
+    chapters: defaultOpenChapters,
+  }))
+  const openChapters =
+    openChaptersState.key === openChaptersKey ? openChaptersState.chapters : defaultOpenChapters
 
   const toggleChapter = (chapterId: string) => {
-    setOpenChapters((prev) => {
-      const next = new Set(prev)
+    setOpenChaptersState((prev) => {
+      const base = prev.key === openChaptersKey ? prev.chapters : defaultOpenChapters
+      const next = new Set(base)
       if (next.has(chapterId)) next.delete(chapterId)
       else next.add(chapterId)
-      return next
+      return { key: openChaptersKey, chapters: next }
     })
   }
 
@@ -249,7 +256,7 @@ export function MiddleSidebarUser({
                           <div className="p-8 text-center text-muted-foreground">Noch keine Videos</div>
                         ) : (
                           sortedVideos.map((video) => {
-                            const isWatched = Boolean(watchedVideoIds?.includes(video.id))
+                            const isWatched = watchedVideoIdSet.has(video.id)
                             return (
                               <VideoRow
                                 key={video.id}

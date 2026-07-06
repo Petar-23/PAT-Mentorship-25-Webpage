@@ -2,7 +2,14 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { getSubscriptionSnapshot } from '@/lib/stripe'
-import DashboardClient from './dashboard-client'
+import { isMentorshipAccessible } from '@/lib/authz'
+import {
+  getEmailFromSessionClaims,
+  getFirstNameFromSessionClaims,
+} from '@/lib/clerk-claims'
+import { isMentorshipAccessOverrideEmail } from '@/lib/mentorship-access-overrides'
+import DashboardConversionClient from './dashboard-conversion-client'
+import DashboardMemberClient from './dashboard-member-client'
 
 // We need to match Next.js's exact type expectation
 interface PageProps {
@@ -12,31 +19,108 @@ interface PageProps {
 export default async function DashboardPage({
   searchParams = Promise.resolve({})  // Provide a default value that matches the type
 }: PageProps) {
-  const { userId } = await auth()
-  const user = await currentUser()
+  const authPromise = auth()
+  const resolvedParamsPromise = searchParams
+  const [{ userId, sessionClaims }, resolvedParams] = await Promise.all([
+    authPromise,
+    resolvedParamsPromise,
+  ])
   
-  if (!userId || !user) {
+  if (!userId) {
     redirect('/sign-in')
   }
 
-  // Always treat searchParams as a Promise in production
-  const resolvedParams = await searchParams
-  const checkForRecentCheckout = resolvedParams?.success === 'true'
+  const showCheckoutSuccess = resolvedParams?.success === 'true'
+  const showCoursesPaywall = resolvedParams?.paywall === 'courses'
+  const showMentorshipNotStarted = resolvedParams?.message === 'mentorship-not-started'
+  const checkForRecentCheckout = showCheckoutSuccess
+  const retryCount = checkForRecentCheckout ? 5 : 3
 
-  const email = user.primaryEmailAddress?.emailAddress
-  const snapshot = await getSubscriptionSnapshot(userId, {
-    retryCount: checkForRecentCheckout ? 5 : 3,
+  let email = getEmailFromSessionClaims(sessionClaims)
+  let firstName = getFirstNameFromSessionClaims(sessionClaims)
+  let fallbackUser: Awaited<ReturnType<typeof currentUser>> | null = null
+
+  if (!email) {
+    // If the token has no email, resolve Clerk first so the Stripe fallback runs once
+    // with the best identifier instead of doing a second subscription lookup later.
+    fallbackUser = await currentUser()
+    if (!fallbackUser) {
+      redirect('/sign-in')
+    }
+
+    const user = fallbackUser
+    email =
+      user.primaryEmailAddress?.emailAddress ??
+      user.emailAddresses.find((address) => address.id === user.primaryEmailAddressId)?.emailAddress ??
+      null
+    firstName = firstName ?? user.firstName
+  }
+
+  const snapshotPromise = getSubscriptionSnapshot(userId, {
+    retryCount,
     checkForRecentCheckout,
     email: email ?? undefined,
   })
 
-  const initialData = {
-    hasSubscription: snapshot.hasActiveSubscription,
-    subscriptionDetails: snapshot.subscriptionDetails,
-    user: {
-      firstName: user.firstName
+  if (!firstName) {
+    fallbackUser = fallbackUser ?? (await currentUser())
+    if (!fallbackUser) {
+      redirect('/sign-in')
+    }
+
+    firstName = fallbackUser.firstName
+  }
+
+  let snapshot = await snapshotPromise
+  if (isMentorshipAccessOverrideEmail(email)) {
+    snapshot = {
+      hasActiveSubscription: true,
+      subscriptionDetails: {
+        status: 'active',
+        startDate: process.env.MENTORSHIP_START_DATE || '2026-03-01T00:00:00+01:00',
+        isPending: false,
+        isCanceled: false,
+        cancelAt: null,
+        currentPeriodEnd: null,
+      },
     }
   }
 
-  return <DashboardClient initialData={initialData} />
+  const initialData = {
+    hasSubscription: snapshot.hasActiveSubscription,
+    subscriptionDetails: snapshot.subscriptionDetails,
+    mentorshipStatus: {
+      accessible: isMentorshipAccessible(),
+      startDate: process.env.MENTORSHIP_START_DATE || '2026-03-01T00:00:00+01:00',
+    },
+    user: {
+      firstName
+    }
+  }
+
+  if (!initialData.subscriptionDetails) {
+    return (
+      <DashboardConversionClient
+        firstName={firstName}
+        viewFlags={{
+          showCheckoutSuccess,
+          showCoursesPaywall,
+          showMentorshipNotStarted,
+        }}
+      />
+    )
+  }
+
+  return (
+    <DashboardMemberClient
+      initialData={{
+        ...initialData,
+        subscriptionDetails: initialData.subscriptionDetails,
+      }}
+      viewFlags={{
+        showCheckoutSuccess,
+        showCoursesPaywall,
+      }}
+    />
+  )
 }

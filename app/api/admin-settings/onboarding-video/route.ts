@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
-import { auth, clerkClient } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
+import { requireAdminApiAccess } from '@/lib/authz'
 import {
   ONBOARDING_VIDEO_SETTING_KEY,
   buildOnboardingVideoSetting,
@@ -10,28 +10,8 @@ import {
 } from '@/lib/onboarding-video'
 import { getOnboardingVideoExpiryDate } from '@/lib/onboarding-video-expiry'
 
-async function requireAdmin() {
-  const { userId } = await auth()
-  if (!userId) {
-    return { ok: false as const, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
-  }
-
-  const client = await clerkClient()
-  const memberships = await client.users.getOrganizationMembershipList({
-    userId,
-    limit: 100,
-  })
-
-  const isAdmin = memberships.data.some((membership) => membership.role === 'org:admin')
-  if (!isAdmin) {
-    return { ok: false as const, response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
-  }
-
-  return { ok: true as const, userId }
-}
-
 export async function GET() {
-  const guard = await requireAdmin()
+  const guard = await requireAdminApiAccess()
   if (!guard.ok) return guard.response
 
   const setting = await prisma.adminSetting.findUnique({
@@ -49,7 +29,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const guard = await requireAdmin()
+  const guard = await requireAdminApiAccess()
   if (!guard.ok) return guard.response
 
   const body = (await request.json().catch(() => null)) as { videoId?: unknown } | null

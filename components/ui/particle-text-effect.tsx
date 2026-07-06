@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useCallback, useEffect, useRef } from "react"
 
 interface Vector2D {
   x: number
@@ -139,19 +139,20 @@ interface ParticleTextEffectProps {
 }
 
 const DEFAULT_WORDS = ["HELLO", "21st.dev", "ParticleTextEffect", "BY", "KAINXU"]
+const PIXEL_STEPS = 6
+const DRAW_AS_POINTS = true
 
 export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffectProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>()
+  const animateRef = useRef<() => void>(() => {})
   const particlesRef = useRef<Particle[]>([])
   const frameCountRef = useRef(0)
   const wordIndexRef = useRef(0)
   const mouseRef = useRef({ x: 0, y: 0, isPressed: false, isRightClick: false })
+  const shouldAnimateRef = useRef(true)
 
-  const pixelSteps = 6
-  const drawAsPoints = true
-
-  const generateRandomPos = (x: number, y: number, mag: number): Vector2D => {
+  const generateRandomPos = useCallback((x: number, y: number, mag: number): Vector2D => {
     const randomX = Math.random() * 1000
     const randomY = Math.random() * 500
 
@@ -170,9 +171,9 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
       x: x + direction.x,
       y: y + direction.y,
     }
-  }
+  }, [])
 
-  const nextWord = (word: string, canvas: HTMLCanvasElement) => {
+  const nextWord = useCallback((word: string, canvas: HTMLCanvasElement) => {
     // const ctx = canvas.getContext("2d")!
 
     // Create off-screen canvas for text rendering
@@ -203,7 +204,7 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
 
     // Collect coordinates
     const coordsIndexes: number[] = []
-    for (let i = 0; i < pixels.length; i += pixelSteps * 4) {
+    for (let i = 0; i < pixels.length; i += PIXEL_STEPS * 4) {
       coordsIndexes.push(i)
     }
 
@@ -260,11 +261,15 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
     for (let i = particleIndex; i < particles.length; i++) {
       particles[i].kill(canvas.width, canvas.height)
     }
-  }
+  }, [generateRandomPos])
 
-  const animate = () => {
+  const animate = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+    if (!shouldAnimateRef.current) {
+      animationRef.current = undefined
+      return
+    }
 
     const ctx = canvas.getContext("2d")!
     const particles = particlesRef.current
@@ -277,7 +282,7 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
     for (let i = particles.length - 1; i >= 0; i--) {
       const particle = particles[i]
       particle.move()
-      particle.draw(ctx, drawAsPoints)
+      particle.draw(ctx, DRAW_AS_POINTS)
 
       // Remove dead particles that are out of bounds
       if (particle.isKilled) {
@@ -311,8 +316,12 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
       nextWord(words[wordIndexRef.current], canvas)
     }
 
-    animationRef.current = requestAnimationFrame(animate)
-  }
+    animationRef.current = requestAnimationFrame(() => animateRef.current())
+  }, [nextWord, words])
+
+  useEffect(() => {
+    animateRef.current = animate
+  }, [animate])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -324,8 +333,57 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
     // Initialize with first word
     nextWord(words[0], canvas)
 
-    // Start animation
-    animate()
+    let isInView = typeof IntersectionObserver === "undefined"
+    let isDocumentVisible = document.visibilityState === "visible"
+    let visibilityObserver: IntersectionObserver | null = null
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
+    let prefersReducedMotion = reducedMotionQuery.matches
+
+    const updateShouldAnimate = () => {
+      shouldAnimateRef.current = isInView && isDocumentVisible && !prefersReducedMotion
+    }
+
+    const stopLoop = () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+        animationRef.current = undefined
+      }
+    }
+
+    const startLoop = () => {
+      updateShouldAnimate()
+      if (animationRef.current || !shouldAnimateRef.current) return
+      animationRef.current = requestAnimationFrame(() => animateRef.current())
+    }
+
+    const settleParticlesForReducedMotion = () => {
+      const ctx = canvas.getContext("2d")!
+      ctx.fillStyle = "rgba(0, 0, 0.1)"
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      for (const particle of particlesRef.current) {
+        particle.pos.x = particle.target.x
+        particle.pos.y = particle.target.y
+        particle.vel.x = 0
+        particle.vel.y = 0
+        particle.colorWeight = 1
+        particle.draw(ctx, DRAW_AS_POINTS)
+      }
+    }
+
+    const updatePlayback = () => {
+      updateShouldAnimate()
+      if (prefersReducedMotion) {
+        stopLoop()
+        settleParticlesForReducedMotion()
+        return
+      }
+
+      if (shouldAnimateRef.current) {
+        startLoop()
+      } else {
+        stopLoop()
+      }
+    }
 
     // Mouse event handlers
     const handleMouseDown = (e: MouseEvent) => {
@@ -351,21 +409,49 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
       e.preventDefault()
     }
 
+    const handleVisibilityChange = () => {
+      isDocumentVisible = document.visibilityState === "visible"
+      updatePlayback()
+    }
+
+    const handleReducedMotionChange = () => {
+      prefersReducedMotion = reducedMotionQuery.matches
+      updatePlayback()
+    }
+
+    if (typeof IntersectionObserver === "undefined") {
+      isInView = true
+    } else {
+      visibilityObserver = new IntersectionObserver(
+        ([entry]) => {
+          isInView = entry.isIntersecting
+          updatePlayback()
+        },
+        { rootMargin: "200px 0px", threshold: 0.01 }
+      )
+      visibilityObserver.observe(canvas)
+    }
+
     canvas.addEventListener("mousedown", handleMouseDown)
     canvas.addEventListener("mouseup", handleMouseUp)
     canvas.addEventListener("mousemove", handleMouseMove)
     canvas.addEventListener("contextmenu", handleContextMenu)
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    reducedMotionQuery.addEventListener?.("change", handleReducedMotionChange)
+
+    updatePlayback()
 
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
-      }
+      stopLoop()
+      visibilityObserver?.disconnect()
       canvas.removeEventListener("mousedown", handleMouseDown)
       canvas.removeEventListener("mouseup", handleMouseUp)
       canvas.removeEventListener("mousemove", handleMouseMove)
       canvas.removeEventListener("contextmenu", handleContextMenu)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      reducedMotionQuery.removeEventListener?.("change", handleReducedMotionChange)
     }
-  }, [])
+  }, [animate, nextWord, words])
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-black p-4">

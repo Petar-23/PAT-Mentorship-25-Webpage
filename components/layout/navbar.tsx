@@ -3,49 +3,92 @@
 import { useUser } from '@clerk/nextjs'
 import { UserButton, SignInButton } from '@clerk/nextjs'
 import Link from 'next/link'
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import {
-  List as Menu,
-  X,
-  House as Home,
-  GearSix as Settings,
-  Notebook,
-  Gauge,
-  PencilLine as PenLine,
-} from '@phosphor-icons/react'
+import { Gauge } from '@phosphor-icons/react/Gauge'
+import { GearSix as Settings } from '@phosphor-icons/react/GearSix'
+import { House as Home } from '@phosphor-icons/react/House'
+import { List as Menu } from '@phosphor-icons/react/List'
+import { Notebook } from '@phosphor-icons/react/Notebook'
+import { PencilLine as PenLine } from '@phosphor-icons/react/PencilLine'
+import { X } from '@phosphor-icons/react/X'
 import { useEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
+
+type MentorshipStatus = {
+  accessible: boolean
+  startDate: string
+  hasSubscription: boolean
+}
+
+const MENTORSHIP_STATUS_CACHE_TTL_MS = 60_000
+type IdleWindow = Window & {
+  requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number
+  cancelIdleCallback?: (id: number) => void
+}
+
+function getMentorshipStatusCacheKey(userId: string) {
+  return `mentorship-nav-status:${userId}`
+}
+
+function readCachedMentorshipStatus(userId: string): MentorshipStatus | null {
+  try {
+    const raw = window.sessionStorage.getItem(getMentorshipStatusCacheKey(userId))
+    if (!raw) return null
+
+    const cached = JSON.parse(raw) as { savedAt?: unknown; data?: unknown }
+    if (typeof cached.savedAt !== 'number' || Date.now() - cached.savedAt > MENTORSHIP_STATUS_CACHE_TTL_MS) {
+      return null
+    }
+
+    const data = cached.data as Partial<MentorshipStatus> | undefined
+    if (
+      typeof data?.accessible !== 'boolean' ||
+      typeof data.startDate !== 'string' ||
+      typeof data.hasSubscription !== 'boolean'
+    ) {
+      return null
+    }
+
+    return data as MentorshipStatus
+  } catch {
+    return null
+  }
+}
+
+function cacheMentorshipStatus(userId: string, data: MentorshipStatus) {
+  try {
+    window.sessionStorage.setItem(
+      getMentorshipStatusCacheKey(userId),
+      JSON.stringify({ savedAt: Date.now(), data })
+    )
+  } catch {
+    // sessionStorage may be unavailable in private contexts; the API fallback still works.
+  }
+}
 
 export function Navbar() {
   const { user, isSignedIn } = useUser()
   const [isOpen, setIsOpen] = useState(false)
-  const [isNavigating, setIsNavigating] = useState(false)
-  const [mentorshipStatus, setMentorshipStatus] = useState<{
-    accessible: boolean
-    startDate: string
-    hasSubscription: boolean
-  } | null>(null)
+  const [mentorshipStatus, setMentorshipStatus] = useState<MentorshipStatus | null>(null)
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const router = useRouter()
   const postCheckoutRef = useRef(false)
 
   const isMentorship = pathname?.startsWith('/mentorship')
   const isDashboard = pathname === '/dashboard'
-  const isQuickGuide = pathname === '/quick-guide'
   const isAdmin = user?.organizationMemberships?.some(
     membership => membership.role === 'org:admin'
   )
+  const userId = user?.id ?? null
   const isCheckoutSuccess = isDashboard && searchParams.get('success') === 'true'
 
   // Lade Mentorship-Status beim ersten Laden
   useEffect(() => {
-    if (!isSignedIn) {
+    if (!isSignedIn || !userId || isMentorship || isAdmin) {
       setMentorshipStatus(null)
+      postCheckoutRef.current = false
       return
     }
 
@@ -55,15 +98,29 @@ export function Navbar() {
       postCheckoutRef.current = true
     }
 
+    if (!postCheckoutRef.current) {
+      const cached = readCachedMentorshipStatus(userId)
+      if (cached) {
+        setMentorshipStatus(cached)
+        return
+      }
+    }
+
     let cancelled = false
     let timeoutId: ReturnType<typeof setTimeout> | null = null
+    let idleId: number | null = null
+    let fallbackIdleId: ReturnType<typeof setTimeout> | null = null
+    const abortController = new AbortController()
     let attempts = 0
     const maxAttempts = postCheckoutRef.current ? 12 : 1 // ~18s bei 1.5s Delay
 
     const load = async () => {
       attempts += 1
       try {
-        const res = await fetch('/api/mentorship-status', { cache: 'no-store' })
+        const res = await fetch('/api/mentorship-status', {
+          cache: 'no-store',
+          signal: abortController.signal,
+        })
         if (!res.ok) {
           const text = await res.text().catch(() => '')
           throw new Error(
@@ -74,10 +131,12 @@ export function Navbar() {
         const data = await res.json()
 
         if (cancelled) return
-        setMentorshipStatus(data)
+        const nextStatus = data as MentorshipStatus
+        setMentorshipStatus(nextStatus)
+        cacheMentorshipStatus(userId, nextStatus)
 
         // Sobald das Abo aktiv ist, stoppen wir und deaktivieren den Post-Checkout-Modus.
-        if (data?.hasSubscription) {
+        if (nextStatus.hasSubscription) {
           postCheckoutRef.current = false
           return
         }
@@ -90,9 +149,9 @@ export function Navbar() {
         // Timeout erreicht -> nicht endlos pollen.
         postCheckoutRef.current = false
       } catch (err) {
+        if (cancelled || abortController.signal.aborted) return
         console.error('Failed to load mentorship status:', err)
 
-        if (cancelled) return
         if (postCheckoutRef.current && attempts < maxAttempts) {
           timeoutId = setTimeout(load, 1500)
         } else {
@@ -101,13 +160,40 @@ export function Navbar() {
       }
     }
 
-    load()
+    const scheduleLoad = () => {
+      if (postCheckoutRef.current) {
+        void load()
+        return
+      }
+
+      const idleWindow = window as IdleWindow
+      if (idleWindow.requestIdleCallback) {
+        idleId = idleWindow.requestIdleCallback(() => {
+          idleId = null
+          void load()
+        }, { timeout: 1200 })
+        return
+      }
+
+      fallbackIdleId = setTimeout(() => {
+        fallbackIdleId = null
+        void load()
+      }, 250)
+    }
+
+    scheduleLoad()
 
     return () => {
       cancelled = true
+      abortController.abort()
       if (timeoutId) clearTimeout(timeoutId)
+      if (idleId != null) {
+        const idleWindow = window as IdleWindow
+        idleWindow.cancelIdleCallback?.(idleId)
+      }
+      if (fallbackIdleId) clearTimeout(fallbackIdleId)
     }
-  }, [isSignedIn, isCheckoutSuccess])
+  }, [isAdmin, isSignedIn, isCheckoutSuccess, isMentorship, userId])
 
   // Prevent body scroll when menu is open
   useEffect(() => {
@@ -120,18 +206,6 @@ export function Navbar() {
       document.body.style.overflow = 'unset'
     }
   }, [isOpen])
-
-  const handleNavigation = async (path: string) => {
-    try {
-      setIsNavigating(true)
-      await router.push(path)
-      setIsOpen(false)
-    } catch (error) {
-      console.error('Navigation error:', error)
-    } finally {
-      setIsNavigating(false)
-    }
-  }
 
   return (
     <>
@@ -148,8 +222,7 @@ export function Navbar() {
                 alt="PAT Mentorship Logo"
                 width={32}
                 height={32}
-                className="rounded-lg"
-                priority
+                className="h-8 w-8 rounded-lg"
                 sizes="32px"
               />
               <span className="text-xl font-semibold hidden sm:inline">
@@ -166,8 +239,8 @@ export function Navbar() {
                 <div className="flex items-center gap-3">
                   {!isMentorship ? (
                     <>
-                      {mentorshipStatus && (mentorshipStatus.hasSubscription || isAdmin) ? (
-                        !mentorshipStatus.accessible && !isAdmin ? (
+                      {isAdmin || mentorshipStatus?.hasSubscription ? (
+                        mentorshipStatus && !mentorshipStatus.accessible && !isAdmin ? (
                           <Button
                             variant="outline"
                             className="flex items-center gap-3 bg-gray-900 hover:bg-gray-800 text-gray-300 border-gray-700 cursor-not-allowed px-3 py-1 leading-tight"
@@ -182,7 +255,7 @@ export function Navbar() {
                           </Button>
                         ) : (
                           <Button asChild className="flex items-center gap-2">
-                            <Link href="/mentorship">
+                            <Link href="/mentorship" prefetch={false}>
                               <Notebook className="h-4 w-4" />
                               <span>Mentorship</span>
                             </Link>
@@ -190,47 +263,38 @@ export function Navbar() {
                         )
                       ) : null}
 
-                      <Button
-                        variant="outline"
-                        onClick={() => handleNavigation(isDashboard ? '/' : '/dashboard')}
-                        disabled={isNavigating}
-                        className="flex items-center gap-2"
-                      >
-                        {isDashboard ? (
-                          <>
-                            <Home className="h-4 w-4" />
-                            <span>Home</span>
-                          </>
-                        ) : (
-                          <>
-                            <Gauge className="h-4 w-4" />
-                            <span>Dashboard</span>
-                          </>
-                        )}
+                      <Button asChild variant="outline" className="flex items-center gap-2">
+                        <Link href={isDashboard ? '/' : '/dashboard'} prefetch={false}>
+                          {isDashboard ? (
+                            <>
+                              <Home className="h-4 w-4" />
+                              <span>Home</span>
+                            </>
+                          ) : (
+                            <>
+                              <Gauge className="h-4 w-4" />
+                              <span>Dashboard</span>
+                            </>
+                          )}
+                        </Link>
                       </Button>
                     </>
                   ) : null}
-                  
+
                   {isAdmin && (
-                    <Button
-                      variant="outline"
-                      onClick={() => handleNavigation('/owner/blog')}
-                      disabled={isNavigating}
-                      className="flex items-center gap-2"
-                    >
-                      <PenLine className="h-4 w-4" />
-                      <span>Blog</span>
+                    <Button asChild variant="outline" className="flex items-center gap-2">
+                      <Link href="/owner/blog" prefetch={false}>
+                        <PenLine className="h-4 w-4" />
+                        <span>Blog</span>
+                      </Link>
                     </Button>
                   )}
                   {isAdmin && (
-                    <Button
-                      variant="outline"
-                      onClick={() => handleNavigation('/owner')}
-                      disabled={isNavigating}
-                      className="flex items-center gap-2"
-                    >
-                      <Settings className="h-4 w-4" />
-                      <span>Admin</span>
+                    <Button asChild variant="outline" className="flex items-center gap-2">
+                      <Link href="/owner" prefetch={false}>
+                        <Settings className="h-4 w-4" />
+                        <span>Admin</span>
+                      </Link>
                     </Button>
                   )}
                   {!isMentorship ? (
@@ -261,19 +325,12 @@ export function Navbar() {
                     <button
                       onClick={() => setIsOpen(!isOpen)}
                       className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                      disabled={isNavigating}
+                      aria-label={isOpen ? 'Menü schließen' : 'Menü öffnen'}
+                      aria-expanded={isOpen}
                     >
-                      <AnimatePresence mode="wait">
-                        <motion.div
-                          key={isOpen ? 'close' : 'menu'}
-                          initial={{ rotate: -90, opacity: 0 }}
-                          animate={{ rotate: 0, opacity: 1 }}
-                          exit={{ rotate: 90, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-                        </motion.div>
-                      </AnimatePresence>
+                      <span className="block transition-transform duration-200">
+                        {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                      </span>
                     </button>
                   ) : null}
                   {!isMentorship ? (
@@ -298,48 +355,41 @@ export function Navbar() {
           </nav>
 
           {/* Mobile Menu */}
-          <AnimatePresence>
-            {isOpen && isSignedIn && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="md:hidden absolute top-16 left-0 right-0 bg-white border-t border-gray-100 shadow-lg z-50 overflow-hidden"
-              >
-                <div className="container px-4 py-4">
-                  <div className="flex flex-col gap-4">
-                    {!isMentorship ? (
-                      <>
-                        {mentorshipStatus && (mentorshipStatus.hasSubscription || isAdmin) ? (
-                          !mentorshipStatus.accessible && !isAdmin ? (
-                            <Button
-                              variant="outline"
-                              className="w-full flex items-center gap-3 bg-gray-900 hover:bg-gray-800 text-gray-300 border-gray-700 cursor-not-allowed px-3 py-1 leading-tight"
-                              disabled
-                              title={`Mentorship startet ab ${MENTORSHIP_CONFIG.startDateFormatted}`}
-                            >
-                              <Notebook className="h-5 w-5" />
-                              <div className="flex flex-col items-start gap-0">
-                                <span className="text-sm">Mentorship</span>
-                                <span className="text-[10px] text-gray-400 mb-1">Start {MENTORSHIP_CONFIG.startDateFormatted}</span>
-                              </div>
-                            </Button>
-                          ) : (
-                            <Button asChild className="w-full flex items-center justify-center gap-2">
-                              <Link href="/mentorship" onClick={() => setIsOpen(false)}>
-                                <Notebook className="h-4 w-4" />
-                                <span>Mentorship</span>
-                              </Link>
-                            </Button>
-                          )
-                        ) : null}
+          {isOpen && isSignedIn && (
+            <div className="md:hidden absolute top-16 left-0 right-0 bg-white border-t border-gray-100 shadow-lg z-50 overflow-hidden animate-in fade-in-0 slide-in-from-top-2 duration-200">
+              <div className="container px-4 py-4">
+                <div className="flex flex-col gap-4">
+                  {!isMentorship ? (
+                    <>
+                      {isAdmin || mentorshipStatus?.hasSubscription ? (
+                        mentorshipStatus && !mentorshipStatus.accessible && !isAdmin ? (
+                          <Button
+                            variant="outline"
+                            className="w-full flex items-center gap-3 bg-gray-900 hover:bg-gray-800 text-gray-300 border-gray-700 cursor-not-allowed px-3 py-1 leading-tight"
+                            disabled
+                            title={`Mentorship startet ab ${MENTORSHIP_CONFIG.startDateFormatted}`}
+                          >
+                            <Notebook className="h-5 w-5" />
+                            <div className="flex flex-col items-start gap-0">
+                              <span className="text-sm">Mentorship</span>
+                              <span className="text-[10px] text-gray-400 mb-1">Start {MENTORSHIP_CONFIG.startDateFormatted}</span>
+                            </div>
+                          </Button>
+                        ) : (
+                          <Button asChild className="w-full flex items-center justify-center gap-2">
+                            <Link href="/mentorship" prefetch={false} onClick={() => setIsOpen(false)}>
+                              <Notebook className="h-4 w-4" />
+                              <span>Mentorship</span>
+                            </Link>
+                          </Button>
+                        )
+                      ) : null}
 
-                        <Button
-                          variant="outline"
-                          onClick={() => handleNavigation(isDashboard ? '/' : '/dashboard')}
-                          disabled={isNavigating}
-                          className="w-full flex items-center justify-center gap-2"
+                      <Button asChild variant="outline" className="w-full flex items-center justify-center gap-2">
+                        <Link
+                          href={isDashboard ? '/' : '/dashboard'}
+                          prefetch={false}
+                          onClick={() => setIsOpen(false)}
                         >
                           {isDashboard ? (
                             <>
@@ -352,37 +402,31 @@ export function Navbar() {
                               <span>Dashboard</span>
                             </>
                           )}
-                        </Button>
-                      </>
-                    ) : null}
-                    
-                    {isAdmin && (
-                      <Button
-                        variant="outline"
-                        onClick={() => handleNavigation('/owner/blog')}
-                        disabled={isNavigating}
-                        className="w-full flex items-center justify-center gap-2"
-                      >
+                        </Link>
+                      </Button>
+                    </>
+                  ) : null}
+
+                  {isAdmin && (
+                    <Button asChild variant="outline" className="w-full flex items-center justify-center gap-2">
+                      <Link href="/owner/blog" prefetch={false} onClick={() => setIsOpen(false)}>
                         <PenLine className="h-4 w-4" />
                         <span>Blog</span>
-                      </Button>
-                    )}
-                    {isAdmin && (
-                      <Button
-                        variant="outline"
-                        onClick={() => handleNavigation('/owner')}
-                        disabled={isNavigating}
-                        className="w-full flex items-center justify-center gap-2"
-                      >
+                      </Link>
+                    </Button>
+                  )}
+                  {isAdmin && (
+                    <Button asChild variant="outline" className="w-full flex items-center justify-center gap-2">
+                      <Link href="/owner" prefetch={false} onClick={() => setIsOpen(false)}>
                         <Settings className="h-4 w-4" />
                         <span>Admin</span>
-                      </Button>
-                    )}
-                  </div>
+                      </Link>
+                    </Button>
+                  )}
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Gradient Border */}
@@ -390,18 +434,12 @@ export function Navbar() {
       </header>
 
       {/* Backdrop Overlay */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
-            onClick={() => setIsOpen(false)}
-          />
-        )}
-      </AnimatePresence>
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden animate-in fade-in-0 duration-200"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
     </>
   )
 }

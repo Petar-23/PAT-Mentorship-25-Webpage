@@ -18,22 +18,25 @@ export async function GET(_req: Request, { params }: RouteParams) {
   const { moduleId } = await params
   if (!moduleId) return NextResponse.json({ error: 'Missing moduleId' }, { status: 400 })
 
-  const moduleRow = await prisma.module.findUnique({
-    where: { id: moduleId },
-    select: {
-      id: true,
-      chapters: {
-        select: {
-          videos: { select: { id: true } },
-        },
+  const [moduleRow, totalLessons, watchedRows] = await Promise.all([
+    prisma.module.findUnique({
+      where: { id: moduleId },
+      select: { id: true },
+    }),
+    prisma.video.count({
+      where: { chapter: { moduleId } },
+    }),
+    prisma.videoProgress.findMany({
+      where: {
+        userId,
+        watched: true,
+        video: { chapter: { moduleId } },
       },
-    },
-  })
+      select: { videoId: true },
+    }),
+  ])
 
   if (!moduleRow) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-
-  const videoIds = moduleRow.chapters.flatMap((ch) => ch.videos.map((v) => v.id))
-  const totalLessons = videoIds.length
 
   if (totalLessons === 0) {
     return NextResponse.json({
@@ -44,15 +47,6 @@ export async function GET(_req: Request, { params }: RouteParams) {
       watchedVideoIds: [],
     })
   }
-
-  const watchedRows = await prisma.videoProgress.findMany({
-    where: {
-      userId,
-      watched: true,
-      videoId: { in: videoIds },
-    },
-    select: { videoId: true },
-  })
 
   const watchedVideoIds = watchedRows.map((r) => r.videoId)
   const completedLessons = watchedVideoIds.length
@@ -65,5 +59,3 @@ export async function GET(_req: Request, { params }: RouteParams) {
     watchedVideoIds,
   })
 }
-
-

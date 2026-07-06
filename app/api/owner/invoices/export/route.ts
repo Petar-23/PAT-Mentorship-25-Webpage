@@ -1,10 +1,36 @@
-import { auth, clerkClient } from '@clerk/nextjs/server'
+import { requireAdminApiAccess } from '@/lib/authz'
 import { NextResponse } from 'next/server'
 import JSZip from 'jszip'
 import { stripe } from '@/lib/stripe'
 import type Stripe from 'stripe'
 
 const MAX_INVOICES_PER_EXPORT = 50
+const STRIPE_LINE_ITEM_CONCURRENCY = 4
+const PDF_DOWNLOAD_CONCURRENCY = 4
+const PDF_DOWNLOAD_TIMEOUT_MS = 15_000
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  if (items.length === 0) return []
+
+  const limit = Math.max(1, Math.min(concurrency, items.length))
+  const results = new Array<R>(items.length)
+  let nextIndex = 0
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex
+      nextIndex += 1
+      results[index] = await mapper(items[index]!, index)
+    }
+  }
+
+  await Promise.all(Array.from({ length: limit }, () => worker()))
+  return results
+}
 
 function parseYmdToUnixSeconds(ymd: string, opts?: { endOfDay?: boolean }): number {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd)
@@ -79,30 +105,32 @@ function extractProductIdsFromLineItems(lineItems: Stripe.InvoiceLineItem[]): Se
 }
 
 async function downloadPdf(url: string): Promise<Uint8Array> {
-  const res = await fetch(url)
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`PDF download failed: ${res.status} ${res.statusText} ${body}`.trim())
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), PDF_DOWNLOAD_TIMEOUT_MS)
+
+  try {
+    const res = await fetch(url, { signal: controller.signal })
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      throw new Error(`PDF download failed: ${res.status} ${res.statusText} ${body}`.trim())
+    }
+    const buf = await res.arrayBuffer()
+    return new Uint8Array(buf)
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error(`PDF download timed out after ${PDF_DOWNLOAD_TIMEOUT_MS}ms`)
+    }
+    throw error
+  } finally {
+    clearTimeout(timeout)
   }
-  const buf = await res.arrayBuffer()
-  return new Uint8Array(buf)
 }
 
 export async function GET(req: Request) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const client = await clerkClient()
-    const memberships = await client.users.getOrganizationMembershipList({
-      userId,
-      limit: 100,
-    })
-    const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-    if (!isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const admin = await requireAdminApiAccess()
+    if (!admin.ok) {
+      return admin.response
     }
 
     const url = new URL(req.url)
@@ -123,20 +151,16 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Keine Rechnungen im Zeitraum gefunden.' }, { status: 404 })
     }
 
-    // Filter invoices by productId if requested
-    const selected: Stripe.Invoice[] = []
-
-    for (const inv of invoices) {
-      if (productIds.length === 0) {
-        selected.push(inv)
-        continue
-      }
-
-      const lineItems = await listAllInvoiceLineItems(inv.id)
-      const ids = extractProductIdsFromLineItems(lineItems)
-      const matches = productIds.some((pid) => ids.has(pid))
-      if (matches) selected.push(inv)
-    }
+    const selected =
+      productIds.length === 0
+        ? invoices
+        : (
+            await mapWithConcurrency(invoices, STRIPE_LINE_ITEM_CONCURRENCY, async (inv) => {
+              const lineItems = await listAllInvoiceLineItems(inv.id)
+              const ids = extractProductIdsFromLineItems(lineItems)
+              return productIds.some((pid) => ids.has(pid)) ? inv : null
+            })
+          ).filter((inv): inv is Stripe.Invoice => inv != null)
 
     if (selected.length === 0) {
       return NextResponse.json(
@@ -155,12 +179,11 @@ export async function GET(req: Request) {
     }
 
     const zip = new JSZip()
-
-    for (const inv of selected) {
+    const pdfFiles = await mapWithConcurrency(selected, PDF_DOWNLOAD_CONCURRENCY, async (inv) => {
       const full =
         inv.invoice_pdf != null ? inv : await stripe.invoices.retrieve(inv.id)
       const pdfUrl = full.invoice_pdf
-      if (!pdfUrl) continue
+      if (!pdfUrl) return null
 
       const createdDate = new Date((inv.created ?? 0) * 1000).toISOString().slice(0, 10)
       const invoiceNumber = sanitizeFilename(inv.number ?? inv.id)
@@ -168,7 +191,12 @@ export async function GET(req: Request) {
 
       const filename = `${createdDate}_${invoiceNumber}_${email}_${inv.id}.pdf`
       const bytes = await downloadPdf(pdfUrl)
-      zip.file(filename, bytes)
+      return { filename, bytes }
+    })
+
+    for (const file of pdfFiles) {
+      if (!file) continue
+      zip.file(file.filename, file.bytes)
     }
 
     const zipBytes = await zip.generateAsync({
@@ -199,5 +227,3 @@ export async function GET(req: Request) {
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-
-

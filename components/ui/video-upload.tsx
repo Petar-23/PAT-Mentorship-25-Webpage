@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as tus from 'tus-js-client'
 
 type UploadResponse = {
@@ -14,8 +14,32 @@ export function VideoUpload({ onSuccess }: { onSuccess?: () => void }) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [fileName, setFileName] = useState('')
+  const uploadAbortRef = useRef<AbortController | null>(null)
+  const tusUploadRef = useRef<tus.Upload | null>(null)
+
+  useEffect(() => {
+    return () => {
+      uploadAbortRef.current?.abort()
+      try {
+        void tusUploadRef.current?.abort()
+      } catch {
+        // Best-effort cancellation while leaving the page.
+      }
+    }
+  }, [])
 
   const startUpload = async (file: File) => {
+    uploadAbortRef.current?.abort()
+    try {
+      void tusUploadRef.current?.abort()
+    } catch {
+      // Ignore stale upload cancellation before replacing it.
+    }
+
+    const controller = new AbortController()
+    uploadAbortRef.current = controller
+    let startedTusUpload = false
+
     setUploading(true)
     setError('')
     setProgress(0)
@@ -26,10 +50,12 @@ export function VideoUpload({ onSuccess }: { onSuccess?: () => void }) {
       const res = await fetch('/api/videos/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({ title: file.name.split('.')[0] }),
       })
       if (!res.ok) throw new Error(await res.text())
       const data: UploadResponse = await res.json()
+      if (controller.signal.aborted) return
 
       // TUS Upload
       const upload = new tus.Upload(file, {
@@ -46,25 +72,46 @@ export function VideoUpload({ onSuccess }: { onSuccess?: () => void }) {
           filetype: file.type,
         },
         onError: (err) => {
+          if (controller.signal.aborted) return
           setError(err.message)
           setUploading(false)
+          if (uploadAbortRef.current === controller) uploadAbortRef.current = null
+          if (tusUploadRef.current === upload) tusUploadRef.current = null
         },
-        onProgress: (bytes, total) => setProgress((bytes / total) * 100),
+        onProgress: (bytes, total) => {
+          if (controller.signal.aborted) return
+          setProgress((bytes / total) * 100)
+        },
         onSuccess: () => {
+          if (controller.signal.aborted) return
           setUploading(false)
           onSuccess?.()
           alert('Upload komplett!')
+          if (uploadAbortRef.current === controller) uploadAbortRef.current = null
+          if (tusUploadRef.current === upload) tusUploadRef.current = null
         },
       })
 
+      tusUploadRef.current = upload
       upload.start()
+      startedTusUpload = true
     } catch (err: unknown) {
-        setError(String(err))
-        setUploading(false)
+      if (controller.signal.aborted) return
+
+      setError(String(err))
+      setUploading(false)
+    } finally {
+      if ((controller.signal.aborted || !startedTusUpload) && uploadAbortRef.current === controller) {
+        uploadAbortRef.current = null
       }
+      if (!startedTusUpload) tusUploadRef.current = null
+    }
   }
 
-  const handleFiles = (files: FileList) => startUpload(files[0])
+  const handleFiles = (files: FileList) => {
+    const file = files[0]
+    if (file) void startUpload(file)
+  }
 
   return (
     <div className="border-2 border-dashed p-8 rounded-lg text-center cursor-pointer hover:border-blue-400 group">

@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-
-const BUNNY_LIBRARY_ID = process.env.BUNNY_LIBRARY_ID
-const BUNNY_API_KEY = process.env.BUNNY_API_KEY
+import { BunnyApiError, getBunnyVideoDetails } from '@/lib/bunny'
 
 export async function GET(
   _request: Request,
@@ -12,10 +10,6 @@ export async function GET(
   const { userId } = await auth()
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  if (!BUNNY_LIBRARY_ID || !BUNNY_API_KEY) {
-    return NextResponse.json({ error: 'Missing Bunny env' }, { status: 500 })
   }
 
   const { guid } = await params
@@ -33,19 +27,20 @@ export async function GET(
     return NextResponse.json({ durationSeconds: cached.duration })
   }
 
-  const res = await fetch(
-    `https://video.bunnycdn.com/library/${BUNNY_LIBRARY_ID}/videos/${guid}`,
-    {
-      headers: { AccessKey: BUNNY_API_KEY },
-      cache: 'no-store',
+  let json: Record<string, unknown>
+  try {
+    json = await getBunnyVideoDetails(guid)
+  } catch (error) {
+    if (error instanceof BunnyApiError) {
+      return NextResponse.json({ error: error.body }, { status: error.status })
     }
-  )
 
-  if (!res.ok) {
-    return NextResponse.json({ error: await res.text() }, { status: res.status })
+    if (error instanceof Error && error.message.startsWith('Missing BUNNY_')) {
+      return NextResponse.json({ error: 'Missing Bunny env' }, { status: 500 })
+    }
+
+    throw error
   }
-
-  const json = (await res.json()) as Record<string, unknown>
 
   const rawLength =
     typeof json.length === 'number'

@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getOnboardingDismissStorageKey, getOnboardingEmbedUrl } from '@/lib/onboarding-video'
-import { CalendarDots as CalendarDays, CheckCircle as CheckCircle2, CaretDown as ChevronDown } from '@phosphor-icons/react'
+import { CalendarDots as CalendarDays } from '@phosphor-icons/react/CalendarDots'
+import { CaretDown as ChevronDown } from '@phosphor-icons/react/CaretDown'
+import { CheckCircle as CheckCircle2 } from '@phosphor-icons/react/CheckCircle'
 
 type OnboardingWelcomeCardProps = {
   videoId: string
@@ -15,35 +16,24 @@ type OnboardingWelcomeCardProps = {
 export function OnboardingWelcomeCard({ videoId, expiresAtLabel }: OnboardingWelcomeCardProps) {
   const storageKey = getOnboardingDismissStorageKey(videoId)
   const embedUrl = getOnboardingEmbedUrl(videoId)
-  const contentRef = useRef<HTMLDivElement>(null)
-  const [contentHeight, setContentHeight] = useState<number>(0)
 
-  const [isDismissed, setIsDismissed] = useState(() => {
-    if (typeof window === 'undefined') return false
-    try {
-      return window.localStorage.getItem(storageKey) === '1'
-    } catch {
-      return false
-    }
-  })
-
-  const measureHeight = useCallback(() => {
-    if (contentRef.current) {
-      setContentHeight(contentRef.current.scrollHeight)
-    }
-  }, [])
+  const [isDismissed, setIsDismissed] = useState<boolean | null>(null)
 
   useEffect(() => {
-    measureHeight()
-    window.addEventListener('resize', measureHeight)
-    return () => window.removeEventListener('resize', measureHeight)
-  }, [measureHeight])
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        setIsDismissed(window.localStorage.getItem(storageKey) === '1')
+      } catch {
+        setIsDismissed(false)
+      }
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [storageKey])
 
   const handleToggle = () => {
-    if (isDismissed) {
+    if (isDismissed === true) {
       try { window.localStorage.removeItem(storageKey) } catch {}
-      // re-measure before expanding
-      measureHeight()
       setIsDismissed(false)
     } else {
       try { window.localStorage.setItem(storageKey, '1') } catch {}
@@ -53,8 +43,8 @@ export function OnboardingWelcomeCard({ videoId, expiresAtLabel }: OnboardingWel
 
   return (
     <Card>
-      <div className={isDismissed ? 'px-4 py-3 sm:px-6' : ''}>
-        {isDismissed ? (
+      <div className={isDismissed === true ? 'px-4 py-3 sm:px-6' : ''}>
+        {isDismissed === true ? (
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
               <CalendarDays className="mr-1.5 inline h-4 w-4 align-text-bottom" />
@@ -69,13 +59,9 @@ export function OnboardingWelcomeCard({ videoId, expiresAtLabel }: OnboardingWel
               aria-label="Onboarding-Kachel einblenden"
             >
               Einblenden
-              <motion.span
-                className="ml-1 inline-flex"
-                animate={{ rotate: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
-              >
+              <span className="ml-1 inline-flex transition-transform duration-300 ease-in-out">
                 <ChevronDown className="h-4 w-4" />
-              </motion.span>
+              </span>
             </Button>
           </div>
         ) : (
@@ -98,29 +84,17 @@ export function OnboardingWelcomeCard({ videoId, expiresAtLabel }: OnboardingWel
                 aria-label="Onboarding-Kachel ausblenden"
               >
                 Ausblenden
-                <motion.span
-                  className="ml-1 inline-flex"
-                  animate={{ rotate: 180 }}
-                  transition={{ duration: 0.3, ease: 'easeInOut' }}
-                >
+                <span className="ml-1 inline-flex rotate-180 transition-transform duration-300 ease-in-out">
                   <ChevronDown className="h-4 w-4" />
-                </motion.span>
+                </span>
               </Button>
             </div>
           </CardHeader>
         )}
       </div>
 
-      <motion.div
-        initial={false}
-        animate={{
-          height: isDismissed ? 0 : contentHeight || 'auto',
-          opacity: isDismissed ? 0 : 1,
-        }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-        style={{ overflow: 'hidden' }}
-      >
-        <div ref={contentRef}>
+      {isDismissed === false ? (
+        <div className="overflow-hidden">
           <CardContent className="pt-0">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
               <div className="overflow-hidden rounded-lg border border-border bg-black aspect-video">
@@ -162,7 +136,7 @@ export function OnboardingWelcomeCard({ videoId, expiresAtLabel }: OnboardingWel
             </div>
           </CardContent>
         </div>
-      </motion.div>
+      ) : null}
     </Card>
   )
 }

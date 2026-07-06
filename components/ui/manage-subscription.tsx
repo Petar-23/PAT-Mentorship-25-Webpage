@@ -1,11 +1,11 @@
 // src/components/manage-subscription.tsx
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useToast } from "@/hooks/use-toast"
-import { CreditCard } from '@phosphor-icons/react'
+import { CreditCard } from '@phosphor-icons/react/CreditCard'
 import { useAuth } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 
@@ -31,8 +31,49 @@ export function ManageSubscriptionButton({
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
   const { isLoaded } = useAuth()
+  const portalAbortRef = useRef<AbortController | null>(null)
+  const retryTimeoutRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      portalAbortRef.current?.abort()
+      if (retryTimeoutRef.current !== null) {
+        window.clearTimeout(retryTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  const waitForRetry = (signal: AbortSignal) =>
+    new Promise<void>((resolve, reject) => {
+      if (signal.aborted) {
+        reject(new DOMException('Aborted', 'AbortError'))
+        return
+      }
+
+      const handleAbort = () => {
+        if (retryTimeoutRef.current !== null) {
+          window.clearTimeout(retryTimeoutRef.current)
+          retryTimeoutRef.current = null
+        }
+        reject(new DOMException('Aborted', 'AbortError'))
+      }
+
+      retryTimeoutRef.current = window.setTimeout(() => {
+        retryTimeoutRef.current = null
+        signal.removeEventListener('abort', handleAbort)
+        resolve()
+      }, 1000)
+
+      signal.addEventListener('abort', handleAbort, { once: true })
+    })
 
   const handlePortalAccess = async () => {
+    if (loading || !isLoaded) return
+
+    portalAbortRef.current?.abort()
+    const controller = new AbortController()
+    portalAbortRef.current = controller
+
     try {
       setLoading(true)
       
@@ -42,9 +83,14 @@ export function ManageSubscriptionButton({
           headers: {
             'Content-Type': 'application/json',
           },
+          signal: controller.signal,
         })
         
         const data = await response.json()
+        if (controller.signal.aborted) {
+          throw new DOMException('Aborted', 'AbortError')
+        }
+
         if (!response.ok) {
           throw new Error(data.message || 'Ein Fehler ist aufgetreten')
         }
@@ -58,7 +104,7 @@ export function ManageSubscriptionButton({
         return
       } catch (error) {
         if (error instanceof Error && error.message.includes('Nicht autorisiert')) {
-          await new Promise(resolve => setTimeout(resolve, 1000))
+          await waitForRetry(controller.signal)
           const data = await makeRequest()
           window.location.href = data.url
           return
@@ -67,6 +113,7 @@ export function ManageSubscriptionButton({
       }
 
     } catch (error) {
+      if (controller.signal.aborted) return
       console.error('Portal access error:', error)
       toast({
         title: "Fehler",
@@ -74,7 +121,12 @@ export function ManageSubscriptionButton({
         variant: "destructive",
       })
     } finally {
-      setLoading(false)
+      if (portalAbortRef.current === controller) {
+        portalAbortRef.current = null
+      }
+      if (!controller.signal.aborted) {
+        setLoading(false)
+      }
     }
   }
 

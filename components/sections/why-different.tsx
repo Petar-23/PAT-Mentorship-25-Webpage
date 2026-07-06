@@ -1,15 +1,10 @@
-'use client'
-
 import { MENTORSHIP_CONFIG } from '@/lib/config'
-import {
-  PlayCircle,
-  Users,
-  Calendar,
-  ChartLine as ChartSpline,
-  Trophy,
-  CreditCard,
-} from "@phosphor-icons/react"
-import { GlowingEffect } from "@/components/ui/glowing-effect"
+import { Calendar } from "@phosphor-icons/react/dist/ssr/Calendar"
+import { ChartLine as ChartSpline } from "@phosphor-icons/react/dist/ssr/ChartLine"
+import { CreditCard } from "@phosphor-icons/react/dist/ssr/CreditCard"
+import { PlayCircle } from "@phosphor-icons/react/dist/ssr/PlayCircle"
+import { Trophy } from "@phosphor-icons/react/dist/ssr/Trophy"
+import { Users } from "@phosphor-icons/react/dist/ssr/Users"
 
 const features = [
   {
@@ -46,17 +41,9 @@ const features = [
 
 function FeatureCard({ feature }: { feature: typeof features[0] }) {
   return (
-    <div className="relative h-full rounded-xl sm:rounded-2xl border border-slate-700 p-0.5 sm:p-1">
-      <GlowingEffect
-        spread={40}
-        glow={true}
-        disabled={false}
-        proximity={64}
-        inactiveZone={0.01}
-        borderWidth={3}
-        variant="dark"
-      />
-      <div className="relative flex h-full flex-col rounded-lg sm:rounded-xl bg-slate-800 p-3 sm:p-6">
+    <div className="group relative h-full rounded-xl border border-slate-700 bg-slate-900 p-0.5 transition-colors duration-300 hover:border-slate-500/80 sm:rounded-2xl sm:p-1">
+      <div className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[radial-gradient(circle_at_30%_0%,rgba(96,165,250,0.75),transparent_36%)] opacity-15 transition-opacity duration-300 group-hover:opacity-25" />
+      <div className="relative flex h-full flex-col rounded-lg bg-slate-800 p-3 sm:rounded-xl sm:p-6">
         <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
           <div className="text-blue-400 bg-blue-500/20 p-1.5 sm:p-3 rounded-md sm:rounded-lg">
             {feature.icon}

@@ -7,16 +7,14 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Progress } from '@/components/ui/progress'
-import {
-  ArrowLeft,
-  Check,
-  CaretDown as ChevronDown,
-  CaretRight as ChevronRight,
-  CaretUp as ChevronUp,
-  DotsSixVertical as GripVertical,
-  Plus,
-  Trash as Trash2,
-} from '@phosphor-icons/react'
+import { ArrowLeft } from '@phosphor-icons/react/ArrowLeft'
+import { CaretDown as ChevronDown } from '@phosphor-icons/react/CaretDown'
+import { CaretRight as ChevronRight } from '@phosphor-icons/react/CaretRight'
+import { CaretUp as ChevronUp } from '@phosphor-icons/react/CaretUp'
+import { Check } from '@phosphor-icons/react/Check'
+import { DotsSixVertical as GripVertical } from '@phosphor-icons/react/DotsSixVertical'
+import { Plus } from '@phosphor-icons/react/Plus'
+import { Trash as Trash2 } from '@phosphor-icons/react/Trash'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +51,36 @@ const DURATION_RETRY_MS = 15_000
 const MAX_DURATION_ATTEMPTS = 30
 const STATUS_RETRY_MS = 8_000
 const MAX_STATUS_ATTEMPTS = 120
+const VIDEO_METADATA_FETCH_CONCURRENCY = 4
+const EMPTY_DURATION_ATTEMPTS: Record<string, number> = {}
+const EMPTY_VIDEO_STATUSES: Record<string, BunnyStatus | null> = {}
+
+function isDocumentHidden() {
+  return typeof document !== 'undefined' && document.visibilityState === 'hidden'
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  if (items.length === 0) return []
+
+  const limit = Math.max(1, Math.min(concurrency, items.length))
+  const results = new Array<R>(items.length)
+  let nextIndex = 0
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex
+      nextIndex += 1
+      results[index] = await mapper(items[index]!, index)
+    }
+  }
+
+  await Promise.all(Array.from({ length: limit }, () => worker()))
+  return results
+}
 
 type Video = {
   id: string
@@ -283,14 +311,20 @@ export function MiddleSidebar({
     )
   }, [activeVideoId, sortedChapters])
 
-  const [openChapters, setOpenChapters] = useState<Set<string>>(() =>
-    initiallyOpenChapterId ? new Set([initiallyOpenChapterId]) : new Set()
-  )
+  const defaultOpenChapters = useMemo(() => {
+    return initiallyOpenChapterId ? new Set([initiallyOpenChapterId]) : new Set<string>()
+  }, [initiallyOpenChapterId])
+  const openChaptersKey = `${modul.id}:${initiallyOpenChapterId ?? 'none'}`
+  const [openChaptersState, setOpenChaptersState] = useState<{
+    key: string
+    chapters: Set<string>
+  }>(() => ({
+    key: openChaptersKey,
+    chapters: defaultOpenChapters,
+  }))
+  const openChapters =
+    openChaptersState.key === openChaptersKey ? openChaptersState.chapters : defaultOpenChapters
   const [deleteDialogChapterId, setDeleteDialogChapterId] = useState<string | null>(null)
-
-  useEffect(() => {
-    setOpenChapters(initiallyOpenChapterId ? new Set([initiallyOpenChapterId]) : new Set())
-  }, [initiallyOpenChapterId, modul.id])
 
   const initialVideoDurations = useMemo(() => {
     const entries = sortedChapters
@@ -304,21 +338,48 @@ export function MiddleSidebar({
     return Object.fromEntries(entries) as Record<string, number>
   }, [sortedChapters])
 
-  const [videoDurations, setVideoDurations] = useState<Record<string, number | null>>(
-    initialVideoDurations
-  )
-  const durationAttemptsRef = useRef<Record<string, number>>({})
-  const [durationAttempts, setDurationAttempts] = useState<Record<string, number>>({})
-  const [videoStatuses, setVideoStatuses] = useState<Record<string, BunnyStatus | null>>({})
-  const statusAttemptsRef = useRef<Record<string, number>>({})
+  const videoStateKey = useMemo(() => {
+    const videoFingerprint = sortedChapters
+      .flatMap((chapter) =>
+        chapter.videos.map((video) => [
+          video.id,
+          video.bunnyGuid ?? '',
+          typeof video.duration === 'number' ? video.duration : '',
+          video.updatedAt ? new Date(video.updatedAt).getTime() : '',
+        ].join(':'))
+      )
+      .join('|')
 
-  useEffect(() => {
-    setVideoDurations(initialVideoDurations)
-    setDurationAttempts({})
-    durationAttemptsRef.current = {}
-    setVideoStatuses({})
-    statusAttemptsRef.current = {}
-  }, [initialVideoDurations, modul.id])
+    return `${modul.id}:${videoFingerprint}`
+  }, [modul.id, sortedChapters])
+
+  const [videoDurationsState, setVideoDurationsState] = useState<{
+    key: string
+    values: Record<string, number | null>
+  }>(() => ({ key: videoStateKey, values: initialVideoDurations }))
+  const [durationAttemptsState, setDurationAttemptsState] = useState<{
+    key: string
+    values: Record<string, number>
+  }>(() => ({ key: videoStateKey, values: {} }))
+  const [videoStatusesState, setVideoStatusesState] = useState<{
+    key: string
+    values: Record<string, BunnyStatus | null>
+  }>(() => ({ key: videoStateKey, values: {} }))
+  const durationAttemptsRef = useRef<{ key: string; values: Record<string, number> }>({
+    key: videoStateKey,
+    values: {},
+  })
+  const statusAttemptsRef = useRef<{ key: string; values: Record<string, number> }>({
+    key: videoStateKey,
+    values: {},
+  })
+
+  const videoDurations =
+    videoDurationsState.key === videoStateKey ? videoDurationsState.values : initialVideoDurations
+  const durationAttempts =
+    durationAttemptsState.key === videoStateKey ? durationAttemptsState.values : EMPTY_DURATION_ATTEMPTS
+  const videoStatuses =
+    videoStatusesState.key === videoStateKey ? videoStatusesState.values : EMPTY_VIDEO_STATUSES
 
   const videosMissingDuration = useMemo(() => {
     return sortedChapters.flatMap((chapter) =>
@@ -347,6 +408,8 @@ export function MiddleSidebar({
   useEffect(() => {
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | null = null
+    let inFlight = false
+    const controller = new AbortController()
 
     const fetchableGuids = durationCandidateGuids.filter((guid) => {
       const status = videoStatuses[guid]
@@ -362,71 +425,118 @@ export function MiddleSidebar({
     const pending = fetchableGuids.filter((guid) => {
       const value = videoDurations[guid]
       if (value !== null) return false
-      const attempts = durationAttemptsRef.current[guid] ?? 0
+      const attempts =
+        durationAttemptsRef.current.key === videoStateKey
+          ? durationAttemptsRef.current.values[guid] ?? 0
+          : 0
       return attempts < MAX_DURATION_ATTEMPTS
     })
 
     if (missing.length === 0 && pending.length === 0) return
 
     const fetchGuids = async (guids: string[]) => {
+      if (cancelled || inFlight || isDocumentHidden()) return
+      inFlight = true
       const attemptUpdates: Record<string, number> = {}
-      const results = await Promise.all(
-        guids.map(async (guid) => {
-          const nextAttempt = (durationAttemptsRef.current[guid] ?? 0) + 1
-          durationAttemptsRef.current[guid] = nextAttempt
-          attemptUpdates[guid] = nextAttempt
-          try {
-            const res = await fetch(`/api/videos/duration/${guid}`, { cache: 'no-store' })
-            if (!res.ok) return [guid, null] as const
+      if (durationAttemptsRef.current.key !== videoStateKey) {
+        durationAttemptsRef.current = { key: videoStateKey, values: {} }
+      }
 
-            const data = (await res.json()) as { durationSeconds?: unknown }
-            const seconds = typeof data.durationSeconds === 'number' ? data.durationSeconds : null
-            return [guid, seconds] as const
-          } catch {
-            return [guid, null] as const
+      try {
+        const results = await mapWithConcurrency(
+          guids,
+          VIDEO_METADATA_FETCH_CONCURRENCY,
+          async (guid) => {
+            const nextAttempt = (durationAttemptsRef.current.values[guid] ?? 0) + 1
+            durationAttemptsRef.current.values[guid] = nextAttempt
+            attemptUpdates[guid] = nextAttempt
+            try {
+              const res = await fetch(`/api/videos/duration/${guid}`, {
+                cache: 'no-store',
+                signal: controller.signal,
+              })
+              if (!res.ok) return [guid, null] as const
+
+              const data = (await res.json()) as { durationSeconds?: unknown }
+              const seconds = typeof data.durationSeconds === 'number' ? data.durationSeconds : null
+              return [guid, seconds] as const
+            } catch {
+              return [guid, null] as const
+            }
           }
+        )
+
+        if (cancelled) return
+
+        setDurationAttemptsState((prev) => ({
+          key: videoStateKey,
+          values: {
+            ...(prev.key === videoStateKey ? prev.values : {}),
+            ...attemptUpdates,
+          },
+        }))
+
+        setVideoDurationsState((prev) => {
+          const next = {
+            ...(prev.key === videoStateKey ? prev.values : initialVideoDurations),
+          }
+          for (const [guid, seconds] of results) next[guid] = seconds
+          return { key: videoStateKey, values: next }
         })
-      )
-
-      if (cancelled) return
-
-      setDurationAttempts((prev) => ({ ...prev, ...attemptUpdates }))
-
-      setVideoDurations((prev) => {
-        const next = { ...prev }
-        for (const [guid, seconds] of results) next[guid] = seconds
-        return next
-      })
+      } finally {
+        inFlight = false
+      }
     }
 
-    if (missing.length > 0) {
-      void fetchGuids(missing)
+    const loadVisibleMetadata = () => {
+      if (isDocumentHidden()) return
+
+      if (missing.length > 0) {
+        void fetchGuids(missing)
+      }
+
+      if (pending.length > 0 && !timer) {
+        timer = setTimeout(() => {
+          timer = null
+          void fetchGuids(pending)
+        }, DURATION_RETRY_MS)
+      }
     }
 
-    if (pending.length > 0) {
-      timer = setTimeout(() => {
-        void fetchGuids(pending)
-      }, DURATION_RETRY_MS)
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadVisibleMetadata()
+      }
     }
+
+    loadVisibleMetadata()
+    document.addEventListener('visibilitychange', onVisibilityChange)
 
     return () => {
       cancelled = true
+      controller.abort()
+      document.removeEventListener('visibilitychange', onVisibilityChange)
       if (timer) clearTimeout(timer)
     }
-  }, [durationCandidateGuids, videoDurations, videoStatuses])
+  }, [durationCandidateGuids, initialVideoDurations, videoDurations, videoStateKey, videoStatuses])
 
   useEffect(() => {
     if (!isAdmin) return
 
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | null = null
+    let inFlight = false
+    const controller = new AbortController()
 
     const missing = bunnyGuids.filter((guid) => videoStatuses[guid] === undefined)
     const pending = bunnyGuids.filter((guid) => {
       const value = videoStatuses[guid]
       if (!value) return false
 
-      const attempts = statusAttemptsRef.current[guid] ?? 0
+      const attempts =
+        statusAttemptsRef.current.key === videoStateKey
+          ? statusAttemptsRef.current.values[guid] ?? 0
+          : 0
       if (attempts >= MAX_STATUS_ATTEMPTS) return false
 
       const failed =
@@ -439,62 +549,95 @@ export function MiddleSidebar({
     if (missing.length === 0 && pending.length === 0) return
 
     const fetchGuids = async (guids: string[]) => {
-      const results = await Promise.all(
-        guids.map(async (guid) => {
-          statusAttemptsRef.current[guid] = (statusAttemptsRef.current[guid] ?? 0) + 1
-          try {
-            const res = await fetch(`/api/videos/status/${guid}`, { cache: 'no-store' })
-            if (!res.ok) return { guid, ok: false } as const
+      if (cancelled || inFlight || isDocumentHidden()) return
+      inFlight = true
+      if (statusAttemptsRef.current.key !== videoStateKey) {
+        statusAttemptsRef.current = { key: videoStateKey, values: {} }
+      }
 
-            const data = (await res.json()) as Partial<BunnyStatus>
-            const status = typeof data.status === 'number' ? data.status : 0
-            const encodeProgress =
-              typeof data.encodeProgress === 'number' ? data.encodeProgress : 0
-            const transcodingFailed = data.transcodingFailed === true
+      try {
+        const results = await mapWithConcurrency(
+          guids,
+          VIDEO_METADATA_FETCH_CONCURRENCY,
+          async (guid) => {
+            statusAttemptsRef.current.values[guid] =
+              (statusAttemptsRef.current.values[guid] ?? 0) + 1
+            try {
+              const res = await fetch(`/api/videos/status/${guid}`, {
+                cache: 'no-store',
+                signal: controller.signal,
+              })
+              if (!res.ok) return { guid, ok: false } as const
 
-            return {
-              guid,
-              ok: true,
-              value: { status, encodeProgress, transcodingFailed } satisfies BunnyStatus,
-            } as const
-          } catch {
-            return { guid, ok: false } as const
+              const data = (await res.json()) as Partial<BunnyStatus>
+              const status = typeof data.status === 'number' ? data.status : 0
+              const encodeProgress =
+                typeof data.encodeProgress === 'number' ? data.encodeProgress : 0
+              const transcodingFailed = data.transcodingFailed === true
+
+              return {
+                guid,
+                ok: true,
+                value: { status, encodeProgress, transcodingFailed } satisfies BunnyStatus,
+              } as const
+            } catch {
+              return { guid, ok: false } as const
+            }
           }
+        )
+
+        if (cancelled) return
+
+        setVideoStatusesState((prev) => {
+          const previousValues = prev.key === videoStateKey ? prev.values : {}
+          const next = { ...previousValues }
+          for (const r of results) {
+            if (r.ok) {
+              next[r.guid] = r.value
+            } else if (previousValues[r.guid] === undefined) {
+              // nur beim ersten Fehler als "nicht verfügbar" markieren,
+              // damit wir bestehende Statusdaten nicht überschreiben.
+              next[r.guid] = null
+            }
+          }
+          return { key: videoStateKey, values: next }
         })
-      )
-
-      if (cancelled) return
-
-      setVideoStatuses((prev) => {
-        const next = { ...prev }
-        for (const r of results) {
-          if (r.ok) {
-            next[r.guid] = r.value
-          } else if (prev[r.guid] === undefined) {
-            // nur beim ersten Fehler als "nicht verfügbar" markieren,
-            // damit wir bestehende Statusdaten nicht überschreiben.
-            next[r.guid] = null
-          }
-        }
-        return next
-      })
+      } finally {
+        inFlight = false
+      }
     }
 
-    if (missing.length > 0) {
-      void fetchGuids(missing)
+    const loadVisibleMetadata = () => {
+      if (isDocumentHidden()) return
+
+      if (missing.length > 0) {
+        void fetchGuids(missing)
+      }
+
+      if (pending.length > 0 && !timer) {
+        timer = setTimeout(() => {
+          timer = null
+          void fetchGuids(pending)
+        }, STATUS_RETRY_MS)
+      }
     }
 
-    if (pending.length > 0) {
-      timer = setTimeout(() => {
-        void fetchGuids(pending)
-      }, STATUS_RETRY_MS)
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadVisibleMetadata()
+      }
     }
+
+    loadVisibleMetadata()
+    document.addEventListener('visibilitychange', onVisibilityChange)
 
     return () => {
       cancelled = true
+      controller.abort()
+      document.removeEventListener('visibilitychange', onVisibilityChange)
       if (timer) clearTimeout(timer)
     }
-  }, [isAdmin, bunnyGuids, videoStatuses])
+  }, [isAdmin, bunnyGuids, videoStateKey, videoStatuses])
 
   const getProcessingInfo = (video: Video) => {
     if (!isAdmin || !video.bunnyGuid) {
@@ -546,11 +689,12 @@ export function MiddleSidebar({
   }
   
   const toggleChapter = (chapterId: string) => {
-    setOpenChapters((prev) => {
-      const newSet = new Set(prev)
+    setOpenChaptersState((prev) => {
+      const base = prev.key === openChaptersKey ? prev.chapters : defaultOpenChapters
+      const newSet = new Set(base)
       if (newSet.has(chapterId)) newSet.delete(chapterId)
       else newSet.add(chapterId)
-      return newSet
+      return { key: openChaptersKey, chapters: newSet }
     })
   }
 
@@ -829,7 +973,7 @@ export function MiddleSidebar({
             open={deleteDialogChapterId !== null}
             onOpenChange={() => setDeleteDialogChapterId(null)}
           >
-            <AlertDialogContent>
+            <AlertDialogContent className="mentorship-typography">
               <AlertDialogHeader>
                 <AlertDialogTitle>Kapitel löschen?</AlertDialogTitle>
                 <AlertDialogDescription>

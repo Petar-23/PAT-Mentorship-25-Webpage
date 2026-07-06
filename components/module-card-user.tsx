@@ -41,8 +41,9 @@ export function ModuleCardUser({ modul, progress = null }: Props) {
   return (
     <Link
       href={desktopHref}
-      prefetch
+      prefetch={false}
       className="relative group block w-full h-full"
+      onMouseEnter={() => router.prefetch(desktopHref)}
       onClick={(event) => {
         if (
           typeof window === 'undefined' ||
@@ -123,4 +124,3 @@ export function ModuleCardUser({ modul, progress = null }: Props) {
     </Link>
   )
 }
-

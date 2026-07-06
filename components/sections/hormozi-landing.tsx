@@ -1,41 +1,9 @@
-'use client'
-
 import Image from 'next/image'
-import { Button } from '@/components/ui/button'
-import { SignInButton, useUser } from '@clerk/nextjs'
-import { useRouter } from 'next/navigation'
-import { trackConversion } from '@/components/analytics/google-tag-manager'
 import { Countdown } from '@/components/ui/countdown'
-import { ChevronDownIcon } from '@/components/ui/chevron-down'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
+import { HormoziLandingCtaButton } from '@/components/sections/hormozi-landing-cta-button'
 
 export default function HormoziLanding() {
-  const { isSignedIn } = useUser()
-  const router = useRouter()
-  const handleJoinClick = () => {
-    trackConversion.ctaClick()
-    if (isSignedIn) {
-      router.push('/dashboard')
-    }
-  }
-
-  const handleSignInClick = () => {
-    trackConversion.ctaClick()
-    trackConversion.signInStart()
-  }
-
-  const ctaButton = isSignedIn ? (
-    <Button size="lg" className="h-14 w-full px-8 text-base sm:w-auto sm:text-lg" onClick={handleJoinClick}>
-      Prüfen, ob Plätze frei sind
-    </Button>
-  ) : (
-    <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-      <Button size="lg" className="h-14 w-full px-8 text-base sm:w-auto sm:text-lg" onClick={handleSignInClick}>
-        Prüfen, ob Plätze frei sind
-      </Button>
-    </SignInButton>
-  )
-
   return (
     <main className="min-h-dvh bg-white text-slate-900">
       {/* HERO */}
@@ -67,7 +35,10 @@ export default function HormoziLanding() {
           </div>
 
           <div className="mt-4 flex w-full flex-col items-center gap-3">
-            {ctaButton}
+            <HormoziLandingCtaButton
+              buttonText="Prüfen, ob Plätze frei sind"
+              className="h-14 w-full px-8 text-base sm:w-auto sm:text-lg"
+            />
             <p className="text-xs text-slate-500">
               {MENTORSHIP_CONFIG.price}€/Monat · monatlich kündbar ·{" "}
               <span className="rounded-sm bg-yellow-200 px-1 text-blue-700">max. {MENTORSHIP_CONFIG.maxSpots} Plätze</span>
@@ -170,7 +141,18 @@ export default function HormoziLanding() {
               ))}
             </div>
           <div className="mt-10 flex justify-center sm:mt-12 sm:pb-6">
-            <ChevronDownIcon className="text-slate-900" size={56} autoPlay />
+            <svg
+              aria-hidden="true"
+              className="h-14 w-14 text-slate-900 motion-safe:animate-bounce"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
           </div>
           </div>
         </section>
@@ -197,25 +179,10 @@ export default function HormoziLanding() {
             </div>
           </div>
           <div className="mt-7 space-y-3">
-            {isSignedIn ? (
-              <Button
-                size="lg"
-                className="h-14 w-full bg-blue-600 px-8 text-base text-white hover:bg-blue-700 sm:h-16 sm:w-auto sm:text-lg"
-                onClick={handleJoinClick}
-              >
-                Prüfe, ob noch Plätze frei sind
-              </Button>
-            ) : (
-              <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-                <Button
-                  size="lg"
-                  className="h-14 w-full bg-blue-600 px-8 text-base text-white hover:bg-blue-700 sm:h-16 sm:w-auto sm:text-lg"
-                  onClick={handleSignInClick}
-                >
-                  Prüfe, ob noch Plätze frei sind
-                </Button>
-              </SignInButton>
-            )}
+            <HormoziLandingCtaButton
+              buttonText="Prüfe, ob noch Plätze frei sind"
+              className="h-14 w-full bg-blue-600 px-8 text-base text-white hover:bg-blue-700 sm:h-16 sm:w-auto sm:text-lg"
+            />
             <p className="text-xs text-slate-500">
               {MENTORSHIP_CONFIG.price}€/Monat · monatlich kündbar ·{" "}
               <span className="rounded-sm bg-yellow-200 px-1 text-blue-700">max. {MENTORSHIP_CONFIG.maxSpots} Plätze</span>

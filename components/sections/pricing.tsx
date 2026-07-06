@@ -1,5 +1,5 @@
 import { MENTORSHIP_CONFIG } from '@/lib/config'
-import { Check } from "@phosphor-icons/react/dist/ssr"
+import { Check } from "@phosphor-icons/react/dist/ssr/Check"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 

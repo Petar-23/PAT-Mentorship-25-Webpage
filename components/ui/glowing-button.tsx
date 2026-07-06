@@ -2,7 +2,6 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { motion } from 'framer-motion'
 
 interface GlowingButtonProps {
   children: React.ReactNode
@@ -31,43 +30,45 @@ export function GlowingButton({ children, onClick, className = '' }: GlowingButt
     return () => button.removeEventListener('mousemove', updateMousePosition)
   }, [])
 
+  const glowBackground = isHovered
+    ? `linear-gradient(180deg,
+        transparent 0%,
+        rgba(255, 177, 66, 0) ${(mousePosition ?? 0) - 100}px,
+        rgba(255, 177, 66, 0.5) ${mousePosition ?? 0}px,
+        rgba(255, 177, 66, 0) ${(mousePosition ?? 0) + 100}px,
+        transparent 100%)`
+    : 'linear-gradient(90deg, transparent 0%, rgba(255, 177, 66, 0) 40%, rgba(255, 177, 66, 0.5) 50%, rgba(255, 177, 66, 0) 60%, transparent 100%)'
+
   return (
-    <motion.div 
+    <div
       className="relative"
       style={{ zIndex: isHovered ? 50 : 1 }}
     >
-      <motion.div
+      <div
         ref={buttonRef}
         className={`relative bg-white rounded-full cursor-pointer ${className}`}
-        onHoverStart={() => setIsHovered(true)}
-        onHoverEnd={() => {
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => {
           setIsHovered(false)
           setMousePosition(null)
           setShadowOffset('8px')
         }}
         onClick={onClick}
-        animate={{
+        style={{
           boxShadow: isHovered
             ? `${shadowOffset} 0 20px rgba(255, 177, 66, 0.3)`
-            : '8px 0 20px rgba(255, 177, 66, 0)'
+            : '8px 0 20px rgba(255, 177, 66, 0)',
+          transition: 'box-shadow 200ms ease',
         }}
-        transition={{ duration: 0.2 }}
       >
         {/* Internal gradient glow */}
         <div className="absolute inset-0 rounded-full overflow-hidden">
-          <motion.div
+          <div
             className="absolute inset-0"
-            animate={{
-              background: isHovered
-                ? `linear-gradient(180deg, 
-                    transparent 0%, 
-                    rgba(255, 177, 66, 0) ${(mousePosition ?? 0) - 100}px,
-                    rgba(255, 177, 66, 0.5) ${mousePosition ?? 0}px,
-                    rgba(255, 177, 66, 0) ${(mousePosition ?? 0) + 100}px,
-                    transparent 100%)`
-                : 'linear-gradient(90deg, transparent 0%, rgba(255, 177, 66, 0) 40%, rgba(255, 177, 66, 0.5) 50%, rgba(255, 177, 66, 0) 60%, transparent 100%)'
+            style={{
+              background: glowBackground,
+              transition: 'background 100ms ease',
             }}
-            transition={{ duration: 0.1 }}
           />
         </div>
 
@@ -78,7 +79,7 @@ export function GlowingButton({ children, onClick, className = '' }: GlowingButt
         <div className="relative px-6 py-2 text-gray-900">
           {children}
         </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   )
 }

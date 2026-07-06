@@ -36,19 +36,49 @@ export default function LeadMagnetCountdown({
   className,
 }: LeadMagnetCountdownProps) {
   const target = useMemo(() => new Date(targetDate), [targetDate])
-  const [timeLeft, setTimeLeft] = useState<TimeParts>(() => getTimeParts(target))
-  const [mounted, setMounted] = useState(false)
+  const [timeLeft, setTimeLeft] = useState<TimeParts | null>(null)
 
   useEffect(() => {
-    setMounted(true)
-    const id = window.setInterval(() => {
-      setTimeLeft(getTimeParts(target))
-    }, 1000)
+    let interval: number | null = null
 
-    return () => window.clearInterval(id)
+    const update = () => {
+      setTimeLeft(getTimeParts(target))
+    }
+
+    const stop = () => {
+      if (interval) {
+        window.clearInterval(interval)
+        interval = null
+      }
+    }
+
+    const start = () => {
+      stop()
+      update()
+
+      if (document.visibilityState === 'visible') {
+        interval = window.setInterval(update, 1000)
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        start()
+      } else {
+        stop()
+      }
+    }
+
+    start()
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      stop()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [target])
 
-  if (!mounted) {
+  if (!timeLeft) {
     return null
   }
 

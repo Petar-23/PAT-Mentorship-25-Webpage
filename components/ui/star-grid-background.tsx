@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef } from "react"
+import { useEffect, useRef } from "react"
 
 interface StarGridBackgroundProps {
   className?: string
@@ -16,10 +16,12 @@ export function StarGridBackground({
   gridColor = "rgba(200, 200, 210, 0.4)",
 }: StarGridBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
+    const container = containerRef.current
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas || !container) return
     
     const ctx = canvas.getContext("2d")
     if (!ctx) return
@@ -42,6 +44,11 @@ export function StarGridBackground({
 
     let particles: Particle[] = []
     let raf = 0
+    let isInView = typeof IntersectionObserver === "undefined"
+    let isDocumentVisible = document.visibilityState === "visible"
+    let visibilityObserver: IntersectionObserver | null = null
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
+    let prefersReducedMotion = reducedMotionQuery.matches
 
     const count = () => Math.floor((canvas.width * canvas.height) / 10000)
 
@@ -73,7 +80,21 @@ export function StarGridBackground({
       for (let i = 0; i < count(); i++) particles.push(make())
     }
 
+    const shouldAnimate = () => isInView && isDocumentVisible && !prefersReducedMotion
+
+    const stopLoop = () => {
+      if (raf) {
+        cancelAnimationFrame(raf)
+        raf = 0
+      }
+    }
+
     const draw = () => {
+      if (!shouldAnimate()) {
+        stopLoop()
+        return
+      }
+
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       particles.forEach((p) => {
         p.y -= p.speed
@@ -89,23 +110,66 @@ export function StarGridBackground({
       raf = requestAnimationFrame(draw)
     }
 
+    const startLoop = () => {
+      if (raf || !shouldAnimate()) return
+      raf = requestAnimationFrame(draw)
+    }
+
+    const updatePlayback = () => {
+      if (shouldAnimate()) {
+        startLoop()
+      } else {
+        stopLoop()
+      }
+    }
+
     const onResize = () => {
       setSize()
       init()
+      updatePlayback()
+    }
+
+    const handleVisibilityChange = () => {
+      isDocumentVisible = document.visibilityState === "visible"
+      updatePlayback()
+    }
+
+    const handleReducedMotionChange = () => {
+      prefersReducedMotion = reducedMotionQuery.matches
+      updatePlayback()
     }
 
     window.addEventListener("resize", onResize)
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    reducedMotionQuery.addEventListener?.("change", handleReducedMotionChange)
+
+    if (typeof IntersectionObserver === "undefined") {
+      isInView = true
+    } else {
+      visibilityObserver = new IntersectionObserver(
+        ([entry]) => {
+          isInView = entry.isIntersecting
+          updatePlayback()
+        },
+        { rootMargin: "200px 0px", threshold: 0.01 }
+      )
+      visibilityObserver.observe(container)
+    }
+
     init()
-    raf = requestAnimationFrame(draw)
+    updatePlayback()
 
     return () => {
       window.removeEventListener("resize", onResize)
-      cancelAnimationFrame(raf)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      reducedMotionQuery.removeEventListener?.("change", handleReducedMotionChange)
+      visibilityObserver?.disconnect()
+      stopLoop()
     }
   }, [particleColor])
 
   return (
-    <div className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}>
+    <div ref={containerRef} className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}>
       {/* Particle Canvas */}
       <canvas
         ref={canvasRef}

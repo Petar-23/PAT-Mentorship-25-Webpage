@@ -4,22 +4,17 @@
 // leitet aber jetzt auf die Mentorship-Seite weiter und öffnet dort das Kurs-Modal.
 
 import { redirect } from 'next/navigation'
-import { auth, clerkClient } from '@clerk/nextjs/server'
+import { auth } from '@clerk/nextjs/server'
+import { getIsAdmin } from '@/lib/authz'
 
 async function requireAdmin() {
-  const { userId } = await auth()
+  const { userId, sessionClaims } = await auth()
 
   if (!userId) {
     redirect('/') // nicht eingeloggt
   }
 
-  const client = await clerkClient()
-  const memberships = await client.users.getOrganizationMembershipList({
-    userId,
-    limit: 100,
-  })
-
-  const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
+  const isAdmin = await getIsAdmin(userId, sessionClaims)
 
   if (!isAdmin) {
     redirect('/mentorship') // eingeloggt, aber kein Admin

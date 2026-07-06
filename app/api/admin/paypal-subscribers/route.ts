@@ -1,17 +1,10 @@
-import { auth, clerkClient } from '@clerk/nextjs/server'
+import { clerkClient } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAdminApiAccess } from '@/lib/authz'
+import { listPayPalSubscribers } from '@/lib/paypal-subscribers'
 
 export const dynamic = 'force-dynamic'
-
-async function requireAdmin(userId: string) {
-  const client = await clerkClient()
-  const memberships = await client.users.getOrganizationMembershipList({
-    userId,
-    limit: 100,
-  })
-  return memberships.data.some((m) => m.role === 'org:admin')
-}
 
 /**
  * Admin-Endpoint: Gibt alle importierten PayPal-Subscriber zurueck.
@@ -20,19 +13,10 @@ async function requireAdmin(userId: string) {
  */
 export async function GET() {
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const access = await requireAdminApiAccess()
+    if (!access.ok) return access.response
 
-    if (!(await requireAdmin(userId))) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    const subscribers = await prisma.payPalSubscriber.findMany({
-      orderBy: { createdAt: 'desc' },
-    })
-
+    const subscribers = await listPayPalSubscribers()
     return NextResponse.json({ subscribers })
   } catch (error) {
     console.error('PayPal subscribers list error:', error)
@@ -51,14 +35,8 @@ export async function GET() {
  */
 export async function PATCH(req: NextRequest) {
   try {
-    const { userId: authUserId } = await auth()
-    if (!authUserId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    if (!(await requireAdmin(authUserId))) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+    const access = await requireAdminApiAccess()
+    if (!access.ok) return access.response
 
     const body = await req.json()
     const { id, userId, paypalEmail, status } = body as {
@@ -72,7 +50,10 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Missing subscriber id' }, { status: 400 })
     }
 
-    const existing = await prisma.payPalSubscriber.findUnique({ where: { id } })
+    const existing = await prisma.payPalSubscriber.findUnique({
+      where: { id },
+      select: { id: true, paypalSubscriptionId: true },
+    })
     if (!existing) {
       return NextResponse.json({ error: 'Subscriber not found' }, { status: 404 })
     }
@@ -96,6 +77,7 @@ export async function PATCH(req: NextRequest) {
         // Check if this userId is already assigned to another subscriber
         const existingAssignment = await prisma.payPalSubscriber.findUnique({
           where: { userId },
+          select: { id: true, paypalSubscriptionId: true },
         })
         if (existingAssignment && existingAssignment.id !== id) {
           return NextResponse.json(
@@ -122,6 +104,16 @@ export async function PATCH(req: NextRequest) {
     const updated = await prisma.payPalSubscriber.update({
       where: { id },
       data: updateData,
+      select: {
+        id: true,
+        paypalSubscriptionId: true,
+        paypalEmail: true,
+        status: true,
+        userId: true,
+        claimedAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     })
 
     // If a userId was assigned, also update UserSubscription
@@ -137,6 +129,7 @@ export async function PATCH(req: NextRequest) {
           paypalSubscriptionId: existing.paypalSubscriptionId,
           status: 'active',
         },
+        select: { id: true },
       })
     }
 

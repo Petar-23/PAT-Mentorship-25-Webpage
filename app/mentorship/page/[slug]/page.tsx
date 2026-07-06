@@ -3,13 +3,14 @@
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import { Sidebar } from '@/components/Sidebar'
 import { getIsAdmin } from '@/lib/authz'
 import { getSidebarData } from '@/lib/sidebar-data'
 import { MobileCoursesDrawer } from '@/components/mobile-courses-drawer'
-import { PageEditor } from '@/components/page-editor'
+import { PageEditorLoader } from '@/components/page-editor-loader'
 import { PageViewer } from '@/components/page-viewer'
 
 interface Props {
@@ -18,16 +19,29 @@ interface Props {
 
 export default async function PageSlugRoute({ params }: Props) {
   const { slug } = await params
-  const [isAdmin, { kurseForSidebar, pagesForSidebar, savedSidebarOrder }] = await Promise.all([
-    getIsAdmin(),
-    getSidebarData(),
-  ])
-
-  const page = await prisma.page.findUnique({ where: { slug } })
+  const authPromise = auth()
+  const pagePromise = prisma.page.findUnique({
+    where: { slug },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      content: true,
+      published: true,
+      updatedAt: true,
+    },
+  })
+  const isAdminPromise = authPromise.then(({ userId, sessionClaims }) =>
+    userId ? getIsAdmin(userId, sessionClaims) : false
+  )
+  const sidebarDataPromise = getSidebarData()
+  const [page, isAdmin] = await Promise.all([pagePromise, isAdminPromise])
 
   if (!page || (!isAdmin && !page.published)) {
     notFound()
   }
+
+  const { kurseForSidebar, pagesForSidebar, savedSidebarOrder } = await sidebarDataPromise
 
   const pageData = {
     id: page.id,
@@ -35,6 +49,7 @@ export default async function PageSlugRoute({ params }: Props) {
     slug: page.slug,
     content: page.content as Record<string, unknown> | null,
     published: page.published,
+    updatedAt: page.updatedAt,
   }
 
   return (
@@ -59,9 +74,14 @@ export default async function PageSlugRoute({ params }: Props) {
         </div>
 
         {isAdmin ? (
-          <PageEditor page={pageData} />
+          <PageEditorLoader page={pageData} />
         ) : (
-          <PageViewer title={page.title} content={page.content as Record<string, unknown> | null} />
+          <PageViewer
+            pageId={page.id}
+            title={page.title}
+            content={page.content as Record<string, unknown> | null}
+            updatedAt={page.updatedAt}
+          />
         )}
       </div>
     </div>

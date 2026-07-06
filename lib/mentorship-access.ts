@@ -2,6 +2,8 @@ import 'server-only'
 
 import { currentUser } from '@clerk/nextjs/server'
 import { getIsAdmin, isMentorshipAccessible } from '@/lib/authz'
+import { getEmailFromSessionClaims } from '@/lib/clerk-claims'
+import { isMentorshipAccessOverrideEmail } from '@/lib/mentorship-access-overrides'
 import { hasActiveSubscription } from '@/lib/stripe'
 
 export type MentorshipAccessState = {
@@ -11,7 +13,10 @@ export type MentorshipAccessState = {
   allowed: boolean
 }
 
-export async function getMentorshipAccessState(userId: string): Promise<MentorshipAccessState> {
+export async function getMentorshipAccessState(
+  userId: string,
+  sessionClaims?: unknown
+): Promise<MentorshipAccessState> {
   const mentorshipAccessible = isMentorshipAccessible()
 
   // Fast path: bestehende DB-/PayPal-Daten sind günstig und reichen für die meisten Mitglieder.
@@ -25,7 +30,7 @@ export async function getMentorshipAccessState(userId: string): Promise<Mentorsh
     }
   }
 
-  const isAdmin = await getIsAdmin()
+  const isAdmin = await getIsAdmin(userId, sessionClaims)
   if (isAdmin) {
     return {
       isAdmin: true,
@@ -36,8 +41,21 @@ export async function getMentorshipAccessState(userId: string): Promise<Mentorsh
   }
 
   // Nur wenn der schnelle Subscription-Check negativ ist, nutzen wir den teureren Email-Fallback.
-  const user = await currentUser()
-  const email = user?.primaryEmailAddress?.emailAddress
+  let email = getEmailFromSessionClaims(sessionClaims)
+  if (!email) {
+    const user = await currentUser()
+    email = user?.primaryEmailAddress?.emailAddress ?? null
+  }
+
+  if (isMentorshipAccessOverrideEmail(email)) {
+    return {
+      isAdmin: false,
+      hasSubscription: true,
+      mentorshipAccessible,
+      allowed: mentorshipAccessible,
+    }
+  }
+
   const hasSubscriptionWithFallback = email
     ? await hasActiveSubscription(userId, email)
     : false

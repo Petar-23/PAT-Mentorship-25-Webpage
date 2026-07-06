@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
+import { getEmailFromSessionClaims } from '@/lib/clerk-claims'
 import {
   exchangeDiscordCodeForToken,
   fetchDiscordUser,
@@ -47,21 +48,11 @@ async function checkPayPalAccess(userId: string): Promise<boolean> {
 
 /**
  * Sucht den Stripe Customer für einen User.
- * Versucht zuerst via metadata.userId, dann per E-Mail (Fallback für ältere Käufe).
+ * Versucht zuerst das DB-Mapping, dann metadata.userId und zuletzt E-Mail (Fallback für ältere Käufe).
  * Gibt null zurück wenn kein Customer gefunden.
  */
 async function findStripeCustomer(userId: string, userEmail?: string | null) {
-  // 1) Suche via metadata.userId (Standard)
-  const byMetadata = await stripe.customers.search({
-    query: `metadata['userId']:'${userId}'`,
-  })
-
-  const liveByMetadata = byMetadata.data.filter((c) => !('deleted' in c && c.deleted))
-  if (liveByMetadata.length > 0) {
-    return [...liveByMetadata].sort((a, b) => b.created - a.created)[0]
-  }
-
-  // 2) Fallback: Suche via DB (falls bereits gelinkt)
+  // 1) DB-Mapping ist der schnellste Pfad, falls der Kunde bereits verknüpft wurde.
   const db = await prisma.userSubscription.findUnique({
     where: { userId },
     select: { stripeCustomerId: true },
@@ -72,6 +63,16 @@ async function findStripeCustomer(userId: string, userEmail?: string | null) {
     if (customer && !('deleted' in customer && customer.deleted)) {
       return customer
     }
+  }
+
+  // 2) Suche via metadata.userId (Standard)
+  const byMetadata = await stripe.customers.search({
+    query: `metadata['userId']:'${userId}'`,
+  })
+
+  const liveByMetadata = byMetadata.data.filter((c) => !('deleted' in c && c.deleted))
+  if (liveByMetadata.length > 0) {
+    return [...liveByMetadata].sort((a, b) => b.created - a.created)[0]
   }
 
   // 3) Fallback: Suche per E-Mail (für ältere Käufe ohne metadata.userId)
@@ -124,7 +125,7 @@ export async function GET(req: Request) {
     return redirectToDiscordPage(req, { discord: 'error', reason: 'invalid_state' })
   }
 
-  const { userId: authedUserId } = await auth()
+  const { userId: authedUserId, sessionClaims } = await auth()
   const userId = authedUserId || cookieUserId
 
   if (!userId) {
@@ -141,11 +142,13 @@ export async function GET(req: Request) {
     const discordUser = await fetchDiscordUser(token.access_token)
 
     // Hole E-Mail des Users für Stripe-Fallback-Lookup
-    let userEmail: string | null = null
+    let userEmail = getEmailFromSessionClaims(sessionClaims)
     try {
-      const clerk = await clerkClient()
-      const user = await clerk.users.getUser(userId)
-      userEmail = user.emailAddresses?.[0]?.emailAddress ?? null
+      if (!userEmail) {
+        const clerk = await clerkClient()
+        const user = await clerk.users.getUser(userId)
+        userEmail = user.emailAddresses?.[0]?.emailAddress ?? null
+      }
     } catch {
       // non-critical
     }

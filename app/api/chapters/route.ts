@@ -2,25 +2,16 @@
 
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
-import { auth, clerkClient } from '@clerk/nextjs/server'
+import { auth } from '@clerk/nextjs/server'
 import { hasActiveSubscription } from '@/lib/stripe'
+import { getIsAdmin, requireAdminApiAccess } from '@/lib/authz'
 
 export async function POST(request: Request) {
-  const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const admin = await requireAdminApiAccess()
+  if (!admin.ok) {
+    return admin.response
   }
 
-  const client = await clerkClient()
-  const memberships = await client.users.getOrganizationMembershipList({
-    userId,
-    limit: 100,
-  })
-
-  const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-  if (!isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
   const body = await request.json()
   const { name = 'Neues Kapitel', moduleId } = body  // Standardname falls keiner gesendet
 
@@ -47,6 +38,12 @@ export async function POST(request: Request) {
         moduleId,  // ← genau so muss es heißen (wie in deinem Prisma-Schema)
         order: newOrder,
       },
+      select: {
+        id: true,
+        name: true,
+        order: true,
+        moduleId: true,
+      },
     })
 
     return NextResponse.json(newChapter, { status: 201 })
@@ -61,30 +58,52 @@ export async function POST(request: Request) {
 
 // GET bleibt unverändert – super wie es ist!
 export async function GET() {
-  const { userId } = await auth()
+  const { userId, sessionClaims } = await auth()
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const client = await clerkClient()
-  const memberships = await client.users.getOrganizationMembershipList({
-    userId,
-    limit: 100,
-  })
-  const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-  const allowed = isAdmin || (await hasActiveSubscription(userId))
+  const allowed = (await hasActiveSubscription(userId)) || (await getIsAdmin(userId, sessionClaims))
 
   if (!allowed) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const chapters = await prisma.chapter.findMany({
-    include: {
+    select: {
+      id: true,
+      name: true,
+      order: true,
+      moduleId: true,
+      createdAt: true,
+      updatedAt: true,
       videos: {
+        select: {
+          id: true,
+          title: true,
+          bunnyGuid: true,
+          pdfUrl: true,
+          thumbnailUrl: true,
+          announcedAt: true,
+          announcementMessageId: true,
+          order: true,
+          chapterId: true,
+          createdAt: true,
+          updatedAt: true,
+          duration: true,
+        },
         orderBy: { order: 'asc' },
       },
       module: {
-        include: {
+        select: {
+          id: true,
+          name: true,
+          order: true,
+          playlistId: true,
+          createdAt: true,
+          updatedAt: true,
+          description: true,
+          imageUrl: true,
           playlist: {
             select: { name: true, slug: true },
           },

@@ -1,5 +1,6 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
+import { getEmailFromSessionClaims } from '@/lib/clerk-claims'
 import { createCustomerPortalSession } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
 
@@ -28,8 +29,7 @@ async function getPayPalSubscriptionId(userId: string): Promise<string | null> {
 
 export async function POST() {
   try {
-    const { userId } = await auth()
-    const user = await currentUser()
+    const { userId, sessionClaims } = await auth()
 
     if (!userId) {
       return NextResponse.json(
@@ -45,9 +45,15 @@ export async function POST() {
       return NextResponse.json({ url: PAYPAL_MANAGE_URL, provider: 'paypal' })
     }
 
-    const primaryEmail =
-      user?.emailAddresses.find((email) => email.id === user.primaryEmailAddressId)
-        ?.emailAddress ?? null
+    let primaryEmail = getEmailFromSessionClaims(sessionClaims)
+    if (!primaryEmail) {
+      const user = await currentUser()
+      primaryEmail =
+        user?.primaryEmailAddress?.emailAddress ??
+        user?.emailAddresses.find((email) => email.id === user.primaryEmailAddressId)
+          ?.emailAddress ??
+        null
+    }
 
     const { url } = await createCustomerPortalSession(userId, primaryEmail)
 

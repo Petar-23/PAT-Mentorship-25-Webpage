@@ -5,6 +5,8 @@ export const revalidate = 300
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+const WHOP_API_TIMEOUT_MS = 8_000
+
 type NormalizedWhopReview = {
   id: string
   rating: number | null
@@ -19,6 +21,10 @@ function asNonEmptyString(value: unknown): string | null {
   if (typeof value !== 'string') return null
   const trimmed = value.trim()
   return trimmed.length > 0 ? trimmed : null
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof Error && error.name === 'AbortError'
 }
 
 function asNumber(value: unknown): number | null {
@@ -149,6 +155,8 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const debug = searchParams.get('debug') === '1' || searchParams.get('debug') === 'true'
+    const summaryOnly =
+      searchParams.get('summary') === '1' || searchParams.get('summary') === 'true'
     const rawLimit = searchParams.get('limit') || searchParams.get('max')
     const limit = Math.min(Math.max(Number.parseInt(rawLimit ?? '200', 10) || 200, 1), 200)
     const rawPer = searchParams.get('per')
@@ -193,30 +201,51 @@ export async function GET(request: Request) {
         // Some versions may also accept `limit` – keep it in sync.
         url.searchParams.set('limit', String(per))
 
-        const res = await fetch(url.toString(), {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            Accept: 'application/json',
-          },
-          next: { revalidate },
-        })
+        let items: unknown[] = []
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), WHOP_API_TIMEOUT_MS)
 
-        if (!res.ok) {
-          const body = await res.text().catch(() => '')
-          lastError = { status: res.status, message: `Whop API Fehler (${res.status})`, body }
-          endpointError = `${lastError.message}: ${body || res.statusText}`.trim()
+        try {
+          const res = await fetch(url.toString(), {
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              Accept: 'application/json',
+            },
+            next: { revalidate },
+            signal: controller.signal,
+          })
+
+          if (!res.ok) {
+            const body = await res.text().catch(() => '')
+            lastError = { status: res.status, message: `Whop API Fehler (${res.status})`, body }
+            endpointError = `${lastError.message}: ${body || res.statusText}`.trim()
+            break
+          }
+
+          const json = await res.json()
+
+          items = Array.isArray(json)
+            ? json
+            : Array.isArray((json as any)?.data)
+              ? (json as any).data
+              : Array.isArray((json as any)?.reviews)
+                ? (json as any).reviews
+                : []
+        } catch (error) {
+          const message = isAbortError(error)
+            ? `Whop API Timeout nach ${WHOP_API_TIMEOUT_MS}ms`
+            : error instanceof Error
+              ? error.message
+              : 'Whop API Request fehlgeschlagen'
+          lastError = {
+            status: isAbortError(error) ? 504 : undefined,
+            message,
+          }
+          endpointError = message
           break
+        } finally {
+          clearTimeout(timeout)
         }
-
-        const json = await res.json()
-
-        const items: unknown[] = Array.isArray(json)
-          ? json
-          : Array.isArray((json as any)?.data)
-            ? (json as any).data
-            : Array.isArray((json as any)?.reviews)
-              ? (json as any).reviews
-              : []
 
         if (items.length === 0) break
 
@@ -266,7 +295,7 @@ export async function GET(request: Request) {
               }
             : {}),
         },
-        { status: 502 }
+        { status: lastError?.status === 504 ? 504 : 502 }
       )
     }
 
@@ -278,10 +307,23 @@ export async function GET(request: Request) {
       )
     }
 
+    const ratingValues = best.collected
+      .map((review) =>
+        typeof review.rating === 'number' && Number.isFinite(review.rating)
+          ? review.rating
+          : null
+      )
+      .filter((rating): rating is number => rating != null)
+    const average =
+      ratingValues.length > 0
+        ? ratingValues.reduce((sum, rating) => sum + rating, 0) / ratingValues.length
+        : 5
+
     const response = NextResponse.json({
       source: 'whop',
       count: best.collected.length,
-      reviews: best.collected,
+      average,
+      ...(summaryOnly ? {} : { reviews: best.collected }),
       ...(debug
         ? {
             meta: {
@@ -309,5 +351,3 @@ export async function GET(request: Request) {
     )
   }
 }
-
-

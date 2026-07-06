@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMediaQuery } from '@/hooks/use-media-query'
 
 interface CardMatrixRainProps {
@@ -15,11 +15,58 @@ export function CardMatrixRain({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const isMobile = useMediaQuery('(max-width: 768px)')
+  const [isInView, setIsInView] = useState(false)
+  const [isDocumentVisible, setIsDocumentVisible] = useState(() =>
+    typeof document === 'undefined' ? true : document.visibilityState === 'visible'
+  )
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    if (typeof IntersectionObserver === 'undefined') {
+      const frame = window.requestAnimationFrame(() => setIsInView(true))
+      return () => window.cancelAnimationFrame(frame)
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting)
+      },
+      { rootMargin: '300px 0px', threshold: 0.01 }
+    )
+
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const updatePreference = () => setPrefersReducedMotion(media.matches)
+
+    updatePreference()
+    media.addEventListener('change', updatePreference)
+    return () => media.removeEventListener('change', updatePreference)
+  }, [])
+
+  useEffect(() => {
+    const updateVisibility = () => {
+      setIsDocumentVisible(document.visibilityState === 'visible')
+    }
+
+    updateVisibility()
+    document.addEventListener('visibilitychange', updateVisibility)
+    return () => document.removeEventListener('visibilitychange', updateVisibility)
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
     const container = containerRef.current
     if (!canvas || !container) return
+    if (!isInView || !isDocumentVisible || prefersReducedMotion) return
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
@@ -95,13 +142,13 @@ export function CardMatrixRain({
       }
     }
 
-    const interval = setInterval(draw, 50)
+    const interval = setInterval(draw, isMobile ? 80 : 50)
 
     return () => {
       clearInterval(interval)
       resizeObserver.disconnect()
     }
-  }, [color, backgroundColor, isMobile])
+  }, [color, backgroundColor, isMobile, isInView, isDocumentVisible, prefersReducedMotion])
 
   return (
     <div 

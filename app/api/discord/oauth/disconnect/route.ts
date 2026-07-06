@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
+import { prisma } from '@/lib/prisma'
 import { removeRoleFromGuildMember } from '@/lib/discord'
 
 export const dynamic = 'force-dynamic'
@@ -34,18 +35,27 @@ export async function POST(req: Request) {
   }
 
   try {
-    const customers = await stripe.customers.search({
-      query: `metadata['userId']:'${userId}'`,
-    })
+    const sub = await prisma.userSubscription.findUnique({
+      where: { userId },
+      select: { stripeCustomerId: true },
+    }).catch(() => null)
 
-    if (!customers.data.length) {
+    let stripeCustomerId = sub?.stripeCustomerId ?? null
+
+    if (!stripeCustomerId) {
+      const customers = await stripe.customers.search({
+        query: `metadata['userId']:'${userId}'`,
+      })
+      stripeCustomerId = customers.data[0]?.id ?? null
+    }
+
+    if (!stripeCustomerId) {
       if (wantsHtml(req)) {
         return redirectToDiscordPage(req, { discord: 'error', reason: 'no_stripe_customer' })
       }
       return NextResponse.json({ ok: false, error: 'no_stripe_customer' }, { status: 404 })
     }
 
-    const stripeCustomerId = customers.data[0].id
     const customer = await stripe.customers.retrieve(stripeCustomerId)
 
     // Stripe kann auch ein DeletedCustomer zurückgeben (hat dann { deleted: true })
@@ -120,5 +130,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'exception' }, { status: 500 })
   }
 }
-
 

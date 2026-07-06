@@ -21,6 +21,7 @@ export function MatrixRain({ color = 'rgba(128, 128, 128, 0.3)' }: MatrixRainPro
     // Set canvas size to match window size with proper pixel ratio
     const resizeCanvas = () => {
       const pixelRatio = window.devicePixelRatio || 1
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
       canvas.width = window.innerWidth * pixelRatio
       canvas.height = window.innerHeight * pixelRatio
       
@@ -78,11 +79,68 @@ export function MatrixRain({ color = 'rgba(128, 128, 128, 0.3)' }: MatrixRainPro
       }
     }
 
-    const interval = setInterval(draw, 50)
+    let isInView = false
+    let isDocumentVisible = document.visibilityState === 'visible'
+    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    let prefersReducedMotion = reducedMotionQuery.matches
+    let interval: ReturnType<typeof setInterval> | null = null
+
+    const shouldAnimate = () => isInView && isDocumentVisible && !prefersReducedMotion
+
+    const stopAnimation = () => {
+      if (interval) {
+        clearInterval(interval)
+        interval = null
+      }
+    }
+
+    const startAnimation = () => {
+      if (interval || !shouldAnimate()) return
+      interval = setInterval(draw, 50)
+    }
+
+    const updatePlayback = () => {
+      if (shouldAnimate()) {
+        startAnimation()
+      } else {
+        stopAnimation()
+      }
+    }
+
+    let visibilityObserver: IntersectionObserver | null = null
+    if (typeof IntersectionObserver === 'undefined') {
+      isInView = true
+      updatePlayback()
+    } else {
+      visibilityObserver = new IntersectionObserver(
+        ([entry]) => {
+          isInView = entry.isIntersecting
+          updatePlayback()
+        },
+        { threshold: 0.01 }
+      )
+      visibilityObserver.observe(canvas)
+    }
+
+    const handleVisibilityChange = () => {
+      isDocumentVisible = document.visibilityState === 'visible'
+      updatePlayback()
+    }
+
+    const handleReducedMotionChange = () => {
+      prefersReducedMotion = reducedMotionQuery.matches
+      updatePlayback()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    reducedMotionQuery.addEventListener?.('change', handleReducedMotionChange)
 
     return () => {
-      clearInterval(interval)
+      visibilityObserver?.disconnect()
+      stopAnimation()
       window.removeEventListener('resize', resizeCanvas)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      reducedMotionQuery.removeEventListener?.('change', handleReducedMotionChange)
     }
   }, [color, isMobile])
 

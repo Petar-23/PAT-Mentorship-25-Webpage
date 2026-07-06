@@ -1,35 +1,32 @@
 'use client'
 
-import type { ChangeEvent, FormEvent } from 'react'
-import { useRef, useState } from 'react'
+import type { ChangeEvent, FormEvent, ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import Image from 'next/image'
-import { Star } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { HeroPill } from '@/components/ui/hero-pill'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
-import { trackConversion } from '@/components/analytics/google-tag-manager'
+import { trackConversion } from '@/components/analytics/tracking'
 
 type FormState = {
   firstName: string
   email: string
+  website: string
 }
 
 type FieldErrors = {
   firstName?: string
   email?: string
+  website?: string
 }
 
 type LeadMagnetSignupFormProps = {
   buttonLabel?: string
   className?: string
   idPrefix?: string
+  socialProof?: ReactNode
 }
-
-const WHOP_REVIEWS_URL =
-  'https://whop.com/price-action-trader-mentorship-24-d9/pat-mentorship-2025/'
 
 const isValidEmail = (value: string) => {
   const email = value.trim()
@@ -41,18 +38,30 @@ export default function LeadMagnetSignupForm({
   buttonLabel = 'Modell 22 Checkliste Jetzt Sichern',
   className,
   idPrefix = 'lead-magnet',
+  socialProof,
 }: LeadMagnetSignupFormProps) {
   const searchParams = useSearchParams()
   const emailRef = useRef<HTMLInputElement | null>(null)
   const firstNameRef = useRef<HTMLInputElement | null>(null)
+  const submitAbortRef = useRef<AbortController | null>(null)
   const { toast } = useToast()
 
-  const [form, setForm] = useState<FormState>({ firstName: '', email: '' })
+  const [form, setForm] = useState<FormState>({
+    firstName: '',
+    email: '',
+    website: '',
+  })
   const [errors, setErrors] = useState<FieldErrors>({})
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>(
     'idle'
   )
   const [statusMessage, setStatusMessage] = useState('')
+
+  useEffect(() => {
+    return () => {
+      submitAbortRef.current?.abort()
+    }
+  }, [])
 
   const handleChange =
     (field: keyof FormState) => (event: ChangeEvent<HTMLInputElement>) => {
@@ -89,6 +98,8 @@ export default function LeadMagnetSignupForm({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
+    if (status === 'submitting') return
+
     if (!validate()) {
       setStatus('error')
       setStatusMessage('Bitte prüfe deine Eingaben.')
@@ -101,6 +112,7 @@ export default function LeadMagnetSignupForm({
     const payload = {
       firstName: form.firstName.trim(),
       email: form.email.trim(),
+      website: form.website.trim(),
       source: 'lead-magnet',
       utmSource: searchParams.get('utm_source'),
       utmMedium: searchParams.get('utm_medium'),
@@ -110,15 +122,21 @@ export default function LeadMagnetSignupForm({
       referrer: typeof document !== 'undefined' ? document.referrer : undefined,
     }
 
+    submitAbortRef.current?.abort()
+    const controller = new AbortController()
+    submitAbortRef.current = controller
+
     try {
       const response = await fetch('/api/lead-magnet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       })
 
       if (!response.ok) {
         const data = await response.json().catch(() => null)
+        if (controller.signal.aborted) return
         setStatus('error')
         setStatusMessage(
           data?.error || 'Etwas ist schiefgelaufen. Bitte versuche es erneut.'
@@ -126,6 +144,7 @@ export default function LeadMagnetSignupForm({
         return
       }
 
+      if (controller.signal.aborted) return
       setStatus('success')
       setStatusMessage(
         'Geschafft! Bitte prüfe jetzt dein E‑Mail‑Postfach für Video 1.'
@@ -140,15 +159,35 @@ export default function LeadMagnetSignupForm({
         description: 'Video 1 ist unterwegs zu deinem Postfach.',
         duration: 6000,
       })
-      setForm({ firstName: '', email: '' })
+      setForm({ firstName: '', email: '', website: '' })
     } catch (error) {
+      if (controller.signal.aborted) return
       setStatus('error')
       setStatusMessage('Etwas ist schiefgelaufen. Bitte versuche es erneut.')
+    } finally {
+      if (submitAbortRef.current === controller) {
+        submitAbortRef.current = null
+      }
     }
   }
 
   return (
     <form className={cn('space-y-3', className)} onSubmit={handleSubmit} noValidate>
+      <div
+        className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden"
+        aria-hidden="true"
+      >
+        <label htmlFor={`${idPrefix}-website`}>Website</label>
+        <Input
+          id={`${idPrefix}-website`}
+          name="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={form.website}
+          onChange={handleChange('website')}
+        />
+      </div>
       <div className="space-y-2">
         <label
           htmlFor={`${idPrefix}-firstName`}
@@ -209,33 +248,7 @@ export default function LeadMagnetSignupForm({
           </p>
         ) : null}
       </div>
-      <HeroPill
-        href={WHOP_REVIEWS_URL}
-        isExternal
-        variant="amber"
-        size="sm"
-        announcement={
-          <span className="flex items-center gap-1.5">
-            <Image
-              src="/images/whop-logo.png"
-              alt="Whop"
-              width={16}
-              height={16}
-              className="h-4 w-4"
-            />
-            <span className="flex items-center gap-0.5">
-              {[1, 2, 3, 4, 5].map(star => (
-                <Star
-                  key={star}
-                  className="h-3 w-3 fill-amber-500 text-amber-500"
-                  aria-hidden="true"
-                />
-              ))}
-            </span>
-          </span>
-        }
-        label="51 Bewertungen"
-      />
+      {socialProof}
       <Button
         type="submit"
         size="lg"

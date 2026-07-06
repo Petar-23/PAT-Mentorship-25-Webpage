@@ -4,24 +4,13 @@ import { randomUUID } from 'crypto'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { put } from '@vercel/blob'
-import { auth, clerkClient } from '@clerk/nextjs/server'
 import sanitizeFilename from 'sanitize-filename'
+import { requireAdminApiAccess } from '@/lib/authz'
 
 export const POST = async (request: Request) => {
-  const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const client = await clerkClient()
-  const memberships = await client.users.getOrganizationMembershipList({
-    userId,
-    limit: 100,
-  })
-  const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-
-  if (!isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const admin = await requireAdminApiAccess()
+  if (!admin.ok) {
+    return admin.response
   }
 
   try {
@@ -62,6 +51,7 @@ export const POST = async (request: Request) => {
     await prisma.video.update({
       where: { id: videoId },
       data: { pdfUrl: url },
+      select: { id: true },
     })
 
     return NextResponse.json({ pdfUrl: url })

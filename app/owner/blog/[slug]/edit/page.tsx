@@ -1,54 +1,23 @@
-'use client'
-
-import { useUser } from '@clerk/nextjs'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState, use } from 'react'
-import Link from 'next/link'
 import BlogEditor from '@/components/blog/blog-editor'
+import { getOwnerBlogPost } from '@/lib/owner-blog'
+import Link from 'next/link'
 
 interface PageProps {
   params: Promise<{ slug: string }>
 }
 
-export default function EditBlogPostPage({ params }: PageProps) {
-  const { slug } = use(params)
-  const { user, isSignedIn, isLoaded } = useUser()
-  const router = useRouter()
-  const isAdmin =
-    user?.organizationMemberships?.some((membership) => membership.role === 'org:admin') || false
+export const dynamic = 'force-dynamic'
 
-  const [content, setContent] = useState<string | null>(null)
-  const [sha, setSha] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+export default async function EditBlogPostPage({ params }: PageProps) {
+  const { slug } = await params
+  let post: Awaited<ReturnType<typeof getOwnerBlogPost>> | null = null
+  let error: string | null = null
 
-  useEffect(() => {
-    if (!isLoaded) return
-    if (!isSignedIn || !isAdmin) {
-      router.replace('/')
-      return
-    }
-
-    fetch(`/api/owner/blog/${slug}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
-          setError(data.error)
-        } else {
-          setContent(data.content)
-          setSha(data.sha)
-        }
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [isLoaded, isSignedIn, isAdmin, router, slug])
-
-  if (!isLoaded || !isSignedIn || !isAdmin) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
-      </div>
-    )
+  try {
+    post = await getOwnerBlogPost(slug)
+  } catch (err) {
+    console.error('Failed to load owner blog post:', err)
+    error = err instanceof Error ? err.message : 'Artikel konnte nicht geladen werden'
   }
 
   return (
@@ -68,14 +37,8 @@ export default function EditBlogPostPage({ params }: PageProps) {
           </div>
         )}
 
-        {loading && (
-          <div className="flex items-center justify-center py-20">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
-          </div>
-        )}
-
-        {!loading && content !== null && sha !== null && (
-          <BlogEditor slug={slug} initialContent={content} initialSha={sha} />
+        {post && (
+          <BlogEditor slug={slug} initialContent={post.content} initialSha={post.sha} />
         )}
       </div>
     </section>

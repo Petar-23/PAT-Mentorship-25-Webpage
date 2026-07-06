@@ -1,13 +1,9 @@
-
-"use client"
 import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { Card } from "@/components/ui/card"
-import { Check, X, ArrowRight } from "@phosphor-icons/react"
-import { motion } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { SignInButton, useUser } from '@clerk/nextjs'
-import { useRouter } from 'next/navigation'
+import { Check } from "@phosphor-icons/react/dist/ssr/Check"
+import { X } from "@phosphor-icons/react/dist/ssr/X"
 import { HeroPill } from "@/components/ui/hero-pill"
+import { PricingComparisonCta } from '@/components/sections/pricing-comparison-cta'
 
 interface Feature {
   name: string
@@ -28,11 +24,8 @@ interface MobileFeatureCardProps {
 
 function MobileFeatureCard({ feature }: MobileFeatureCardProps) {
   return (
-    <motion.div
+    <div
       className={`p-3 space-y-2.5 ${feature.highlight ? 'bg-emerald-50/40' : 'bg-white'}`}
-      initial={{ opacity: 0, y: 10 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
     >
       <div>
         <p className="text-sm font-semibold text-gray-800 mb-1">{feature.name}</p>
@@ -60,7 +53,7 @@ function MobileFeatureCard({ feature }: MobileFeatureCardProps) {
         </div>
         <p className="text-xs text-gray-800 pl-7">{feature.others}</p>
       </div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -141,15 +134,6 @@ const comparisonData: { categories: Category[] } = {
 }
 
 export default function PricingComparison() {
-  const { isSignedIn } = useUser()
-  const router = useRouter()
-
-  const handleClick = () => {
-    if (isSignedIn) {
-      router.push('/dashboard')
-    }
-  }
-
   return (
     <section className="py-12 sm:py-24 bg-white">
       <div className="container mx-auto px-4 max-w-6xl">
@@ -215,13 +199,9 @@ export default function PricingComparison() {
                     <p className="font-semibold text-white">{category.name}</p>
                   </div>
                   {category.features.map((feature, featureIndex) => (
-                    <motion.div
+                    <div
                       key={featureIndex}
                       className="grid grid-cols-12 hover:bg-slate-50 transition-colors"
-                      initial={{ opacity: 0, y: 10 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: featureIndex * 0.05 }}
                     >
                       <div className="col-span-4 p-6 flex items-center">
                         <div>
@@ -249,7 +229,7 @@ export default function PricingComparison() {
                           {feature.others}
                         </span>
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               ))}
@@ -263,19 +243,7 @@ export default function PricingComparison() {
             Wähle eine Lernmethode, die deinen Erfolg priorisiert
           </h3>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {isSignedIn ? (
-              <Button size="lg" onClick={handleClick} className="gap-2">
-                Jetzt Platz sichern
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            ) : (
-              <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-                <Button size="lg" className="gap-2">
-                  Jetzt Platz sichern
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </SignInButton>
-            )}
+            <PricingComparisonCta />
           </div>
         </div>
       </div>

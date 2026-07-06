@@ -77,6 +77,7 @@ export async function POST(req: Request) {
     // Pruefen ob User bereits einen Claim hat
     const existingClaim = await prisma.payPalSubscriber.findUnique({
       where: { userId },
+      select: { id: true },
     })
     if (existingClaim) {
       return NextResponse.json(
@@ -93,6 +94,11 @@ export async function POST(req: Request) {
           mode: 'insensitive',
         },
         userId: null, // Noch nicht claimed
+      },
+      select: {
+        id: true,
+        paypalSubscriptionId: true,
+        status: true,
       },
     })
 
@@ -141,6 +147,7 @@ export async function POST(req: Request) {
         claimedAt: new Date(),
         status: liveStatus,
       },
+      select: { id: true },
     })
 
     // UserSubscription Record anlegen (fuer Access-Check)
@@ -158,6 +165,7 @@ export async function POST(req: Request) {
         status: 'active',
         cancelAtPeriodEnd: false,
       },
+      select: { id: true },
     })
 
     return NextResponse.json({ success: true, redirectUrl: '/mentorship' })

@@ -16,31 +16,29 @@ import { Underline } from '@tiptap/extension-underline'
 import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import { upload } from '@vercel/blob/client'
-import {
-  TextB as Bold,
-  TextItalic as Italic,
-  TextUnderline as UnderlineIcon,
-  TextStrikethrough as Strikethrough,
-  Highlighter,
-  List,
-  ListNumbers as ListOrdered,
-  Quotes as Quote,
-  Image as ImageIcon,
-  Link as LinkIcon,
-  Table as TableIcon,
-  Minus,
-  ArrowCounterClockwise as Undo,
-  ArrowClockwise as Redo,
-  TextHOne as Heading1,
-  TextHTwo as Heading2,
-  TextHThree as Heading3,
-  AlignLeft,
-  TextAlignCenter as AlignCenter,
-  AlignRight,
-  Eye,
-  EyeSlash as EyeOff,
-  FloppyDisk as Save,
-} from '@phosphor-icons/react'
+import { AlignLeft } from '@phosphor-icons/react/AlignLeft'
+import { AlignRight } from '@phosphor-icons/react/AlignRight'
+import { ArrowClockwise as Redo } from '@phosphor-icons/react/ArrowClockwise'
+import { ArrowCounterClockwise as Undo } from '@phosphor-icons/react/ArrowCounterClockwise'
+import { Eye } from '@phosphor-icons/react/Eye'
+import { EyeSlash as EyeOff } from '@phosphor-icons/react/EyeSlash'
+import { FloppyDisk as Save } from '@phosphor-icons/react/FloppyDisk'
+import { Highlighter } from '@phosphor-icons/react/Highlighter'
+import { Image as ImageIcon } from '@phosphor-icons/react/Image'
+import { Link as LinkIcon } from '@phosphor-icons/react/Link'
+import { List } from '@phosphor-icons/react/List'
+import { ListNumbers as ListOrdered } from '@phosphor-icons/react/ListNumbers'
+import { Minus } from '@phosphor-icons/react/Minus'
+import { Quotes as Quote } from '@phosphor-icons/react/Quotes'
+import { Table as TableIcon } from '@phosphor-icons/react/Table'
+import { TextAlignCenter as AlignCenter } from '@phosphor-icons/react/TextAlignCenter'
+import { TextB as Bold } from '@phosphor-icons/react/TextB'
+import { TextHOne as Heading1 } from '@phosphor-icons/react/TextHOne'
+import { TextHThree as Heading3 } from '@phosphor-icons/react/TextHThree'
+import { TextHTwo as Heading2 } from '@phosphor-icons/react/TextHTwo'
+import { TextItalic as Italic } from '@phosphor-icons/react/TextItalic'
+import { TextStrikethrough as Strikethrough } from '@phosphor-icons/react/TextStrikethrough'
+import { TextUnderline as UnderlineIcon } from '@phosphor-icons/react/TextUnderline'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 
@@ -98,11 +96,16 @@ export function PageEditor({ page }: Props) {
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isSavingRef = useRef(false)
   const titleRef = useRef<HTMLInputElement>(null)
+  const saveAbortRef = useRef<AbortController | null>(null)
+  const publishAbortRef = useRef<AbortController | null>(null)
 
   const save = useCallback(
     async (content: Record<string, unknown>, title?: string) => {
       if (isSavingRef.current) return
       isSavingRef.current = true
+      const controller = new AbortController()
+      saveAbortRef.current = controller
+
       try {
         const body: Record<string, unknown> = { content }
         if (title !== undefined) body.title = title
@@ -110,10 +113,14 @@ export function PageEditor({ page }: Props) {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
+          signal: controller.signal,
         })
       } catch {
         // silent auto-save failure
       } finally {
+        if (saveAbortRef.current === controller) {
+          saveAbortRef.current = null
+        }
         isSavingRef.current = false
       }
     },
@@ -198,12 +205,18 @@ export function PageEditor({ page }: Props) {
 
   const handlePublishToggle = async () => {
     const newPublished = !page.published
+    publishAbortRef.current?.abort()
+    const controller = new AbortController()
+    publishAbortRef.current = controller
+
     try {
       const res = await fetch(`/api/pages/${page.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ published: newPublished }),
+        signal: controller.signal,
       })
+      if (controller.signal.aborted) return
       if (!res.ok) throw new Error('Fehler')
       toast({
         title: newPublished ? 'Veröffentlicht ✓' : 'Entwurf',
@@ -211,7 +224,12 @@ export function PageEditor({ page }: Props) {
       })
       router.refresh()
     } catch {
+      if (controller.signal.aborted) return
       toast({ variant: 'destructive', title: 'Fehler beim Ändern des Status' })
+    } finally {
+      if (publishAbortRef.current === controller) {
+        publishAbortRef.current = null
+      }
     }
   }
 
@@ -225,6 +243,8 @@ export function PageEditor({ page }: Props) {
   useEffect(() => {
     return () => {
       if (saveTimeout.current) clearTimeout(saveTimeout.current)
+      saveAbortRef.current?.abort()
+      publishAbortRef.current?.abort()
     }
   }, [])
 

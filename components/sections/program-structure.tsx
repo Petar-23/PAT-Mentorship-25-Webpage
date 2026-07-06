@@ -1,17 +1,11 @@
-// src/components/sections/program-structure.tsx
-'use client'
-
-import {
-  CheckCircle,
-  Users,
-  HeadCircuit as BrainCircuit,
-  ChartLine as LineChart,
-  Calendar,
-} from "@phosphor-icons/react"
+import { Calendar } from "@phosphor-icons/react/dist/ssr/Calendar"
+import { ChartLine as LineChart } from "@phosphor-icons/react/dist/ssr/ChartLine"
+import { CheckCircle } from "@phosphor-icons/react/dist/ssr/CheckCircle"
+import { HeadCircuit as BrainCircuit } from "@phosphor-icons/react/dist/ssr/HeadCircuit"
+import { Users } from "@phosphor-icons/react/dist/ssr/Users"
 import { Card, CardContent } from "@/components/ui/card"
-import { CardWithMatrix } from '@/components/ui/card-with-matrix'
 import { GradientCard } from '@/components/ui/gradient-card'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { ProgramSupportCards } from "@/components/sections/program-support-cards"
 
 interface ProgramPhase {
   phase: string;
@@ -156,16 +150,17 @@ export default function ProgramStructure() {
         <div className="md:hidden space-y-4">
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-3">
             <h3 className="text-sm font-semibold text-white">Programmphasen</h3>
-            <Accordion type="single" collapsible className="mt-2">
+            <div className="mt-2">
               {programPhases.map((phase, index) => (
-                <AccordionItem key={index} value={`phase-${index}`} className="border-slate-800">
-                  <AccordionTrigger className="text-left text-white hover:no-underline py-2.5">
+                <details key={phase.phase} className="group border-b border-slate-800 last:border-b-0">
+                  <summary className="flex cursor-pointer list-none items-center justify-between py-2.5 text-left text-white [&::-webkit-details-marker]:hidden">
                     <div className="flex flex-col text-left">
                       <span className="text-[10px] text-blue-400">{phase.duration}</span>
                       <span className="text-sm font-semibold">{phase.phase}</span>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="text-gray-300 pb-2">
+                    <span className="ml-3 text-xs text-slate-500 transition-transform group-open:rotate-180">⌄</span>
+                  </summary>
+                  <div className="text-gray-300 pb-2">
                     <p className="text-xs text-gray-400 mb-2">{phase.description}</p>
                     <ul className="space-y-1.5">
                       {phase.features.map((feature, featureIndex) => (
@@ -175,29 +170,30 @@ export default function ProgramStructure() {
                         </li>
                       ))}
                     </ul>
-                  </AccordionContent>
-                </AccordionItem>
+                  </div>
+                </details>
               ))}
-            </Accordion>
+            </div>
           </div>
 
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-3">
             <h3 className="text-sm font-semibold text-white">Wöchentlicher Ablauf*</h3>
-            <Accordion type="single" collapsible className="mt-2">
+            <div className="mt-2">
               {weeklySchedule.map((session, index) => (
-                <AccordionItem key={index} value={`schedule-${index}`} className="border-slate-800">
-                  <AccordionTrigger className="text-left text-white hover:no-underline py-2.5">
+                <details key={`${session.day}-${session.type}`} className="group border-b border-slate-800 last:border-b-0">
+                  <summary className="flex cursor-pointer list-none items-center justify-between py-2.5 text-left text-white [&::-webkit-details-marker]:hidden">
                     <div className="flex flex-col text-left">
                       <span className="text-[10px] text-blue-400">{session.day} • {session.time}</span>
                       <span className="text-sm font-semibold">{session.type}</span>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="text-gray-300 pb-2">
+                    <span className="ml-3 text-xs text-slate-500 transition-transform group-open:rotate-180">⌄</span>
+                  </summary>
+                  <div className="text-gray-300 pb-2">
                     <p className="text-xs text-gray-400">{session.description}</p>
-                  </AccordionContent>
-                </AccordionItem>
+                  </div>
+                </details>
               ))}
-            </Accordion>
+            </div>
             <p className="mt-2 text-center text-gray-500 text-[10px] italic">
               * Zeitplan kann je nach Marktbedingungen und Gruppenbedürfnissen angepasst werden
             </p>
@@ -208,21 +204,22 @@ export default function ProgramStructure() {
             <p className="text-xs text-gray-400 mt-0.5">
               Zugriff auf Community, Indikatoren und Alumni.
             </p>
-            <Accordion type="single" collapsible className="mt-2">
+            <div className="mt-2">
               {supportFeatures.map((feature, index) => (
-                <AccordionItem key={index} value={`support-${index}`} className="border-slate-800">
-                  <AccordionTrigger className="text-left text-white hover:no-underline py-2.5">
+                <details key={feature.title} className="group border-b border-slate-800 last:border-b-0">
+                  <summary className="flex cursor-pointer list-none items-center justify-between py-2.5 text-left text-white [&::-webkit-details-marker]:hidden">
                     <div className="flex items-center gap-2">
                       <span className={`h-4 w-4 ${feature.iconColor}`}>{feature.icon}</span>
                       <span className="text-sm font-semibold">{feature.title}</span>
                     </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="text-gray-300 pb-2">
+                    <span className="ml-3 text-xs text-slate-500 transition-transform group-open:rotate-180">⌄</span>
+                  </summary>
+                  <div className="text-gray-300 pb-2">
                     <p className="text-xs text-gray-400">{feature.description}</p>
-                  </AccordionContent>
-                </AccordionItem>
+                  </div>
+                </details>
               ))}
-            </Accordion>
+            </div>
           </div>
         </div>
 
@@ -312,18 +309,7 @@ export default function ProgramStructure() {
             </p>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-[1200px] mx-auto">
-              {supportFeatures.map((feature, index) => (
-                <CardWithMatrix
-                  key={index}
-                  icon={feature.icon}
-                  title={feature.title}
-                  description={feature.description}
-                  iconColor={feature.iconColor}
-                  rainColor={feature.rainColor}
-                  gradientColor={feature.gradientColor}
-                  className="h-auto sm:h-[250px] lg:h-auto" // Optimized height for mobile
-                />
-              ))}
+              <ProgramSupportCards />
             </div>
           </div>
         </div>

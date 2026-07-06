@@ -1,13 +1,11 @@
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 // import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Users,
-  Target,
-  Calendar,
-  ChatText as MessageSquare,
-  BookOpen,
-  Medal as Award,
-} from "@phosphor-icons/react/dist/ssr"
+import { BookOpen } from "@phosphor-icons/react/dist/ssr/BookOpen"
+import { Calendar } from "@phosphor-icons/react/dist/ssr/Calendar"
+import { ChatText as MessageSquare } from "@phosphor-icons/react/dist/ssr/ChatText"
+import { Medal as Award } from "@phosphor-icons/react/dist/ssr/Medal"
+import { Target } from "@phosphor-icons/react/dist/ssr/Target"
+import { Users } from "@phosphor-icons/react/dist/ssr/Users"
 
 const features = [
   {

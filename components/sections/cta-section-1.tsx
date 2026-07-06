@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { VortexBackground } from "@/components/ui/vortex-wrapper"
-import { trackConversion } from '@/components/analytics/google-tag-manager'
+import { trackConversion } from '@/components/analytics/tracking'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
 
 export default function CTASection() {

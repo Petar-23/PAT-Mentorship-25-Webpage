@@ -4,16 +4,37 @@ import { NextRequest, NextResponse } from 'next/server'
 import { deleteVideo } from '@/lib/bunny'
 import { put } from '@vercel/blob'
 import sanitizeFilename from 'sanitize-filename'
-import { auth, clerkClient } from '@clerk/nextjs/server'
+import { requireAdminApiAccess } from '@/lib/authz'
+import { revalidateSidebarData } from '@/lib/sidebar-data'
+
+const BUNNY_DELETE_CONCURRENCY = 4
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  if (items.length === 0) return []
+
+  const limit = Math.max(1, Math.min(concurrency, items.length))
+  const results = new Array<R>(items.length)
+  let nextIndex = 0
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex
+      nextIndex += 1
+      results[index] = await mapper(items[index]!, index)
+    }
+  }
+
+  await Promise.all(Array.from({ length: limit }, () => worker()))
+  return results
+}
 
 export async function PATCH(request: NextRequest,{ params }: { params: Promise<{ id: string }> }) {
-    const { userId } = await auth()
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-    const client = await clerkClient()
-    const memberships = await client.users.getOrganizationMembershipList({ userId, limit: 100 })
-    const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-    if (!isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const admin = await requireAdminApiAccess()
+    if (!admin.ok) return admin.response
 
     const { id } = await params
     const formData = await request.formData()  // ← FormData statt json()!
@@ -44,6 +65,7 @@ export async function PATCH(request: NextRequest,{ params }: { params: Promise<{
             ...(description && description.trim() && { description: description.trim() }),
             ...(imageUrl && { imageUrl }),  // ← NEU: Speichere Bild-URL
           },
+        select: { id: true },
       })
       return NextResponse.json(updatedModule)
     } catch (error) {
@@ -53,13 +75,8 @@ export async function PATCH(request: NextRequest,{ params }: { params: Promise<{
   }
 
   export async function DELETE(_request: NextRequest,{ params }: { params: Promise<{ id: string }> }) {
-    const { userId } = await auth()
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-    const client = await clerkClient()
-    const memberships = await client.users.getOrganizationMembershipList({ userId, limit: 100 })
-    const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-    if (!isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const admin = await requireAdminApiAccess()
+    if (!admin.ok) return admin.response
 
     const { id } = await params
 
@@ -67,13 +84,13 @@ export async function PATCH(request: NextRequest,{ params }: { params: Promise<{
       // 1. Videos fetchen (für Bunny-Cleanup)
       const moduleWithVideos = await prisma.module.findUnique({
         where: { id },
-        include: {
+        select: {
           chapters: {
-            include: {
-              videos: true  // Alle Videos
-            }
-          }
-        }
+            select: {
+              videos: { select: { bunnyGuid: true } },
+            },
+          },
+        },
       })
   
       if (!moduleWithVideos) {
@@ -81,23 +98,24 @@ export async function PATCH(request: NextRequest,{ params }: { params: Promise<{
       }
   
       // 2. Bunny-Videos löschen (parallel, Errors loggen)
-      const bunnyDeletes = moduleWithVideos.chapters
+      const videosToDelete = moduleWithVideos.chapters
         .flatMap(ch => ch.videos)
-        .filter(v => v.bunnyGuid)
-        .map(async (video) => {
+        .filter((video): video is { bunnyGuid: string } => Boolean(video.bunnyGuid))
+
+      await mapWithConcurrency(videosToDelete, BUNNY_DELETE_CONCURRENCY, async (video) => {
           try {
-            await deleteVideo(video.bunnyGuid!)
+            await deleteVideo(video.bunnyGuid)
           } catch (error) {
             console.error(`Bunny delete failed for ${video.bunnyGuid}:`, error)
             // Nicht stoppen – DB trotzdem löschen
           }
-        })
-  
-      await Promise.allSettled(bunnyDeletes)  // Parallel safe
+        }
+      )
   
       // 3. DB löschen (Cascade)
-      await prisma.module.delete({ where: { id } })
+      await prisma.module.delete({ where: { id }, select: { id: true } })
   
+      revalidateSidebarData()
       return NextResponse.json({ success: true })
     } catch (error) {
       console.error('Module delete error:', error)

@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server'
-import { auth, clerkClient } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { sendDiscordChannelMessage, sendDiscordChannelMessageWithAttachment } from '@/lib/discord'
-import { resolveBunnyThumbnailUrl } from '@/lib/bunny'
+import { buildBunnyThumbnailUrl } from '@/lib/bunny-thumbnail'
+import { requireAdminApiAccess } from '@/lib/authz'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+
+const THUMBNAIL_FETCH_TIMEOUT_MS = 8_000
 
 function requireEnv(name: string): string {
   const value = process.env[name]
@@ -27,21 +29,45 @@ function getBooleanProp(value: unknown, key: string): boolean | null {
   return typeof v === 'boolean' ? v : null
 }
 
-export async function POST(req: Request) {
+async function fetchThumbnailAttachment(thumbnailUrl: string) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), THUMBNAIL_FETCH_TIMEOUT_MS)
+
   try {
-    const { userId } = await auth()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const response = await fetch(thumbnailUrl, {
+      headers: { Referer: 'https://iframe.mediadelivery.net/' },
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      throw new Error(`Thumbnail fetch failed (${response.status})`)
     }
 
-    const client = await clerkClient()
-    const memberships = await client.users.getOrganizationMembershipList({
-      userId,
-      limit: 100,
-    })
-    const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-    if (!isAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const bytes = await response.arrayBuffer()
+    if (bytes.byteLength === 0) {
+      throw new Error('Thumbnail is empty')
+    }
+
+    return {
+      bytes,
+      contentType: response.headers.get('content-type') || 'image/jpeg',
+    }
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error(`Thumbnail fetch timed out after ${THUMBNAIL_FETCH_TIMEOUT_MS}ms`)
+    }
+    throw error
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const admin = await requireAdminApiAccess()
+    if (!admin.ok) {
+      return admin.response
     }
 
     let body: unknown
@@ -58,12 +84,23 @@ export async function POST(req: Request) {
 
     const video = await prisma.video.findUnique({
       where: { id: videoId },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        bunnyGuid: true,
+        thumbnailUrl: true,
         chapter: {
-          include: {
+          select: {
+            name: true,
             module: {
-              include: {
-                playlist: true,
+              select: {
+                id: true,
+                name: true,
+                playlist: {
+                  select: {
+                    name: true,
+                  },
+                },
               },
             },
           },
@@ -115,7 +152,7 @@ export async function POST(req: Request) {
     // Vorbereitung für Schritt 5: Deep-Link auf ein konkretes Video.
     const videoUrl = `${baseUrl}/mentorship/modul/${moduleId}?video=${video.id}`
 
-    const thumbnailUrl = `https://vz-08bb86cc-ee1.b-cdn.net/${video.bunnyGuid}/thumbnail.jpg`
+    const thumbnailUrl = buildBunnyThumbnailUrl(video.bunnyGuid)
 
     const courseForText = playlistName ?? moduleName
     const announcementContent = [
@@ -139,19 +176,7 @@ export async function POST(req: Request) {
       // Deshalb laden wir das Thumbnail serverseitig (mit Referer) und schicken es als Attachment,
       // damit Discord es sicher anzeigen kann.
       try {
-        const thumbRes = await fetch(thumbnailUrl, {
-          headers: { Referer: 'https://iframe.mediadelivery.net/' },
-          cache: 'no-store',
-        })
-
-        if (!thumbRes.ok) {
-          throw new Error(`Thumbnail fetch failed (${thumbRes.status})`)
-        }
-
-        const bytes = await thumbRes.arrayBuffer()
-        if (bytes.byteLength === 0) {
-          throw new Error('Thumbnail is empty')
-        }
+        const thumbnail = await fetchThumbnailAttachment(thumbnailUrl)
 
         const fileName = 'thumbnail.jpg'
         const embedImageUrl = `attachment://${fileName}`
@@ -180,8 +205,8 @@ export async function POST(req: Request) {
           ],
           file: {
             name: fileName,
-            contentType: thumbRes.headers.get('content-type') || 'image/jpeg',
-            data: bytes,
+            contentType: thumbnail.contentType,
+            data: thumbnail.bytes,
           },
         })
 
@@ -279,4 +304,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
-

@@ -13,7 +13,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { DotsThreeVertical as MoreVertical, Trash as Trash2, PencilSimple as Edit } from '@phosphor-icons/react'
+import { DotsThreeVertical as MoreVertical } from '@phosphor-icons/react/DotsThreeVertical'
+import { PencilSimple as Edit } from '@phosphor-icons/react/PencilSimple'
+import { Trash as Trash2 } from '@phosphor-icons/react/Trash'
 import { useToast } from '@/hooks/use-toast'
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
@@ -26,7 +28,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle
 } from '@/components/ui/alert-dialog'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 function formatModuleDuration(totalSeconds: number | null | undefined) {
   if (!totalSeconds || !Number.isFinite(totalSeconds) || totalSeconds <= 0) return '—'
@@ -67,10 +69,15 @@ export function ModuleCard({ modul, progress = null }: Props) {
     const isAdmin = isLoaded && user?.organizationMemberships?.some(m => m.role === 'org:admin')
     const desktopHref = `/mentorship/modul/${modul.id}`
     const mobileHref = `${desktopHref}?view=content`
+    const editAbortRef = useRef<AbortController | null>(null)
+    const deleteAbortRef = useRef<AbortController | null>(null)
 
     useEffect(() => {
-      router.prefetch(desktopHref)
-    }, [desktopHref, router])
+      return () => {
+        editAbortRef.current?.abort()
+        deleteAbortRef.current?.abort()
+      }
+    }, [])
 
     const navigateToModule = () => {
       if (typeof window === 'undefined') {
@@ -84,34 +91,56 @@ export function ModuleCard({ modul, progress = null }: Props) {
   
     const handleEdit = async (formData: FormData) => {
       setLoading(true)
+      editAbortRef.current?.abort()
+      const controller = new AbortController()
+      editAbortRef.current = controller
+
       try {
         const res = await fetch(`/api/modules/${modul.id}`, {
           method: 'PATCH',
+          signal: controller.signal,
           body: formData,
         })
         if (!res.ok) throw new Error()
+        if (controller.signal.aborted) return
+
         router.refresh()  // List neu laden (Server-Component)
         setEditOpen(false)
         toast({ title: 'Modul aktualisiert!' })
       } catch {
+        if (controller.signal.aborted) return
+
         toast({ variant: 'destructive', title: 'Fehler beim Speichern' })
       } finally {
-        setLoading(false)
+        if (editAbortRef.current === controller) editAbortRef.current = null
+        if (!controller.signal.aborted) setLoading(false)
       }
     }
   
     const handleDelete = async () => {
       setLoading(true)
+      deleteAbortRef.current?.abort()
+      const controller = new AbortController()
+      deleteAbortRef.current = controller
+
       try {
-        const res = await fetch(`/api/modules/${modul.id}`, { method: 'DELETE' })
+        const res = await fetch(`/api/modules/${modul.id}`, {
+          method: 'DELETE',
+          signal: controller.signal,
+        })
         if (!res.ok) throw new Error()
+        if (controller.signal.aborted) return
+
         router.refresh()
         setDeleteOpen(false)
         toast({ title: 'Modul gelöscht!' })
       } catch {
+        if (controller.signal.aborted) return
+
         toast({ variant: 'destructive', title: 'Fehler beim Löschen' })
       } finally {
-        setLoading(false)
+        if (deleteAbortRef.current === controller) deleteAbortRef.current = null
+        if (!controller.signal.aborted) setLoading(false)
       }
     }
 
@@ -226,7 +255,7 @@ export function ModuleCard({ modul, progress = null }: Props) {
           {/* Modals außerhalb – safe */}
           {isAdmin && (
           <Dialog open={editOpen} onOpenChange={setEditOpen}>
-            <DialogContent>
+            <DialogContent className="mentorship-typography">
                 <DialogHeader>
                 <DialogTitle>Modul bearbeiten</DialogTitle>
                 <DialogDescription>Ändere Name & Beschreibung.</DialogDescription>
@@ -281,7 +310,7 @@ export function ModuleCard({ modul, progress = null }: Props) {
             )}
           {isAdmin && (
           <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-            <AlertDialogContent>
+            <AlertDialogContent className="mentorship-typography">
                 <AlertDialogHeader>
                 <AlertDialogTitle>Modul löschen?</AlertDialogTitle>
                 <AlertDialogDescription>

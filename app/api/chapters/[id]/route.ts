@@ -1,24 +1,38 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 import { deleteVideo } from '@/lib/bunny'
-import { auth, clerkClient } from '@clerk/nextjs/server'
+import { requireAdminApiAccess } from '@/lib/authz'
+
+const BUNNY_DELETE_CONCURRENCY = 4
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  if (items.length === 0) return []
+
+  const limit = Math.max(1, Math.min(concurrency, items.length))
+  const results = new Array<R>(items.length)
+  let nextIndex = 0
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex
+      nextIndex += 1
+      results[index] = await mapper(items[index]!, index)
+    }
+  }
+
+  await Promise.all(Array.from({ length: limit }, () => worker()))
+  return results
+}
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const client = await clerkClient()
-  const memberships = await client.users.getOrganizationMembershipList({
-    userId,
-    limit: 100,
-  })
-
-  const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-  if (!isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const admin = await requireAdminApiAccess()
+  if (!admin.ok) {
+    return admin.response
   }
 
   const { name } = await request.json()
@@ -27,6 +41,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const updatedChapter = await prisma.chapter.update({
       where: { id },
       data: { name },
+      select: {
+        id: true,
+        name: true,
+        order: true,
+        moduleId: true,
+      },
     })
     return NextResponse.json(updatedChapter)
   } catch (error) {
@@ -38,26 +58,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
-  const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const client = await clerkClient()
-  const memberships = await client.users.getOrganizationMembershipList({
-    userId,
-    limit: 100,
-  })
-
-  const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-  if (!isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const admin = await requireAdminApiAccess()
+  if (!admin.ok) {
+    return admin.response
   }
 
   try {
     const chapter = await prisma.chapter.findUnique({
       where: { id },
-      include: { videos: true },
+      select: {
+        videos: { select: { bunnyGuid: true } },
+      },
     })
 
     if (!chapter) {
@@ -65,18 +76,20 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     }
 
     // Bunny Videos löschen (nicht fatal wenn fehlschlägt)
-    for (const video of chapter.videos) {
-      if (video.bunnyGuid) {
+    await mapWithConcurrency(
+      chapter.videos.filter((video): video is { bunnyGuid: string } => Boolean(video.bunnyGuid)),
+      BUNNY_DELETE_CONCURRENCY,
+      async (video) => {
         try {
           await deleteVideo(video.bunnyGuid)
         } catch (error) {
           console.error(`Bunny Video ${video.bunnyGuid} löschen fehlgeschlagen:`, error)
         }
       }
-    }
+    )
 
     // DB löschen (Cascade löscht Videos)
-    await prisma.chapter.delete({ where: { id } })
+    await prisma.chapter.delete({ where: { id }, select: { id: true } })
 
     return NextResponse.json({ success: true })
   } catch (error) {

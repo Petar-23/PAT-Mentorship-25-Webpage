@@ -18,16 +18,10 @@ export default async function MentorshipModulPage({
   searchParams = Promise.resolve({}),
 }: Props) {
   const { id } = await params
-  const isAdmin = await getIsAdmin()
-  const { userId } = await auth()
-  const resolvedParams = await searchParams
-  const requestedVideoId = typeof resolvedParams.video === 'string' ? resolvedParams.video : undefined
-
-  // Sidebar-Daten — shared cached helper (deduplicated across routes per request)
-  const { kurseForSidebar, savedSidebarOrder } = await getSidebarData()
-
-  // Modul laden
-  const modul = await prisma.module.findUnique({
+  const authPromise = auth()
+  const searchParamsPromise = searchParams
+  const sidebarDataPromise = getSidebarData()
+  const modulPromise = prisma.module.findUnique({
     where: { id },
     select: {
       id: true,
@@ -61,6 +55,29 @@ export default async function MentorshipModulPage({
       },
     },
   })
+  const { userId, sessionClaims } = await authPromise
+  const isAdminPromise = userId ? getIsAdmin(userId, sessionClaims) : Promise.resolve(false)
+  const watchedProgressRowsPromise = isAdminPromise.then((isAdmin) =>
+    !isAdmin && userId
+      ? prisma.videoProgress.findMany({
+          where: {
+            userId,
+            watched: true,
+            video: { chapter: { moduleId: id } },
+          },
+          select: { videoId: true },
+        })
+      : Promise.resolve([])
+  )
+  const [resolvedParams, { kurseForSidebar, savedSidebarOrder }, modul, isAdmin, watchedProgressRows] =
+    await Promise.all([
+      searchParamsPromise,
+      sidebarDataPromise,
+      modulPromise,
+      isAdminPromise,
+      watchedProgressRowsPromise,
+    ])
+  const requestedVideoId = typeof resolvedParams.video === 'string' ? resolvedParams.video : undefined
 
   if (!modul) notFound()
 
@@ -73,20 +90,8 @@ export default async function MentorshipModulPage({
 
   const activeCourseId = modul.playlist?.id ?? null
 
-  // Performance: Fortschritt direkt serverseitig laden → kein extra Client-Fetch nötig.
-  const initialWatchedVideoIds =
-    !isAdmin && userId && allVideos.length
-      ? (
-          await prisma.videoProgress.findMany({
-            where: {
-              userId,
-              watched: true,
-              videoId: { in: allVideos.map((v) => v.id) },
-            },
-            select: { videoId: true },
-          })
-        ).map((r) => r.videoId)
-      : []
+  // Performance: Fortschritt direkt serverseitig und parallel laden → kein extra Client-Fetch nötig.
+  const initialWatchedVideoIds = watchedProgressRows.map((r) => r.videoId)
 
   return (
     <div className="flex h-full min-h-0 bg-background">
@@ -113,4 +118,3 @@ export default async function MentorshipModulPage({
     </div>
   )
 }
-

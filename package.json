@@ -8,6 +8,7 @@
     "vercel-build": "prisma generate && prisma migrate deploy && next build --webpack",
     "start": "next start",
     "invoices:download": "node scripts/download-invoices.mjs --env-file .env.local",
+    "hermes:upload": "node scripts/hermes-upload.mjs",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -60,7 +61,6 @@
     "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "framer-motion": "^11.18.2",
     "gray-matter": "^4.0.3",
     "jszip": "^3.10.1",
     "mini-svg-data-uri": "^1.4.4",
@@ -71,8 +71,11 @@
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.53.1",
     "react-intersection-observer": "^9.13.1",
+    "react-markdown": "^10.1.0",
     "reading-time": "^1.5.0",
     "recharts": "^2.13.3",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1",
     "sanitize-filename": "^1.6.3",
     "simplex-noise": "^4.0.3",
     "stripe": "^17.3.1",

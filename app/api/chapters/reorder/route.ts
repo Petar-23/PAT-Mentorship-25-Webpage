@@ -1,21 +1,11 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
-import { auth, clerkClient } from '@clerk/nextjs/server'
+import { requireAdminApiAccess } from '@/lib/authz'
 
 export async function POST(request: Request) {
-  const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const client = await clerkClient()
-  const memberships = await client.users.getOrganizationMembershipList({
-    userId,
-    limit: 100,
-  })
-  const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-  if (!isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const admin = await requireAdminApiAccess()
+  if (!admin.ok) {
+    return admin.response
   }
 
   const body = await request.json()
@@ -31,6 +21,7 @@ export async function POST(request: Request) {
         prisma.chapter.update({
           where: { id },
           data: { order: index + 1 },
+          select: { id: true },
         })
       )
     )

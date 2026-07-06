@@ -2,24 +2,17 @@
 
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
-import { auth, clerkClient } from '@clerk/nextjs/server' 
+import { auth } from '@clerk/nextjs/server'
 import { hasActiveSubscription } from '@/lib/stripe'
+import { getIsAdmin, requireAdminApiAccess } from '@/lib/authz'
+import { revalidateSidebarData } from '@/lib/sidebar-data'
 
 export async function POST(request: Request) {
-  const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const admin = await requireAdminApiAccess()
+  if (!admin.ok) {
+    return admin.response
   }
 
-  const client = await clerkClient()
-  const memberships = await client.users.getOrganizationMembershipList({
-    userId,
-    limit: 100,
-  })
-  const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-  if (!isAdmin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
   const body = await request.json()
   const { name, description, imageUrl, playlistId } = body
 
@@ -41,8 +34,10 @@ export async function POST(request: Request) {
         playlistId,
         order: 0,                                 // Du kannst das später mit Reorder anpassen
       },
+      select: { id: true },
     })
 
+    revalidateSidebarData()
     return NextResponse.json(newModule, { status: 201 })
   } catch (error) {
     console.error('Fehler beim Anlegen des Moduls:', error)
@@ -55,25 +50,27 @@ export async function POST(request: Request) {
 
 // GET bleibt genau gleich – super!
 export async function GET() {
-  const { userId } = await auth()
+  const { userId, sessionClaims } = await auth()
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const client = await clerkClient()
-  const memberships = await client.users.getOrganizationMembershipList({
-    userId,
-    limit: 100,
-  })
-  const isAdmin = memberships.data.some((m) => m.role === 'org:admin')
-  const allowed = isAdmin || (await hasActiveSubscription(userId))
+  const allowed = (await hasActiveSubscription(userId)) || (await getIsAdmin(userId, sessionClaims))
 
   if (!allowed) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const modules = await prisma.module.findMany({
-    include: {
+    select: {
+      id: true,
+      name: true,
+      order: true,
+      playlistId: true,
+      createdAt: true,
+      updatedAt: true,
+      description: true,
+      imageUrl: true,
       playlist: {
         select: {
           name: true,

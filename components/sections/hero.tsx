@@ -1,33 +1,48 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import dynamic from 'next/dynamic'
 import { Button } from "@/components/ui/button"
-import {
-  ArrowRight,
-  Star,
-  Users,
-  Medal as Award,
-  ChartLine as LineChart,
-  SealCheck as BadgeCheck,
-} from "@phosphor-icons/react"
+import { ArrowRight } from "@phosphor-icons/react/ArrowRight"
+import { ChartLine as LineChart } from "@phosphor-icons/react/ChartLine"
+import { Medal as Award } from "@phosphor-icons/react/Medal"
+import { SealCheck as BadgeCheck } from "@phosphor-icons/react/SealCheck"
+import { Star } from "@phosphor-icons/react/Star"
+import { Users } from "@phosphor-icons/react/Users"
 import Link from "next/link"
-import { GLSLHills } from "../ui/glsl-hills"
 import { Countdown } from "@/components/ui/countdown"
 import Image from "next/image"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { SignInButton, useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { trackConversion } from '@/components/analytics/google-tag-manager'
+import { trackConversion } from '@/components/analytics/tracking'
 import { HeroPill } from '@/components/ui/hero-pill'
-import { ParticleTextReveal } from '@/components/ui/particle-text-reveal'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
+import { getWhopReviewStats } from '@/lib/whop-review-stats'
+
+const GLSLHills = dynamic(
+  () => import('../ui/glsl-hills').then((mod) => mod.GLSLHills),
+  { ssr: false }
+)
+
+const ParticleTextReveal = dynamic(
+  () => import('@/components/ui/particle-text-reveal').then((mod) => mod.ParticleTextReveal),
+  {
+    ssr: false,
+    loading: () => <span className="text-blue-600">Live-Mentoring:</span>,
+  }
+)
 
 export default function Hero() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
+  const mouseFrameRef = useRef<number | null>(null)
+  const navigationTimeoutRef = useRef<number | null>(null)
+  const latestMouseRef = useRef<{ clientX: number; clientY: number } | null>(null)
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [isNavigating, setIsNavigating] = useState(false)
   const [isInView, setIsInView] = useState(false)
+  const [showAmbientBackground, setShowAmbientBackground] = useState(false)
   const { isSignedIn } = useUser()
   const router = useRouter()
   const [whopStats, setWhopStats] = useState<{ count: number; average: number } | null>(null)
@@ -35,17 +50,31 @@ export default function Hero() {
   useEffect(() => {
     if (!isMobile && isInView) {
       const handleMouseMove = (e: MouseEvent) => {
-        if (containerRef.current) {
+        latestMouseRef.current = { clientX: e.clientX, clientY: e.clientY }
+
+        if (mouseFrameRef.current != null) return
+
+        mouseFrameRef.current = window.requestAnimationFrame(() => {
+          mouseFrameRef.current = null
+          const latestMouse = latestMouseRef.current
+          if (!latestMouse || !containerRef.current) return
+
           const rect = containerRef.current.getBoundingClientRect()
           setMousePosition({
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top + window.scrollY
+            x: latestMouse.clientX - rect.left,
+            y: latestMouse.clientY - rect.top + window.scrollY
           })
-        }
+        })
       }
 
       window.addEventListener('mousemove', handleMouseMove)
-      return () => window.removeEventListener('mousemove', handleMouseMove)
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove)
+        if (mouseFrameRef.current != null) {
+          window.cancelAnimationFrame(mouseFrameRef.current)
+          mouseFrameRef.current = null
+        }
+      }
     }
   }, [isMobile, isInView])
 
@@ -64,27 +93,35 @@ export default function Hero() {
   }, [])
 
   useEffect(() => {
+    if (isMobile || !isInView || showAmbientBackground) return
+
+    const w =
+      typeof window !== 'undefined'
+        ? (window as Window & {
+            requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+            cancelIdleCallback?: (id: number) => void
+          })
+        : undefined
+
+    let cleanup: (() => void) | undefined
+    if (w?.requestIdleCallback) {
+      const id = w.requestIdleCallback(() => setShowAmbientBackground(true), { timeout: 2500 })
+      cleanup = () => w.cancelIdleCallback?.(id)
+    } else if (typeof window !== 'undefined') {
+      const id = window.setTimeout(() => setShowAmbientBackground(true), 1400)
+      cleanup = () => window.clearTimeout(id)
+    }
+
+    return cleanup
+  }, [isMobile, isInView, showAmbientBackground])
+
+  useEffect(() => {
     let cancelled = false
 
     async function loadWhopStats() {
-      try {
-        const res = await fetch('/api/whop/reviews?limit=200&per=50')
-        if (!res.ok) return
-
-        const data = (await res.json()) as { reviews?: Array<{ rating: number | null }> }
-        const reviews = Array.isArray(data?.reviews) ? data.reviews : []
-
-        const ratingValues = reviews
-          .map((r) => (typeof r.rating === 'number' && Number.isFinite(r.rating) ? r.rating : null))
-          .filter((x): x is number => x != null)
-
-        const average = ratingValues.length > 0 ? ratingValues.reduce((sum, v) => sum + v, 0) / ratingValues.length : 5
-
-        if (!cancelled) {
-          setWhopStats({ count: reviews.length, average })
-        }
-      } catch {
-        // Silent fail
+      const stats = await getWhopReviewStats()
+      if (!cancelled && stats) {
+        setWhopStats(stats)
       }
     }
 
@@ -119,6 +156,14 @@ export default function Hero() {
     }
   }, [])
 
+  useEffect(() => {
+    return () => {
+      if (navigationTimeoutRef.current != null) {
+        window.clearTimeout(navigationTimeoutRef.current)
+      }
+    }
+  }, [])
+
   const whopCount = whopStats?.count ?? 48
   const whopAvg = whopStats?.average ?? 5
   const whopAvgRounded = Math.round(whopAvg * 10) / 10
@@ -134,7 +179,13 @@ export default function Hero() {
     if (isSignedIn) {
       setIsNavigating(true)
       router.push('/dashboard')
-      setTimeout(() => setIsNavigating(false), 500)
+      if (navigationTimeoutRef.current != null) {
+        window.clearTimeout(navigationTimeoutRef.current)
+      }
+      navigationTimeoutRef.current = window.setTimeout(() => {
+        setIsNavigating(false)
+        navigationTimeoutRef.current = null
+      }, 500)
     }
   }
   
@@ -173,7 +224,7 @@ export default function Hero() {
       className="relative pt-6 pb-12 sm:py-24 md:py-20 lg:py-32 min-h-[85vh] lg:min-h-[65vh] overflow-hidden bg-gradient-to-b from-white to-gray-50"
     >
        {/* GLSL Hills Background Layer */}
-      {!isMobile && isInView && (
+      {!isMobile && showAmbientBackground && (
         <GLSLHills
           speed={0.3}
           cameraZ={125}

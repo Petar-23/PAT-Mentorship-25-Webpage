@@ -1,14 +1,36 @@
 // src/lib/stripe.ts
-import Stripe from 'stripe'
-import { prisma } from './prisma'
+import 'server-only'
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing STRIPE_SECRET_KEY')
+import Stripe from 'stripe'
+import { prisma, withPrismaRetry } from './prisma'
+
+declare global {
+  var stripeClient: Stripe | undefined
 }
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-10-28.acacia',
-  typescript: true,
+export function getStripe() {
+  if (!global.stripeClient) {
+    const secretKey = process.env.STRIPE_SECRET_KEY
+    if (!secretKey) {
+      throw new Error('Missing STRIPE_SECRET_KEY')
+    }
+
+    global.stripeClient = new Stripe(secretKey, {
+      apiVersion: '2024-10-28.acacia',
+      typescript: true,
+    })
+  }
+
+  return global.stripeClient
+}
+
+export const stripe = new Proxy({} as Stripe, {
+  get(_target, prop) {
+    const client = getStripe()
+    const value = Reflect.get(client, prop, client) as unknown
+
+    return typeof value === 'function' ? value.bind(client) : value
+  },
 })
 
 const PROGRAM_START_DATE = new Date('2026-03-01T00:00:00+01:00')
@@ -111,16 +133,20 @@ async function readSubscriptionFromDb(userId: string): Promise<{
   priceIds: string[]
 } | null> {
   try {
-    const row = await prisma.userSubscription.findUnique({
-      where: { userId },
-      select: {
-        status: true,
-        cancelAtPeriodEnd: true,
-        cancelAt: true,
-        currentPeriodEnd: true,
-        priceIds: true,
-      },
-    })
+    const row = await withPrismaRetry(
+      () =>
+        prisma.userSubscription.findUnique({
+          where: { userId },
+          select: {
+            status: true,
+            cancelAtPeriodEnd: true,
+            cancelAt: true,
+            currentPeriodEnd: true,
+            priceIds: true,
+          },
+        }),
+      { label: 'Read subscription from DB' }
+    )
 
     if (!row) return null
 
@@ -148,28 +174,32 @@ async function writeSubscriptionToDb(params: {
   priceIds: string[]
 }) {
   try {
-    await prisma.userSubscription.upsert({
-      where: { userId: params.userId },
-      create: {
-        userId: params.userId,
-        stripeCustomerId: params.stripeCustomerId,
-        stripeSubscriptionId: params.stripeSubscriptionId,
-        status: params.status,
-        cancelAtPeriodEnd: params.cancelAtPeriodEnd,
-        cancelAt: params.cancelAt,
-        currentPeriodEnd: params.currentPeriodEnd,
-        priceIds: params.priceIds,
-      },
-      update: {
-        stripeCustomerId: params.stripeCustomerId,
-        stripeSubscriptionId: params.stripeSubscriptionId,
-        status: params.status,
-        cancelAtPeriodEnd: params.cancelAtPeriodEnd,
-        cancelAt: params.cancelAt,
-        currentPeriodEnd: params.currentPeriodEnd,
-        priceIds: params.priceIds,
-      },
-    })
+    await withPrismaRetry(
+      () =>
+        prisma.userSubscription.upsert({
+          where: { userId: params.userId },
+          create: {
+            userId: params.userId,
+            stripeCustomerId: params.stripeCustomerId,
+            stripeSubscriptionId: params.stripeSubscriptionId,
+            status: params.status,
+            cancelAtPeriodEnd: params.cancelAtPeriodEnd,
+            cancelAt: params.cancelAt,
+            currentPeriodEnd: params.currentPeriodEnd,
+            priceIds: params.priceIds,
+          },
+          update: {
+            stripeCustomerId: params.stripeCustomerId,
+            stripeSubscriptionId: params.stripeSubscriptionId,
+            status: params.status,
+            cancelAtPeriodEnd: params.cancelAtPeriodEnd,
+            cancelAt: params.cancelAt,
+            currentPeriodEnd: params.currentPeriodEnd,
+            priceIds: params.priceIds,
+          },
+        }),
+      { label: 'Write subscription to DB' }
+    )
   } catch (error) {
     // Wichtig: wir wollen die Seite nicht kaputt machen, falls DB-Write scheitert.
     console.error('Error writing subscription to DB:', error)
@@ -179,10 +209,14 @@ async function writeSubscriptionToDb(params: {
 // PayPal-Check: Hat der User einen aktiven PayPal-Subscriber-Eintrag?
 async function checkPayPalAccess(userId: string): Promise<SubscriptionSnapshot | null> {
   try {
-    const paypalSub = await prisma.payPalSubscriber.findUnique({
-      where: { userId },
-      select: { status: true },
-    })
+    const paypalSub = await withPrismaRetry(
+      () =>
+        prisma.payPalSubscriber.findUnique({
+          where: { userId },
+          select: { status: true },
+        }),
+      { label: 'Check PayPal access' }
+    )
 
     if (paypalSub?.status === 'ACTIVE') {
       return {
@@ -207,7 +241,8 @@ export async function getSubscriptionSnapshot(
   userId: string,
   options: { retryCount?: number; checkForRecentCheckout?: boolean; email?: string } = {}
 ): Promise<SubscriptionSnapshot> {
-  // Schneller PayPal-Check vor allem anderen (fuer M24-Subscriber).
+  // Nicht parallel gegen den kleinen Serverless-Pool schießen: direkt nach Deploys kann die erste
+  // DB-Verbindung kalt sein, und parallele Acquires treffen dann denselben Connection-Timeout.
   const paypalResult = await checkPayPalAccess(userId)
   if (paypalResult) return paypalResult
 
@@ -614,4 +649,100 @@ export async function getSubscriptionDetails(
 
   // Wir behalten das bisherige Verhalten: null wenn keine Subscription-Historie existiert.
   return snapshot.subscriptionDetails
+}
+
+// ---------------------------------------------------------------------------
+// PAT Raid Map (TradingView-Indikator, Einzelprodukt) — eigener Checkout.
+// Price-IDs kommen ausschliesslich aus Env-Vars (siehe docs/RAIDMAP_STRIPE_SETUP.md):
+//   STRIPE_PRICE_ID_RAIDMAP_MONTHLY, STRIPE_PRICE_ID_RAIDMAP_ANNUAL
+// Internationale Zielgruppe: locale 'auto', USD-Preise, kein Trial.
+// ---------------------------------------------------------------------------
+
+export type RaidMapCheckoutTier = 'monthly' | 'annual'
+
+export function getRaidMapPriceId(tier: RaidMapCheckoutTier): string | undefined {
+  return tier === 'annual'
+    ? process.env.STRIPE_PRICE_ID_RAIDMAP_ANNUAL
+    : process.env.STRIPE_PRICE_ID_RAIDMAP_MONTHLY
+}
+
+export async function createRaidMapCheckoutSession(
+  userId: string,
+  userEmail: string,
+  tier: RaidMapCheckoutTier
+) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+  if (!baseUrl) {
+    throw new Error('Missing NEXT_PUBLIC_APP_URL environment variable')
+  }
+
+  const priceId = getRaidMapPriceId(tier)
+  if (!priceId) {
+    throw new Error(`Missing Stripe price id for raidmap tier "${tier}" (see docs/RAIDMAP_STRIPE_SETUP.md)`)
+  }
+
+  // Customer wiederverwenden (gleiche Konvention wie Mentorship-Checkout)
+  let customer: Stripe.Customer
+  const existingCustomers = await stripe.customers.search({
+    query: `metadata['userId']:'${userId}'`,
+  })
+  if (existingCustomers.data.length > 0) {
+    customer = [...existingCustomers.data].sort((a, b) => b.created - a.created)[0]
+  } else {
+    customer = await stripe.customers.create({
+      email: userEmail,
+      metadata: { userId },
+    })
+  }
+
+  await stripe.customers.update(customer.id, {
+    invoice_settings: {
+      footer: '',
+      custom_fields: [],
+    },
+  })
+
+  const session = await stripe.checkout.sessions.create({
+    customer: customer.id,
+    payment_method_types: ['card'],
+    mode: 'subscription',
+    allow_promotion_codes: true,
+    billing_address_collection: 'required',
+    customer_update: {
+      address: 'auto',
+      name: 'auto',
+    },
+    locale: 'auto',
+    automatic_tax: { enabled: true },
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+    subscription_data: {
+      metadata: {
+        userId,
+        product: 'raidmap',
+        tier,
+      },
+    },
+    // TradingView-Username fuer den Invite-Only-Grant direkt im Checkout erfassen
+    custom_fields: [
+      {
+        key: 'tradingview_username',
+        label: { type: 'custom', custom: 'TradingView username' },
+        type: 'text',
+      },
+    ],
+    success_url: `${baseUrl}/raid-map?checkout=success`,
+    cancel_url: `${baseUrl}/raid-map?checkout=cancelled`,
+    metadata: {
+      userId,
+      product: 'raidmap',
+      tier,
+    },
+  })
+
+  return { url: session.url }
 }

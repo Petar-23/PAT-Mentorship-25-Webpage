@@ -2,16 +2,66 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+@keyframes final-cta-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes final-cta-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Typography: Display font for headings with text-balance */
 @layer base {
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-sora), var(--font-inter), system-ui, sans-serif;
+    font-family: var(--font-sora), var(--font-geist-sans), system-ui, sans-serif;
     text-wrap: balance;
   }
   
   p {
     text-wrap: pretty;
   }
+
+  main:has([data-hide-root-footer="true"]) + #site-footer {
+    display: none;
+  }
+}
+
+.mentorship-typography :is(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  [data-slot='dialog-title'],
+  [data-slot='alert-dialog-title'],
+  .mentorship-ui-heading
+) {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
 
 /* CSS Custom Properties für Glass Button */
