@@ -37,7 +37,30 @@ Check: /env-check zeigt beide mit ✓.
 - Subscription-Metadata: `product=raidmap`, `tier=...`, `userId` — der bestehende
   Webhook cached sie wie gehabt in `UserSubscription.priceIds`.
 
-## 4. Fulfillment (TradingView Invite-Only) — bewusst noch offen
+## 4. Fulfillment (TradingView Invite-Only) — AUTOMATISIERT (Stand 06.07. Abend)
+
+Der komplette Flow ist gebaut und nutzt die bestehende Cookie-/Cron-Infrastruktur:
+
+- **Checkout → Claim:** Der Stripe-Webhook legt bei `product=raidmap` automatisch
+  einen `IndicatorClaim` mit dem im Checkout erfassten TradingView-Username an
+  (`lib/raidmap-fulfillment.ts`); der stündliche Cron granted wie beim Mentorship.
+- **Account-Bereich:** `/raid-map/account` (Login via Clerk) — Abo-Status,
+  Billing-Portal (kündigen/Rechnungen), TradingView-Username setzen/ändern mit
+  Live-Claim-Status, "Wo finde ich den Indikator"-Guide.
+- **Success-Popup:** Nach dem Checkout (`/raid-map?checkout=success`) erklärt ein
+  Dialog die Invite-only-Fundstelle (mit Screenshot) und verlinkt den Account-Bereich.
+
+**Deine 2 Handgriffe dafür:**
+1. Nach dem TradingView-Publish im Owner-Bereich (/owner → Indicators) einen
+   Indicator anlegen mit **Slug exakt `pat-raid-map`**, der `pineId` des
+   veröffentlichten Scripts (Format `PUB;...`, steht in der Script-URL bzw. im
+   Owner-Import) und `ready` + `visible` aktivieren. Ab dann läuft alles automatisch;
+   vorher sammelt der Account-Bereich die Usernames mit freundlichem Hinweis.
+2. Deinen Invite-only-Screenshot ablegen als
+   `public/images/raidmap/find-invite-only.png` (der aus dem Chat) — Popup und
+   Account-Seite blenden ihn dann automatisch ein.
+
+## 4b. Alter Stand (überholt) — manuelles Fulfillment
 
 Die vorhandene Indicator-Claim-Infrastruktur (Prisma `Indicator`/`IndicatorClaim`,
 `lib/indicators/*`, Cron `/api/cron/tradingview-claims`) ist ans Mentorship-Abo

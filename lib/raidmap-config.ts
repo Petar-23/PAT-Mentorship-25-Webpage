@@ -38,6 +38,12 @@ export const RAIDMAP_CONFIG = {
   salesPathDe: '/raid-map/de',
   docsPathEn: '/raid-map/docs',
   docsPathDe: '/raid-map/docs/de',
+  accountPath: '/raid-map/account',
+
+  // Fulfillment: Indicator-Datensatz (Owner-Bereich) MUSS diesen Slug tragen,
+  // damit Checkout-Claims und Account-Bereich ihn finden.
+  indicatorSlug: 'pat-raid-map',
+  guideImagePath: '/images/raidmap/find-invite-only.png',
 } as const
 
 export type RaidMapConfig = typeof RAIDMAP_CONFIG
