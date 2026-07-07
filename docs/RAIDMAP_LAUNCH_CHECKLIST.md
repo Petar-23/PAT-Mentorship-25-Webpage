@@ -14,8 +14,9 @@ noch die Schritte, die du selbst machen musst — in dieser Reihenfolge.
       Titel: "PAT Raid Map". (Publikations-Beschreibung: sag Bescheid, ich schreibe
       sie dir TradingView-regelkonform aus dem Claims-Inventar.)
 - [ ] **A3. pineId kopieren:** aus der Publish-URL (Format `PUB;xxxxxxxx...`).
-- [ ] **A4. Indicator-Eintrag anlegen:** wie in `docs/RAIDMAP_STRIPE_SETUP.md`
-      beschrieben — slug `pat-raid-map`, deine pineId, Status ready + visible.
+- [ ] **A4. Indicator-Eintrag anlegen:** im Admin-Panel /mentorship/indicators —
+      Name "PAT Raid Map" (Slug wird automatisch `pat-raid-map`), pineId, ready +
+      visible. Fallback ohne UI: `node scripts/create-raidmap-indicator.mjs "PUB;..."`.
 - [ ] **A5. TradingView-Session-Cookie prüfen:** der bestehende Claims-Cron
       (`/api/cron/tradingview-claims`) braucht einen gültigen Cookie (gleiche
       Infrastruktur wie im Mentorship-Bereich).

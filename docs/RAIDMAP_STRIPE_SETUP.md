@@ -51,7 +51,7 @@ Der komplette Flow ist gebaut und nutzt die bestehende Cookie-/Cron-Infrastruktu
   Dialog die Invite-only-Fundstelle (mit Screenshot) und verlinkt den Account-Bereich.
 
 **Deine 2 Handgriffe dafür:**
-1. Nach dem TradingView-Publish im Owner-Bereich (/owner → Indicators) einen
+1. Nach dem TradingView-Publish im Admin-Panel (/mentorship/indicators) einen
    Indicator anlegen mit **Slug exakt `pat-raid-map`**, der `pineId` des
    veröffentlichten Scripts (Format `PUB;...`, steht in der Script-URL bzw. im
    Owner-Import) und `ready` + `visible` aktivieren. Ab dann läuft alles automatisch;
