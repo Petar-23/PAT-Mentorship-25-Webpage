@@ -17,6 +17,8 @@ type Props = {
   iconClassName?: string
   iconWrapperClassName?: string
   spinnerClassName?: string
+  /** Portal-API-Route; Raid Map nutzt einen eigenen Stripe-Customer (eigene Route). */
+  endpoint?: string
 }
 
 export function ManageSubscriptionButton({
@@ -27,6 +29,7 @@ export function ManageSubscriptionButton({
   iconClassName,
   iconWrapperClassName,
   spinnerClassName,
+  endpoint = '/api/create-portal-session',
 }: Props) {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
@@ -78,7 +81,7 @@ export function ManageSubscriptionButton({
       setLoading(true)
       
       const makeRequest = async () => {
-        const response = await fetch('/api/create-portal-session', {
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
