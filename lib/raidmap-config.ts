@@ -4,17 +4,22 @@
 
 export const RAIDMAP_CONFIG = {
   productName: 'PAT Raid Map',
-  betaTag: 'BETA',
   currency: 'USD',
 
-  // Pricing (international, USD)
+  // Pricing (international, USD) — Launch-Offer: erste 300 Mitglieder, danach +20%.
+  // Streichpreise sind die ECHTEN Preise nach der Erhöhung (kein Fantasie-Anker).
   monthlyPrice: 45,
   monthlyPriceFormatted: '$45',
+  monthlyPriceAfterFormatted: '$54',
   annualMonthlyPrice: 29,
   annualMonthlyPriceFormatted: '$29',
+  annualMonthlyAfterFormatted: '$35',
   annualTotal: 348,
   annualTotalFormatted: '$348',
   annualSavingsPct: 36,
+  launchSpots: 300,
+  priceIncreasePct: 20,
+  trialDays: 7,
 
   // Delivery
   platform: 'TradingView (invite-only)',
@@ -32,6 +37,12 @@ export const RAIDMAP_CONFIG = {
   salesPathDe: '/raid-map/de',
   docsPathEn: '/raid-map/docs',
   docsPathDe: '/raid-map/docs/de',
+  accountPath: '/raid-map/account',
+
+  // Fulfillment: Indicator-Datensatz (Owner-Bereich) MUSS diesen Slug tragen,
+  // damit Checkout-Claims und Account-Bereich ihn finden.
+  indicatorSlug: 'pat-raid-map',
+  guideImagePath: '/images/raidmap/find-invite-only.png',
 } as const
 
 export type RaidMapConfig = typeof RAIDMAP_CONFIG

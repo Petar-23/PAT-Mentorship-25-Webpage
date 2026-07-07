@@ -18,7 +18,10 @@ export default function RaidMapPricing({ lang }: { lang: RaidMapLang }) {
     <section id="pricing" className="py-20 px-4 md:px-6 bg-gray-50">
       <div className="container mx-auto max-w-5xl">
         <div className="text-center mb-14">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 text-balance">{t.title}</h2>
+          <span className="inline-flex items-center rounded-full bg-blue-600 px-4 py-1 text-sm font-medium text-white">
+            {t.launchBadge}
+          </span>
+          <h2 className="mt-5 text-3xl md:text-4xl font-bold text-gray-900 text-balance">{t.title}</h2>
           <p className="mt-4 text-lg text-gray-600 text-pretty">{t.subtitle}</p>
         </div>
 
@@ -27,6 +30,9 @@ export default function RaidMapPricing({ lang }: { lang: RaidMapLang }) {
             <CardHeader className="text-center">
               <CardTitle className="text-xl">{t.monthly.name}</CardTitle>
               <div className="mt-4">
+                <span className="text-2xl font-semibold text-gray-400 line-through tabular-nums mr-3">
+                  {t.monthly.strike}
+                </span>
                 <span className="text-5xl font-bold tabular-nums">{c.monthlyPriceFormatted}</span>
                 <span className="text-gray-600 text-lg">{t.monthly.period}</span>
               </div>
@@ -52,6 +58,9 @@ export default function RaidMapPricing({ lang }: { lang: RaidMapLang }) {
             <CardHeader className="text-center">
               <CardTitle className="text-xl">{t.annual.name}</CardTitle>
               <div className="mt-4">
+                <span className="text-2xl font-semibold text-gray-400 line-through tabular-nums mr-3">
+                  {t.annual.strike}
+                </span>
                 <span className="text-5xl font-bold tabular-nums">{c.annualMonthlyPriceFormatted}</span>
                 <span className="text-gray-600 text-lg">{t.annual.period}</span>
               </div>
@@ -78,6 +87,9 @@ export default function RaidMapPricing({ lang }: { lang: RaidMapLang }) {
             ))}
           </ul>
           <p className="mt-6 text-sm text-gray-500 text-pretty">{t.loginNote}</p>
+          <p className="mt-2 text-sm font-medium text-gray-700 text-pretty">
+            {t.trialNote} {t.lockNote}
+          </p>
         </div>
 
         <p className="mt-8 text-xs text-gray-400 text-center max-w-3xl mx-auto text-pretty">

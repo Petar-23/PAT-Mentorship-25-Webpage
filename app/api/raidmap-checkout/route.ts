@@ -2,6 +2,8 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { getEmailFromSessionClaims } from '@/lib/clerk-claims'
+import { RAIDMAP_CONFIG } from '@/lib/raidmap-config'
+import { isRaidMapTestMode } from '@/lib/raidmap-test-mode'
 import { createRaidMapCheckoutSession, type RaidMapCheckoutTier } from '@/lib/stripe'
 
 function isTier(value: unknown): value is RaidMapCheckoutTier {
@@ -9,6 +11,12 @@ function isTier(value: unknown): value is RaidMapCheckoutTier {
 }
 
 export async function POST(request: Request) {
+  // Dev-only Test-Mode: Checkout simulieren, Clerk/Stripe werden nicht angefasst
+  // (doppelt geguarded in lib/raidmap-test-mode.ts, in Production immer aus).
+  if (isRaidMapTestMode()) {
+    return NextResponse.json({ url: `${RAIDMAP_CONFIG.salesPathEn}?checkout=success&test=1` })
+  }
+
   try {
     const { userId, sessionClaims } = await auth()
 

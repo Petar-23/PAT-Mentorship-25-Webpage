@@ -81,7 +81,7 @@ const docs: Record<RaidMapLang, { title: string; intro: string; sections: DocSec
         blocks: [
           {
             list: [
-              'All statistics are historical and in-sample (NQ futures, 1-minute data, 2016–2025). The final out-of-sample window is deliberately reserved — hence [BETA].',
+              'All statistics are historical (NQ futures, 1-minute data, 2016–2025) and were additionally confirmed on a reserved out-of-sample year (Jul 2025 – Jun 2026) — tested exactly once, criteria frozen in advance, 96% of robust cells held.',
               'Validated on NQ only. The indicator draws on other symbols, but no number was validated there.',
               'Depending on the session, 27–51% of days the session target never gets hit. The map shows probabilities, not certainties.',
               'No entries, no stops, no sizing, no financial advice.',
@@ -171,7 +171,7 @@ const docs: Record<RaidMapLang, { title: string; intro: string; sections: DocSec
         blocks: [
           {
             list: [
-              'Alle Statistiken sind historisch und in-sample (NQ-Futures, 1-Minuten-Daten, 2016–2025). Das finale Out-of-Sample-Fenster ist bewusst reserviert — daher [BETA].',
+              'Alle Statistiken sind historisch (NQ-Futures, 1-Minuten-Daten, 2016–2025) und wurden zusätzlich auf einem reservierten Out-of-Sample-Jahr bestätigt (Jul 2025 – Jun 2026) — genau einmal getestet, Kriterien vorab eingefroren, 96% der robusten Zellen hielten.',
               'Validiert nur auf NQ. Der Indikator zeichnet auch auf anderen Symbolen, aber dort wurde keine Zahl validiert.',
               'Je nach Session wird das Session-Ziel an 27–51% der Tage nie erreicht. Die Karte zeigt Wahrscheinlichkeiten, keine Gewissheiten.',
               'Keine Entries, keine Stops, kein Sizing, keine Anlageberatung.',
