@@ -16,13 +16,6 @@ export type RaidMapAccessState = {
 
 const ACTIVE_STATUSES = new Set(['active', 'trialing', 'past_due'])
 
-function asPriceIdList(priceIds: unknown): string[] {
-  if (Array.isArray(priceIds)) {
-    return priceIds.filter((p): p is string => typeof p === 'string')
-  }
-  return []
-}
-
 export async function getRaidMapAccessState(userId: string): Promise<RaidMapAccessState> {
   // Dev-only Test-Mode: simulierter Abo-Zustand für den Test-User, keine DB-Abfrage
   // (doppelt geguarded in lib/raidmap-test-mode.ts, in Production immer aus).
@@ -31,7 +24,7 @@ export async function getRaidMapAccessState(userId: string): Promise<RaidMapAcce
   }
 
   const subscription = await withPrismaRetry(
-    () => prisma.userSubscription.findUnique({ where: { userId } }),
+    () => prisma.raidMapSubscription.findUnique({ where: { userId } }),
     { label: 'Load raidmap subscription' }
   )
 
@@ -39,16 +32,17 @@ export async function getRaidMapAccessState(userId: string): Promise<RaidMapAcce
     return { hasAccess: false, status: null, tier: null }
   }
 
-  const priceIds = asPriceIdList(subscription.priceIds)
   const monthlyId = getRaidMapPriceId('monthly')
   const annualId = getRaidMapPriceId('annual')
 
   const tier: RaidMapAccessState['tier'] =
-    annualId && priceIds.includes(annualId)
-      ? 'annual'
-      : monthlyId && priceIds.includes(monthlyId)
-        ? 'monthly'
-        : null
+    subscription.tier === 'annual' || subscription.tier === 'monthly'
+      ? subscription.tier
+      : subscription.priceId && subscription.priceId === annualId
+        ? 'annual'
+        : subscription.priceId && subscription.priceId === monthlyId
+          ? 'monthly'
+          : null
 
   const hasAccess = tier !== null && ACTIVE_STATUSES.has(subscription.status)
 

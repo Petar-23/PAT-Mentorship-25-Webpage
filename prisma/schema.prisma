@@ -235,6 +235,28 @@ model UserSubscription {
   @@index([stripeSubscriptionId])
 }
 
+// Raid-Map-Abos laufen ueber einen EIGENEN Stripe-Customer (USD) und werden
+// bewusst getrennt vom Mentorship-Cache (UserSubscription, 1 Zeile/User)
+// gehalten — sonst ueberschreiben sich die beiden Abos gegenseitig.
+model RaidMapSubscription {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  stripeCustomerId     String
+  stripeSubscriptionId String @unique
+
+  status            String
+  tier              String?
+  priceId           String?
+  cancelAtPeriodEnd Boolean   @default(false)
+  currentPeriodEnd  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
 model LeadMagnetSubscriber {
   id          String   @id @default(uuid())
   email       String   @unique

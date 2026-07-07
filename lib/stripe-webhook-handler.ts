@@ -114,6 +114,47 @@ async function upsertUserSubscription(params: {
   })
 }
 
+
+// Raid-Map-Abos: eigener Cache (RaidMapSubscription), komplett getrennt vom
+// Mentorship-Pfad. userId kommt aus subscription.metadata (wird im Checkout
+// immer gesetzt) — der Raid-Map-Customer traegt bewusst KEIN metadata.userId.
+async function upsertRaidMapSubscription(subscription: Stripe.Subscription) {
+  const userId = subscription.metadata?.userId
+  if (!userId) {
+    console.warn('[raidmap] subscription event ohne metadata.userId — skip', subscription.id)
+    return
+  }
+
+  const customerId =
+    typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id
+  const priceId = subscription.items?.data?.[0]?.price?.id ?? null
+
+  await prisma.raidMapSubscription.upsert({
+    where: { userId },
+    create: {
+      userId,
+      stripeCustomerId: customerId ?? '',
+      stripeSubscriptionId: subscription.id,
+      status: subscription.status,
+      tier: subscription.metadata?.tier ?? null,
+      priceId,
+      cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
+      currentPeriodEnd: unixToDate(subscription.current_period_end),
+    },
+    update: {
+      stripeCustomerId: customerId ?? '',
+      stripeSubscriptionId: subscription.id,
+      status: subscription.status,
+      tier: subscription.metadata?.tier ?? null,
+      priceId,
+      cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
+      currentPeriodEnd: unixToDate(subscription.current_period_end),
+    },
+  })
+
+  console.log('[raidmap] subscription cached', { userId, status: subscription.status })
+}
+
 async function getCustomerInfo(customerId: string): Promise<{
   email: string | null
   appUserId: string | null
@@ -217,6 +258,11 @@ export async function handleStripeEvent(event: Stripe.Event) {
 
       case 'customer.subscription.created': {
         const subscription = event.data.object as Stripe.Subscription
+        if (subscription.metadata?.product === 'raidmap') {
+          // Raid Map: eigener Cache, kein Mentorship-Discord/-Rollen-Pfad
+          await upsertRaidMapSubscription(subscription)
+          break
+        }
         const customerId = getCustomerIdFromSubscription(subscription)
 
         if (customerId) {
@@ -262,6 +308,11 @@ export async function handleStripeEvent(event: Stripe.Event) {
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription
+        if (subscription.metadata?.product === 'raidmap') {
+          // Raid Map: eigener Cache, kein Mentorship-Discord/-Rollen-Pfad
+          await upsertRaidMapSubscription(subscription)
+          break
+        }
         const customerId = getCustomerIdFromSubscription(subscription)
 
         const prev = event.data.previous_attributes as
@@ -374,6 +425,11 @@ export async function handleStripeEvent(event: Stripe.Event) {
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
+        if (subscription.metadata?.product === 'raidmap') {
+          // Raid Map: eigener Cache, kein Mentorship-Discord/-Rollen-Pfad
+          await upsertRaidMapSubscription(subscription)
+          break
+        }
         const customerId = getCustomerIdFromSubscription(subscription)
 
         if (customerId) {
