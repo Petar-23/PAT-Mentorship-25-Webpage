@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/paypal-sync",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/tradingview-claims",
+      "schedule": "0 * * * *"
     }
   ]
 }

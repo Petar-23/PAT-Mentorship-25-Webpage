@@ -7,6 +7,7 @@ import {
   getEmailFromSessionClaims,
   getFirstNameFromSessionClaims,
 } from '@/lib/clerk-claims'
+import { isMentorshipAccessOverrideEmail } from '@/lib/mentorship-access-overrides'
 import DashboardConversionClient from './dashboard-conversion-client'
 import DashboardMemberClient from './dashboard-member-client'
 
@@ -70,7 +71,20 @@ export default async function DashboardPage({
     firstName = fallbackUser.firstName
   }
 
-  const snapshot = await snapshotPromise
+  let snapshot = await snapshotPromise
+  if (isMentorshipAccessOverrideEmail(email)) {
+    snapshot = {
+      hasActiveSubscription: true,
+      subscriptionDetails: {
+        status: 'active',
+        startDate: process.env.MENTORSHIP_START_DATE || '2026-03-01T00:00:00+01:00',
+        isPending: false,
+        isCanceled: false,
+        cancelAt: null,
+        currentPeriodEnd: null,
+      },
+    }
+  }
 
   const initialData = {
     hasSubscription: snapshot.hasActiveSubscription,

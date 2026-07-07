@@ -1,3 +1,4 @@
+import { handleRaidMapCheckoutCompleted } from '@/lib/raidmap-fulfillment'
 import type Stripe from 'stripe'
 import { stripe } from './stripe'
 import { prisma } from './prisma'
@@ -438,7 +439,13 @@ export async function handleStripeEvent(event: Stripe.Event) {
       }
 
       case 'checkout.session.completed': {
-        console.log('Checkout completed, customer and subscription events will follow')
+        const session = event.data.object as Stripe.Checkout.Session
+        if (session.metadata?.product === 'raidmap') {
+          // Raid-Map-Kauf: TradingView-Claim in die bestehende Grant-Queue legen
+          await handleRaidMapCheckoutCompleted(session)
+        } else {
+          console.log('Checkout completed, customer and subscription events will follow')
+        }
         break
       }
 

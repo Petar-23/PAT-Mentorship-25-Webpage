@@ -3,6 +3,7 @@ import 'server-only'
 import { currentUser } from '@clerk/nextjs/server'
 import { getIsAdmin, isMentorshipAccessible } from '@/lib/authz'
 import { getEmailFromSessionClaims } from '@/lib/clerk-claims'
+import { isMentorshipAccessOverrideEmail } from '@/lib/mentorship-access-overrides'
 import { hasActiveSubscription } from '@/lib/stripe'
 
 export type MentorshipAccessState = {
@@ -45,6 +46,16 @@ export async function getMentorshipAccessState(
     const user = await currentUser()
     email = user?.primaryEmailAddress?.emailAddress ?? null
   }
+
+  if (isMentorshipAccessOverrideEmail(email)) {
+    return {
+      isAdmin: false,
+      hasSubscription: true,
+      mentorshipAccessible,
+      allowed: mentorshipAccessible,
+    }
+  }
+
   const hasSubscriptionWithFallback = email
     ? await hasActiveSubscription(userId, email)
     : false

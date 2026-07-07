@@ -7,14 +7,14 @@ datasource db {
 }
 
 model Playlist {
-  id        String   @id @default(uuid())
-  name      String
-  slug      String   @unique
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
   description String?
   iconUrl     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  modules   Module[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  modules     Module[]
 
   @@index([createdAt])
 }
@@ -28,8 +28,8 @@ model Module {
   chapters    Chapter[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  description   String?
-  imageUrl String?
+  description String?
+  imageUrl    String?
 
   @@index([playlistId, order])
   @@index([createdAt])
@@ -49,21 +49,21 @@ model Chapter {
 }
 
 model Video {
-  id           String   @id @default(uuid())
-  title        String
-  bunnyGuid    String?
-  pdfUrl       String?  // die anhängende PDF
-  thumbnailUrl String?  // später von Bunny
-  announcedAt  DateTime?
+  id                    String              @id @default(uuid())
+  title                 String
+  bunnyGuid             String?
+  pdfUrl                String? // die anhängende PDF
+  thumbnailUrl          String? // später von Bunny
+  announcedAt           DateTime?
   announcementMessageId String?
-  order        Int      @default(0)
-  chapterId    String
-  chapter      Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  progresses   VideoProgress[]
-  lastViewedBy UserPlaybackState[] @relation("UserPlaybackLastVideo")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  duration     Int?
+  order                 Int                 @default(0)
+  chapterId             String
+  chapter               Chapter             @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  progresses            VideoProgress[]
+  lastViewedBy          UserPlaybackState[] @relation("UserPlaybackLastVideo")
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  duration              Int?
 
   @@index([bunnyGuid])
   @@index([chapterId, order])
@@ -71,14 +71,14 @@ model Video {
 }
 
 model VideoProgress {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
   videoId   String
-  watched   Boolean  @default(false)
+  watched   Boolean   @default(false)
   watchedAt DateTime?
-  manual    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  manual    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
@@ -90,12 +90,12 @@ model VideoProgress {
 
 // Merkt sich das zuletzt angesehene Video pro User (für "Weiterlernen").
 model UserPlaybackState {
-  id           String   @id @default(uuid())
-  userId       String   @unique
+  id           String    @id @default(uuid())
+  userId       String    @unique
   lastVideoId  String?
   lastViewedAt DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   lastVideo Video? @relation("UserPlaybackLastVideo", fields: [lastVideoId], references: [id], onDelete: SetNull)
 
@@ -103,29 +103,133 @@ model UserPlaybackState {
 }
 
 model AdminSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique // z. B. "sidebarOrder"
+  value     Json // der gespeicherte Wert, z. B. ["discord", "kurs-1"]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model IndicatorPackage {
+  id          String      @id @default(uuid())
+  slug        String      @unique
+  name        String
+  description String?
+  sortOrder   Int         @default(0)
+  visible     Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  indicators  Indicator[]
+
+  @@index([sortOrder, name])
+  @@index([visible])
+}
+
+model Indicator {
+  id                String            @id @default(uuid())
+  packageId         String?
+  package           IndicatorPackage? @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  slug              String            @unique
+  name              String
+  shortDescription  String?
+  detailDescription String?
+  usageGuide        String?
+  pineId            String?
+  imageUrl          String?
+  ready             Boolean           @default(false)
+  visible           Boolean           @default(false)
+  sortOrder         Int               @default(0)
+  metadata          Json?
+  claims            IndicatorClaim[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([packageId, sortOrder])
+  @@index([visible, ready])
+  @@index([pineId])
+}
+
+model IndicatorClaim {
+  id                  String    @id @default(uuid())
+  userId              String
+  indicatorId         String
+  indicator           Indicator @relation(fields: [indicatorId], references: [id], onDelete: Cascade)
+  tvUsername          String
+  status              String    @default("pending")
+  errorMessage        String?
+  claimedAt           DateTime?
+  revokedAt           DateTime?
+  attemptCount        Int       @default(0)
+  nextRetryAt         DateTime?
+  lastAttemptAt       DateTime?
+  lastErrorCode       String?
+  lastWorkerId        String?
+  tradingViewResponse Json?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([userId, indicatorId])
+  @@index([userId])
+  @@index([status, nextRetryAt])
+  @@index([indicatorId, status])
+}
+
+model IndicatorClaimAudit {
   id          String   @id @default(uuid())
-  key         String   @unique   // z. B. "sidebarOrder"
-  value       Json     // der gespeicherte Wert, z. B. ["discord", "kurs-1"]
+  userId      String
+  indicatorId String?
+  tvUsername  String
+  action      String
+  result      String
+  errorCode   String?
+  metadata    Json?
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([indicatorId, createdAt])
+}
+
+model UserTradingViewAccount {
+  userId               String   @id
+  tvUsername           String
+  tvUsernameNormalized String   @unique
+  verificationStatus   String   @default("unverified")
+  metadata             Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([updatedAt])
+}
+
+model IndicatorWorkerHeartbeat {
+  workerId       String   @id
+  status         String   @default("idle")
+  currentClaimId String?
+  processedCount Int      @default(0)
+  grantedCount   Int      @default(0)
+  failedCount    Int      @default(0)
+  lastError      String?
+  metadata       Json?
+  lastSeenAt     DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model UserSubscription {
-  id                   String   @id @default(uuid())
-  userId               String   @unique
+  id     String @id @default(uuid())
+  userId String @unique
 
   stripeCustomerId     String?
   stripeSubscriptionId String?
-  paypalSubscriptionId String?  // Falls Zugang ueber PayPal statt Stripe
+  paypalSubscriptionId String? // Falls Zugang ueber PayPal statt Stripe
 
-  status              String
-  cancelAtPeriodEnd   Boolean  @default(false)
-  currentPeriodEnd    DateTime?
-  cancelAt            DateTime?
-  priceIds            Json?
+  status            String
+  cancelAtPeriodEnd Boolean   @default(false)
+  currentPeriodEnd  DateTime?
+  cancelAt          DateTime?
+  priceIds          Json?
 
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([stripeCustomerId])
   @@index([stripeSubscriptionId])
@@ -149,18 +253,19 @@ model LeadMagnetSubscriber {
 // PayPal-Subscriber (M24-Sonderfall): vom Admin importierte PayPal-Abos.
 // User koennen ihren PayPal-Account ueber die Claim-Seite verknuepfen.
 model PayPalSubscriber {
-  id                    String    @id @default(uuid())
-  paypalSubscriptionId  String    @unique
-  paypalEmail           String
-  status                String    // ACTIVE, CANCELLED, SUSPENDED, EXPIRED
-  userId                String?   @unique  // Clerk User ID (gesetzt nach Claim)
-  claimedAt             DateTime?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  id                   String    @id @default(uuid())
+  paypalSubscriptionId String    @unique
+  paypalEmail          String
+  status               String // ACTIVE, CANCELLED, SUSPENDED, EXPIRED
+  userId               String?   @unique // Clerk User ID (gesetzt nach Claim)
+  claimedAt            DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   @@index([paypalEmail])
   @@index([userId])
 }
+
 model Page {
   id          String   @id @default(uuid())
   title       String

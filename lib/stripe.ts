@@ -650,3 +650,100 @@ export async function getSubscriptionDetails(
   // Wir behalten das bisherige Verhalten: null wenn keine Subscription-Historie existiert.
   return snapshot.subscriptionDetails
 }
+
+// ---------------------------------------------------------------------------
+// PAT Raid Map (TradingView-Indikator, Einzelprodukt) — eigener Checkout.
+// Price-IDs kommen ausschliesslich aus Env-Vars (siehe docs/RAIDMAP_STRIPE_SETUP.md):
+//   STRIPE_PRICE_ID_RAIDMAP_MONTHLY, STRIPE_PRICE_ID_RAIDMAP_ANNUAL
+// Internationale Zielgruppe: locale 'auto', USD-Preise, kein Trial.
+// ---------------------------------------------------------------------------
+
+export type RaidMapCheckoutTier = 'monthly' | 'annual'
+
+export function getRaidMapPriceId(tier: RaidMapCheckoutTier): string | undefined {
+  return tier === 'annual'
+    ? process.env.STRIPE_PRICE_ID_RAIDMAP_ANNUAL
+    : process.env.STRIPE_PRICE_ID_RAIDMAP_MONTHLY
+}
+
+export async function createRaidMapCheckoutSession(
+  userId: string,
+  userEmail: string,
+  tier: RaidMapCheckoutTier
+) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+  if (!baseUrl) {
+    throw new Error('Missing NEXT_PUBLIC_APP_URL environment variable')
+  }
+
+  const priceId = getRaidMapPriceId(tier)
+  if (!priceId) {
+    throw new Error(`Missing Stripe price id for raidmap tier "${tier}" (see docs/RAIDMAP_STRIPE_SETUP.md)`)
+  }
+
+  // Customer wiederverwenden (gleiche Konvention wie Mentorship-Checkout)
+  let customer: Stripe.Customer
+  const existingCustomers = await stripe.customers.search({
+    query: `metadata['userId']:'${userId}'`,
+  })
+  if (existingCustomers.data.length > 0) {
+    customer = [...existingCustomers.data].sort((a, b) => b.created - a.created)[0]
+  } else {
+    customer = await stripe.customers.create({
+      email: userEmail,
+      metadata: { userId },
+    })
+  }
+
+  await stripe.customers.update(customer.id, {
+    invoice_settings: {
+      footer: '',
+      custom_fields: [],
+    },
+  })
+
+  const session = await stripe.checkout.sessions.create({
+    customer: customer.id,
+    payment_method_types: ['card'],
+    mode: 'subscription',
+    allow_promotion_codes: true,
+    billing_address_collection: 'required',
+    customer_update: {
+      address: 'auto',
+      name: 'auto',
+    },
+    locale: 'auto',
+    automatic_tax: { enabled: true },
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+    subscription_data: {
+      trial_period_days: 7,
+      metadata: {
+        userId,
+        product: 'raidmap',
+        tier,
+      },
+    },
+    // TradingView-Username fuer den Invite-Only-Grant direkt im Checkout erfassen
+    custom_fields: [
+      {
+        key: 'tradingview_username',
+        label: { type: 'custom', custom: 'TradingView username' },
+        type: 'text',
+      },
+    ],
+    success_url: `${baseUrl}/raid-map?checkout=success`,
+    cancel_url: `${baseUrl}/raid-map?checkout=cancelled`,
+    metadata: {
+      userId,
+      product: 'raidmap',
+      tier,
+    },
+  })
+
+  return { url: session.url }
+}
