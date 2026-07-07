@@ -45,7 +45,12 @@ function normalizeSlug(value: string) {
 }
 
 function normalizeTradingViewUsername(value: string) {
-  return String(value || '').trim().replace(/^@+/, '')
+  let v = String(value || '').trim()
+  // Kunden pasten gern ihre Profil-URL oder "@name" — beides auf den nackten
+  // Username reduzieren, bevor validiert/gespeichert wird.
+  const urlMatch = v.match(/tradingview\.com\/u\/([A-Za-z0-9_\-.]+)/i)
+  if (urlMatch) v = urlMatch[1]
+  return v.replace(/^@+/, '').replace(/\/+$/, '').replace(/\s+/g, '')
 }
 
 function normalizedTradingViewKey(value: string) {
@@ -803,6 +808,9 @@ export async function claimIndicatorForUser(input: {
   userId: string
   indicatorId: string
   tvUsername: string
+  // Raid-Map-Self-Service: erlaubt das Umhaengen auf einen NEUEN TradingView-
+  // Namen (Mentorship-Flows lassen das weiter bewusst nicht zu).
+  allowRebind?: boolean
 }): Promise<ClaimIndicatorActionResult> {
   const requestedTvUsername = normalizeTradingViewUsername(input.tvUsername)
 
@@ -834,35 +842,99 @@ export async function claimIndicatorForUser(input: {
   const existingAccount = await prisma.userTradingViewAccount.findUnique({ where: { userId: input.userId } })
   let linkedAccount = existingAccount ? asTradingViewAccount(existingAccount) : null
   let tvUsername = requestedTvUsername
+  let reboundFrom: string | undefined
 
   if (linkedAccount) {
     const requestedKey = normalizedTradingViewKey(requestedTvUsername)
     if (requestedKey !== linkedAccount.normalizedUsername) {
+      if (!input.allowRebind) {
+        await writeClaimAudit({
+          userId: input.userId,
+          indicatorId: input.indicatorId,
+          tvUsername: requestedTvUsername,
+          action: 'claim',
+          result: 'failure',
+          errorCode: 'account_mismatch',
+          metadata: { linked_username: linkedAccount.tvUsername },
+        })
+
+        return {
+          ok: false,
+          indicatorId: input.indicatorId,
+          tvUsername: linkedAccount.tvUsername,
+          message: `Dieses Mitgliedskonto ist bereits mit @${linkedAccount.tvUsername} verknüpft.`,
+        }
+      }
+
+      // Rebind: neuen Namen erst gegen TradingView validieren, dann Konto
+      // umhaengen. Der ALTE Grant bleibt auf TradingView-Seite bestehen und
+      // muss vom Owner in "Manage access" entfernt werden (Audit + Telegram).
+      const revalidation = await new TradingViewService().validateUsername(requestedTvUsername)
+      if (!revalidation.valid) {
+        await writeClaimAudit({
+          userId: input.userId,
+          indicatorId: input.indicatorId,
+          tvUsername: requestedTvUsername,
+          action: 'claim',
+          result: 'failure',
+          errorCode: 'invalid_username',
+          metadata: { reason: 'rebind_validation' },
+        })
+        return {
+          ok: false,
+          indicatorId: input.indicatorId,
+          tvUsername: requestedTvUsername,
+          message: `TradingView-Benutzername "${requestedTvUsername}" wurde nicht gefunden.`,
+        }
+      }
+
+      try {
+        const updated = await prisma.userTradingViewAccount.update({
+          where: { userId: input.userId },
+          data: {
+            tvUsername: revalidation.exactName,
+            tvUsernameNormalized: normalizedTradingViewKey(revalidation.exactName),
+            verificationStatus: 'unverified',
+          },
+        })
+        reboundFrom = linkedAccount.tvUsername
+        linkedAccount = asTradingViewAccount(updated)
+        tvUsername = linkedAccount.tvUsername
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+          return {
+            ok: false,
+            indicatorId: input.indicatorId,
+            tvUsername: requestedTvUsername,
+            message: `@${requestedTvUsername} ist bereits mit einem anderen Mitgliedskonto verknüpft.`,
+          }
+        }
+        throw error
+      }
+
       await writeClaimAudit({
         userId: input.userId,
         indicatorId: input.indicatorId,
-        tvUsername: requestedTvUsername,
-        action: 'claim',
-        result: 'failure',
-        errorCode: 'account_mismatch',
-        metadata: { linked_username: linkedAccount.tvUsername },
+        tvUsername,
+        action: 'revoke',
+        result: 'success',
+        metadata: {
+          reason: 'rebind',
+          from: reboundFrom,
+          to: tvUsername,
+          note: 'old TradingView grant must be removed manually via Manage access',
+        },
       })
-
-      return {
-        ok: false,
-        indicatorId: input.indicatorId,
-        tvUsername: linkedAccount.tvUsername,
-        message: `Dieses Mitgliedskonto ist bereits mit @${linkedAccount.tvUsername} verknüpft.`,
-      }
+    } else {
+      tvUsername = linkedAccount.tvUsername
     }
-    tvUsername = linkedAccount.tvUsername
   }
 
   const existingClaim = await prisma.indicatorClaim.findUnique({
     where: { userId_indicatorId: { userId: input.userId, indicatorId: input.indicatorId } },
   })
 
-  if (existingClaim?.status === 'granted') {
+  if (!reboundFrom && existingClaim?.status === 'granted') {
     return {
       ok: true,
       indicatorId: input.indicatorId,
@@ -873,9 +945,10 @@ export async function claimIndicatorForUser(input: {
   }
 
   if (
-    existingClaim?.status === 'pending' ||
-    existingClaim?.status === 'processing' ||
-    existingClaim?.status === 'needs_session'
+    !reboundFrom &&
+    (existingClaim?.status === 'pending' ||
+      existingClaim?.status === 'processing' ||
+      existingClaim?.status === 'needs_session')
   ) {
     return {
       ok: true,
@@ -985,6 +1058,7 @@ export async function claimIndicatorForUser(input: {
     tvUsername,
     claimStatus: 'pending',
     message: memberMessage,
+    reboundFrom,
   }
 }
 

@@ -6,6 +6,7 @@ import { claimIndicatorForUser } from '@/lib/indicators/store'
 import { getRaidMapAccessState, getRaidMapIndicator } from '@/lib/raidmap-access'
 import { RAIDMAP_CONFIG } from '@/lib/raidmap-config'
 import { isRaidMapTestMode, RAIDMAP_TEST_USER_ID } from '@/lib/raidmap-test-mode'
+import { sendCortanaTelegram } from '@/lib/telegram-notify'
 
 export type RaidMapClaimResult = { ok: boolean; message: string }
 
@@ -35,7 +36,16 @@ export async function claimRaidMapAction(tvUsername: string): Promise<RaidMapCla
     userId,
     indicatorId: indicator.id,
     tvUsername,
+    // Raid-Map-Kunden duerfen ihren TV-Namen selbst korrigieren; der alte
+    // TradingView-Grant wird Petar per Telegram zum manuellen Entzug gemeldet.
+    allowRebind: true,
   })
+
+  if (result.ok && result.reboundFrom) {
+    await sendCortanaTelegram(
+      `⚠️ Raid Map: TV-Username geändert\n@${result.reboundFrom} → @${result.tvUsername}\nAlten Zugang in TradingView "Manage access" manuell entfernen.`
+    )
+  }
 
   revalidatePath(RAIDMAP_CONFIG.accountPath)
   return { ok: result.ok, message: result.message ?? (result.ok ? 'Access request queued.' : 'Something went wrong.') }
