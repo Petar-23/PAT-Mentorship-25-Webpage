@@ -54,6 +54,20 @@ export type TradingViewAccountBinding = {
   updatedAt: string
 }
 
+/**
+ * Ergebnis des Best-Effort-Auto-Revokes beim Rebind: Wie viele alte
+ * TradingView-Grants entzogen werden sollten und wie es ausging.
+ * attempted === 0 heisst: es gab nichts zu entziehen (alter Name hatte
+ * nie einen erfolgreichen Grant).
+ */
+export type RebindRevokeSummary = {
+  attempted: number
+  revoked: number
+  failed: number
+  /** Erster Fehlergrund, falls mindestens ein Revoke fehlschlug. */
+  firstError: string | null
+}
+
 export type ClaimIndicatorActionResult = {
   ok: boolean
   indicatorId?: string
@@ -62,6 +76,8 @@ export type ClaimIndicatorActionResult = {
   message: string
   /** Gesetzt, wenn der Claim das TradingView-Konto auf einen neuen Namen umgehaengt hat. */
   reboundFrom?: string
+  /** Gesetzt beim Rebind: Ergebnis des automatischen Entzugs der alten Grants. */
+  rebindRevoke?: RebindRevokeSummary
 }
 
 export type TradingViewSessionMeta = {

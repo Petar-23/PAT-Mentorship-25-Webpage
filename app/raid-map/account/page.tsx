@@ -8,6 +8,7 @@ import { auth } from '@clerk/nextjs/server'
 import { Check } from '@phosphor-icons/react/dist/ssr/Check'
 import { Button } from '@/components/ui/button'
 import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'
+import { TestimonialForm } from '@/components/sections/raidmap/testimonial-form'
 import { TvUsernameForm } from '@/components/sections/raidmap/tv-username-form'
 import { listIndicatorClaimsForUser, getTradingViewAccountForUser } from '@/lib/indicators/store'
 import { getRaidMapAccessState, getRaidMapIndicator } from '@/lib/raidmap-access'
@@ -134,6 +135,26 @@ export default async function RaidMapAccountPage() {
           <p className="mt-4 text-sm text-gray-500 text-pretty">
             Questions? <a href="mailto:kontakt@price-action-trader.de" className="underline underline-offset-4">kontakt@price-action-trader.de</a>
           </p>
+        </section>
+
+        {/* Testimonial einreichen (Review-Gate: geht erst nach Approval live) */}
+        <section className="mt-8 rounded-xl border border-gray-200 p-7">
+          <h2 className="text-lg font-bold text-gray-900">Share your experience</h2>
+          {access.hasAccess ? (
+            <>
+              <p className="mt-2 text-gray-600 text-pretty">
+                Tell other traders what the map does for you. Your words go live on the Raid Map page
+                after a quick review.
+              </p>
+              <div className="mt-4">
+                <TestimonialForm />
+              </div>
+            </>
+          ) : (
+            <p className="mt-2 text-gray-600 text-pretty">
+              You can share your experience here once your subscription is active.
+            </p>
+          )}
         </section>
       </div>
     </main>

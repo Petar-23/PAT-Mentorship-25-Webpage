@@ -149,6 +149,82 @@ export const raidmapStory: L<{
   },
 }
 
+// Chart-Tour: ein echter Live-Chart mit kompakter Legende. Bewusst ohne
+// Zahlen — alle Statistiken bleiben im Claims-Inventar-geprüften Content.
+export const raidmapChartTour: L<{
+  title: string
+  subtitle: string
+  imageAlt: string
+  items: { label: string; body: string }[]
+  pricingCta: string
+}> = {
+  en: {
+    title: 'What you actually see on your chart',
+    subtitle: 'A real session, straight from TradingView. Here’s how to read the map in ten seconds.',
+    imageAlt:
+      'PAT Raid Map on a live NQ 1-minute chart: red DoL line with traffic-light tag, validated EQH labels, safe and typical distance bands, and shaded session zones',
+    items: [
+      {
+        label: '🔴🟡🟢 The traffic light',
+        body: 'Green = strong stats (held in both market eras), yellow = decent, red = careful. Hover any label and it tells you why in one sentence.',
+      },
+      {
+        label: 'DoL line (red)',
+        body: 'The level price most likely runs to FIRST this session.',
+      },
+      {
+        label: 'EQH / EQL tags',
+        body: 'Only the equal highs/lows that beat a random level in testing — the map refuses to draw the ones that failed.',
+      },
+      {
+        label: 'safe / typical',
+        body: 'How far the move typically carried after the DoL broke — distance bands, not reversal targets.',
+      },
+      {
+        label: 'Shaded zones',
+        body: 'Your session and the validated run-window minutes.',
+      },
+    ],
+    pricingCta: 'Try it on your own chart — 7 days free',
+  },
+  de: {
+    title: 'Was du wirklich auf deinem Chart siehst',
+    subtitle: 'Eine echte Session, direkt aus TradingView. So liest du die Karte in zehn Sekunden.',
+    imageAlt:
+      'PAT Raid Map auf einem echten NQ-1-Minuten-Chart: rote DoL-Linie mit Ampel-Tag, validierte EQH-Labels, safe- und typical-Bänder und schattierte Session-Zonen',
+    items: [
+      {
+        label: '🔴🟡🟢 Die Ampel',
+        body: 'Grün = starke Statistik (hielt in beiden Marktepochen), Gelb = ordentlich, Rot = Vorsicht. Fahr über ein Label und es sagt dir in einem Satz, warum.',
+      },
+      {
+        label: 'DoL-Linie (rot)',
+        body: 'Das Level, zu dem der Preis in dieser Session am wahrscheinlichsten ZUERST läuft.',
+      },
+      {
+        label: 'EQH-/EQL-Tags',
+        body: 'Nur die Equal Highs/Lows, die im Test ein Zufalls-Level geschlagen haben — die durchgefallenen weigert sich die Karte zu zeichnen.',
+      },
+      {
+        label: 'safe / typical',
+        body: 'Wie weit die Bewegung nach dem DoL-Bruch typischerweise trug — Distanz-Bänder, keine Reversal-Ziele.',
+      },
+      {
+        label: 'Schattierte Zonen',
+        body: 'Deine Session und die validierten Run-Window-Minuten.',
+      },
+    ],
+    pricingCta: 'Teste es auf deinem eigenen Chart — 7 Tage kostenlos',
+  },
+}
+
+// Testimonials-Sektion: zeigt ausschliesslich approved Mitglieder-Stimmen
+// (Review-Gate im Owner-Bereich) — bei 0 approved rendert die Sektion nichts.
+export const raidmapTestimonials: L<{ title: string }> = {
+  en: { title: 'What members say' },
+  de: { title: 'Was Mitglieder sagen' },
+}
+
 export const raidmapFeatures: L<{
   title: string
   subtitle: string

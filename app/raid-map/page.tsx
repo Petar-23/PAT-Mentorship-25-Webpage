@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import RaidMapHero from '@/components/sections/raidmap/hero'
 import RaidMapStory from '@/components/sections/raidmap/story'
+import RaidMapChartTour from '@/components/sections/raidmap/chart-tour'
 import RaidMapFeatures from '@/components/sections/raidmap/features'
 import RaidMapPricing from '@/components/sections/raidmap/pricing'
+import RaidMapTestimonials from '@/components/sections/raidmap/testimonials'
 import RaidMapFaq from '@/components/sections/raidmap/faq'
 import { RaidMapSuccessDialog } from '@/components/sections/raidmap/success-dialog'
 import { Suspense } from 'react'
@@ -69,8 +71,10 @@ export default function RaidMapPageEn() {
       </Suspense>
       <RaidMapHero lang="en" />
       <RaidMapStory lang="en" />
+      <RaidMapChartTour lang="en" />
       <RaidMapFeatures lang="en" />
       <RaidMapPricing lang="en" />
+      <RaidMapTestimonials lang="en" />
       <RaidMapFaq lang="en" />
     </main>
   )
