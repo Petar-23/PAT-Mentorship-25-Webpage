@@ -15,6 +15,7 @@ import type {
   IndicatorClaim,
   IndicatorClaimStatus,
   IndicatorPackage,
+  RebindRevokeSummary,
   TradingViewAccountBinding,
   TradingViewSessionMeta,
 } from '@/lib/indicators/types'
@@ -804,6 +805,105 @@ async function bindTradingViewAccountForUser(input: {
   }
 }
 
+// Best-Effort-Auto-Revoke beim Rebind: entzieht dem ALTEN TradingView-Namen
+// die vorhandenen Grants über die gleiche Session-Cookie-Infrastruktur wie
+// die Grants (POST /pine_perm/remove/). WICHTIG: darf NIE werfen und den
+// Claim des neuen Namens NIE blockieren — auch wenn der alte Name nie ein
+// echter TradingView-Account war oder nie Zugang hatte. Fehler werden nur
+// geloggt, auditiert und im Summary zurückgemeldet (Telegram-Warnung).
+async function revokeOldGrantsAfterRebind(input: {
+  userId: string
+  oldUsername: string
+  newUsername: string
+}): Promise<RebindRevokeSummary> {
+  const summary: RebindRevokeSummary = { attempted: 0, revoked: 0, failed: 0, firstError: null }
+
+  try {
+    // Nur Claims, bei denen auf TradingView-Seite überhaupt ein Grant
+    // existieren kann: granted/processing oder mindestens ein Worker-Versuch.
+    // Reine pending-Claims (z. B. Tippfehler, Worker lief nie) haben nichts,
+    // das man entziehen könnte — attempted bleibt dann 0.
+    const claims = await prisma.indicatorClaim.findMany({
+      where: {
+        userId: input.userId,
+        OR: [{ status: { in: ['granted', 'processing'] } }, { attemptCount: { gt: 0 } }],
+      },
+      include: { indicator: { select: { pineId: true } } },
+    })
+
+    const revocable = claims.flatMap((claim) => {
+      const pineId = claim.indicator?.pineId
+      return pineId ? [{ indicatorId: claim.indicatorId, tvUsername: claim.tvUsername, pineId }] : []
+    })
+    if (revocable.length === 0) return summary
+
+    const tv = new TradingViewService(await getTvSessionSecret())
+    if (!tv.isConfigured) {
+      summary.attempted = revocable.length
+      summary.failed = revocable.length
+      summary.firstError = 'TradingView cookie is not configured.'
+      console.error('[indicators] rebind auto-revoke skipped: TradingView cookie not configured', {
+        userId: input.userId,
+        from: input.oldUsername,
+        to: input.newUsername,
+      })
+      return summary
+    }
+
+    for (const claim of revocable) {
+      summary.attempted += 1
+      const revokeUsername = claim.tvUsername || input.oldUsername
+      let result: { success: boolean; message: string }
+      try {
+        result = await tv.revokeAccess(revokeUsername, claim.pineId)
+      } catch (error) {
+        result = {
+          success: false,
+          message: error instanceof Error ? error.message : 'TradingView revoke failed.',
+        }
+      }
+
+      if (result.success) {
+        summary.revoked += 1
+      } else {
+        summary.failed += 1
+        if (!summary.firstError) summary.firstError = result.message
+        console.error('[indicators] rebind auto-revoke failed:', {
+          userId: input.userId,
+          from: input.oldUsername,
+          to: input.newUsername,
+          indicatorId: claim.indicatorId,
+          message: result.message,
+        })
+      }
+
+      await writeClaimAudit({
+        userId: input.userId,
+        indicatorId: claim.indicatorId,
+        tvUsername: revokeUsername,
+        action: 'revoke',
+        result: result.success ? 'success' : 'failure',
+        errorCode: result.success ? undefined : result.message,
+        metadata: {
+          reason: 'rebind_auto_revoke',
+          from: input.oldUsername,
+          to: input.newUsername,
+          message: result.message,
+        },
+      })
+    }
+  } catch (error) {
+    // Selbst das Laden der Claims darf den Rebind nicht stoppen.
+    summary.failed = Math.max(summary.failed, 1)
+    if (!summary.firstError) {
+      summary.firstError = error instanceof Error ? error.message : 'Auto-revoke failed unexpectedly.'
+    }
+    console.error('[indicators] rebind auto-revoke crashed (non-fatal):', error)
+  }
+
+  return summary
+}
+
 export async function claimIndicatorForUser(input: {
   userId: string
   indicatorId: string
@@ -843,6 +943,7 @@ export async function claimIndicatorForUser(input: {
   let linkedAccount = existingAccount ? asTradingViewAccount(existingAccount) : null
   let tvUsername = requestedTvUsername
   let reboundFrom: string | undefined
+  let rebindRevoke: RebindRevokeSummary | undefined
 
   if (linkedAccount) {
     const requestedKey = normalizedTradingViewKey(requestedTvUsername)
@@ -867,8 +968,9 @@ export async function claimIndicatorForUser(input: {
       }
 
       // Rebind: neuen Namen erst gegen TradingView validieren, dann Konto
-      // umhaengen. Der ALTE Grant bleibt auf TradingView-Seite bestehen und
-      // muss vom Owner in "Manage access" entfernt werden (Audit + Telegram).
+      // umhaengen. Danach wird der ALTE Grant auf TradingView-Seite best
+      // effort automatisch entzogen (revokeOldGrantsAfterRebind); schlaegt
+      // das fehl, bleibt "Manage access" der manuelle Fallback (Telegram).
       const revalidation = await new TradingViewService().validateUsername(requestedTvUsername)
       if (!revalidation.valid) {
         await writeClaimAudit({
@@ -912,6 +1014,14 @@ export async function claimIndicatorForUser(input: {
         throw error
       }
 
+      // Auto-Revoke der alten Grants — best effort, blockiert den neuen
+      // Claim nie (auch nicht, wenn der alte Name nie Zugang hatte).
+      rebindRevoke = await revokeOldGrantsAfterRebind({
+        userId: input.userId,
+        oldUsername: reboundFrom,
+        newUsername: tvUsername,
+      })
+
       await writeClaimAudit({
         userId: input.userId,
         indicatorId: input.indicatorId,
@@ -922,7 +1032,18 @@ export async function claimIndicatorForUser(input: {
           reason: 'rebind',
           from: reboundFrom,
           to: tvUsername,
-          note: 'old TradingView grant must be removed manually via Manage access',
+          auto_revoke: {
+            attempted: rebindRevoke.attempted,
+            revoked: rebindRevoke.revoked,
+            failed: rebindRevoke.failed,
+            first_error: rebindRevoke.firstError,
+          },
+          note:
+            rebindRevoke.failed > 0
+              ? 'auto-revoke failed — old TradingView grant must be removed manually via Manage access'
+              : rebindRevoke.attempted === 0
+                ? 'no old TradingView grant existed — nothing to revoke'
+                : 'old TradingView grant revoked automatically',
         },
       })
     } else {
@@ -1059,6 +1180,7 @@ export async function claimIndicatorForUser(input: {
     claimStatus: 'pending',
     message: memberMessage,
     reboundFrom,
+    rebindRevoke,
   }
 }
 

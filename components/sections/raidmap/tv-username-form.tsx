@@ -35,6 +35,9 @@ export function TvUsernameForm({ initialUsername }: { initialUsername: string })
           {isPending ? 'Requesting…' : 'Grant / update access'}
         </Button>
       </div>
+      <p className="mt-2 text-xs text-gray-500 text-pretty">
+        Changing your username moves access to the new account — the old account loses it.
+      </p>
       {message ? (
         <p role={ok ? 'status' : 'alert'} className={`mt-2 text-sm text-pretty ${ok ? 'text-gray-600' : 'text-red-600'}`}>
           {message}
