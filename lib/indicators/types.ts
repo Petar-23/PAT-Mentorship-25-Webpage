@@ -60,6 +60,8 @@ export type ClaimIndicatorActionResult = {
   tvUsername?: string
   claimStatus?: IndicatorClaimStatus
   message: string
+  /** Gesetzt, wenn der Claim das TradingView-Konto auf einen neuen Namen umgehaengt hat. */
+  reboundFrom?: string
 }
 
 export type TradingViewSessionMeta = {
