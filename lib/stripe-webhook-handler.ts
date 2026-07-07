@@ -1,4 +1,5 @@
 import { handleRaidMapCheckoutCompleted } from '@/lib/raidmap-fulfillment'
+import { sendCortanaTelegram } from '@/lib/telegram-notify'
 import type Stripe from 'stripe'
 import { stripe } from './stripe'
 import { prisma } from './prisma'
@@ -434,6 +435,32 @@ export async function handleStripeEvent(event: Stripe.Event) {
             console.log(`Attempting to update tax info for customer ${customerId}`)
             await ensureCustomerTaxInfo(customerId)
           }
+        }
+        break
+      }
+
+      case 'invoice.paid': {
+        const invoice = event.data.object as Stripe.Invoice
+        // Raid-Map-Zahlungen an Petars Telegram melden; 0-Betrag-Invoices
+        // (Trial-Start) ausgenommen. Nie fatal fuer den Webhook.
+        try {
+          const invoiceSubscription = (invoice as unknown as { subscription?: string | { id: string } | null }).subscription
+          const subscriptionId =
+            typeof invoiceSubscription === 'string'
+              ? invoiceSubscription
+              : invoiceSubscription?.id ?? null
+          if ((invoice.amount_paid ?? 0) > 0 && subscriptionId) {
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+            if (subscription.metadata?.product === 'raidmap') {
+              const amount = (invoice.amount_paid / 100).toFixed(2)
+              const currency = (invoice.currency ?? 'usd').toUpperCase()
+              await sendCortanaTelegram(
+                `💰 Raid Map Zahlung eingegangen\n${amount} ${currency} · ${subscription.metadata?.tier ?? '?'} · ${invoice.customer_email ?? '?'}`
+              )
+            }
+          }
+        } catch (error) {
+          console.error('[raidmap] invoice.paid notify failed (non-fatal):', error)
         }
         break
       }
