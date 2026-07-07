@@ -266,6 +266,22 @@ model PayPalSubscriber {
   @@index([userId])
 }
 
+// Raid-Map-Testimonials mit Review-Gate: Mitglieder reichen Feedback ein
+// (status "pending"), Petar approved/rejected im Owner-Bereich — nur
+// "approved" erscheint auf der Landing (kein Fake-Social-Proof).
+model RaidMapTestimonial {
+  id          String    @id @default(uuid())
+  userId      String
+  displayName String
+  text        String
+  rating      Int
+  status      String    @default("pending")
+  createdAt   DateTime  @default(now())
+  reviewedAt  DateTime?
+
+  @@index([status, createdAt])
+}
+
 model Page {
   id          String   @id @default(uuid())
   title       String
