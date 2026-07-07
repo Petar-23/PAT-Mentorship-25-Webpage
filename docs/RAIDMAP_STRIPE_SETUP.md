@@ -5,7 +5,7 @@ Stripe-Objekte und zwei Env-Vars. Danach ist der Checkout live.
 
 ## 1. In Stripe anlegen (Dashboard → Produktkatalog)
 
-1. Produkt: **"PAT Raid Map [BETA]"** (Beschreibung z. B. "TradingView indicator —
+1. Produkt: **"PAT Raid Map"** (ohne BETA — Holdout-PASS 07.07.) (Beschreibung z. B. "TradingView indicator —
    session bias & run timing for NQ. Invite-only access.")
 2. Zwei wiederkehrende Preise in **USD**:
    - Monthly: **$45.00 / month**
