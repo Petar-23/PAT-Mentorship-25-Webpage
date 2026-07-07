@@ -76,6 +76,34 @@ gekoppelt. Für Raid-Map-Käufer gibt es zwei Wege:
   `IndicatorClaim` schreiben — der bestehende TradingView-Cron erledigt dann den
   Grant. Aufwand ~1 Session; sagen, wenn ich das bauen soll.
 
+## Test mode (dev only)
+
+Zum lokalen Testen des kompletten Raid-Map-User-Flows OHNE Clerk-Login und OHNE
+Stripe (`lib/raidmap-test-mode.ts`). Env-Vars (in `.env.local`, gitignored):
+
+```
+RAIDMAP_TEST_MODE=1                       # aktiviert den Test-Mode
+RAIDMAP_TEST_ACCESS=trialing              # simulierter Abo-Status: active | trialing | none (default: trialing)
+RAIDMAP_TEST_TIER=monthly                 # simulierter Plan: monthly | annual (default: monthly)
+```
+
+Was simuliert wird:
+
+- `/raid-map/account` ohne Login: statt Redirect zu /sign-in wird der Test-User
+  `raidmap_test_user` verwendet; sein Abo-Status kommt aus `RAIDMAP_TEST_ACCESS`/
+  `RAIDMAP_TEST_TIER` (keine DB-Abfrage der Subscription).
+- `POST /api/raidmap-checkout` gibt sofort
+  `{ "url": "/raid-map?checkout=success&test=1" }` zurück — Stripe (und Clerk)
+  werden nicht angefasst, das Success-Popup lässt sich so durchklicken.
+- Die TV-Username-Claim-Action akzeptiert den Test-User ebenfalls (der Claim
+  landet ggf. als normaler DB-Eintrag unter `raidmap_test_user`).
+
+Production ist doppelt geschützt: Der Bypass greift zentral in
+`isRaidMapTestMode()` nur wenn `NODE_ENV !== 'production'` UND
+`RAIDMAP_TEST_MODE === '1'` — in Production-Builds also nie, selbst wenn die
+Env-Var versehentlich gesetzt wäre. Ohne gesetzte Var verhält sich auch Dev
+exakt wie vorher.
+
 ## 5. Rechtliches (kurz)
 
 - Impressum/AGB/Widerruf existieren (deutsch). Für internationale USD-Verkäufe:

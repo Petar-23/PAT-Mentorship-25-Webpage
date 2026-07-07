@@ -12,6 +12,7 @@ import { TvUsernameForm } from '@/components/sections/raidmap/tv-username-form'
 import { listIndicatorClaimsForUser, getTradingViewAccountForUser } from '@/lib/indicators/store'
 import { getRaidMapAccessState, getRaidMapIndicator } from '@/lib/raidmap-access'
 import { RAIDMAP_CONFIG } from '@/lib/raidmap-config'
+import { isRaidMapTestMode, RAIDMAP_TEST_USER_ID } from '@/lib/raidmap-test-mode'
 
 export const metadata: Metadata = {
   title: 'PAT Raid Map — Your account',
@@ -29,7 +30,10 @@ const claimStatusCopy: Record<string, string> = {
 }
 
 export default async function RaidMapAccountPage() {
-  const { userId } = await auth()
+  const { userId: clerkUserId } = await auth()
+  // Dev-only Test-Mode: ohne Clerk-Login mit simuliertem Test-User weiterarbeiten
+  // (doppelt geguarded in lib/raidmap-test-mode.ts, in Production immer aus).
+  const userId = clerkUserId ?? (isRaidMapTestMode() ? RAIDMAP_TEST_USER_ID : null)
   if (!userId) {
     redirect(`/sign-in?redirect_url=${encodeURIComponent(RAIDMAP_CONFIG.accountPath)}`)
   }

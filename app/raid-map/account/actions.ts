@@ -5,11 +5,15 @@ import { revalidatePath } from 'next/cache'
 import { claimIndicatorForUser } from '@/lib/indicators/store'
 import { getRaidMapAccessState, getRaidMapIndicator } from '@/lib/raidmap-access'
 import { RAIDMAP_CONFIG } from '@/lib/raidmap-config'
+import { isRaidMapTestMode, RAIDMAP_TEST_USER_ID } from '@/lib/raidmap-test-mode'
 
 export type RaidMapClaimResult = { ok: boolean; message: string }
 
 export async function claimRaidMapAction(tvUsername: string): Promise<RaidMapClaimResult> {
-  const { userId } = await auth()
+  const { userId: clerkUserId } = await auth()
+  // Dev-only Test-Mode: gleicher Fallback wie auf der Account-Seite
+  // (doppelt geguarded in lib/raidmap-test-mode.ts, in Production immer aus).
+  const userId = clerkUserId ?? (isRaidMapTestMode() ? RAIDMAP_TEST_USER_ID : null)
   if (!userId) {
     return { ok: false, message: 'Please sign in again.' }
   }

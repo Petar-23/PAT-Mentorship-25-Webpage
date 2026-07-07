@@ -3,6 +3,7 @@ import 'server-only'
 import { prisma, withPrismaRetry } from '@/lib/prisma'
 import { getRaidMapPriceId } from '@/lib/stripe'
 import { RAIDMAP_CONFIG } from '@/lib/raidmap-config'
+import { getRaidMapTestAccess, isRaidMapTestMode, RAIDMAP_TEST_USER_ID } from '@/lib/raidmap-test-mode'
 
 // Zugangs-Status für die PAT Raid Map: rein über den UserSubscription-Cache
 // (der Stripe-Webhook hält ihn aktuell). Aktiv oder im Trial = Zugang.
@@ -23,6 +24,12 @@ function asPriceIdList(priceIds: unknown): string[] {
 }
 
 export async function getRaidMapAccessState(userId: string): Promise<RaidMapAccessState> {
+  // Dev-only Test-Mode: simulierter Abo-Zustand für den Test-User, keine DB-Abfrage
+  // (doppelt geguarded in lib/raidmap-test-mode.ts, in Production immer aus).
+  if (isRaidMapTestMode() && userId === RAIDMAP_TEST_USER_ID) {
+    return getRaidMapTestAccess()
+  }
+
   const subscription = await withPrismaRetry(
     () => prisma.userSubscription.findUnique({ where: { userId } }),
     { label: 'Load raidmap subscription' }
