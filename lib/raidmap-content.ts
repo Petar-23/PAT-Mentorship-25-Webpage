@@ -20,12 +20,12 @@ const c = RAIDMAP_CONFIG
 
 export const raidmapMeta: L<{ title: string; description: string }> = {
   en: {
-    title: 'PAT Raid Map [BETA] — Session Bias & Run Timing for NQ, backed by 10 years of data',
+    title: 'PAT Raid Map — Session Bias & Run Timing for NQ, backed by 10 years of data',
     description:
       'A TradingView indicator that maps which liquidity level gets raided first, when the run typically starts, and what happens after the purge — every number tested against random placebos on 10 years of NQ 1-minute data.',
   },
   de: {
-    title: 'PAT Raid Map [BETA] — Session-Bias & Run-Timing für NQ, belegt mit 10 Jahren Daten',
+    title: 'PAT Raid Map — Session-Bias & Run-Timing für NQ, belegt mit 10 Jahren Daten',
     description:
       'Ein TradingView-Indikator, der zeigt, welches Liquiditäts-Level zuerst geraidet wird, wann der Run typischerweise startet und was nach dem Purge passiert — jede Zahl gegen Zufalls-Placebos auf 10 Jahren NQ-1-Minuten-Daten getestet.',
   },
@@ -42,7 +42,7 @@ export const raidmapHero: L<{
   finePrint: string
 }> = {
   en: {
-    badge: 'TradingView indicator · NQ · invite-only · [BETA]',
+    badge: 'TradingView indicator · NQ · invite-only · out-of-sample tested',
     title: 'Stop guessing the bias. Read the session like a map.',
     subtitle:
       'The PAT Raid Map shows the three things that actually decide your session: which level gets raided first, when the run typically starts, and what happens after the purge. Every number on your chart survived a placebo test on 10 years of NQ data — or it was deleted.',
@@ -58,7 +58,7 @@ export const raidmapHero: L<{
       'Historical statistics (NQ futures, 2016–2025, in-sample). Not financial advice. No performance guarantee. Not an entry signal — a context layer.',
   },
   de: {
-    badge: 'TradingView-Indikator · NQ · invite-only · [BETA]',
+    badge: 'TradingView-Indikator · NQ · invite-only · Out-of-Sample getestet',
     title: 'Hör auf, den Bias zu raten. Lies die Session wie eine Karte.',
     subtitle:
       'Die PAT Raid Map zeigt dir die drei Dinge, die deine Session wirklich entscheiden: welches Level zuerst geraidet wird, wann der Run typischerweise startet und was nach dem Purge passiert. Jede Zahl auf deinem Chart hat einen Placebo-Test auf 10 Jahren NQ-Daten überlebt — oder sie wurde gelöscht.',
@@ -131,7 +131,7 @@ export const raidmapStory: L<{
         n: '01',
         title: 'Session-Struktur kann man messen. Also haben wir gemessen.',
         body:
-          'Die meisten Tools raten, wo der Tag schließt. Wir haben 10 Jahren NQ-Daten (2.327 Handelstage, 575.439 bestätigte Swing-Level) stattdessen zwei kleinere, schärfere Fragen gestellt: Welches Level fällt in jeder Session zuerst — und wann startet der Run? So gefragt, antworten die Daten mit echten, wiederholbaren Zahlen.',
+          'Die meisten Tools raten, wo der Tag schließt. Wir haben 10 Jahre NQ-Daten (2.327 Handelstage, 575.439 bestätigte Swing-Level) stattdessen zwei kleinere, schärfere Fragen gestellt: Welches Level fällt in jeder Session zuerst — und wann startet der Run? So gefragt, antworten die Daten mit echten, wiederholbaren Zahlen.',
       },
       {
         n: '02',
@@ -159,7 +159,7 @@ export const raidmapFeatures: L<{
     title: 'What you see on the chart',
     subtitle: 'Five layers. Each one carries its own validated number and a plain-English confidence tag.',
     sourceNote:
-      'Behind every card: NQ futures, 1-minute data, 2016–2025, in-sample, tested against fair random-placebo benchmarks. Exact numbers live in the docs and in every chart tooltip.',
+      'Behind every card: NQ futures, 1-minute data, 2016–2025, tested against fair random-placebo benchmarks — and confirmed on a one-shot out-of-sample year (Jul 2025 – Jun 2026). Exact numbers live in the docs and in every chart tooltip.',
     cards: [
       {
         title: 'First-Target Map (DoL compass)',
@@ -209,7 +209,7 @@ export const raidmapFeatures: L<{
     title: 'Was du auf dem Chart siehst',
     subtitle: 'Fünf Ebenen. Jede trägt ihre eigene validierte Zahl und ein Klartext-Confidence-Tag.',
     sourceNote:
-      'Hinter jeder Karte: NQ-Futures, 1-Minuten-Daten, 2016–2025, in-sample, getestet gegen faire Zufalls-Placebo-Benchmarks. Die exakten Zahlen stehen in der Doku und in jedem Chart-Tooltip.',
+      'Hinter jeder Karte: NQ-Futures, 1-Minuten-Daten, 2016–2025, getestet gegen faire Zufalls-Placebo-Benchmarks — und bestätigt auf einem einmaligen Out-of-Sample-Jahr (Jul 2025 – Jun 2026). Die exakten Zahlen stehen in der Doku und in jedem Chart-Tooltip.',
     cards: [
       {
         title: 'First-Target-Karte (DoL-Kompass)',
@@ -291,7 +291,7 @@ export const raidmapPricing: L<{
       strike: c.annualMonthlyAfterFormatted,
     },
     included: [
-      'PAT Raid Map [BETA] on TradingView (invite-only access)',
+      'PAT Raid Map on TradingView (invite-only access)',
       'All five layers: first-target map, timing windows, purge detection, micro pools, terminus bands',
       'Plain-English confidence tags with the full statistics one hover away',
       'Weekly live streams reading the map on real sessions',
@@ -323,7 +323,7 @@ export const raidmapPricing: L<{
       strike: c.annualMonthlyAfterFormatted,
     },
     included: [
-      'PAT Raid Map [BETA] auf TradingView (Invite-only-Zugang)',
+      'PAT Raid Map auf TradingView (Invite-only-Zugang)',
       'Alle fünf Ebenen: First-Target-Karte, Timing-Fenster, Purge-Erkennung, Mikro-Pools, Terminus-Bänder',
       'Klartext-Confidence-Tags — die volle Statistik einen Hover entfernt',
       'Wöchentliche Livestreams, in denen wir die Karte an echten Sessions lesen',
@@ -344,8 +344,8 @@ export const raidmapFaq: L<{ title: string; items: FaqItem[] }> = {
         a: 'No. The Raid Map is a context layer: it tells you the most likely first target, the validated timing windows, and the scenario you are in. Entries, stops and risk are your job. Anyone selling you “validated entries” from bar data should worry you.',
       },
       {
-        q: 'Why [BETA]? What does that mean?',
-        a: 'All statistics are in-sample (2016–2025). We deliberately reserved a final untouched out-of-sample period — it gets tested exactly once, and the BETA tag only comes off if the numbers hold. That is how seriously we take overfitting.',
+        q: 'Has this been tested out-of-sample?',
+        a: 'Yes — the hard way. Everything was built on 2016–2025 data, and we deliberately reserved one untouched year (Jul 2025 – Jun 2026). On July 7, 2026 it was tested exactly once, with pass criteria frozen in advance: 96% of the robust cells held their edge on data the research had never seen. Where the test disagreed, we adjusted the numbers we quote — one follow-through band now uses the more conservative out-of-sample value. That test can never be repeated, and that is exactly what makes it honest.',
       },
       {
         q: 'Which markets does it work on?',
@@ -381,8 +381,8 @@ export const raidmapFaq: L<{ title: string; items: FaqItem[] }> = {
         a: 'Nein. Die Raid Map ist ein Kontext-Layer: Sie zeigt dir das wahrscheinlichste erste Ziel, die validierten Zeitfenster und das Szenario, in dem du bist. Entries, Stops und Risiko sind dein Job. Wer dir „validierte Entries“ aus Bar-Daten verkauft, sollte dich stutzig machen.',
       },
       {
-        q: 'Warum [BETA]? Was heißt das?',
-        a: 'Alle Statistiken sind in-sample (2016–2025). Wir haben bewusst einen finalen, unangetasteten Out-of-Sample-Zeitraum reserviert — der wird genau einmal getestet, und das BETA-Tag fällt nur, wenn die Zahlen halten. So ernst nehmen wir Overfitting.',
+        q: 'Wurde das out-of-sample getestet?',
+        a: 'Ja — auf die harte Tour. Alles wurde auf Daten von 2016–2025 gebaut, und wir haben bewusst ein unangetastetes Jahr reserviert (Jul 2025 – Jun 2026). Am 7. Juli 2026 wurde genau einmal getestet, mit vorab eingefrorenen Kriterien: 96% der robusten Zellen hielten ihren Edge auf Daten, die die Research nie gesehen hatte. Wo der Test widersprach, haben wir die zitierten Zahlen angepasst — ein Follow-Through-Band nutzt jetzt den konservativeren Out-of-Sample-Wert. Dieser Test ist unwiederholbar — genau das macht ihn ehrlich.',
       },
       {
         q: 'Für welche Märkte funktioniert das?',
@@ -416,12 +416,12 @@ export const raidmapDisclaimer: L<{ title: string; body: string }> = {
   en: {
     title: 'Risk & transparency',
     body:
-      'All statistics shown are historical, in-sample results on NQ futures (1-minute data, 2016–2025) against random-placebo benchmarks, validated separately in two market eras. Past behavior does not guarantee future behavior. The final out-of-sample test is deliberately reserved and has not been run. This product is a charting/context tool — it is not financial advice, not an entry system, and makes no profit claims. Futures trading involves substantial risk of loss.',
+      'All statistics shown are historical, in-sample results on NQ futures (1-minute data, 2016–2025) against random-placebo benchmarks, validated separately in two market eras, and confirmed on a reserved out-of-sample year (Jul 2025 – Jun 2026) that was tested exactly once with preregistered criteria. Past behavior does not guarantee future behavior. This product is a charting/context tool — it is not financial advice, not an entry system, and makes no profit claims. Futures trading involves substantial risk of loss.',
   },
   de: {
     title: 'Risiko & Transparenz',
     body:
-      'Alle gezeigten Statistiken sind historische In-Sample-Ergebnisse auf NQ-Futures (1-Minuten-Daten, 2016–2025) gegen Zufalls-Placebo-Benchmarks, getrennt in zwei Marktepochen validiert. Vergangenes Verhalten garantiert kein zukünftiges Verhalten. Der finale Out-of-Sample-Test ist bewusst reserviert und wurde noch nicht durchgeführt. Dieses Produkt ist ein Chart-/Kontext-Werkzeug — keine Anlageberatung, kein Entry-System, keine Gewinnversprechen. Futures-Handel birgt erhebliches Verlustrisiko.',
+      'Alle gezeigten Statistiken sind historische In-Sample-Ergebnisse auf NQ-Futures (1-Minuten-Daten, 2016–2025) gegen Zufalls-Placebo-Benchmarks, getrennt in zwei Marktepochen validiert und auf einem reservierten Out-of-Sample-Jahr bestätigt (Jul 2025 – Jun 2026), das genau einmal mit vorregistrierten Kriterien getestet wurde. Vergangenes Verhalten garantiert kein zukünftiges Verhalten. Dieses Produkt ist ein Chart-/Kontext-Werkzeug — keine Anlageberatung, kein Entry-System, keine Gewinnversprechen. Futures-Handel birgt erhebliches Verlustrisiko.',
   },
 }
 

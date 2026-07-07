@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 const productJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Product',
-  name: `${RAIDMAP_CONFIG.productName} [${RAIDMAP_CONFIG.betaTag}]`,
+  name: RAIDMAP_CONFIG.productName,
   description: raidmapMeta.en.description,
   brand: { '@type': 'Brand', name: 'Price Action Trader' },
   offers: [

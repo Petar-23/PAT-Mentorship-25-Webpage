@@ -14,7 +14,7 @@ const copy = {
     description: 'Your 7-day free trial is running. Here is where you find the indicator on TradingView:',
     steps: [
       'We are granting access to the TradingView username you entered at checkout (usually done within the hour).',
-      'On TradingView, open “Indicators” and pick “Invite-only” in the left sidebar — PAT Raid Map [BETA] appears there.',
+      'On TradingView, open “Indicators” and pick “Invite-only” in the left sidebar — PAT Raid Map appears there.',
       'Manage your username, subscription and invoices anytime in your account area.',
     ],
     accountCta: 'Open my account area',
@@ -26,7 +26,7 @@ const copy = {
     description: 'Dein 7-Tage-Test läuft. Hier findest du den Indikator auf TradingView:',
     steps: [
       'Wir schalten den TradingView-Usernamen frei, den du im Checkout angegeben hast (meist innerhalb einer Stunde).',
-      'Öffne auf TradingView „Indicators“ und wähle links „Invite-only“ — dort erscheint die PAT Raid Map [BETA].',
+      'Öffne auf TradingView „Indicators“ und wähle links „Invite-only“ — dort erscheint die PAT Raid Map.',
       'Username, Abo und Rechnungen verwaltest du jederzeit in deinem Account-Bereich.',
     ],
     accountCta: 'Zu meinem Account-Bereich',

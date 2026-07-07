@@ -117,7 +117,7 @@ export default async function RaidMapAccountPage() {
             <li className="text-pretty">
               In the left sidebar choose <span className="font-semibold">“Invite-only”</span>.
             </li>
-            <li className="text-pretty">Select “PAT Raid Map [BETA]” — done. It stays in your list.</li>
+            <li className="text-pretty">Select “PAT Raid Map” — done. It stays in your list.</li>
           </ol>
           {hasGuideImage ? (
             <div className="mt-5 overflow-hidden rounded-lg border border-gray-200">

@@ -4,7 +4,6 @@
 
 export const RAIDMAP_CONFIG = {
   productName: 'PAT Raid Map',
-  betaTag: 'BETA',
   currency: 'USD',
 
   // Pricing (international, USD) — Launch-Offer: erste 300 Mitglieder, danach +20%.
