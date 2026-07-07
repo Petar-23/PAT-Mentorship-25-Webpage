@@ -681,17 +681,21 @@ export async function createRaidMapCheckoutSession(
     throw new Error(`Missing Stripe price id for raidmap tier "${tier}" (see docs/RAIDMAP_STRIPE_SETUP.md)`)
   }
 
-  // Customer wiederverwenden (gleiche Konvention wie Mentorship-Checkout)
+  // Raid Map rechnet in USD, Mentorship-Customers tragen oft schon eine
+  // EUR-Currency — Stripe verbietet Currency-Mix pro Customer ("You cannot
+  // combine currencies on a single customer"). Deshalb bekommt Raid Map einen
+  // EIGENEN Customer je User (metadata.raidmapUserId, bewusst OHNE userId-Key,
+  // damit die Mentorship-Suchen ihn nie aufgreifen).
   let customer: Stripe.Customer
-  const existingCustomers = await stripe.customers.search({
-    query: `metadata['userId']:'${userId}'`,
+  const existingRaidmapCustomers = await stripe.customers.search({
+    query: `metadata['raidmapUserId']:'${userId}'`,
   })
-  if (existingCustomers.data.length > 0) {
-    customer = [...existingCustomers.data].sort((a, b) => b.created - a.created)[0]
+  if (existingRaidmapCustomers.data.length > 0) {
+    customer = [...existingRaidmapCustomers.data].sort((a, b) => b.created - a.created)[0]
   } else {
     customer = await stripe.customers.create({
       email: userEmail,
-      metadata: { userId },
+      metadata: { raidmapUserId: userId },
     })
   }
 
@@ -744,6 +748,35 @@ export async function createRaidMapCheckoutSession(
       tier,
     },
   })
+
+  return { url: session.url }
+}
+
+
+// Billing-Portal fuer den separaten Raid-Map-Customer (siehe createRaidMapCheckoutSession)
+export async function createRaidMapPortalSession(userId: string) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+  if (!baseUrl) {
+    throw new Error('Missing NEXT_PUBLIC_APP_URL environment variable')
+  }
+
+  const found = await stripe.customers.search({
+    query: `metadata['raidmapUserId']:'${userId}'`,
+  })
+  if (found.data.length === 0) {
+    throw new Error('No Raid Map customer found')
+  }
+  const customer = [...found.data].sort((a, b) => b.created - a.created)[0]
+
+  const session = await stripe.billingPortal.sessions.create({
+    customer: customer.id,
+    return_url: `${baseUrl}/raid-map/account`,
+    locale: 'auto',
+  })
+
+  if (!session.url) {
+    throw new Error('Failed to create portal session')
+  }
 
   return { url: session.url }
 }

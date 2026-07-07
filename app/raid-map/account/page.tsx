@@ -74,7 +74,7 @@ export default async function RaidMapAccountPage() {
             </p>
           )}
           <div className="mt-4 flex flex-col sm:flex-row gap-3">
-            <ManageSubscriptionButton label="Manage subscription & invoices" />
+            <ManageSubscriptionButton label="Manage subscription & invoices" endpoint="/api/raidmap-portal" />
             <Button asChild variant="ghost">
               <Link href={RAIDMAP_CONFIG.docsPathEn}>Documentation</Link>
             </Button>
