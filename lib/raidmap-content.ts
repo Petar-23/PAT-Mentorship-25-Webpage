@@ -159,8 +159,8 @@ export const raidmapChartTour: L<{
   pricingCta: string
 }> = {
   en: {
-    title: 'What you actually see on your chart',
-    subtitle: 'A real session, straight from TradingView. Here’s how to read the map in ten seconds.',
+    title: 'A real session, annotated',
+    subtitle: 'One live NQ chart, straight from TradingView. Here’s how to read the map in ten seconds.',
     imageAlt:
       'PAT Raid Map on a live NQ 1-minute chart: red DoL line with traffic-light tag, validated EQH labels, safe and typical distance bands, and shaded session zones',
     items: [
@@ -188,8 +188,8 @@ export const raidmapChartTour: L<{
     pricingCta: 'Try it on your own chart — 7 days free',
   },
   de: {
-    title: 'Was du wirklich auf deinem Chart siehst',
-    subtitle: 'Eine echte Session, direkt aus TradingView. So liest du die Karte in zehn Sekunden.',
+    title: 'Eine echte Session, erklärt',
+    subtitle: 'Ein echter NQ-Chart, direkt aus TradingView. So liest du die Karte in zehn Sekunden.',
     imageAlt:
       'PAT Raid Map auf einem echten NQ-1-Minuten-Chart: rote DoL-Linie mit Ampel-Tag, validierte EQH-Labels, safe- und typical-Bänder und schattierte Session-Zonen',
     items: [
@@ -232,7 +232,7 @@ export const raidmapFeatures: L<{
   sourceNote: string
 }> = {
   en: {
-    title: 'What you see on the chart',
+    title: 'The five layers of the map',
     subtitle: 'Five layers. Each one carries its own validated number and a plain-English confidence tag.',
     sourceNote:
       'Behind every card: NQ futures, 1-minute data, 2016–2025, tested against fair random-placebo benchmarks — and confirmed on a one-shot out-of-sample year (Jul 2025 – Jun 2026). Exact numbers live in the docs and in every chart tooltip.',
@@ -282,7 +282,7 @@ export const raidmapFeatures: L<{
     ],
   },
   de: {
-    title: 'Was du auf dem Chart siehst',
+    title: 'Die fünf Ebenen der Karte',
     subtitle: 'Fünf Ebenen. Jede trägt ihre eigene validierte Zahl und ein Klartext-Confidence-Tag.',
     sourceNote:
       'Hinter jeder Karte: NQ-Futures, 1-Minuten-Daten, 2016–2025, getestet gegen faire Zufalls-Placebo-Benchmarks — und bestätigt auf einem einmaligen Out-of-Sample-Jahr (Jul 2025 – Jun 2026). Die exakten Zahlen stehen in der Doku und in jedem Chart-Tooltip.',
