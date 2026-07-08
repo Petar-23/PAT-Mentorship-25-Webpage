@@ -58,6 +58,14 @@ function normalizedTradingViewKey(value: string) {
   return normalizeTradingViewUsername(value).toLowerCase()
 }
 
+function isPublishedInviteOnlyPineId(value: string | null | undefined) {
+  return String(value ?? '').trim().startsWith('PUB;')
+}
+
+function normalizedScriptNameKey(value: string | null | undefined) {
+  return normalizeSlug(value ?? '')
+}
+
 function asClaimStatus(value: string): IndicatorClaimStatus {
   return VALID_CLAIM_STATUSES.has(value as IndicatorClaimStatus)
     ? (value as IndicatorClaimStatus)
@@ -376,14 +384,25 @@ export async function listVisibleIndicatorPackages() {
     ).then((rows) => rows.map(asIndicator)),
   ])
 
-  const visiblePackages = packages.filter((pkg) => pkg.visible && pkg.indicators.length > 0)
+  const memberPackages = packages
+    .map((pkg) => ({
+      ...pkg,
+      indicators: pkg.indicators.filter(
+        (indicator) => indicator.ready && indicator.visible && isPublishedInviteOnlyPineId(indicator.pineId)
+      ),
+    }))
+    .filter((pkg) => pkg.visible && pkg.indicators.length > 0)
 
-  if (unassignedIndicators.length === 0) {
-    return visiblePackages
+  const memberUnassignedIndicators = unassignedIndicators.filter(
+    (indicator) => indicator.ready && indicator.visible && isPublishedInviteOnlyPineId(indicator.pineId)
+  )
+
+  if (memberUnassignedIndicators.length === 0) {
+    return memberPackages
   }
 
   return [
-    ...visiblePackages,
+    ...memberPackages,
     {
       id: 'unassigned-indicators',
       slug: 'weitere-indikatoren',
@@ -391,7 +410,7 @@ export async function listVisibleIndicatorPackages() {
       description: '',
       sortOrder: 999,
       visible: true,
-      indicators: unassignedIndicators,
+      indicators: memberUnassignedIndicators,
     },
   ]
 }
@@ -634,6 +653,7 @@ export async function createIndicator(input: {
 }) {
   const name = input.name.trim()
   if (!name) throw new Error('Indicator name is required.')
+  const pineId = input.pineId.trim() || null
 
   const slug = await uniqueIndicatorSlug(name, 'indicator')
   await withPrismaRetry(
@@ -646,9 +666,9 @@ export async function createIndicator(input: {
           shortDescription: input.shortDescription.trim() || null,
           detailDescription: input.detailDescription.trim() || null,
           usageGuide: input.usageGuide.trim() || null,
-          pineId: input.pineId.trim() || null,
-          ready: input.ready,
-          visible: input.visible,
+          pineId,
+          ready: input.ready && isPublishedInviteOnlyPineId(pineId),
+          visible: input.visible && isPublishedInviteOnlyPineId(pineId),
           sortOrder: input.sortOrder,
         },
       }),
@@ -672,6 +692,7 @@ export async function updateIndicator(
 ) {
   const name = input.name.trim()
   if (!name) throw new Error('Indicator name is required.')
+  const pineId = input.pineId.trim() || null
 
   await withPrismaRetry(
     () =>
@@ -683,9 +704,9 @@ export async function updateIndicator(
           shortDescription: input.shortDescription.trim() || null,
           detailDescription: input.detailDescription.trim() || null,
           usageGuide: input.usageGuide.trim() || null,
-          pineId: input.pineId.trim() || null,
-          ready: input.ready,
-          visible: input.visible,
+          pineId,
+          ready: input.ready && isPublishedInviteOnlyPineId(pineId),
+          visible: input.visible && isPublishedInviteOnlyPineId(pineId),
           sortOrder: input.sortOrder,
         },
       }),
@@ -719,13 +740,24 @@ export async function importTradingViewIndicators(packageId: string | null) {
   )
   const existingPineIds = new Set(existingIndicators.map((row) => row.pineId).filter(Boolean))
   const existingSlugs = new Set(existingIndicators.map((row) => row.slug))
+  const publishedScriptNames = new Set(
+    scripts
+      .filter((script) => isPublishedInviteOnlyPineId(script.scriptIdPart))
+      .map((script) => normalizedScriptNameKey(script.scriptName))
+      .filter(Boolean)
+  )
 
   let imported = 0
   let skipped = 0
 
   for (const script of scripts) {
     const pineId = script.scriptIdPart
-    if (!pineId || existingPineIds.has(pineId)) {
+    const scriptNameKey = normalizedScriptNameKey(script.scriptName)
+    if (
+      !pineId ||
+      existingPineIds.has(pineId) ||
+      (pineId.startsWith('USER;') && scriptNameKey && publishedScriptNames.has(scriptNameKey))
+    ) {
       skipped += 1
       continue
     }
@@ -735,7 +767,7 @@ export async function importTradingViewIndicators(packageId: string | null) {
     if (existingSlugs.has(slug)) slug = `${slug}-${shortId}`
     existingSlugs.add(slug)
 
-    const isClaimable = pineId.startsWith('PUB;') && script.scriptAccess === 'closed_needs_auth'
+    const isClaimable = isPublishedInviteOnlyPineId(pineId) && script.scriptAccess === 'closed_needs_auth'
     await withPrismaRetry(
       () =>
         prisma.indicator.create({

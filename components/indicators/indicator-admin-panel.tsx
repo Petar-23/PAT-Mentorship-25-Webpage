@@ -123,17 +123,25 @@ function CheckboxField({
   name,
   label,
   defaultChecked,
+  disabled = false,
 }: {
   name: string
   label: string
   defaultChecked?: boolean
+  disabled?: boolean
 }) {
   return (
-    <label className="flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm">
+    <label
+      className={cn(
+        'flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm',
+        disabled && 'cursor-not-allowed opacity-60'
+      )}
+    >
       <input
         type="checkbox"
         name={name}
         defaultChecked={defaultChecked}
+        disabled={disabled}
         className="h-4 w-4 rounded border-gray-300"
       />
       <span>{label}</span>
@@ -751,6 +759,7 @@ function IndicatorEditor({
   removeImage: (indicatorId: string) => void
 }) {
   const guideTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const publishedPineId = indicator.pineId.startsWith('PUB;')
 
   return (
     <div className="rounded-md border p-3">
@@ -864,9 +873,19 @@ function IndicatorEditor({
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap gap-2">
-              <CheckboxField name="ready" label="Claimbar" defaultChecked={indicator.ready} />
-              <CheckboxField name="visible" label="Sichtbar" defaultChecked={indicator.visible} />
-              {!indicator.ready || !indicator.visible || !indicator.pineId.startsWith('PUB;') ? (
+              <CheckboxField
+                name="ready"
+                label="Claimbar"
+                defaultChecked={indicator.ready && publishedPineId}
+                disabled={!publishedPineId}
+              />
+              <CheckboxField
+                name="visible"
+                label="Sichtbar"
+                defaultChecked={indicator.visible && publishedPineId}
+                disabled={!publishedPineId}
+              />
+              {!indicator.ready || !indicator.visible || !publishedPineId ? (
                 <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800">
                   <WarningCircle className="h-3.5 w-3.5" />
                   Nicht claimbar
