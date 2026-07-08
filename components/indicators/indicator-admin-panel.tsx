@@ -52,6 +52,45 @@ type Props = {
 }
 
 type FormAction = (formData: FormData) => Promise<IndicatorActionResult>
+type AdminIndicatorFilter = 'all' | 'visible' | 'claimable' | 'hidden' | 'needsSetup'
+
+const ADMIN_FILTERS: Array<{ value: AdminIndicatorFilter; label: string }> = [
+  { value: 'all', label: 'Alle' },
+  { value: 'visible', label: 'Sichtbar' },
+  { value: 'claimable', label: 'Claimbar' },
+  { value: 'hidden', label: 'Versteckt' },
+  { value: 'needsSetup', label: 'Setup offen' },
+]
+
+function isAdminIndicatorClaimable(indicator: Indicator) {
+  return indicator.ready && indicator.pineId.startsWith('PUB;')
+}
+
+function matchesAdminFilter(indicator: Indicator, filter: AdminIndicatorFilter) {
+  if (filter === 'all') return true
+  if (filter === 'visible') return indicator.visible
+  if (filter === 'claimable') return isAdminIndicatorClaimable(indicator)
+  if (filter === 'hidden') return !indicator.visible
+  if (filter === 'needsSetup') return !indicator.ready || !indicator.pineId.startsWith('PUB;')
+
+  return true
+}
+
+function matchesAdminSearch(indicator: Indicator, searchTerm: string, packageName: string) {
+  if (!searchTerm) return true
+
+  return [
+    packageName,
+    indicator.name,
+    indicator.slug,
+    indicator.pineId,
+    indicator.shortDescription,
+    indicator.detailDescription,
+  ]
+    .join(' ')
+    .toLowerCase()
+    .includes(searchTerm)
+}
 
 function Select({
   name,
@@ -148,6 +187,8 @@ export function IndicatorAdminPanel({ overview }: Props) {
   const [isPending, startTransition] = useTransition()
   const [uploadingIndicatorId, setUploadingIndicatorId] = useState<string | null>(null)
   const [uploadingGuideImageId, setUploadingGuideImageId] = useState<string | null>(null)
+  const [adminSearchTerm, setAdminSearchTerm] = useState('')
+  const [adminStatusFilter, setAdminStatusFilter] = useState<AdminIndicatorFilter>('all')
   const cookieFormRef = useRef<HTMLFormElement | null>(null)
 
   const allIndicators = useMemo(() => {
@@ -156,6 +197,40 @@ export function IndicatorAdminPanel({ overview }: Props) {
       ...overview.unassignedIndicators,
     ].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
   }, [overview.packages, overview.unassignedIndicators])
+
+  const hasActiveAdminFilters = adminSearchTerm.trim().length > 0 || adminStatusFilter !== 'all'
+
+  const filteredAdminPackages = useMemo(() => {
+    const normalizedSearch = adminSearchTerm.trim().toLowerCase()
+
+    return overview.packages
+      .map((pkg) => ({
+        ...pkg,
+        indicators: pkg.indicators.filter(
+          (indicator) =>
+            matchesAdminSearch(indicator, normalizedSearch, pkg.name) &&
+            matchesAdminFilter(indicator, adminStatusFilter)
+        ),
+      }))
+      .filter((pkg) => !hasActiveAdminFilters || pkg.indicators.length > 0)
+  }, [adminSearchTerm, adminStatusFilter, hasActiveAdminFilters, overview.packages])
+
+  const filteredUnassignedIndicators = useMemo(() => {
+    const normalizedSearch = adminSearchTerm.trim().toLowerCase()
+
+    return overview.unassignedIndicators.filter(
+      (indicator) =>
+        matchesAdminSearch(indicator, normalizedSearch, 'Ohne Package') &&
+        matchesAdminFilter(indicator, adminStatusFilter)
+    )
+  }, [adminSearchTerm, adminStatusFilter, overview.unassignedIndicators])
+
+  const filteredAdminIndicatorCount = useMemo(
+    () =>
+      filteredAdminPackages.reduce((sum, pkg) => sum + pkg.indicators.length, 0) +
+      filteredUnassignedIndicators.length,
+    [filteredAdminPackages, filteredUnassignedIndicators]
+  )
 
   function submitForm(event: FormEvent<HTMLFormElement>, action: FormAction, resetOnSuccess = false) {
     event.preventDefault()
@@ -420,7 +495,47 @@ export function IndicatorAdminPanel({ overview }: Props) {
           </p>
         </div>
 
-        {overview.packages.map((pkg) => (
+        <Card>
+          <CardContent className="space-y-4 p-4">
+            <div className="space-y-2">
+              <Label htmlFor="admin-indicator-search">Indikator suchen</Label>
+              <Input
+                id="admin-indicator-search"
+                value={adminSearchTerm}
+                onChange={(event) => setAdminSearchTerm(event.target.value)}
+                placeholder="Name, Slug, Package oder PUB-ID"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {ADMIN_FILTERS.map((filter) => (
+                <Button
+                  key={filter.value}
+                  type="button"
+                  size="sm"
+                  variant={adminStatusFilter === filter.value ? 'default' : 'outline'}
+                  onClick={() => setAdminStatusFilter(filter.value)}
+                >
+                  {filter.label}
+                </Button>
+              ))}
+              <span className="ml-auto text-xs text-muted-foreground">
+                {filteredAdminIndicatorCount}/{allIndicators.length}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {hasActiveAdminFilters && filteredAdminIndicatorCount === 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Keine Treffer</CardTitle>
+              <CardDescription>Suche oder Statusfilter anpassen.</CardDescription>
+            </CardHeader>
+          </Card>
+        ) : null}
+
+        {filteredAdminPackages.map((pkg) => (
           <PackageCard
             key={pkg.id}
             pkg={pkg}
@@ -436,7 +551,7 @@ export function IndicatorAdminPanel({ overview }: Props) {
           />
         ))}
 
-        {overview.unassignedIndicators.length > 0 ? (
+        {filteredUnassignedIndicators.length > 0 ? (
           <PackageCard
             pkg={{
               id: '',
@@ -445,10 +560,10 @@ export function IndicatorAdminPanel({ overview }: Props) {
               description: 'Noch keiner Gruppe zugeordnet.',
               sortOrder: 999,
               visible: false,
-              indicators: overview.unassignedIndicators,
+              indicators: filteredUnassignedIndicators,
             }}
             packages={overview.packages}
-            allIndicators={overview.unassignedIndicators}
+            allIndicators={filteredUnassignedIndicators}
             isPending={isPending}
             uploadingIndicatorId={uploadingIndicatorId}
             uploadingGuideImageId={uploadingGuideImageId}
@@ -751,7 +866,7 @@ function IndicatorEditor({
             <div className="flex flex-wrap gap-2">
               <CheckboxField name="ready" label="Claimbar" defaultChecked={indicator.ready} />
               <CheckboxField name="visible" label="Sichtbar" defaultChecked={indicator.visible} />
-              {!indicator.ready || !indicator.visible || !indicator.pineId ? (
+              {!indicator.ready || !indicator.visible || !indicator.pineId.startsWith('PUB;') ? (
                 <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800">
                   <WarningCircle className="h-3.5 w-3.5" />
                   Nicht claimbar

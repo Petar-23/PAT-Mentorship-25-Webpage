@@ -364,8 +364,36 @@ export async function getIndicatorAdminOverview(): Promise<AdminIndicatorOvervie
 }
 
 export async function listVisibleIndicatorPackages() {
-  const packages = await listPackages(true)
-  return packages.filter((pkg) => pkg.visible && pkg.indicators.length > 0)
+  const [packages, unassignedIndicators] = await Promise.all([
+    listPackages(true),
+    withPrismaRetry(
+      () =>
+        prisma.indicator.findMany({
+          where: { packageId: null, visible: true },
+          orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        }),
+      { label: 'Load visible unassigned indicators' }
+    ).then((rows) => rows.map(asIndicator)),
+  ])
+
+  const visiblePackages = packages.filter((pkg) => pkg.visible && pkg.indicators.length > 0)
+
+  if (unassignedIndicators.length === 0) {
+    return visiblePackages
+  }
+
+  return [
+    ...visiblePackages,
+    {
+      id: 'unassigned-indicators',
+      slug: 'weitere-indikatoren',
+      name: 'Weitere Indikatoren',
+      description: '',
+      sortOrder: 999,
+      visible: true,
+      indicators: unassignedIndicators,
+    },
+  ]
 }
 
 export async function listIndicatorClaimsForUser(userId: string) {
