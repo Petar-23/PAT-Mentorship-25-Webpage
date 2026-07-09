@@ -1317,9 +1317,11 @@ async function markDueClaimsAsNeedsSession(message: string, code: string) {
 export async function processTradingViewClaimQueue({
   limit = 25,
   workerId = 'admin-manual',
+  claimId,
 }: {
   limit?: number
   workerId?: string
+  claimId?: string
 } = {}): Promise<AdminIndicatorClaimRetrySummary> {
   const tv = new TradingViewService(await getTvSessionSecret())
   const cappedLimit = Math.max(1, Math.min(limit, 100))
@@ -1373,6 +1375,7 @@ export async function processTradingViewClaimQueue({
 
   const rows = await prisma.indicatorClaim.findMany({
     where: {
+      ...(claimId ? { id: claimId } : {}),
       status: { in: ['pending', 'failed', 'needs_session'] },
       OR: [{ nextRetryAt: null }, { nextRetryAt: { lte: new Date() } }],
     },
@@ -1505,6 +1508,42 @@ export async function processTradingViewClaimQueue({
       attempted === 0
         ? 'Keine TradingView-Claims sind gerade bereit.'
         : `${attempted} TradingView-Claims verarbeitet: ${granted} granted, ${failed} failed, ${skipped} skipped.`,
+  }
+}
+
+export async function processTradingViewClaimInstantly(input: {
+  userId: string
+  indicatorId: string
+  workerId: string
+}) {
+  const where = {
+    userId_indicatorId: {
+      userId: input.userId,
+      indicatorId: input.indicatorId,
+    },
+  }
+  const select = { id: true, status: true, errorMessage: true } as const
+  const existingClaim = await prisma.indicatorClaim.findUnique({ where, select })
+
+  if (!existingClaim || existingClaim.status === 'granted' || existingClaim.status === 'processing') {
+    return {
+      status: existingClaim ? asClaimStatus(existingClaim.status) : null,
+      errorMessage: existingClaim?.errorMessage ?? null,
+      blockedBySession: false,
+    }
+  }
+
+  const workerResult = await processTradingViewClaimQueue({
+    limit: 1,
+    workerId: input.workerId,
+    claimId: existingClaim.id,
+  })
+  const updatedClaim = await prisma.indicatorClaim.findUnique({ where, select })
+
+  return {
+    status: updatedClaim ? asClaimStatus(updatedClaim.status) : null,
+    errorMessage: updatedClaim?.errorMessage ?? null,
+    blockedBySession: workerResult.blockedBySession,
   }
 }
 

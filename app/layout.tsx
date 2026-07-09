@@ -5,8 +5,7 @@ import './globals.css'
 import { ToasterLoader } from '@/components/ui/toaster-loader'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
-import {ClerkProvider} from '@clerk/nextjs'
-import { deDE } from '@clerk/localizations'
+import { LocalizedClerkProvider } from '@/components/layout/localized-clerk-provider'
 import { CookieBannerLoader } from '@/components/ui/cookie-banner-loader'
 import { AnalyticsScriptsLoader } from '@/components/analytics/analytics-scripts-loader'
 import { JsonLd } from '@/components/seo/json-ld'
@@ -104,7 +103,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <ClerkProvider afterSignOutUrl={"/"} localization={deDE} signInFallbackRedirectUrl="/dashboard" signUpFallbackRedirectUrl="/dashboard">
+    <LocalizedClerkProvider>
       <html lang="de" className="h-full scroll-smooth">
         <head>
           <link rel="preconnect" href={`https://${CURRENT_BUNNY_THUMBNAIL_HOST}`} crossOrigin="" />
@@ -137,6 +136,6 @@ export default function RootLayout({
           )}
         </body>
       </html>
-    </ClerkProvider>
+    </LocalizedClerkProvider>
   )
 }

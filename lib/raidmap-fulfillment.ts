@@ -1,13 +1,16 @@
 import 'server-only'
 
 import type Stripe from 'stripe'
-import { claimIndicatorForUser } from '@/lib/indicators/store'
+import {
+  claimIndicatorForUser,
+  processTradingViewClaimInstantly,
+} from '@/lib/indicators/store'
 import { getRaidMapIndicator } from '@/lib/raidmap-access'
 import { sendCortanaTelegram } from '@/lib/telegram-notify'
 
 // Nach erfolgreichem Raid-Map-Checkout: TradingView-Username aus dem Checkout-
-// Custom-Field lesen und den Invite-Only-Claim in die bestehende Queue legen
-// (der stündliche TradingView-Cron erledigt den Grant über die Session-Cookies).
+// Custom-Field lesen und den Invite-Only-Claim sofort verarbeiten. Der
+// stündliche TradingView-Cron bleibt als Fallback für temporäre Fehler aktiv.
 // Fehler werden NUR geloggt — der Webhook darf am Fulfillment nie scheitern,
 // der Kunde kann den Username jederzeit im Account-Bereich nachtragen.
 
@@ -49,12 +52,20 @@ export async function handleRaidMapCheckoutCompleted(session: Stripe.Checkout.Se
       indicatorId: indicator.id,
       tvUsername,
     })
+    const instantResult =
+      result.ok && result.claimStatus !== 'granted'
+        ? await processTradingViewClaimInstantly({
+            userId,
+            indicatorId: indicator.id,
+            workerId: 'raidmap-checkout-instant',
+          })
+        : null
 
-    console.log('[raidmap] Checkout-Claim angelegt', {
+    console.log('[raidmap] Checkout-Claim verarbeitet', {
       userId,
       tvUsername,
       ok: result.ok,
-      claimStatus: 'claimStatus' in result ? result.claimStatus : undefined,
+      claimStatus: instantResult?.status ?? result.claimStatus,
       message: result.message,
     })
   } catch (error) {
