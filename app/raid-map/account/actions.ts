@@ -2,7 +2,10 @@
 
 import { auth } from '@clerk/nextjs/server'
 import { revalidatePath } from 'next/cache'
-import { claimIndicatorForUser } from '@/lib/indicators/store'
+import {
+  claimIndicatorForUser,
+  processTradingViewClaimInstantly,
+} from '@/lib/indicators/store'
 import { prisma, withPrismaRetry } from '@/lib/prisma'
 import { getRaidMapAccessState, getRaidMapIndicator } from '@/lib/raidmap-access'
 import { RAIDMAP_CONFIG } from '@/lib/raidmap-config'
@@ -43,6 +46,31 @@ export async function claimRaidMapAction(tvUsername: string): Promise<RaidMapCla
     allowRebind: true,
   })
 
+  let message = result.message ?? (result.ok ? 'Access request queued.' : 'Something went wrong.')
+  if (result.ok && result.claimStatus !== 'granted') {
+    try {
+      const instant = await processTradingViewClaimInstantly({
+        userId,
+        indicatorId: indicator.id,
+        workerId: 'raidmap-account-instant',
+      })
+
+      if (instant.status === 'granted') {
+        message = 'Access granted — PAT Raid Map is now available on your TradingView account.'
+      } else if (instant.blockedBySession) {
+        message = 'Your request is saved. We are reconnecting TradingView and will retry automatically.'
+      } else if (instant.status === 'processing') {
+        message = 'Your request is saved and is being processed right now.'
+      } else if (instant.status === 'failed') {
+        message =
+          instant.errorMessage ??
+          'TradingView could not finish the activation yet. We will retry automatically.'
+      }
+    } catch (error) {
+      console.error('[raidmap] Instant account claim failed; cron will retry:', error)
+    }
+  }
+
   if (result.ok && result.reboundFrom) {
     const revoke = result.rebindRevoke
     if (revoke && revoke.failed > 0) {
@@ -63,7 +91,7 @@ export async function claimRaidMapAction(tvUsername: string): Promise<RaidMapCla
   }
 
   revalidatePath(RAIDMAP_CONFIG.accountPath)
-  return { ok: result.ok, message: result.message ?? (result.ok ? 'Access request queued.' : 'Something went wrong.') }
+  return { ok: result.ok, message }
 }
 
 export type RaidMapTestimonialResult = { ok: boolean; message: string }
