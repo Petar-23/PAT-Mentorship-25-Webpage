@@ -11,6 +11,7 @@ import { Warning as AlertTriangle } from '@phosphor-icons/react/Warning'
 import { XCircle } from '@phosphor-icons/react/XCircle'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { MENTORSHIP_IS_UPCOMING } from '@/lib/config'
 import { CountdownProgress } from './countdown-progress'
 
 interface SubscriptionStatusProps {
@@ -110,10 +111,14 @@ export function SubscriptionStatus({
     if (status === 'active' || status === 'trialing') {
       return {
         icon: <Armchair className="h-5 w-5 text-emerald-500" />,
-        text: '🎉 Platz Gesichert!',
-        description: 'Dein Platz in der Mentorship wird freigehalten.',
-        subDescription: `Die Mentorship startet am ${formattedDate}`,
-        showCountdown: true,
+        text: MENTORSHIP_IS_UPCOMING ? '🎉 Platz gesichert!' : '🎉 Mitgliedschaft aktiv',
+        description: MENTORSHIP_IS_UPCOMING
+          ? 'Dein Platz in der Mentorship wird freigehalten.'
+          : 'Dein Zugang zur laufenden Mentorship ist freigeschaltet.',
+        subDescription: MENTORSHIP_IS_UPCOMING
+          ? `Die Mentorship startet am ${formattedDate}`
+          : 'Du kannst direkt mit den Inhalten und Aufzeichnungen starten.',
+        showCountdown: MENTORSHIP_IS_UPCOMING,
         showAlert: false,
         variant: 'success'
       }

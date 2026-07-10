@@ -1,10 +1,14 @@
-import { MENTORSHIP_CONFIG } from '@/lib/config'
+import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
 
 const faqs = [
   {
     id: "item-1",
-    question: `Warum startet das Programm im ${MENTORSHIP_CONFIG.startMonthYear}?`,
-    answer: `Der Start am ${MENTORSHIP_CONFIG.startDateFormatted} ermöglicht es mir, alle Teilnehmer einzusammeln und sicherzustellen, dass alle gemeinsam beginnen, um von Tag eins an eine starke Community aufzubauen. Dies gibt dir auch die Zeit, deinen Platz zu sichern und dich auf das Programm vorzubereiten.`,
+    question: MENTORSHIP_IS_UPCOMING
+      ? `Warum startet das Programm im ${MENTORSHIP_CONFIG.startMonthYear}?`
+      : 'Kann ich noch in die Mentorship 2026 einsteigen?',
+    answer: MENTORSHIP_IS_UPCOMING
+      ? `Der Start am ${MENTORSHIP_CONFIG.startDateFormatted} ermöglicht es mir, alle Teilnehmer einzusammeln und sicherzustellen, dass alle gemeinsam beginnen, um von Tag eins an eine starke Community aufzubauen. Dies gibt dir auch die Zeit, deinen Platz zu sichern und dich auf das Programm vorzubereiten.`
+      : 'Ja, solange noch ein Platz verfügbar ist. Nach der Freischaltung erhältst du direkten Zugang zum laufenden Programm, zu den bisherigen Aufzeichnungen und zur Community.',
   },
   {
     id: "item-2",

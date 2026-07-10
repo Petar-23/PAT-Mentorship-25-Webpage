@@ -12,7 +12,7 @@ import { useUser, SignInButton } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { trackConversion } from '@/components/analytics/tracking'
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { MENTORSHIP_CONFIG } from '@/lib/config'
+import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
 
 const Vortex = dynamic(
     () => import("@/components/ui/vortex").then((mod) => mod.Vortex),
@@ -182,7 +182,7 @@ export default function FinalCTA() {
                         <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6">
                             Deine Trading-Reise <br />
                             <span className="text-blue-400">
-                                Beginnt im {MENTORSHIP_CONFIG.startMonthYear}
+                                {MENTORSHIP_IS_UPCOMING ? `Beginnt im ${MENTORSHIP_CONFIG.startMonthYear}` : 'Beginnt jetzt'}
                             </span>
                         </h2>
                         <p className="text-sm sm:text-xl text-gray-300 max-w-2xl mx-auto">
@@ -191,12 +191,18 @@ export default function FinalCTA() {
                         </p>
                     </div>
                     <div className="mt-6 sm:mt-8 flex justify-center">
-                        <div className="max-w-md w-full">
-                            <p className="text-xs sm:text-sm text-gray-200 mb-2 sm:mb-3">
-                                Verbleibende Zeit zur Anmeldung in die Warteliste
+                        {MENTORSHIP_IS_UPCOMING ? (
+                            <div className="max-w-md w-full">
+                                <p className="text-xs sm:text-sm text-gray-200 mb-2 sm:mb-3">
+                                    Verbleibende Zeit zur Anmeldung in die Warteliste
+                                </p>
+                                <Countdown targetDate={MENTORSHIP_CONFIG.startDate} variant="dark" />
+                            </div>
+                        ) : (
+                            <p className="rounded-full border border-blue-400/30 bg-blue-400/10 px-4 py-2 text-sm font-medium text-blue-200">
+                                {MENTORSHIP_CONFIG.enrollmentLabel}
                             </p>
-                            <Countdown targetDate={MENTORSHIP_CONFIG.startDate} variant="dark" />
-                        </div>
+                        )}
                     </div>
                 </div>
 
@@ -235,7 +241,7 @@ export default function FinalCTA() {
                     {ctaButton}
                     
                     <p className="mt-4 sm:mt-6 text-xs sm:text-base text-gray-400">
-                        Keine Zahlung bis zum Programmstart.
+                        {MENTORSHIP_IS_UPCOMING ? 'Keine Zahlung bis zum Programmstart.' : MENTORSHIP_CONFIG.paymentNote}
                     </p>
 
                     <div className="mt-6 sm:mt-12 inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-white/10 ring-1 ring-white/20">

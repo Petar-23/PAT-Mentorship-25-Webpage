@@ -9,6 +9,18 @@ import { BookOpen } from '@phosphor-icons/react/BookOpen'
 import { CreditCard } from '@phosphor-icons/react/CreditCard'
 import { LockIcon } from '@phosphor-icons/react/Lock'
 import { trackConversion } from '@/components/analytics/tracking'
+import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
+
+function formatMentorshipDate(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return MENTORSHIP_CONFIG.startDateFormatted
+
+  return new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date)
+}
 
 const ManageSubscriptionButton = dynamic(
   () => import('@/components/ui/manage-subscription').then((mod) => mod.ManageSubscriptionButton),
@@ -73,9 +85,16 @@ export default function DashboardMemberClient({
   viewFlags,
 }: DashboardMemberClientProps) {
   const { showCheckoutSuccess, showCoursesPaywall } = viewFlags
+  const mentorshipStatus = initialData.mentorshipStatus
+  const mentorshipStartDate = formatMentorshipDate(initialData.mentorshipStatus.startDate)
+  const subscriptionStartDate = formatMentorshipDate(initialData.subscriptionDetails.startDate)
+  const subscriptionIsPending =
+    initialData.subscriptionDetails.isPending ||
+    initialData.subscriptionDetails.status === 'incomplete'
+  const hasMentorshipAccess =
+    initialData.hasSubscription && mentorshipStatus?.accessible
   const [showSuccessModal, setShowSuccessModal] = useState(() => showCheckoutSuccess)
   const hasTrackedPurchase = useRef(false)
-  const mentorshipStatus = initialData.mentorshipStatus
 
   useEffect(() => {
     if (showCheckoutSuccess && !hasTrackedPurchase.current) {
@@ -164,13 +183,19 @@ export default function DashboardMemberClient({
                 Hier kommst du direkt zur Discord-Verknüpfung und zum Mentorship-Bereich.
               </p>
 
-              {!mentorshipStatus?.accessible ? (
+              {!hasMentorshipAccess ? (
                 <Button
                   disabled
                   className="w-full bg-blue-600 hover:bg-blue-600 opacity-60 cursor-not-allowed"
-                  title="Mentorship startet am 01.03.2026"
+                  title={
+                    !initialData.hasSubscription
+                      ? 'Ein aktives Abonnement ist erforderlich.'
+                      : `Mentorship startet am ${mentorshipStartDate}`
+                  }
                 >
-                  Zur Mentorship Platform (Startet am 01.03.2026)
+                  {initialData.hasSubscription
+                    ? `Zur Mentorship Platform (Startet am ${mentorshipStartDate})`
+                    : 'Mentorship-Zugang nicht aktiv'}
                 </Button>
               ) : (
                 <Button asChild className="w-full bg-blue-600 hover:bg-blue-700">
@@ -192,11 +217,23 @@ export default function DashboardMemberClient({
               <div className="text-sm text-gray-600">
                 {initialData.subscriptionDetails.isCanceled ? (
                   <p className="text-red-600">
-                    Dein Abonnement wurde gekündigt. Erneuere jetzt dein Abonnement, um deinen Platz für das Programm ab 01. März 2026 zu sichern.
+                    Dein Abonnement wurde gekündigt. Erneuere es, um deinen Zugang zur Mentorship zu sichern.
+                  </p>
+                ) : subscriptionIsPending ? (
+                  <p className="text-amber-700">
+                    Dein Abonnement wird noch verarbeitet. Sobald die Zahlung bestätigt ist, wird dein Zugang automatisch freigeschaltet.
+                  </p>
+                ) : !initialData.hasSubscription ? (
+                  <p className="text-amber-700">
+                    Dein Abonnement ist aktuell nicht aktiv (Status: {initialData.subscriptionDetails.status}). Prüfe deine Zahlung oder reaktiviere das Abo im Kundenportal.
                   </p>
                 ) : (
                   <>
-                    <p>Dein Abonnement startet am 01. März 2026. Die erste Zahlung erfolgt automatisch an diesem Datum.</p>
+                    <p>
+                      {MENTORSHIP_IS_UPCOMING
+                        ? `Dein Abonnement startet am ${subscriptionStartDate}. Die erste Zahlung erfolgt automatisch an diesem Datum.`
+                        : 'Dein Abonnement ist aktiv und dein Mentorship-Zugang kann direkt genutzt werden.'}
+                    </p>
                     <p>Du kannst deine Zahlungsmethode und Abonnement-Einstellungen unten verwalten.</p>
                   </>
                 )}

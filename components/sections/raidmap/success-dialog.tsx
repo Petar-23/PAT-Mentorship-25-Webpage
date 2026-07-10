@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -37,14 +37,8 @@ const copy = {
 
 export function RaidMapSuccessDialog({ lang, hasGuideImage }: { lang: RaidMapLang; hasGuideImage: boolean }) {
   const searchParams = useSearchParams()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(() => searchParams.get('checkout') === 'success')
   const t = copy[lang]
-
-  useEffect(() => {
-    if (searchParams.get('checkout') === 'success') {
-      setOpen(true)
-    }
-  }, [searchParams])
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

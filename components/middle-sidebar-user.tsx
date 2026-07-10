@@ -81,23 +81,27 @@ function VideoRow({
   onClick,
   durationText,
   isWatched,
+  tabIndex,
 }: {
   video: Video
   isActive: boolean
   onClick: () => void
   durationText: string
   isWatched: boolean
+  tabIndex?: number
 }) {
   return (
-    <div
+    <button
+      type="button"
       className={[
-        'p-2 flex items-center space-x-2 cursor-pointer transition-colors rounded-md border border-l-4',
+        'w-full p-2 flex items-center space-x-2 cursor-pointer text-left transition-colors rounded-md border border-l-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
         isActive
           ? 'bg-gray-100 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 border-l-gray-400 dark:border-l-gray-400'
           : 'border-transparent border-l-transparent hover:bg-gray-100 dark:hover:bg-gray-800/40',
       ].join(' ')}
       onClick={onClick}
       aria-current={isActive ? 'true' : undefined}
+      tabIndex={tabIndex}
     >
       <VideoThumbnail
         bunnyGuid={video.bunnyGuid}
@@ -113,7 +117,7 @@ function VideoRow({
         </p>
         <p className="text-xs text-muted-foreground">{durationText}</p>
       </div>
-    </div>
+    </button>
   )
 }
 
@@ -219,25 +223,30 @@ export function MiddleSidebarUser({
           {sortedChapters.map((chapter) => {
             const isOpen = openChapters.has(chapter.id)
             const sortedVideos = [...chapter.videos].sort((a, b) => (a.order || 0) - (b.order || 0))
+            const chapterContentId = `chapter-videos-${chapter.id}`
 
             return (
               <Card className="border border-border shadow-sm" key={chapter.id}>
                 <CardContent className="p-2">
                   <div className="flex items-center justify-between select-none">
                     <div className="flex items-center space-x-3 flex-1">
-                      <span
-                        className="cursor-pointer p-1 hover:bg-accent/50 rounded flex-shrink-0"
+                      <button
+                        type="button"
+                        className="h-8 w-8 cursor-pointer rounded flex flex-shrink-0 items-center justify-center hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         onClick={(e) => {
                           e.stopPropagation()
                           toggleChapter(chapter.id)
                         }}
+                        aria-expanded={isOpen}
+                        aria-controls={chapterContentId}
+                        aria-label={`${chapter.name} ${isOpen ? 'einklappen' : 'ausklappen'}`}
                       >
                         {isOpen ? (
                           <ChevronDown className="h-4 w-4 text-muted-foreground" />
                         ) : (
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         )}
-                      </span>
+                      </button>
 
                       <h3 className="text-md font-bold truncate flex-1 px-2 py-1 rounded select-text">
                         {chapter.name}
@@ -246,6 +255,8 @@ export function MiddleSidebarUser({
                   </div>
 
                   <div
+                    id={chapterContentId}
+                    aria-hidden={!isOpen}
                     className={`grid transition-all duration-300 ease-in-out ${
                       isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
                     }`}
@@ -265,6 +276,7 @@ export function MiddleSidebarUser({
                                 onClick={() => onVideoClick(video.id)}
                                 durationText={getDurationText(video)}
                                 isWatched={isWatched}
+                                tabIndex={isOpen ? 0 : -1}
                               />
                             )
                           })

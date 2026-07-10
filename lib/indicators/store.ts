@@ -1033,20 +1033,23 @@ export async function claimIndicatorForUser(input: {
       // das fehl, bleibt "Manage access" der manuelle Fallback (Telegram).
       const revalidation = await new TradingViewService().validateUsername(requestedTvUsername)
       if (!revalidation.valid) {
+        const validationUnavailable = revalidation.reason === 'unavailable'
         await writeClaimAudit({
           userId: input.userId,
           indicatorId: input.indicatorId,
           tvUsername: requestedTvUsername,
           action: 'claim',
           result: 'failure',
-          errorCode: 'invalid_username',
-          metadata: { reason: 'rebind_validation' },
+          errorCode: validationUnavailable ? 'username_validation_unavailable' : 'invalid_username',
+          metadata: { reason: validationUnavailable ? 'rebind_validation_unavailable' : 'rebind_validation' },
         })
         return {
           ok: false,
           indicatorId: input.indicatorId,
           tvUsername: requestedTvUsername,
-          message: `TradingView-Benutzername "${requestedTvUsername}" wurde nicht gefunden.`,
+          message: validationUnavailable
+            ? 'TradingView konnte den Benutzernamen gerade nicht prüfen. Bitte versuche es in einem Moment erneut.'
+            : `TradingView-Benutzername "${requestedTvUsername}" wurde nicht gefunden.`,
         }
       }
 
@@ -1141,23 +1144,26 @@ export async function claimIndicatorForUser(input: {
   }
 
   const validation = linkedAccount
-    ? { valid: true, exactName: linkedAccount.tvUsername }
+    ? { valid: true, exactName: linkedAccount.tvUsername, reason: undefined }
     : await new TradingViewService().validateUsername(tvUsername)
 
   if (!validation.valid) {
+    const validationUnavailable = validation.reason === 'unavailable'
     await writeClaimAudit({
       userId: input.userId,
       indicatorId: input.indicatorId,
       tvUsername,
       action: 'claim',
       result: 'failure',
-      errorCode: 'invalid_username',
+      errorCode: validationUnavailable ? 'username_validation_unavailable' : 'invalid_username',
     })
     return {
       ok: false,
       indicatorId: input.indicatorId,
       tvUsername,
-      message: `TradingView-Benutzername "${tvUsername}" wurde nicht gefunden.`,
+      message: validationUnavailable
+        ? 'TradingView konnte den Benutzernamen gerade nicht prüfen. Bitte versuche es in einem Moment erneut.'
+        : `TradingView-Benutzername "${tvUsername}" wurde nicht gefunden.`,
     }
   }
 
@@ -1293,10 +1299,13 @@ async function upsertTradingViewWorkerHeartbeat(input: {
   })
 }
 
-async function markDueClaimsAsNeedsSession(message: string, code: string) {
+async function markDueClaimsAsNeedsSession(message: string, code: string, claimId?: string) {
   const now = new Date()
   await prisma.indicatorClaim.updateMany({
-    where: { status: { in: ['pending', 'processing', 'failed'] } },
+    where: {
+      ...(claimId ? { id: claimId } : {}),
+      status: { in: ['pending', 'processing', 'failed'] },
+    },
     data: {
       status: 'needs_session',
       errorMessage:
@@ -1327,7 +1336,11 @@ export async function processTradingViewClaimQueue({
   const cappedLimit = Math.max(1, Math.min(limit, 100))
 
   if (!tv.isConfigured) {
-    await markDueClaimsAsNeedsSession('TradingView cookie is not configured.', 'not_configured')
+    await markDueClaimsAsNeedsSession(
+      'TradingView cookie is not configured.',
+      'not_configured',
+      claimId
+    )
     await upsertTradingViewWorkerHeartbeat({
       workerId,
       status: 'blocked',
@@ -1345,7 +1358,11 @@ export async function processTradingViewClaimQueue({
 
   const session = await tv.testSession()
   if (!session.success) {
-    await markDueClaimsAsNeedsSession(session.message, session.code ?? 'login_required')
+    await markDueClaimsAsNeedsSession(
+      session.message,
+      session.code ?? 'login_required',
+      claimId
+    )
     await upsertTradingViewWorkerHeartbeat({
       workerId,
       status: 'blocked',
@@ -1364,7 +1381,11 @@ export async function processTradingViewClaimQueue({
 
   const staleProcessingCutoff = new Date(Date.now() - 15 * 60 * 1000)
   await prisma.indicatorClaim.updateMany({
-    where: { status: 'processing', lastAttemptAt: { lt: staleProcessingCutoff } },
+    where: {
+      ...(claimId ? { id: claimId } : {}),
+      status: 'processing',
+      lastAttemptAt: { lt: staleProcessingCutoff },
+    },
     data: {
       status: 'pending',
       errorMessage: 'Der vorherige TradingView-Prozess war stale. Die Freigabe ist zurück in der Queue.',

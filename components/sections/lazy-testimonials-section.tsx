@@ -33,7 +33,7 @@ export default function LazyTestimonialsSection() {
           observer.disconnect()
         }
       },
-      { rootMargin: '1200px 0px' }
+      { rootMargin: '500px 0px' }
     )
 
     observer.observe(node)

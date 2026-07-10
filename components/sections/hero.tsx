@@ -17,7 +17,7 @@ import { SignInButton, useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { trackConversion } from '@/components/analytics/tracking'
 import { HeroPill } from '@/components/ui/hero-pill'
-import { MENTORSHIP_CONFIG } from '@/lib/config'
+import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
 import { getWhopReviewStats } from '@/lib/whop-review-stats'
 
 const GLSLHills = dynamic(
@@ -34,11 +34,8 @@ const ParticleTextReveal = dynamic(
 )
 
 export default function Hero() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
-  const mouseFrameRef = useRef<number | null>(null)
   const navigationTimeoutRef = useRef<number | null>(null)
-  const latestMouseRef = useRef<{ clientX: number; clientY: number } | null>(null)
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [isNavigating, setIsNavigating] = useState(false)
   const [isInView, setIsInView] = useState(false)
@@ -46,37 +43,6 @@ export default function Hero() {
   const { isSignedIn } = useUser()
   const router = useRouter()
   const [whopStats, setWhopStats] = useState<{ count: number; average: number } | null>(null)
-
-  useEffect(() => {
-    if (!isMobile && isInView) {
-      const handleMouseMove = (e: MouseEvent) => {
-        latestMouseRef.current = { clientX: e.clientX, clientY: e.clientY }
-
-        if (mouseFrameRef.current != null) return
-
-        mouseFrameRef.current = window.requestAnimationFrame(() => {
-          mouseFrameRef.current = null
-          const latestMouse = latestMouseRef.current
-          if (!latestMouse || !containerRef.current) return
-
-          const rect = containerRef.current.getBoundingClientRect()
-          setMousePosition({
-            x: latestMouse.clientX - rect.left,
-            y: latestMouse.clientY - rect.top + window.scrollY
-          })
-        })
-      }
-
-      window.addEventListener('mousemove', handleMouseMove)
-      return () => {
-        window.removeEventListener('mousemove', handleMouseMove)
-        if (mouseFrameRef.current != null) {
-          window.cancelAnimationFrame(mouseFrameRef.current)
-          mouseFrameRef.current = null
-        }
-      }
-    }
-  }, [isMobile, isInView])
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -266,7 +232,11 @@ export default function Hero() {
                   variant="blue"
                   size="sm"
                   announcement="🚀"
-                  label={`Limitiert auf ${MENTORSHIP_CONFIG.maxSpots} Plätze • Start am ${MENTORSHIP_CONFIG.startDateFormatted}`}
+                  label={
+                    MENTORSHIP_IS_UPCOMING
+                      ? `Limitiert auf ${MENTORSHIP_CONFIG.maxSpots} Plätze • Start am ${MENTORSHIP_CONFIG.startDateFormatted}`
+                      : MENTORSHIP_CONFIG.enrollmentLabel
+                  }
                 />
               </div>
               <h1 className="hidden lg:block text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 lg:leading-[1.1]">
@@ -340,14 +310,15 @@ export default function Hero() {
                 </div>
               </div>
 
-              <div className="pt-3 hidden lg:block text-left">
-                
-                <div className="inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-blue-50 ring-1 ring-blue-200 mb-3">
-                  <div className="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs sm:text-sm">⏰</div>
-                  <span className="text-xs sm:text-sm font-medium text-blue-700">Verbleibende Zeit zur Einschreibung</span>
+              {MENTORSHIP_IS_UPCOMING ? (
+                <div className="pt-3 hidden lg:block text-left">
+                  <div className="inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-blue-50 ring-1 ring-blue-200 mb-3">
+                    <div className="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs sm:text-sm">⏰</div>
+                    <span className="text-xs sm:text-sm font-medium text-blue-700">Verbleibende Zeit zur Einschreibung</span>
+                  </div>
+                  <Countdown targetDate={MENTORSHIP_CONFIG.startDate} />
                 </div>
-                <Countdown targetDate={MENTORSHIP_CONFIG.startDate} />
-              </div>
+              ) : null}
             </div>
 
             {/* Right Column - Visual Element */}
@@ -446,16 +417,22 @@ export default function Hero() {
                     size="sm"
                     className="w-full justify-center"
                     announcement="🚀"
-                    label={`Limitiert auf ${MENTORSHIP_CONFIG.maxSpots} Plätze • Start am ${MENTORSHIP_CONFIG.startDateFormatted}`}
+                    label={
+                      MENTORSHIP_IS_UPCOMING
+                        ? `Limitiert auf ${MENTORSHIP_CONFIG.maxSpots} Plätze • Start am ${MENTORSHIP_CONFIG.startDateFormatted}`
+                        : MENTORSHIP_CONFIG.enrollmentLabel
+                    }
                   />
                 </div>
 
-                <div className="mt-4 lg:hidden text-center">
-                  <p className="text-xs text-gray-700 mb-2">
-                    Verbleibende Zeit zur Einschreibung in die Warteliste
-                  </p>
-                  <Countdown targetDate={MENTORSHIP_CONFIG.startDate} />
-                </div>
+                {MENTORSHIP_IS_UPCOMING ? (
+                  <div className="mt-4 lg:hidden text-center">
+                    <p className="text-xs text-gray-700 mb-2">
+                      Verbleibende Zeit zur Einschreibung in die Warteliste
+                    </p>
+                    <Countdown targetDate={MENTORSHIP_CONFIG.startDate} />
+                  </div>
+                ) : null}
 
                 <div className="mt-2 flex flex-col items-center lg:grid lg:grid-cols-2 gap-3 lg:items-stretch">
                   <a

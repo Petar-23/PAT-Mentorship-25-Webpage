@@ -1,18 +1,28 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 type CountdownProps = {
   targetDate: string
   className?: string
   variant?: 'light' | 'dark'
+  expiredFallback?: ReactNode
+}
+
+type TimeParts = {
+  days: number
+  hours: number
+  minutes: number
+  seconds: number
+  expired: boolean
 }
 
 const pad = (value: number) => value.toString().padStart(2, '0')
 
 const getTimeParts = (target: Date) => {
   const now = new Date()
-  const diffMs = Math.max(0, target.getTime() - now.getTime())
+  const targetMs = target.getTime()
+  const diffMs = Number.isFinite(targetMs) ? Math.max(0, targetMs - now.getTime()) : 0
   const totalSeconds = Math.floor(diffMs / 1000)
 
   const days = Math.floor(totalSeconds / 86400)
@@ -20,14 +30,14 @@ const getTimeParts = (target: Date) => {
   const minutes = Math.floor((totalSeconds % 3600) / 60)
   const seconds = totalSeconds % 60
 
-  return { days, hours, minutes, seconds }
+  return { days, hours, minutes, seconds, expired: diffMs <= 0 }
 }
 
-export function Countdown({ targetDate, className, variant = 'light' }: CountdownProps) {
+export function Countdown({ targetDate, className, variant = 'light', expiredFallback = null }: CountdownProps) {
   const target = useMemo(() => new Date(targetDate), [targetDate])
   // Starte mit null, um Hydration-Mismatch zu vermeiden
-  const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null)
-  const prevRef = useRef<{ days: number; hours: number; minutes: number; seconds: number } | null>(null)
+  const [timeLeft, setTimeLeft] = useState<TimeParts | null>(null)
+  const prevRef = useRef<TimeParts | null>(null)
   const [pulse, setPulse] = useState({ days: false, hours: false, minutes: false, seconds: false })
 
   useEffect(() => {
@@ -46,6 +56,7 @@ export function Countdown({ targetDate, className, variant = 'light' }: Countdow
         if (next.seconds !== prev.seconds) setPulse((curr) => ({ ...curr, seconds: true }))
       }
       prevRef.current = next
+      return next.expired
     }
 
     const stop = () => {
@@ -57,10 +68,12 @@ export function Countdown({ targetDate, className, variant = 'light' }: Countdow
 
     const start = () => {
       stop()
-      update()
+      const expired = update()
 
-      if (document.visibilityState === 'visible') {
-        interval = window.setInterval(update, 1000)
+      if (!expired && document.visibilityState === 'visible') {
+        interval = window.setInterval(() => {
+          if (update()) stop()
+        }, 1000)
       }
     }
 
@@ -96,8 +109,12 @@ export function Countdown({ targetDate, className, variant = 'light' }: Countdow
     ? 'bg-amber-900/30 border-amber-500/40 ring-1 ring-amber-500/30'
     : 'bg-amber-50/80 border-amber-200 ring-1 ring-amber-200/70'
 
-   // Zeige Platzhalter während SSR/Hydration
-  const display = timeLeft ?? { days: 0, hours: 0, minutes: 0, seconds: 0 }
+  if (timeLeft?.expired) {
+    return expiredFallback ? <div className={className}>{expiredFallback}</div> : null
+  }
+
+  // Zeige Platzhalter während SSR/Hydration
+  const display = timeLeft ?? { days: 0, hours: 0, minutes: 0, seconds: 0, expired: false }
 
   return (
     <div className={className}>

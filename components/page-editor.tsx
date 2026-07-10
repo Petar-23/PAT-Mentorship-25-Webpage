@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { useEditor, EditorContent, type Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { Image as ImageExtension } from '@tiptap/extension-image'
@@ -54,6 +54,19 @@ type Props = {
   page: PageData
 }
 
+type SaveRequest = {
+  content: Record<string, unknown>
+  title?: string
+  revision: number
+  keepalive?: boolean
+}
+
+type SaveResult =
+  | { ok: true }
+  | { ok: false; error: string }
+
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
+
 function ToolbarButton({
   onClick,
   active,
@@ -73,8 +86,9 @@ function ToolbarButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
+      aria-label={title}
       className={cn(
-        'p-1.5 rounded-md text-sm transition-colors',
+        'p-1.5 rounded-md text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
         active
           ? 'bg-accent text-accent-foreground'
           : 'hover:bg-accent/50 text-muted-foreground hover:text-foreground',
@@ -94,37 +108,135 @@ export function PageEditor({ page }: Props) {
   const { toast } = useToast()
   const router = useRouter()
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const isSavingRef = useRef(false)
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
+  const pendingSaveCountRef = useRef(0)
+  const latestRevisionRef = useRef(0)
+  const savedRevisionRef = useRef(0)
+  const latestContentRef = useRef<Record<string, unknown>>(
+    page.content ?? { type: 'doc', content: [] }
+  )
+  const latestTitleRef = useRef(page.title)
+  const titleDirtyRef = useRef(false)
+  const isMountedRef = useRef(true)
   const titleRef = useRef<HTMLInputElement>(null)
-  const saveAbortRef = useRef<AbortController | null>(null)
   const publishAbortRef = useRef<AbortController | null>(null)
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [saveError, setSaveError] = useState<string | null>(null)
 
-  const save = useCallback(
-    async (content: Record<string, unknown>, title?: string) => {
-      if (isSavingRef.current) return
-      isSavingRef.current = true
-      const controller = new AbortController()
-      saveAbortRef.current = controller
+  const enqueueSave = useCallback(
+    (request: SaveRequest): Promise<SaveResult> => {
+      pendingSaveCountRef.current += 1
 
-      try {
-        const body: Record<string, unknown> = { content }
-        if (title !== undefined) body.title = title
-        await fetch(`/api/pages/${page.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-          signal: controller.signal,
-        })
-      } catch {
-        // silent auto-save failure
-      } finally {
-        if (saveAbortRef.current === controller) {
-          saveAbortRef.current = null
-        }
-        isSavingRef.current = false
+      if (isMountedRef.current) {
+        setSaveStatus('saving')
+        setSaveError(null)
       }
+
+      const run = async (): Promise<SaveResult> => {
+        try {
+          const body: Record<string, unknown> = { content: request.content }
+          if (request.title !== undefined) body.title = request.title
+
+          const response = await fetch(`/api/pages/${page.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            keepalive: request.keepalive,
+          })
+
+          if (!response.ok) {
+            const data = (await response.json().catch(() => null)) as
+              | { error?: string; message?: string }
+              | null
+            throw new Error(
+              data?.error || data?.message || `Speichern fehlgeschlagen (${response.status})`
+            )
+          }
+
+          savedRevisionRef.current = Math.max(savedRevisionRef.current, request.revision)
+          if (
+            request.title !== undefined &&
+            request.title === latestTitleRef.current.trim()
+          ) {
+            titleDirtyRef.current = false
+          }
+          return { ok: true }
+        } catch (error) {
+          return {
+            ok: false,
+            error: error instanceof Error ? error.message : 'Unbekannter Fehler beim Speichern',
+          }
+        }
+      }
+
+      const task = saveQueueRef.current.then(run)
+      saveQueueRef.current = task.then(() => undefined)
+
+      void task.then((result) => {
+        pendingSaveCountRef.current = Math.max(0, pendingSaveCountRef.current - 1)
+        if (!isMountedRef.current) return
+
+        if (pendingSaveCountRef.current > 0) {
+          setSaveStatus('saving')
+          return
+        }
+
+        if (!result.ok && request.revision >= latestRevisionRef.current) {
+          setSaveStatus('error')
+          setSaveError(result.error)
+          return
+        }
+
+        if (
+          savedRevisionRef.current >= latestRevisionRef.current &&
+          !titleDirtyRef.current
+        ) {
+          setSaveStatus('saved')
+          setSaveError(null)
+          return
+        }
+
+        if (titleDirtyRef.current && !latestTitleRef.current.trim()) {
+          setSaveStatus('error')
+          setSaveError('Der Seitentitel darf nicht leer sein.')
+          return
+        }
+
+        setSaveStatus('saving')
+      })
+
+      return task
     },
     [page.id]
+  )
+
+  const scheduleAutosave = useCallback(
+    (content: Record<string, unknown>, title: string, titleChanged = false) => {
+      latestContentRef.current = content
+      latestTitleRef.current = title
+      if (titleChanged) titleDirtyRef.current = true
+      latestRevisionRef.current += 1
+
+      if (isMountedRef.current) {
+        setSaveStatus('saving')
+        setSaveError(null)
+      }
+
+      if (saveTimeout.current) clearTimeout(saveTimeout.current)
+      saveTimeout.current = setTimeout(() => {
+        saveTimeout.current = null
+        const normalizedTitle = latestTitleRef.current.trim()
+        const pendingTitle = titleDirtyRef.current && normalizedTitle
+          ? normalizedTitle
+          : undefined
+        void enqueueSave({
+          content: latestContentRef.current,
+          title: pendingTitle,
+          revision: latestRevisionRef.current,
+        })
+      }, 2000)
+    },
+    [enqueueSave]
   )
 
   const editor = useEditor({
@@ -146,14 +258,15 @@ export function PageEditor({ page }: Props) {
     ],
     content: page.content ?? undefined,
     onUpdate: ({ editor }) => {
-      if (saveTimeout.current) clearTimeout(saveTimeout.current)
-      saveTimeout.current = setTimeout(() => {
-        void save(editor.getJSON() as Record<string, unknown>)
-      }, 2000)
+      scheduleAutosave(
+        editor.getJSON() as Record<string, unknown>,
+        titleRef.current?.value ?? latestTitleRef.current
+      )
     },
     editorProps: {
       attributes: {
-        class: 'outline-none min-h-[400px] prose prose-sm dark:prose-invert max-w-none focus:outline-none',
+        'aria-label': 'Seiteninhalt',
+        class: 'min-h-[400px] max-w-none rounded-md outline-none prose prose-sm dark:prose-invert focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
       },
       handleDrop: (view, event) => {
         const files = event.dataTransfer?.files
@@ -197,10 +310,47 @@ export function PageEditor({ page }: Props) {
 
   const handleManualSave = async () => {
     if (!editor) return
-    if (saveTimeout.current) clearTimeout(saveTimeout.current)
+    if (saveTimeout.current) {
+      clearTimeout(saveTimeout.current)
+      saveTimeout.current = null
+    }
+    latestContentRef.current = editor.getJSON() as Record<string, unknown>
     const title = titleRef.current?.value?.trim() ?? page.title
-    await save(editor.getJSON() as Record<string, unknown>, title)
-    toast({ title: 'Gespeichert ✓', description: 'Seite wurde gespeichert.' })
+    if (!title) {
+      setSaveStatus('error')
+      setSaveError('Der Seitentitel darf nicht leer sein.')
+      titleRef.current?.focus()
+      toast({
+        variant: 'destructive',
+        title: 'Titel fehlt',
+        description: 'Gib der Seite vor dem Speichern einen Titel.',
+      })
+      return
+    }
+    latestTitleRef.current = title
+    const result = await enqueueSave({
+      content: latestContentRef.current,
+      title,
+      revision: latestRevisionRef.current,
+    })
+
+    if (result.ok) {
+      const hasNewerChanges =
+        savedRevisionRef.current < latestRevisionRef.current || titleDirtyRef.current
+      toast({
+        title: hasNewerChanges ? 'Zwischenstand gespeichert' : 'Gespeichert ✓',
+        description: hasNewerChanges
+          ? 'Neuere Änderungen werden noch gespeichert.'
+          : 'Seite wurde gespeichert.',
+      })
+      return
+    }
+
+    toast({
+      variant: 'destructive',
+      title: 'Speichern fehlgeschlagen',
+      description: result.error,
+    })
   }
 
   const handlePublishToggle = async () => {
@@ -235,18 +385,54 @@ export function PageEditor({ page }: Props) {
 
   const handleTitleBlur = async () => {
     const title = titleRef.current?.value?.trim()
-    if (title && title !== page.title && editor) {
-      await save(editor.getJSON() as Record<string, unknown>, title)
+    if (!title && titleDirtyRef.current) {
+      setSaveStatus('error')
+      setSaveError('Der Seitentitel darf nicht leer sein.')
+      return
+    }
+    if (title && titleDirtyRef.current && editor) {
+      if (saveTimeout.current) {
+        clearTimeout(saveTimeout.current)
+        saveTimeout.current = null
+      }
+      latestContentRef.current = editor.getJSON() as Record<string, unknown>
+      latestTitleRef.current = title
+      titleDirtyRef.current = true
+      await enqueueSave({
+        content: latestContentRef.current,
+        title,
+        revision: latestRevisionRef.current,
+      })
     }
   }
 
   useEffect(() => {
+    isMountedRef.current = true
+
     return () => {
-      if (saveTimeout.current) clearTimeout(saveTimeout.current)
-      saveAbortRef.current?.abort()
+      isMountedRef.current = false
+
+      if (saveTimeout.current) {
+        clearTimeout(saveTimeout.current)
+        saveTimeout.current = null
+      }
+
+      if (savedRevisionRef.current < latestRevisionRef.current) {
+        const normalizedTitle = latestTitleRef.current.trim()
+        const pendingTitle = titleDirtyRef.current && normalizedTitle
+          ? normalizedTitle
+          : undefined
+        void enqueueSave({
+          content: latestContentRef.current,
+          title: pendingTitle,
+          revision: latestRevisionRef.current,
+          keepalive: true,
+        })
+      }
+
       publishAbortRef.current?.abort()
     }
-  }, [])
+  }, [enqueueSave])
 
   if (!editor) return null
 
@@ -276,13 +462,31 @@ export function PageEditor({ page }: Props) {
             </Button>
           </div>
         </div>
+        <label htmlFor="page-editor-title" className="sr-only">
+          Seitentitel
+        </label>
         <input
+          id="page-editor-title"
           ref={titleRef}
           defaultValue={page.title}
+          onChange={(event) => {
+            scheduleAutosave(latestContentRef.current, event.currentTarget.value, true)
+          }}
           onBlur={handleTitleBlur}
-          className="w-full text-3xl font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground/50 py-2"
+          className="w-full rounded-md bg-transparent py-2 text-3xl font-bold outline-none placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           placeholder="Titel..."
         />
+        <div aria-live="polite" aria-atomic="true" className="min-h-5">
+          {saveStatus === 'saving' ? (
+            <p className="text-xs text-muted-foreground">Speichert…</p>
+          ) : saveStatus === 'saved' ? (
+            <p className="text-xs text-emerald-700">Alle Änderungen gespeichert.</p>
+          ) : saveStatus === 'error' ? (
+            <p className="text-xs text-red-700" role="alert">
+              Speichern fehlgeschlagen: {saveError}
+            </p>
+          ) : null}
+        </div>
       </div>
 
       {/* Sticky toolbar */}

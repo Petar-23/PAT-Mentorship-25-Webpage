@@ -58,7 +58,7 @@ export default function LeadMagnetHero() {
                 </div>
               </div>
             </GlassCard>
-            <div id="lead-magnet-inline-form">
+            <div id="lead-magnet-inline-form-mobile">
               <GlassCard>
                 <p className="text-pretty text-sm font-medium text-neutral-900">
                   Starte Jetzt Kostenlos
@@ -69,7 +69,7 @@ export default function LeadMagnetHero() {
                 <Suspense fallback={null}>
                   <LeadMagnetSignupForm
                     className="mt-4"
-                    idPrefix="lead-magnet-inline"
+                    idPrefix="lead-magnet-inline-mobile"
                     socialProof={<LeadMagnetWhopPill />}
                   />
                 </Suspense>
@@ -94,7 +94,7 @@ export default function LeadMagnetHero() {
               kannst. Keine unnötige Theorie, nur das, was zählt: Modell,
               Trading‑Plan und Checkliste.
             </p>
-            <div className="mt-8 max-w-sm" id="lead-magnet-inline-form">
+            <div className="mt-8 max-w-sm" id="lead-magnet-inline-form-desktop">
               <GlassCard>
                 <p className="text-pretty text-sm font-medium text-neutral-900">
                   Starte Jetzt Kostenlos
@@ -105,7 +105,7 @@ export default function LeadMagnetHero() {
                 <Suspense fallback={null}>
                   <LeadMagnetSignupForm
                     className="mt-4"
-                    idPrefix="lead-magnet-inline"
+                    idPrefix="lead-magnet-inline-desktop"
                     socialProof={<LeadMagnetWhopPill />}
                   />
                 </Suspense>

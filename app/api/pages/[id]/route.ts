@@ -75,9 +75,18 @@ export async function PATCH(
   const updateData: Record<string, any> = {}
 
   if (body.title !== undefined) {
+    if (typeof body.title !== 'string') {
+      return NextResponse.json({ error: 'Ungültiger Seitentitel.' }, { status: 400 })
+    }
     const title = body.title.trim()
-    updateData.title = title
     const newSlug = generateSlug(title)
+    if (!title || !newSlug) {
+      return NextResponse.json(
+        { error: 'Der Seitentitel muss mindestens ein Zeichen oder eine Zahl enthalten.' },
+        { status: 400 }
+      )
+    }
+    updateData.title = title
     if (newSlug !== existing.slug) {
       const conflict = await prisma.page.findFirst({
         where: { slug: newSlug, NOT: { id } },
