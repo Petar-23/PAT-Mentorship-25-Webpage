@@ -118,9 +118,7 @@ export default function RootLayout({
             Zum Inhalt springen
           </a>
           <div className="min-h-full flex flex-col">
-            <Suspense fallback={<div className="h-16 w-full" />}>
-              <Navbar />
-            </Suspense>
+            <Navbar />
             <main id="main-content" className="flex-1 min-h-0">
               {children}
             </main>

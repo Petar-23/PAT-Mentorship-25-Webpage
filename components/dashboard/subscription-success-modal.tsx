@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { CheckCircle } from '@phosphor-icons/react/CheckCircle'
-import { MENTORSHIP_CONFIG } from '@/lib/config'
+import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
 import confetti from 'canvas-confetti'
 
 interface SuccessModalProps {
@@ -70,7 +70,9 @@ export function SubscriptionSuccessModal({ isOpen, onClose }: SuccessModalProps)
         </DialogHeader>
         <div className="text-center space-y-4">
           <p className="text-gray-600">
-            Dein Platz ist gesichert. Die Mentorship startet am {MENTORSHIP_CONFIG.startDateFormatted}
+            {MENTORSHIP_IS_UPCOMING
+              ? `Dein Platz ist gesichert. Die Mentorship startet am ${MENTORSHIP_CONFIG.startDateFormatted}.`
+              : 'Dein Platz ist gesichert. Du kannst jetzt direkt mit der Mentorship starten.'}
           </p>
           <Button onClick={onClose} className="w-full">
             Zum Dashboard

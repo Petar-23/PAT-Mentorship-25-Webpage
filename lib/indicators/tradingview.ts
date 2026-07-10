@@ -1,4 +1,5 @@
 const TV_BASE = 'https://www.tradingview.com'
+const USERNAME_VALIDATION_TIMEOUT_MS = 8_000
 const DEFAULT_BROWSER_USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
 
@@ -67,6 +68,7 @@ function extractHintUsernames(payload: unknown): string[] {
 export type TradingViewValidationResult = {
   valid: boolean
   exactName: string
+  reason?: 'invalid' | 'unavailable'
 }
 
 export type TradingViewAccessResult = {
@@ -95,25 +97,30 @@ export class TradingViewService {
   async validateUsername(username: string): Promise<TradingViewValidationResult> {
     const normalizedUsername = normalizeUsernameInput(username)
     if (normalizedUsername.length < 2) {
-      return { valid: false, exactName: '' }
+      return { valid: false, exactName: '', reason: 'invalid' }
     }
 
     try {
       const res = await fetch(
         `${TV_BASE}/username_hint/?s=${encodeURIComponent(normalizedUsername)}`,
-        { headers: { 'User-Agent': process.env.TRADINGVIEW_USER_AGENT?.trim() || DEFAULT_BROWSER_USER_AGENT } }
+        {
+          headers: {
+            'User-Agent': process.env.TRADINGVIEW_USER_AGENT?.trim() || DEFAULT_BROWSER_USER_AGENT,
+          },
+          signal: AbortSignal.timeout(USERNAME_VALIDATION_TIMEOUT_MS),
+        }
       )
 
-      if (!res.ok) return { valid: false, exactName: '' }
+      if (!res.ok) return { valid: false, exactName: '', reason: 'unavailable' }
 
       const data: unknown = await res.json()
       const exact = extractHintUsernames(data).find(
         (match) => match.toLowerCase() === normalizedUsername.toLowerCase()
       )
 
-      return { valid: Boolean(exact), exactName: exact ?? '' }
+      return { valid: Boolean(exact), exactName: exact ?? '', reason: exact ? undefined : 'invalid' }
     } catch {
-      return { valid: false, exactName: '' }
+      return { valid: false, exactName: '', reason: 'unavailable' }
     }
   }
 

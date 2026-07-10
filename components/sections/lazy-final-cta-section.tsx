@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
-import { MENTORSHIP_CONFIG } from '@/lib/config'
+import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
 
 const FinalCTA = dynamic(() => import('@/components/sections/final-cta'), {
   ssr: false,
@@ -29,7 +29,7 @@ export default function LazyFinalCtaSection() {
           observer.disconnect()
         }
       },
-      { rootMargin: '1600px 0px' }
+      { rootMargin: '600px 0px' }
     )
 
     observer.observe(node)
@@ -57,7 +57,9 @@ function FinalCtaFallback() {
           </div>
           <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6">
             Deine Trading-Reise <br />
-            <span className="text-blue-400">Beginnt im {MENTORSHIP_CONFIG.startMonthYear}</span>
+            <span className="text-blue-400">
+              {MENTORSHIP_IS_UPCOMING ? `Beginnt im ${MENTORSHIP_CONFIG.startMonthYear}` : 'Beginnt jetzt'}
+            </span>
           </h2>
           <p className="text-sm sm:text-xl text-gray-300 max-w-2xl mx-auto">
             Werde einer von {MENTORSHIP_CONFIG.maxSpots} ambitionierten Tradern und erlebe ein transformatives Jahr
@@ -65,21 +67,27 @@ function FinalCtaFallback() {
           </p>
         </div>
 
-        <div className="mx-auto mb-12 grid max-w-md grid-cols-2 gap-2 text-center sm:grid-cols-4">
-          {['Tage', 'Std', 'Min', 'Sek'].map((label) => (
-            <div key={label} className="rounded-md border border-slate-700 bg-slate-900/80 px-4 py-3 text-slate-100">
-              <div className="text-xl font-bold">00</div>
-              <div className="text-xs uppercase tracking-wide text-slate-400">{label}</div>
-            </div>
-          ))}
-        </div>
+        {MENTORSHIP_IS_UPCOMING ? (
+          <div className="mx-auto mb-12 grid max-w-md grid-cols-2 gap-2 text-center sm:grid-cols-4">
+            {['Tage', 'Std', 'Min', 'Sek'].map((label) => (
+              <div key={label} className="rounded-md border border-slate-700 bg-slate-900/80 px-4 py-3 text-slate-100">
+                <div className="text-xl font-bold">00</div>
+                <div className="text-xs uppercase tracking-wide text-slate-400">{label}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mx-auto mb-12 w-fit rounded-full border border-blue-400/30 bg-blue-400/10 px-4 py-2 text-sm font-medium text-blue-200">
+            {MENTORSHIP_CONFIG.enrollmentLabel}
+          </p>
+        )}
 
         <div className="text-center">
           <div className="inline-flex h-12 items-center justify-center rounded-md bg-white/90 px-6 text-sm font-medium text-slate-900 sm:h-14 sm:px-8 sm:text-lg">
             Prüfen ob Plätze frei sind
           </div>
           <p className="mt-4 sm:mt-6 text-xs sm:text-base text-gray-400">
-            Keine Zahlung bis zum Programmstart.
+            {MENTORSHIP_IS_UPCOMING ? 'Keine Zahlung bis zum Programmstart.' : MENTORSHIP_CONFIG.paymentNote}
           </p>
         </div>
       </div>

@@ -3,13 +3,13 @@
 import { auth } from '@clerk/nextjs/server'
 import { revalidatePath } from 'next/cache'
 import { getIsAdmin } from '@/lib/authz'
-import { prisma } from '@/lib/prisma'
 import {
   claimIndicatorForUser,
   clearTradingViewCookie,
   createIndicator,
   createIndicatorPackage,
   importTradingViewIndicators,
+  processTradingViewClaimInstantly,
   processTradingViewClaimQueue,
   resetTradingViewAccountBinding,
   saveTradingViewCookie,
@@ -57,29 +57,20 @@ async function processClaimInstantly(input: {
   fallbackMessage: string
 }) {
   try {
-    const workerResult = await processTradingViewClaimQueue({
-      limit: 5,
+    const claim = await processTradingViewClaimInstantly({
+      userId: input.userId,
+      indicatorId: input.indicatorId,
       workerId: 'member-claim-instant',
     })
 
-    const claim = await prisma.indicatorClaim.findUnique({
-      where: {
-        userId_indicatorId: {
-          userId: input.userId,
-          indicatorId: input.indicatorId,
-        },
-      },
-      select: { status: true, errorMessage: true },
-    })
-
-    if (claim?.status === 'granted') {
+    if (claim.status === 'granted') {
       return {
         ok: true,
         message: 'Deine TradingView-Freigabe wurde direkt aktiviert.',
       }
     }
 
-    if (workerResult.blockedBySession) {
+    if (claim.blockedBySession) {
       return {
         ok: true,
         message:
@@ -87,14 +78,14 @@ async function processClaimInstantly(input: {
       }
     }
 
-    if (claim?.status === 'processing') {
+    if (claim.status === 'processing') {
       return {
         ok: true,
         message: 'Deine Anfrage ist gespeichert. Die TradingView-Freigabe wird gerade verarbeitet.',
       }
     }
 
-    if (claim?.status === 'failed') {
+    if (claim.status === 'failed') {
       return {
         ok: true,
         message:
@@ -105,7 +96,7 @@ async function processClaimInstantly(input: {
 
     return {
       ok: true,
-      message: claim?.errorMessage ?? input.fallbackMessage,
+      message: claim.errorMessage ?? input.fallbackMessage,
     }
   } catch (error) {
     console.error('[tradingview-claims] Instant processing failed:', error)

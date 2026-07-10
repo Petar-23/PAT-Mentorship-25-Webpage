@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { Countdown } from '@/components/ui/countdown'
-import { MENTORSHIP_CONFIG } from '@/lib/config'
+import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
 import { HormoziLandingCtaButton } from '@/components/sections/hormozi-landing-cta-button'
 
 export default function HormoziLanding() {
@@ -169,14 +169,20 @@ export default function HormoziLanding() {
             Du bekommst 2–3 Live‑Sessions pro Woche. Du kommst rein, indem du dich anmeldest.
           </p>
           <div className="mt-6 flex justify-center">
-            <div className="max-w-sm">
-              <p className="text-[11px] text-slate-500">Anmeldung schließt in</p>
-              <Countdown
-                targetDate={MENTORSHIP_CONFIG.startDate}
-                variant="light"
-                className="mt-2 scale-75 sm:scale-90 sm:[&>div]:flex-nowrap"
-              />
-            </div>
+            {MENTORSHIP_IS_UPCOMING ? (
+              <div className="max-w-sm">
+                <p className="text-[11px] text-slate-500">Anmeldung schließt in</p>
+                <Countdown
+                  targetDate={MENTORSHIP_CONFIG.startDate}
+                  variant="light"
+                  className="mt-2 scale-75 sm:scale-90 sm:[&>div]:flex-nowrap"
+                />
+              </div>
+            ) : (
+              <p className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-medium text-blue-700">
+                {MENTORSHIP_CONFIG.enrollmentLabel}
+              </p>
+            )}
           </div>
           <div className="mt-7 space-y-3">
             <HormoziLandingCtaButton

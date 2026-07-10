@@ -17,6 +17,18 @@ export function CountdownProgress({ startDate }: CountdownProgressProps) {
       const now = new Date().getTime()
       const start = new Date('2024-11-04').getTime() // Current date
       const end = new Date(startDate).getTime()
+      if (!Number.isFinite(end)) {
+        setProgress(0)
+        setTimeLeft('Startdatum nicht verfügbar')
+        return true
+      }
+
+      if (end <= now) {
+        setProgress(100)
+        setTimeLeft('Die Mentorship ist gestartet.')
+        return true
+      }
+
       const total = end - start
       const elapsed = now - start
       const percentage = (elapsed / total) * 100
@@ -25,9 +37,10 @@ export function CountdownProgress({ startDate }: CountdownProgressProps) {
       // Calculate time left
       const days = Math.ceil((end - now) / (1000 * 60 * 60 * 24))
       setTimeLeft(`Noch ${days} Tage`)
+      return false
     }
 
-    calculateProgress()
+    if (calculateProgress()) return
     const interval = setInterval(calculateProgress, 1000 * 60 * 60) // Update every hour
     return () => clearInterval(interval)
   }, [startDate])

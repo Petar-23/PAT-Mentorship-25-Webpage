@@ -18,12 +18,13 @@ export default function InfiniteScroll({
   gap = 16
 }: InfiniteScrollProps) {
   const isHoveredRef = useRef(false)
+  const isFocusWithinRef = useRef(false)
   const initializedRef = useRef(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const sequenceWidthRef = useRef(0)
   const positionRef = useRef(0)
-  const animationFrameRef = useRef<number>()
+  const animationFrameRef = useRef<number | null>(null)
   const lastTimeRef = useRef<number>(0)
   const velocityRef = useRef(0)
   const targetVelocityRef = useRef(0)
@@ -138,7 +139,7 @@ export default function InfiniteScroll({
         return
       }
       
-      const isPaused = pauseOnHover && isHoveredRef.current
+      const isPaused = (pauseOnHover && isHoveredRef.current) || isFocusWithinRef.current
       targetVelocityRef.current = isPaused ? 0 : (direction === 'left' ? -speed : speed)
       velocityRef.current += (targetVelocityRef.current - velocityRef.current) * 0.1
 
@@ -163,8 +164,9 @@ export default function InfiniteScroll({
     animationFrameRef.current = requestAnimationFrame(animate)
 
     return () => {
-      if (animationFrameRef.current) {
+      if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current)
+        animationFrameRef.current = null
       }
     }
   }, [direction, speed, pauseOnHover, baseCount, isInView, isDocumentVisible, prefersReducedMotion])
@@ -173,6 +175,15 @@ export default function InfiniteScroll({
     <div
       ref={containerRef}
       className={`relative overflow-hidden ${className}`} // Removed h-full and w-full
+      onFocusCapture={() => {
+        isFocusWithinRef.current = true
+        velocityRef.current = 0
+      }}
+      onBlurCapture={(event) => {
+        if (event.currentTarget.contains(event.relatedTarget as Node | null)) return
+        isFocusWithinRef.current = false
+        velocityRef.current = 0
+      }}
     >
       <div
         ref={scrollRef}
@@ -183,23 +194,31 @@ export default function InfiniteScroll({
           willChange: 'transform',
         }}
       >
-        {items.map((child, index) => (
-          <div
-            key={index}
-            className="flex-shrink-0"
-            onMouseEnter={() => {
-              if (!pauseOnHover) return
-              isHoveredRef.current = true
-            }}
-            onMouseLeave={() => {
-              if (!pauseOnHover) return
-              isHoveredRef.current = false
-              velocityRef.current = 0
-            }}
-          >
-            {child}
-          </div>
-        ))}
+        {items.map((child, index) => {
+          // Right-moving rows start at -sequenceWidth, so their visible and
+          // focusable sequence is the second copy rather than the first.
+          const isDuplicate = direction === 'right' ? index < baseCount : index >= baseCount
+
+          return (
+            <div
+              key={index}
+              className="flex-shrink-0"
+              aria-hidden={isDuplicate ? true : undefined}
+              inert={isDuplicate ? true : undefined}
+              onMouseEnter={() => {
+                if (!pauseOnHover) return
+                isHoveredRef.current = true
+              }}
+              onMouseLeave={() => {
+                if (!pauseOnHover) return
+                isHoveredRef.current = false
+                velocityRef.current = 0
+              }}
+            >
+              {child}
+            </div>
+          )
+        })}
       </div>
     </div>
   )

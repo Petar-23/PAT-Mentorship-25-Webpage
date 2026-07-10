@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { VortexBackground } from "@/components/ui/vortex-wrapper"
 import { trackConversion } from '@/components/analytics/tracking'
-import { MENTORSHIP_CONFIG } from '@/lib/config'
+import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
 
 export default function CTASection() {
   const { isSignedIn } = useUser()
@@ -47,8 +47,9 @@ export default function CTASection() {
                   Bereit dein Trading zu transformieren?
                 </h2>
                 <p className="text-base sm:text-lg opacity-90 mb-6">
-                  Trete jetzt der Warteliste bei und sichere dir als einer der Ersten deinen Platz
-                  im Mentorship Programm 2026.
+                  {MENTORSHIP_IS_UPCOMING
+                    ? 'Trete jetzt der Warteliste bei und sichere dir als einer der Ersten deinen Platz im Mentorship Programm 2026.'
+                    : 'Steige in die laufende Mentorship 2026 ein, solange noch ein Platz verfügbar ist.'}
                 </p>
                 {isSignedIn ? (
                   <Button 
@@ -81,15 +82,21 @@ export default function CTASection() {
                   </p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/10">
-                  <p className="text-sm sm:text-base font-medium">🚀 Start im {MENTORSHIP_CONFIG.startMonthYear}</p>
+                  <p className="text-sm sm:text-base font-medium">
+                    🚀 {MENTORSHIP_IS_UPCOMING ? `Start im ${MENTORSHIP_CONFIG.startMonthYear}` : MENTORSHIP_CONFIG.enrollmentLabel}
+                  </p>
                   <p className="text-xs sm:text-sm opacity-90">
                     Die Vergabe der Plätze erfolgt nach dem Prinzip: Wer zuerst kommt, mahlt zuerst.
                   </p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/10">
-                  <p className="text-sm sm:text-base font-medium">💎 Kostenlose Reservierung</p>
+                  <p className="text-sm sm:text-base font-medium">
+                    💎 {MENTORSHIP_IS_UPCOMING ? 'Kostenlose Reservierung' : 'Flexibles Monatsabo'}
+                  </p>
                   <p className="text-xs sm:text-sm opacity-90">
-                    Dein Zahlungsmittel wird erst beim Start der Mentorship mit {MENTORSHIP_CONFIG.price}€/Monat (inkl. MwSt.) belastet. Du kannst jederzeit kündigen.
+                    {MENTORSHIP_IS_UPCOMING
+                      ? `Dein Zahlungsmittel wird erst beim Start der Mentorship mit ${MENTORSHIP_CONFIG.price}€/Monat (inkl. MwSt.) belastet. Du kannst jederzeit kündigen.`
+                      : `${MENTORSHIP_CONFIG.price}€/Monat (inkl. MwSt.). Du kannst jederzeit kündigen.`}
                   </p>
                 </div>
               </div>

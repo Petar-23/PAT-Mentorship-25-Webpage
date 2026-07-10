@@ -3,7 +3,7 @@
 import { useUser } from '@clerk/nextjs'
 import { UserButton, SignInButton } from '@clerk/nextjs'
 import Link from 'next/link'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Gauge } from '@phosphor-icons/react/Gauge'
@@ -30,6 +30,19 @@ type IdleWindow = Window & {
 
 function getMentorshipStatusCacheKey(userId: string) {
   return `mentorship-nav-status:${userId}`
+}
+
+function formatMentorshipStartDate(value?: string) {
+  if (!value) return MENTORSHIP_CONFIG.startDateFormatted
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return MENTORSHIP_CONFIG.startDateFormatted
+
+  return new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date)
 }
 
 function readCachedMentorshipStatus(userId: string): MentorshipStatus | null {
@@ -73,7 +86,6 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [mentorshipStatus, setMentorshipStatus] = useState<MentorshipStatus | null>(null)
   const pathname = usePathname()
-  const searchParams = useSearchParams()
   const postCheckoutRef = useRef(false)
 
   const isMentorship = pathname?.startsWith('/mentorship')
@@ -82,7 +94,7 @@ export function Navbar() {
     membership => membership.role === 'org:admin'
   )
   const userId = user?.id ?? null
-  const isCheckoutSuccess = isDashboard && searchParams.get('success') === 'true'
+  const mentorshipStartLabel = formatMentorshipStartDate(mentorshipStatus?.startDate)
 
   // Lade Mentorship-Status beim ersten Laden
   useEffect(() => {
@@ -94,6 +106,8 @@ export function Navbar() {
 
     // Wenn wir aus Stripe zurückkommen, kann es ein paar Sekunden dauern bis Webhooks/DB aktuell sind.
     // Deshalb pollen wir kurz, damit der Mentorship-Button ohne Refresh sofort erscheint.
+    const isCheckoutSuccess =
+      isDashboard && new URLSearchParams(window.location.search).get('success') === 'true'
     if (isCheckoutSuccess) {
       postCheckoutRef.current = true
     }
@@ -193,7 +207,7 @@ export function Navbar() {
       }
       if (fallbackIdleId) clearTimeout(fallbackIdleId)
     }
-  }, [isAdmin, isSignedIn, isCheckoutSuccess, isMentorship, userId])
+  }, [isAdmin, isDashboard, isSignedIn, isMentorship, userId])
 
   // Prevent body scroll when menu is open
   useEffect(() => {
@@ -245,12 +259,12 @@ export function Navbar() {
                             variant="outline"
                             className="flex items-center gap-3 bg-gray-900 hover:bg-gray-800 text-gray-300 border-gray-700 cursor-not-allowed px-3 py-1 leading-tight"
                             disabled
-                            title={`Mentorship startet ab ${MENTORSHIP_CONFIG.startDateFormatted}`}
+                            title={`Mentorship startet ab ${mentorshipStartLabel}`}
                           >
                             <Notebook className="h-5 w-5" />
                             <div className="flex flex-col items-start gap-0">
                               <span className="text-sm">Mentorship</span>
-                              <span className="text-[10px] text-gray-400 mb-1">Start {MENTORSHIP_CONFIG.startDateFormatted}</span>
+                              <span className="text-[10px] text-gray-400 mb-1">Start {mentorshipStartLabel}</span>
                             </div>
                           </Button>
                         ) : (
@@ -367,12 +381,12 @@ export function Navbar() {
                             variant="outline"
                             className="w-full flex items-center gap-3 bg-gray-900 hover:bg-gray-800 text-gray-300 border-gray-700 cursor-not-allowed px-3 py-1 leading-tight"
                             disabled
-                            title={`Mentorship startet ab ${MENTORSHIP_CONFIG.startDateFormatted}`}
+                            title={`Mentorship startet ab ${mentorshipStartLabel}`}
                           >
                             <Notebook className="h-5 w-5" />
                             <div className="flex flex-col items-start gap-0">
                               <span className="text-sm">Mentorship</span>
-                              <span className="text-[10px] text-gray-400 mb-1">Start {MENTORSHIP_CONFIG.startDateFormatted}</span>
+                              <span className="text-[10px] text-gray-400 mb-1">Start {mentorshipStartLabel}</span>
                             </div>
                           </Button>
                         ) : (

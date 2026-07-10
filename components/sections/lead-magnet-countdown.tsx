@@ -14,13 +14,15 @@ type TimeParts = {
   hours: number
   minutes: number
   seconds: number
+  expired: boolean
 }
 
 const pad = (value: number) => value.toString().padStart(2, '0')
 
 const getTimeParts = (target: Date): TimeParts => {
   const now = new Date()
-  const diffMs = Math.max(0, target.getTime() - now.getTime())
+  const targetMs = target.getTime()
+  const diffMs = Number.isFinite(targetMs) ? Math.max(0, targetMs - now.getTime()) : 0
   const totalSeconds = Math.floor(diffMs / 1000)
 
   const days = Math.floor(totalSeconds / 86400)
@@ -28,7 +30,7 @@ const getTimeParts = (target: Date): TimeParts => {
   const minutes = Math.floor((totalSeconds % 3600) / 60)
   const seconds = totalSeconds % 60
 
-  return { days, hours, minutes, seconds }
+  return { days, hours, minutes, seconds, expired: diffMs <= 0 }
 }
 
 export default function LeadMagnetCountdown({
@@ -42,7 +44,9 @@ export default function LeadMagnetCountdown({
     let interval: number | null = null
 
     const update = () => {
-      setTimeLeft(getTimeParts(target))
+      const next = getTimeParts(target)
+      setTimeLeft(next)
+      return next.expired
     }
 
     const stop = () => {
@@ -54,10 +58,12 @@ export default function LeadMagnetCountdown({
 
     const start = () => {
       stop()
-      update()
+      const expired = update()
 
-      if (document.visibilityState === 'visible') {
-        interval = window.setInterval(update, 1000)
+      if (!expired && document.visibilityState === 'visible') {
+        interval = window.setInterval(() => {
+          if (update()) stop()
+        }, 1000)
       }
     }
 
@@ -78,7 +84,7 @@ export default function LeadMagnetCountdown({
     }
   }, [target])
 
-  if (!timeLeft) {
+  if (!timeLeft || timeLeft.expired) {
     return null
   }
 

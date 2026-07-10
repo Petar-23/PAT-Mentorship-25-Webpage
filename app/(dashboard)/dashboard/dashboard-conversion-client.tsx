@@ -10,6 +10,7 @@ import { CheckCircle as CircleCheckBig } from '@phosphor-icons/react/CheckCircle
 import { LockIcon } from '@phosphor-icons/react/Lock'
 import { Ticket } from '@phosphor-icons/react/Ticket'
 import { trackConversion } from '@/components/analytics/tracking'
+import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
 
 const CheckoutButton = dynamic(
   () => import('@/components/ui/checkout-button').then((mod) => mod.CheckoutButton),
@@ -93,9 +94,13 @@ export default function DashboardConversionClient({
                     <CalendarCheck className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="font-semibold text-blue-900">Mentorship startet bald</p>
+                    <p className="font-semibold text-blue-900">
+                      {MENTORSHIP_IS_UPCOMING ? 'Mentorship startet bald' : 'Mentorship-Zugang wird vorbereitet'}
+                    </p>
                     <p className="text-sm text-blue-900/80 mt-1">
-                      Du hast bereits ein aktives Abo! Der Mentorship-Bereich öffnet am 01.03.2026.
+                      {MENTORSHIP_IS_UPCOMING
+                        ? `Du hast bereits ein aktives Abo! Der Mentorship-Bereich öffnet am ${MENTORSHIP_CONFIG.startDateFormatted}.`
+                        : 'Du hast bereits ein aktives Abo. Lade die Seite neu, falls der Mentorship-Bereich noch nicht freigeschaltet ist.'}
                     </p>
                   </div>
                 </div>
@@ -143,7 +148,9 @@ export default function DashboardConversionClient({
                 inkl. gesetzl. MwSt. · monatlich kündbar
               </p>
               <p className="text-sm text-green-600 mt-1 font-medium">
-                Keine Zahlung bis 01. März 2026
+                {MENTORSHIP_IS_UPCOMING
+                  ? `Keine Zahlung bis ${MENTORSHIP_CONFIG.startDateFormatted}`
+                  : MENTORSHIP_CONFIG.paymentNote}
               </p>
             </div>
 
