@@ -2,7 +2,7 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { getEmailFromSessionClaims } from '@/lib/clerk-claims'
-import { RAIDMAP_CONFIG } from '@/lib/raidmap-config'
+import { RAIDMAP_CONFIG, type RaidMapLang } from '@/lib/raidmap-config'
 import { isRaidMapTestMode } from '@/lib/raidmap-test-mode'
 import { createRaidMapCheckoutSession, type RaidMapCheckoutTier } from '@/lib/stripe'
 
@@ -10,11 +10,26 @@ function isTier(value: unknown): value is RaidMapCheckoutTier {
   return value === 'monthly' || value === 'annual'
 }
 
+function isLang(value: unknown): value is RaidMapLang {
+  return value === 'en' || value === 'de'
+}
+
 export async function POST(request: Request) {
+  let tier: RaidMapCheckoutTier = 'monthly'
+  let lang: RaidMapLang = 'en'
+  try {
+    const body = await request.json()
+    if (isTier(body?.tier)) tier = body.tier
+    if (isLang(body?.lang)) lang = body.lang
+  } catch {
+    // Invalid/missing body uses the established monthly/English defaults.
+  }
+
   // Dev-only Test-Mode: Checkout simulieren, Clerk/Stripe werden nicht angefasst
   // (doppelt geguarded in lib/raidmap-test-mode.ts, in Production immer aus).
   if (isRaidMapTestMode()) {
-    return NextResponse.json({ url: `${RAIDMAP_CONFIG.salesPathEn}?checkout=success&test=1` })
+    const salesPath = lang === 'de' ? RAIDMAP_CONFIG.salesPathDe : RAIDMAP_CONFIG.salesPathEn
+    return NextResponse.json({ url: `${salesPath}?checkout=success&test=1` })
   }
 
   try {
@@ -22,16 +37,6 @@ export async function POST(request: Request) {
 
     if (!userId) {
       return new NextResponse('Unauthorized', { status: 401 })
-    }
-
-    let tier: RaidMapCheckoutTier = 'monthly'
-    try {
-      const body = await request.json()
-      if (isTier(body?.tier)) {
-        tier = body.tier
-      }
-    } catch {
-      // kein/ungueltiger Body -> Default monthly
     }
 
     let primaryEmail = getEmailFromSessionClaims(sessionClaims)
@@ -51,7 +56,7 @@ export async function POST(request: Request) {
       return new NextResponse('No email address found', { status: 400 })
     }
 
-    const { url } = await createRaidMapCheckoutSession(userId, primaryEmail, tier)
+    const { url } = await createRaidMapCheckoutSession(userId, primaryEmail, tier, lang)
 
     if (!url) {
       return new NextResponse('Error creating checkout session', { status: 500 })

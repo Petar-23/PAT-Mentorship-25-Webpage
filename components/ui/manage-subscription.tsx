@@ -17,8 +17,21 @@ type Props = {
   iconClassName?: string
   iconWrapperClassName?: string
   spinnerClassName?: string
+  loadingLabel?: string
+  errorTitle?: string
+  fallbackErrorMessage?: string
   /** Portal-API-Route; Raid Map nutzt einen eigenen Stripe-Customer (eigene Route). */
   endpoint?: string
+}
+
+class PortalRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number
+  ) {
+    super(message)
+    this.name = 'PortalRequestError'
+  }
 }
 
 export function ManageSubscriptionButton({
@@ -29,6 +42,9 @@ export function ManageSubscriptionButton({
   iconClassName,
   iconWrapperClassName,
   spinnerClassName,
+  loadingLabel = 'Lädt…',
+  errorTitle = 'Fehler',
+  fallbackErrorMessage = 'Zugriff auf Abonnementverwaltung fehlgeschlagen',
   endpoint = '/api/create-portal-session',
 }: Props) {
   const [loading, setLoading] = useState(false)
@@ -95,7 +111,7 @@ export function ManageSubscriptionButton({
         }
 
         if (!response.ok) {
-          throw new Error(data.message || 'Ein Fehler ist aufgetreten')
+          throw new PortalRequestError(data.message || 'Ein Fehler ist aufgetreten', response.status)
         }
         
         return data
@@ -106,7 +122,10 @@ export function ManageSubscriptionButton({
         window.location.href = data.url
         return
       } catch (error) {
-        if (error instanceof Error && error.message.includes('Nicht autorisiert')) {
+        if (
+          error instanceof PortalRequestError &&
+          error.status === 401
+        ) {
           await waitForRetry(controller.signal)
           const data = await makeRequest()
           window.location.href = data.url
@@ -119,8 +138,8 @@ export function ManageSubscriptionButton({
       if (controller.signal.aborted) return
       console.error('Portal access error:', error)
       toast({
-        title: "Fehler",
-        description: error instanceof Error ? error.message : 'Zugriff auf Abonnementverwaltung fehlgeschlagen',
+        title: errorTitle,
+        description: error instanceof Error ? error.message : fallbackErrorMessage,
         variant: "destructive",
       })
     } finally {
@@ -146,7 +165,7 @@ export function ManageSubscriptionButton({
           <span className={cn('flex items-center justify-center shrink-0', iconWrapperClassName)}>
             <LoadingSpinner className={cn('h-4 w-4', spinnerClassName)} />
           </span>
-          <span>Läd...</span>
+          <span>{loadingLabel}</span>
         </>
       ) : (
         <>

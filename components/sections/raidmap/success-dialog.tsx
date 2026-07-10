@@ -39,6 +39,7 @@ export function RaidMapSuccessDialog({ lang, hasGuideImage }: { lang: RaidMapLan
   const searchParams = useSearchParams()
   const [open, setOpen] = useState(() => searchParams.get('checkout') === 'success')
   const t = copy[lang]
+  const accountPath = lang === 'de' ? RAIDMAP_CONFIG.accountPathDe : RAIDMAP_CONFIG.accountPath
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -69,7 +70,7 @@ export function RaidMapSuccessDialog({ lang, hasGuideImage }: { lang: RaidMapLan
 
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <Button asChild>
-            <Link href={RAIDMAP_CONFIG.accountPath}>{t.accountCta}</Link>
+            <Link href={accountPath}>{t.accountCta}</Link>
           </Button>
           <Button asChild variant="outline">
             <Link href={lang === 'en' ? RAIDMAP_CONFIG.docsPathEn : RAIDMAP_CONFIG.docsPathDe}>{t.docsCta}</Link>

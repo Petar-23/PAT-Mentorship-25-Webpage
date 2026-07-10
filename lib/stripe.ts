@@ -3,6 +3,7 @@ import 'server-only'
 
 import Stripe from 'stripe'
 import { prisma, withPrismaRetry } from './prisma'
+import { RAIDMAP_CONFIG, type RaidMapLang } from './raidmap-config'
 
 declare global {
   var stripeClient: Stripe | undefined
@@ -655,7 +656,7 @@ export async function getSubscriptionDetails(
 // PAT Raid Map (TradingView-Indikator, Einzelprodukt) — eigener Checkout.
 // Price-IDs kommen ausschliesslich aus Env-Vars (siehe docs/RAIDMAP_STRIPE_SETUP.md):
 //   STRIPE_PRICE_ID_RAIDMAP_MONTHLY, STRIPE_PRICE_ID_RAIDMAP_ANNUAL
-// Internationale Zielgruppe: locale 'auto', USD-Preise, kein Trial.
+// Internationale Zielgruppe: locale 'auto', USD-Preise, 7 Tage Trial.
 // ---------------------------------------------------------------------------
 
 export type RaidMapCheckoutTier = 'monthly' | 'annual'
@@ -669,7 +670,8 @@ export function getRaidMapPriceId(tier: RaidMapCheckoutTier): string | undefined
 export async function createRaidMapCheckoutSession(
   userId: string,
   userEmail: string,
-  tier: RaidMapCheckoutTier
+  tier: RaidMapCheckoutTier,
+  lang: RaidMapLang = 'en'
 ) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL
   if (!baseUrl) {
@@ -680,6 +682,8 @@ export async function createRaidMapCheckoutSession(
   if (!priceId) {
     throw new Error(`Missing Stripe price id for raidmap tier "${tier}" (see docs/RAIDMAP_STRIPE_SETUP.md)`)
   }
+
+  const salesPath = lang === 'de' ? RAIDMAP_CONFIG.salesPathDe : RAIDMAP_CONFIG.salesPathEn
 
   // Raid Map rechnet in USD, Mentorship-Customers tragen oft schon eine
   // EUR-Currency — Stripe verbietet Currency-Mix pro Customer ("You cannot
@@ -740,8 +744,8 @@ export async function createRaidMapCheckoutSession(
         type: 'text',
       },
     ],
-    success_url: `${baseUrl}/raid-map?checkout=success`,
-    cancel_url: `${baseUrl}/raid-map?checkout=cancelled`,
+    success_url: `${baseUrl}${salesPath}?checkout=success`,
+    cancel_url: `${baseUrl}${salesPath}?checkout=cancelled`,
     metadata: {
       userId,
       product: 'raidmap',
@@ -754,7 +758,7 @@ export async function createRaidMapCheckoutSession(
 
 
 // Billing-Portal fuer den separaten Raid-Map-Customer (siehe createRaidMapCheckoutSession)
-export async function createRaidMapPortalSession(userId: string) {
+export async function createRaidMapPortalSession(userId: string, lang: RaidMapLang = 'en') {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL
   if (!baseUrl) {
     throw new Error('Missing NEXT_PUBLIC_APP_URL environment variable')
@@ -767,10 +771,11 @@ export async function createRaidMapPortalSession(userId: string) {
     throw new Error('No Raid Map customer found')
   }
   const customer = [...found.data].sort((a, b) => b.created - a.created)[0]
+  const accountPath = lang === 'de' ? RAIDMAP_CONFIG.accountPathDe : RAIDMAP_CONFIG.accountPath
 
   const session = await stripe.billingPortal.sessions.create({
     customer: customer.id,
-    return_url: `${baseUrl}/raid-map/account`,
+    return_url: `${baseUrl}${accountPath}`,
     locale: 'auto',
   })
 

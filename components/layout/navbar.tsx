@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import { CreditCard } from '@phosphor-icons/react/CreditCard'
 import { Gauge } from '@phosphor-icons/react/Gauge'
 import { GearSix as Settings } from '@phosphor-icons/react/GearSix'
 import { House as Home } from '@phosphor-icons/react/House'
@@ -15,6 +16,7 @@ import { PencilLine as PenLine } from '@phosphor-icons/react/PencilLine'
 import { X } from '@phosphor-icons/react/X'
 import { useEffect, useRef, useState } from 'react'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
+import { RAIDMAP_CONFIG } from '@/lib/raidmap-config'
 
 type MentorshipStatus = {
   accessible: boolean
@@ -90,6 +92,17 @@ export function Navbar() {
 
   const isMentorship = pathname?.startsWith('/mentorship')
   const isDashboard = pathname === '/dashboard'
+  const isRaidMap = pathname?.startsWith('/raid-map')
+  const isRaidMapAccount =
+    pathname === RAIDMAP_CONFIG.accountPath || pathname === RAIDMAP_CONFIG.accountPathDe
+  const isRaidMapGerman =
+    pathname === RAIDMAP_CONFIG.salesPathDe ||
+    pathname === RAIDMAP_CONFIG.docsPathDe ||
+    pathname === RAIDMAP_CONFIG.accountPathDe
+  const raidMapAccountPath = isRaidMapGerman
+    ? RAIDMAP_CONFIG.accountPathDe
+    : RAIDMAP_CONFIG.accountPath
+  const raidMapAccountLabel = isRaidMapGerman ? 'Mein Raid Map Account' : 'My Raid Map account'
   const isAdmin = user?.organizationMemberships?.some(
     membership => membership.role === 'org:admin'
   )
@@ -253,6 +266,15 @@ export function Navbar() {
                 <div className="flex items-center gap-3">
                   {!isMentorship ? (
                     <>
+                      {isRaidMap && !isRaidMapAccount ? (
+                        <Button asChild variant="outline" className="flex items-center gap-2">
+                          <Link href={raidMapAccountPath} prefetch={false}>
+                            <CreditCard className="h-4 w-4" />
+                            <span>{raidMapAccountLabel}</span>
+                          </Link>
+                        </Button>
+                      ) : null}
+
                       {isAdmin || mentorshipStatus?.hasSubscription ? (
                         mentorshipStatus && !mentorshipStatus.accessible && !isAdmin ? (
                           <Button
@@ -323,11 +345,21 @@ export function Navbar() {
                   ) : null}
                 </div>
               ) : (
-                <SignInButton mode="modal" forceRedirectUrl={"/dashboard"}>
-                  <Button>
-                    Anmelden →
-                  </Button>
-                </SignInButton>
+                <div className="flex items-center gap-3">
+                  {isRaidMap && !isRaidMapAccount ? (
+                    <Button asChild variant="outline" className="flex items-center gap-2">
+                      <Link href={raidMapAccountPath} prefetch={false}>
+                        <CreditCard className="h-4 w-4" />
+                        <span>{raidMapAccountLabel}</span>
+                      </Link>
+                    </Button>
+                  ) : null}
+                  <SignInButton mode="modal" forceRedirectUrl={"/dashboard"}>
+                    <Button>
+                      Anmelden →
+                    </Button>
+                  </SignInButton>
+                </div>
               )}
             </div>
 
@@ -335,6 +367,14 @@ export function Navbar() {
             <div className="md:hidden flex items-center gap-3">
               {isSignedIn ? (
                 <>
+                  {isRaidMap && !isRaidMapAccount ? (
+                    <Button asChild variant="outline" size="sm" className="flex items-center gap-2 px-3">
+                      <Link href={raidMapAccountPath} prefetch={false}>
+                        <CreditCard className="h-4 w-4" />
+                        <span>Account</span>
+                      </Link>
+                    </Button>
+                  ) : null}
                   {!isMentorship || isAdmin ? (
                     <button
                       onClick={() => setIsOpen(!isOpen)}
@@ -359,11 +399,21 @@ export function Navbar() {
                   ) : null}
                 </>
               ) : (
-                <SignInButton mode="modal" forceRedirectUrl={"/dashboard"}>
-                  <Button size="sm">
-                    Anmelden →
-                  </Button>
-                </SignInButton>
+                <>
+                  {isRaidMap && !isRaidMapAccount ? (
+                    <Button asChild variant="outline" size="sm" className="flex items-center gap-2 px-3">
+                      <Link href={raidMapAccountPath} prefetch={false}>
+                        <CreditCard className="h-4 w-4" />
+                        <span>Account</span>
+                      </Link>
+                    </Button>
+                  ) : null}
+                  <SignInButton mode="modal" forceRedirectUrl={"/dashboard"}>
+                    <Button size="sm">
+                      Anmelden →
+                    </Button>
+                  </SignInButton>
+                </>
               )}
             </div>
           </nav>

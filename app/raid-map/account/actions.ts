@@ -8,31 +8,49 @@ import {
 } from '@/lib/indicators/store'
 import { prisma, withPrismaRetry } from '@/lib/prisma'
 import { getRaidMapAccessState, getRaidMapIndicator } from '@/lib/raidmap-access'
-import { RAIDMAP_CONFIG } from '@/lib/raidmap-config'
+import { RAIDMAP_CONFIG, type RaidMapLang } from '@/lib/raidmap-config'
 import { isRaidMapTestMode, RAIDMAP_TEST_USER_ID } from '@/lib/raidmap-test-mode'
 import { sendCortanaTelegram } from '@/lib/telegram-notify'
 
 export type RaidMapClaimResult = { ok: boolean; message: string }
 
-export async function claimRaidMapAction(tvUsername: string): Promise<RaidMapClaimResult> {
+function localize(lang: RaidMapLang, english: string, german: string) {
+  return lang === 'de' ? german : english
+}
+
+export async function claimRaidMapAction(
+  tvUsername: string,
+  lang: RaidMapLang = 'en'
+): Promise<RaidMapClaimResult> {
   const { userId: clerkUserId } = await auth()
   // Dev-only Test-Mode: gleicher Fallback wie auf der Account-Seite
   // (doppelt geguarded in lib/raidmap-test-mode.ts, in Production immer aus).
   const userId = clerkUserId ?? (isRaidMapTestMode() ? RAIDMAP_TEST_USER_ID : null)
   if (!userId) {
-    return { ok: false, message: 'Please sign in again.' }
+    return { ok: false, message: localize(lang, 'Please sign in again.', 'Bitte melde dich erneut an.') }
   }
 
   const access = await getRaidMapAccessState(userId)
   if (!access.hasAccess) {
-    return { ok: false, message: 'No active Raid Map subscription found for this account.' }
+    return {
+      ok: false,
+      message: localize(
+        lang,
+        'No active Raid Map subscription found for this account.',
+        'Für diesen Account wurde kein aktives Raid-Map-Abo gefunden.'
+      ),
+    }
   }
 
   const indicator = await getRaidMapIndicator()
   if (!indicator || !indicator.ready || !indicator.pineId?.startsWith('PUB;')) {
     return {
       ok: false,
-      message: 'Access provisioning is being set up — your username was received, please check back shortly or contact support.',
+      message: localize(
+        lang,
+        'Access provisioning is being set up. Your username was received; please check back shortly or contact support.',
+        'Die Freigabe wird gerade eingerichtet. Dein Username wurde gespeichert; prüfe den Status bitte gleich noch einmal oder kontaktiere den Support.'
+      ),
     }
   }
 
@@ -56,15 +74,31 @@ export async function claimRaidMapAction(tvUsername: string): Promise<RaidMapCla
       })
 
       if (instant.status === 'granted') {
-        message = 'Access granted — PAT Raid Map is now available on your TradingView account.'
+        message = localize(
+          lang,
+          'Access granted. PAT Raid Map is now available on your TradingView account.',
+          'Zugang erteilt. PAT Raid Map ist jetzt in deinem TradingView-Account verfügbar.'
+        )
       } else if (instant.blockedBySession) {
-        message = 'Your request is saved. We are reconnecting TradingView and will retry automatically.'
+        message = localize(
+          lang,
+          'Your request is saved. We are reconnecting TradingView and will retry automatically.',
+          'Deine Anfrage ist gespeichert. Wir verbinden TradingView neu und versuchen es automatisch erneut.'
+        )
       } else if (instant.status === 'processing') {
-        message = 'Your request is saved and is being processed right now.'
+        message = localize(
+          lang,
+          'Your request is saved and is being processed right now.',
+          'Deine Anfrage ist gespeichert und wird gerade verarbeitet.'
+        )
       } else if (instant.status === 'failed') {
         message =
           instant.errorMessage ??
-          'TradingView could not finish the activation yet. We will retry automatically.'
+          localize(
+            lang,
+            'TradingView could not finish the activation yet. We will retry automatically.',
+            'TradingView konnte die Freigabe noch nicht abschließen. Wir versuchen es automatisch erneut.'
+          )
       }
     } catch (error) {
       console.error('[raidmap] Instant account claim failed; cron will retry:', error)
@@ -91,6 +125,7 @@ export async function claimRaidMapAction(tvUsername: string): Promise<RaidMapCla
   }
 
   revalidatePath(RAIDMAP_CONFIG.accountPath)
+  revalidatePath(RAIDMAP_CONFIG.accountPathDe)
   return { ok: result.ok, message }
 }
 
@@ -108,18 +143,25 @@ export async function submitRaidMapTestimonialAction(input: {
   displayName: string
   rating: number
   text: string
-}): Promise<RaidMapTestimonialResult> {
+}, lang: RaidMapLang = 'en'): Promise<RaidMapTestimonialResult> {
   const { userId: clerkUserId } = await auth()
   // Dev-only Test-Mode: gleicher Fallback wie claimRaidMapAction
   // (doppelt geguarded in lib/raidmap-test-mode.ts, in Production immer aus).
   const userId = clerkUserId ?? (isRaidMapTestMode() ? RAIDMAP_TEST_USER_ID : null)
   if (!userId) {
-    return { ok: false, message: 'Please sign in again.' }
+    return { ok: false, message: localize(lang, 'Please sign in again.', 'Bitte melde dich erneut an.') }
   }
 
   const access = await getRaidMapAccessState(userId)
   if (!access.hasAccess) {
-    return { ok: false, message: 'No active Raid Map subscription found for this account.' }
+    return {
+      ok: false,
+      message: localize(
+        lang,
+        'No active Raid Map subscription found for this account.',
+        'Für diesen Account wurde kein aktives Raid-Map-Abo gefunden.'
+      ),
+    }
   }
 
   const displayName = String(input.displayName ?? '').trim().slice(0, TESTIMONIAL_NAME_MAX)
@@ -127,13 +169,26 @@ export async function submitRaidMapTestimonialAction(input: {
   const rating = Math.round(Number(input.rating))
 
   if (!displayName) {
-    return { ok: false, message: 'Please add a name — that’s what shows next to your words.' }
+    return {
+      ok: false,
+      message: localize(
+        lang,
+        'Please add a name. It will be shown next to your words.',
+        'Bitte gib einen Namen an. Er wird neben deinem Beitrag angezeigt.'
+      ),
+    }
   }
   if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-    return { ok: false, message: 'Please pick a rating (1–5 stars).' }
+    return {
+      ok: false,
+      message: localize(lang, 'Please pick a rating (1-5 stars).', 'Bitte wähle eine Bewertung von 1 bis 5 Sternen.'),
+    }
   }
   if (!text) {
-    return { ok: false, message: 'Please write a sentence or two.' }
+    return {
+      ok: false,
+      message: localize(lang, 'Please write a sentence or two.', 'Bitte schreibe ein oder zwei Sätze.'),
+    }
   }
 
   const existingPending = await withPrismaRetry(
@@ -166,5 +221,12 @@ export async function submitRaidMapTestimonialAction(input: {
     `📝 Neues Raid-Map-Testimonial (pending) von ${displayName} (${rating}/5)`
   )
 
-  return { ok: true, message: 'Thanks! Your feedback goes live after a quick review.' }
+  return {
+    ok: true,
+    message: localize(
+      lang,
+      'Thanks! Your feedback goes live after a quick review.',
+      'Danke! Dein Feedback erscheint nach einer kurzen Prüfung.'
+    ),
+  }
 }

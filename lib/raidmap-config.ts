@@ -38,6 +38,7 @@ export const RAIDMAP_CONFIG = {
   docsPathEn: '/raid-map/docs',
   docsPathDe: '/raid-map/docs/de',
   accountPath: '/raid-map/account',
+  accountPathDe: '/raid-map/de/account',
 
   // Fulfillment: Indicator-Datensatz (Owner-Bereich) MUSS diesen Slug tragen,
   // damit Checkout-Claims und Account-Bereich ihn finden.

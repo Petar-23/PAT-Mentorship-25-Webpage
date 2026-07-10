@@ -41,6 +41,7 @@ export default function RaidMapPricing({ lang }: { lang: RaidMapLang }) {
             <CardContent>
               <RaidMapCheckoutButton
                 tier="monthly"
+                lang={lang}
                 variant="outline"
                 label={t.monthly.cta}
                 loadingLabel={labels.loading}
@@ -69,6 +70,7 @@ export default function RaidMapPricing({ lang }: { lang: RaidMapLang }) {
             <CardContent>
               <RaidMapCheckoutButton
                 tier="annual"
+                lang={lang}
                 label={t.annual.cta}
                 loadingLabel={labels.loading}
                 errorMessage={labels.error}

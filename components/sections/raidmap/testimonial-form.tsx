@@ -5,17 +5,42 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { submitRaidMapTestimonialAction } from '@/app/raid-map/account/actions'
+import type { RaidMapLang } from '@/lib/raidmap-config'
 
 // Muss zum Server-Limit in account/actions.ts passen (TESTIMONIAL_TEXT_MAX).
 const TEXT_MAX = 600
 
-export function TestimonialForm() {
+const copy = {
+  en: {
+    name: 'Name',
+    namePlaceholder: 'The name shown next to your words',
+    rating: 'Rating',
+    ratingAria: 'Rating from 1 to 5 stars',
+    experience: 'Your experience',
+    experiencePlaceholder: 'What does the map actually do for your trading?',
+    pending: 'Sending…',
+    submit: 'Submit feedback',
+  },
+  de: {
+    name: 'Name',
+    namePlaceholder: 'Dieser Name wird neben deinem Beitrag angezeigt',
+    rating: 'Bewertung',
+    ratingAria: 'Bewertung von 1 bis 5 Sternen',
+    experience: 'Deine Erfahrung',
+    experiencePlaceholder: 'Wie hilft dir die Raid Map konkret beim Trading?',
+    pending: 'Wird gesendet…',
+    submit: 'Feedback einreichen',
+  },
+} as const
+
+export function TestimonialForm({ lang }: { lang: RaidMapLang }) {
   const [displayName, setDisplayName] = useState('')
   const [rating, setRating] = useState(0)
   const [text, setText] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [ok, setOk] = useState<boolean | null>(null)
   const [isPending, startTransition] = useTransition()
+  const t = copy[lang]
 
   const canSubmit = displayName.trim().length > 0 && rating >= 1 && rating <= 5 && text.trim().length > 0
 
@@ -23,11 +48,14 @@ export function TestimonialForm() {
     if (isPending || !canSubmit) return
     setMessage(null)
     startTransition(async () => {
-      const result = await submitRaidMapTestimonialAction({
-        displayName: displayName.trim(),
-        rating,
-        text: text.trim(),
-      })
+      const result = await submitRaidMapTestimonialAction(
+        {
+          displayName: displayName.trim(),
+          rating,
+          text: text.trim(),
+        },
+        lang
+      )
       setOk(result.ok)
       setMessage(result.message)
     })
@@ -38,28 +66,28 @@ export function TestimonialForm() {
       <div className="flex flex-col gap-4">
         <div>
           <label htmlFor="testimonial-name" className="block text-sm font-medium text-gray-700">
-            Name
+            {t.name}
           </label>
           <Input
             id="testimonial-name"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="The name shown next to your words"
+            placeholder={t.namePlaceholder}
             maxLength={80}
             className="mt-1 sm:max-w-xs"
           />
         </div>
 
         <div>
-          <span className="block text-sm font-medium text-gray-700">Rating</span>
-          <div className="mt-1 flex items-center gap-1" role="radiogroup" aria-label="Rating from 1 to 5 stars">
+          <span className="block text-sm font-medium text-gray-700">{t.rating}</span>
+          <div className="mt-1 flex items-center gap-1" role="radiogroup" aria-label={t.ratingAria}>
             {[1, 2, 3, 4, 5].map((value) => (
               <button
                 key={value}
                 type="button"
                 role="radio"
                 aria-checked={rating === value}
-                aria-label={`${value} star${value === 1 ? '' : 's'}`}
+                aria-label={lang === 'de' ? `${value} ${value === 1 ? 'Stern' : 'Sterne'}` : `${value} star${value === 1 ? '' : 's'}`}
                 onClick={() => setRating(value)}
                 className={`text-2xl leading-none transition-colors ${
                   value <= rating ? 'text-amber-400' : 'text-gray-300 hover:text-amber-300'
@@ -73,13 +101,13 @@ export function TestimonialForm() {
 
         <div>
           <label htmlFor="testimonial-text" className="block text-sm font-medium text-gray-700">
-            Your experience
+            {t.experience}
           </label>
           <Textarea
             id="testimonial-text"
             value={text}
             onChange={(e) => setText(e.target.value.slice(0, TEXT_MAX))}
-            placeholder="What does the map actually do for your trading?"
+            placeholder={t.experiencePlaceholder}
             maxLength={TEXT_MAX}
             rows={4}
             className="mt-1"
@@ -91,7 +119,7 @@ export function TestimonialForm() {
 
         <div>
           <Button onClick={submit} disabled={isPending || !canSubmit}>
-            {isPending ? 'Sending…' : 'Submit feedback'}
+            {isPending ? t.pending : t.submit}
           </Button>
         </div>
       </div>

@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { SpinnerGap } from '@phosphor-icons/react/SpinnerGap'
 import { Button } from '@/components/ui/button'
-import type { RaidMapTier } from '@/lib/raidmap-config'
+import type { RaidMapLang, RaidMapTier } from '@/lib/raidmap-config'
 
 interface RaidMapCheckoutButtonProps {
   tier: RaidMapTier
+  lang: RaidMapLang
   label: string
   loadingLabel: string
   errorMessage: string
@@ -15,6 +16,7 @@ interface RaidMapCheckoutButtonProps {
 
 export function RaidMapCheckoutButton({
   tier,
+  lang,
   label,
   loadingLabel,
   errorMessage,
@@ -44,7 +46,7 @@ export function RaidMapCheckoutButton({
       const response = await fetch('/api/raidmap-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier }),
+        body: JSON.stringify({ tier, lang }),
         signal: controller.signal,
       })
 
