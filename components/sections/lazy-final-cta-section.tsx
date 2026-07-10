@@ -55,15 +55,13 @@ function FinalCtaFallback() {
               <span className="text-xs sm:text-sm font-medium text-blue-400">Jetzt starten</span>
             </div>
           </div>
-          <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6">
-            Deine Trading-Reise <br />
-            <span className="text-blue-400">
-              {MENTORSHIP_IS_UPCOMING ? `Beginnt im ${MENTORSHIP_CONFIG.startMonthYear}` : 'Beginnt jetzt'}
-            </span>
+          <h2 className="text-balance text-2xl font-bold text-white sm:text-4xl md:text-5xl">
+            Bereit, ICT <span className="text-blue-400">live anzuwenden?</span>
           </h2>
-          <p className="text-sm sm:text-xl text-gray-300 max-w-2xl mx-auto">
-            Werde einer von {MENTORSHIP_CONFIG.maxSpots} ambitionierten Tradern und erlebe ein transformatives Jahr
-            mit Live-Marktanalysen, Echtzeit-Trading und messbarem Wachstum.
+          <p className="mx-auto mt-4 max-w-2xl text-pretty text-sm text-gray-300 sm:mt-6 sm:text-xl">
+            {MENTORSHIP_IS_UPCOMING
+              ? `Melde dich für den Start im ${MENTORSHIP_CONFIG.startMonthYear} an und sichere dir Zugang zu Live-Sessions, Aufzeichnungen und Community.`
+              : 'Steig in die laufende Mentorship ein und erhalte Zugang zu Live-Sessions, Aufzeichnungen und Community.'}
           </p>
         </div>
 
@@ -84,10 +82,10 @@ function FinalCtaFallback() {
 
         <div className="text-center">
           <div className="inline-flex h-12 items-center justify-center rounded-md bg-white/90 px-6 text-sm font-medium text-slate-900 sm:h-14 sm:px-8 sm:text-lg">
-            Prüfen ob Plätze frei sind
+            Einstieg starten
           </div>
           <p className="mt-4 sm:mt-6 text-xs sm:text-base text-gray-400">
-            {MENTORSHIP_IS_UPCOMING ? 'Keine Zahlung bis zum Programmstart.' : MENTORSHIP_CONFIG.paymentNote}
+            Kostenlos anmelden → Konditionen prüfen → sicher über Stripe buchen
           </p>
         </div>
       </div>

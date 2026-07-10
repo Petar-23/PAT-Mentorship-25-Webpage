@@ -31,6 +31,7 @@ export default async function DashboardPage({
   }
 
   const showCheckoutSuccess = resolvedParams?.success === 'true'
+  const showCheckoutCanceled = resolvedParams?.canceled === 'true'
   const showCoursesPaywall = resolvedParams?.paywall === 'courses'
   const showMentorshipNotStarted = resolvedParams?.message === 'mentorship-not-started'
   const checkForRecentCheckout = showCheckoutSuccess
@@ -104,6 +105,7 @@ export default async function DashboardPage({
         firstName={firstName}
         viewFlags={{
           showCheckoutSuccess,
+          showCheckoutCanceled,
           showCoursesPaywall,
           showMentorshipNotStarted,
         }}
@@ -118,7 +120,7 @@ export default async function DashboardPage({
         subscriptionDetails: initialData.subscriptionDetails,
       }}
       viewFlags={{
-        showCheckoutSuccess,
+        showCheckoutSuccess: showCheckoutSuccess && initialData.hasSubscription,
         showCoursesPaywall,
       }}
     />

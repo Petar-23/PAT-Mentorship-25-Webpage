@@ -2,17 +2,13 @@
 "use client"
 import dynamic from "next/dynamic"
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { ArrowRight } from "@phosphor-icons/react/ArrowRight"
 import { Clock } from "@phosphor-icons/react/Clock"
 import { Trophy } from "@phosphor-icons/react/Trophy"
 import { Users } from "@phosphor-icons/react/Users"
 import { Countdown } from "@/components/ui/countdown"
-import { useUser, SignInButton } from '@clerk/nextjs'
-import { useRouter } from 'next/navigation'
-import { trackConversion } from '@/components/analytics/tracking'
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
+import { MentorshipEntryCta } from '@/components/sections/mentorship-entry-cta'
 
 const Vortex = dynamic(
     () => import("@/components/ui/vortex").then((mod) => mod.Vortex),
@@ -54,8 +50,6 @@ function FinalCtaInfoCard({
 }
 
 export default function FinalCTA() {
-    const { isSignedIn } = useUser()
-    const router = useRouter()
     const isMobile = useMediaQuery("(max-width: 768px)")
     const sectionRef = useRef<HTMLElement>(null)
     const [isInView, setIsInView] = useState(false)
@@ -77,25 +71,6 @@ export default function FinalCTA() {
             baseRadius: 0.5,
             rangeRadius: 1.5,
         }
-
-    // Handle click for signed-in users
-    const handleJoinClick = () => {
-        trackConversion.ctaClick()
-        router.push('/dashboard')
-    }
-    
-    // Handle click for non-signed-in users
-    const handleSignInClick = () => {
-        trackConversion.ctaClick()
-        trackConversion.signInStart()
-    }
-
-    const buttonContent = (
-        <>
-            <span>Prüfen ob Plätze frei sind</span>
-            <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-        </>
-    )
 
     useEffect(() => {
         if (!sectionRef.current) return
@@ -121,35 +96,6 @@ export default function FinalCTA() {
         media.addEventListener('change', updatePreference)
         return () => media.removeEventListener('change', updatePreference)
     }, [])
-
-    const ctaButton = isSignedIn ? (
-        <Button
-            onClick={handleJoinClick}
-            size="lg"
-            className="bg-white text-slate-900 hover:bg-white/90 text-sm sm:text-lg px-6 sm:px-8 py-4 sm:py-6 h-auto group"
-        >
-            {buttonContent}
-        </Button>
-    ) : (
-        <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-            <Button
-                size="lg"
-                className="bg-white text-slate-900 hover:bg-white/90 text-sm sm:text-lg px-6 sm:px-8 py-4 sm:py-6 h-auto group"
-                onClick={handleSignInClick}
-            >
-                {buttonContent}
-            </Button>
-        </SignInButton>
-    )
-    
-    const handleScrollToDetails = () => {
-        const target = document.getElementById('why-different')
-        if (target) {
-            target.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        } else {
-            window.location.hash = 'why-different'
-        }
-    }
 
     return (
         <section ref={sectionRef} className="relative py-12 sm:py-24 overflow-hidden">
@@ -179,15 +125,13 @@ export default function FinalCTA() {
                                 <span className="text-xs sm:text-sm font-medium text-blue-400">Jetzt starten</span>
                             </div>
                         </div>
-                        <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-4 sm:mb-6">
-                            Deine Trading-Reise <br />
-                            <span className="text-blue-400">
-                                {MENTORSHIP_IS_UPCOMING ? `Beginnt im ${MENTORSHIP_CONFIG.startMonthYear}` : 'Beginnt jetzt'}
-                            </span>
+                        <h2 className="text-balance text-2xl font-bold text-white sm:text-4xl md:text-5xl">
+                            Bereit, ICT <span className="text-blue-400">live anzuwenden?</span>
                         </h2>
-                        <p className="text-sm sm:text-xl text-gray-300 max-w-2xl mx-auto">
-                            Werde einer von {MENTORSHIP_CONFIG.maxSpots} ambitionierten Tradern und erlebe ein transformatives Jahr 
-                            mit Live-Marktanalysen, Echtzeit-Trading und messbarem Wachstum.
+                        <p className="mx-auto mt-4 max-w-2xl text-pretty text-sm text-gray-300 sm:mt-6 sm:text-xl">
+                            {MENTORSHIP_IS_UPCOMING
+                                ? `Melde dich für den Start im ${MENTORSHIP_CONFIG.startMonthYear} an und sichere dir Zugang zu Live-Sessions, Aufzeichnungen und Community.`
+                                : 'Steig in die laufende Mentorship ein und erhalte Zugang zu Live-Sessions, Aufzeichnungen und Community.'}
                         </p>
                     </div>
                     <div className="mt-6 sm:mt-8 flex justify-center">
@@ -210,20 +154,22 @@ export default function FinalCTA() {
                     {[
                         {
                             icon: <Users className="h-8 w-8 text-blue-400 mb-4" />,
-                            title: "Begrenzte Plätze",
-                            description: `Nur ${MENTORSHIP_CONFIG.maxSpots} Trader werden aufgenommen, um eine qualitativ hochwertige Betreuung zu gewährleisten`,
+                            title: "Fokussierte Community",
+                            description: "Austausch, Rückfragen und direktes Feedback begleiten deinen Lernprozess.",
                             glowColor: "#60A5FA" // blue-400
                         },
                         {
                             icon: <Clock className="h-8 w-8 text-purple-400 mb-4" />,
-                            title: "Frühzeitig Sichern",
-                            description: "Die Vergabe der Mentorship-Plätze erfolgt nach dem Prinzip: Wer zuerst kommt, mahlt zuerst.",
+                            title: "Flexibler Einstieg",
+                            description: MENTORSHIP_IS_UPCOMING
+                                ? `Start im ${MENTORSHIP_CONFIG.startMonthYear}; kündbar mit 1 Tag Frist zum Monatsende.`
+                                : "Der laufende Jahrgang ist offen und mit 1 Tag Frist zum Monatsende kündbar.",
                             glowColor: "#A78BFA" // purple-400
                         },
                         {
                             icon: <Trophy className="h-8 w-8 text-green-400 mb-4" />,
-                            title: "Lebenslanger Zugang",
-                            description: "Schließe das Jahr ab und erhalte permanenten Zugriff auf alle Materialien und Aufzeichnungen",
+                            title: "Aufzeichnungen inklusive",
+                            description: "Greife während deiner Mitgliedschaft auf Materialien und bisherige Sessions zu.",
                             glowColor: "#4ADE80" // green-400
                         }
                     ].map((card) => (
@@ -238,15 +184,20 @@ export default function FinalCTA() {
                 </div>
 
                 <div className="text-center mt-6 sm:mt-8 md:mt-0 motion-safe:animate-[final-cta-pop_500ms_ease-out_200ms_both]">
-                    {ctaButton}
+                    <MentorshipEntryCta
+                        source="final_cta"
+                        className="h-auto bg-white px-6 py-4 text-sm text-slate-900 hover:bg-white/90 sm:px-8 sm:py-6 sm:text-lg"
+                    />
                     
                     <p className="mt-4 sm:mt-6 text-xs sm:text-base text-gray-400">
-                        {MENTORSHIP_IS_UPCOMING ? 'Keine Zahlung bis zum Programmstart.' : MENTORSHIP_CONFIG.paymentNote}
+                        Kostenlos anmelden → Konditionen prüfen → sicher über Stripe buchen
                     </p>
 
                     <div className="mt-6 sm:mt-12 inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-white/10 ring-1 ring-white/20">
                         <div className="bg-amber-500/20 text-amber-400 rounded-full px-2 py-0.5 text-xs sm:text-sm">⚡</div>
-                        <span className="text-xs sm:text-sm font-medium text-amber-300">Nur die ersten {MENTORSHIP_CONFIG.maxSpots} Anmeldungen werden akzeptiert</span>
+                        <span className="text-xs sm:text-sm font-medium text-amber-300">
+                            Transparente Konditionen · monatlich kündbar
+                        </span>
                     </div>
                 </div>
             </div>

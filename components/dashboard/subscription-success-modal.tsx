@@ -2,6 +2,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import Link from 'next/link'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { CheckCircle } from '@phosphor-icons/react/CheckCircle'
@@ -10,10 +11,11 @@ import confetti from 'canvas-confetti'
 
 interface SuccessModalProps {
   isOpen: boolean
+  hasMentorshipAccess: boolean
   onClose: () => void
 }
 
-export function SubscriptionSuccessModal({ isOpen, onClose }: SuccessModalProps) {
+export function SubscriptionSuccessModal({ isOpen, hasMentorshipAccess, onClose }: SuccessModalProps) {
   useEffect(() => {
     if (!isOpen) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
@@ -70,13 +72,23 @@ export function SubscriptionSuccessModal({ isOpen, onClose }: SuccessModalProps)
         </DialogHeader>
         <div className="text-center space-y-4">
           <p className="text-gray-600">
-            {MENTORSHIP_IS_UPCOMING
-              ? `Dein Platz ist gesichert. Die Mentorship startet am ${MENTORSHIP_CONFIG.startDateFormatted}.`
-              : 'Dein Platz ist gesichert. Du kannst jetzt direkt mit der Mentorship starten.'}
+            {hasMentorshipAccess
+              ? 'Deine Buchung ist bestätigt. Du kannst jetzt direkt mit der Mentorship starten.'
+              : MENTORSHIP_IS_UPCOMING
+                ? `Deine Buchung ist bestätigt. Die Mentorship startet am ${MENTORSHIP_CONFIG.startDateFormatted}.`
+                : 'Deine Buchung ist bestätigt. Dein Mentorship-Zugang wird gerade freigeschaltet.'}
           </p>
-          <Button onClick={onClose} className="w-full">
-            Zum Dashboard
-          </Button>
+          {hasMentorshipAccess ? (
+            <Button asChild className="w-full">
+              <Link href="/mentorship" onClick={onClose}>
+                Mentorship öffnen
+              </Link>
+            </Button>
+          ) : (
+            <Button onClick={onClose} className="w-full">
+              Zum Dashboard
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

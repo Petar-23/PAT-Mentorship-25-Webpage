@@ -60,6 +60,7 @@ type SubscriptionDetails = {
   isPending: boolean
   isCanceled: boolean
   cancelAt: string | null
+  currentPeriodEnd: string | null
 }
 
 type DashboardMemberClientProps = {
@@ -88,20 +89,28 @@ export default function DashboardMemberClient({
   const mentorshipStatus = initialData.mentorshipStatus
   const mentorshipStartDate = formatMentorshipDate(initialData.mentorshipStatus.startDate)
   const subscriptionStartDate = formatMentorshipDate(initialData.subscriptionDetails.startDate)
+  const subscriptionEndDate = initialData.subscriptionDetails.currentPeriodEnd
+    ? formatMentorshipDate(initialData.subscriptionDetails.currentPeriodEnd)
+    : null
   const subscriptionIsPending =
     initialData.subscriptionDetails.isPending ||
     initialData.subscriptionDetails.status === 'incomplete'
   const hasMentorshipAccess =
     initialData.hasSubscription && mentorshipStatus?.accessible
-  const [showSuccessModal, setShowSuccessModal] = useState(() => showCheckoutSuccess)
+  const [showSuccessModal, setShowSuccessModal] = useState(
+    () => showCheckoutSuccess && initialData.hasSubscription
+  )
   const hasTrackedPurchase = useRef(false)
 
   useEffect(() => {
-    if (showCheckoutSuccess && !hasTrackedPurchase.current) {
+    if (showCheckoutSuccess && initialData.hasSubscription && !hasTrackedPurchase.current) {
       hasTrackedPurchase.current = true
-      trackConversion.purchase(150)
+      trackConversion.purchase(MENTORSHIP_CONFIG.price)
+      if (window.history.replaceState) {
+        window.history.replaceState({}, '', '/dashboard')
+      }
     }
-  }, [showCheckoutSuccess])
+  }, [initialData.hasSubscription, showCheckoutSuccess])
 
   const handleCloseModal = useCallback(() => {
     setShowSuccessModal(false)
@@ -122,6 +131,7 @@ export default function DashboardMemberClient({
       {showSuccessModal && (
         <SubscriptionSuccessModal
           isOpen={true}
+          hasMentorshipAccess={hasMentorshipAccess}
           onClose={handleCloseModal}
         />
       )}
@@ -217,7 +227,9 @@ export default function DashboardMemberClient({
               <div className="text-sm text-gray-600">
                 {initialData.subscriptionDetails.isCanceled ? (
                   <p className="text-red-600">
-                    Dein Abonnement wurde gekündigt. Erneuere es, um deinen Zugang zur Mentorship zu sichern.
+                    {initialData.hasSubscription
+                      ? `Dein Abonnement ist gekündigt. Dein Zugang bleibt ${subscriptionEndDate ? `bis zum ${subscriptionEndDate}` : 'bis zum Ende der bezahlten Periode'} aktiv.`
+                      : 'Dein Abonnement ist gekündigt und aktuell nicht mehr aktiv.'}
                   </p>
                 ) : subscriptionIsPending ? (
                   <p className="text-amber-700">

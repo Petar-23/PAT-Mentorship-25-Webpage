@@ -71,7 +71,7 @@ const comparisonData: { categories: Category[] } = {
         },
         {
           name: "Kündigungsbedingungen",
-          us: "Jederzeit kündbar",
+          us: "1 Tag Frist zum Monatsende",
           others: "Keine Kündigung",
           highlight: true,
           description: "Flexible Bindung vs. feste Vertragslaufzeit"
@@ -123,7 +123,7 @@ const comparisonData: { categories: Category[] } = {
         },
         {
           name: "Community-Größe",
-          us: "Limitiert auf 100",
+          us: "Fokussierte Community",
           others: "Unbegrenzt",
           highlight: true,
           description: "Fokussierte Gruppe vs. überfüllte Community"
@@ -245,6 +245,9 @@ export default function PricingComparison() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <PricingComparisonCta />
           </div>
+          <p className="text-sm leading-relaxed text-gray-500">
+            Kostenlos anmelden → Konditionen prüfen → sicher über Stripe buchen
+          </p>
         </div>
       </div>
     </section>

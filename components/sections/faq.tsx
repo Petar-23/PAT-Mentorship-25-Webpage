@@ -8,12 +8,12 @@ const faqs = [
       : 'Kann ich noch in die Mentorship 2026 einsteigen?',
     answer: MENTORSHIP_IS_UPCOMING
       ? `Der Start am ${MENTORSHIP_CONFIG.startDateFormatted} ermöglicht es mir, alle Teilnehmer einzusammeln und sicherzustellen, dass alle gemeinsam beginnen, um von Tag eins an eine starke Community aufzubauen. Dies gibt dir auch die Zeit, deinen Platz zu sichern und dich auf das Programm vorzubereiten.`
-      : 'Ja, solange noch ein Platz verfügbar ist. Nach der Freischaltung erhältst du direkten Zugang zum laufenden Programm, zu den bisherigen Aufzeichnungen und zur Community.',
+      : 'Ja. Nach der Freischaltung erhältst du direkten Zugang zum laufenden Programm, zu den bisherigen Aufzeichnungen und zur Community.',
   },
   {
     id: "item-2",
     question: "Wie funktioniert das monatliche Abonnement?",
-    answer: `Das Programm kostet ${MENTORSHIP_CONFIG.price}€ pro Monat (inkl. MwSt.) und du kannst jederzeit kündigen, wenn du nicht zufrieden bist. Dieses flexible Modell gewährleistet hochwertige Betreuung und ermöglicht es dir gleichzeitig, den Wert des Programms monatlich zu evaluieren.`,
+    answer: `Das Programm kostet ${MENTORSHIP_CONFIG.price}€ pro Monat (inkl. MwSt.) und ist mit 1 Tag Frist zum Monatsende kündbar. Dieses flexible Modell ermöglicht es dir, den Wert des Programms monatlich zu evaluieren.`,
   },
   {
     id: "item-3",
@@ -28,7 +28,7 @@ const faqs = [
   {
     id: "item-5",
     question: "Was passiert, wenn ich mein Abonnement kündige?",
-    answer: "Du behältst den Zugang bis zum Ende deiner bezahlten Periode. Falls du später wieder einsteigen möchtest, beachte, dass die Plätze begrenzt sind und möglicherweise nicht mehr verfügbar sind. Der Abschluss des gesamten Jahres gewährt dir dauerhaften Zugriff auf alle Materialien.",
+    answer: "Du behältst den Zugang bis zum Ende deiner bezahlten Periode. Danach endet der Zugriff auf den Mentorship-Bereich, die Community und die Aufzeichnungen.",
   },
   {
     id: "item-6",
@@ -58,7 +58,7 @@ const faqs = [
   {
     id: "item-11",
     question: "Gibt es eine Rückerstattungspolitik?",
-    answer: "Da wir mit einem monatlichen Abonnement-Modell arbeiten, gibt es keine langfristige Bindung. Du kannst jederzeit kündigen, wenn du das Gefühl hast, dass das Programm nicht deinen Erwartungen entspricht.",
+    answer: "Da wir mit einem monatlichen Abonnement-Modell arbeiten, gibt es keine langfristige Bindung. Du kannst mit 1 Tag Frist zum Monatsende kündigen, wenn das Programm nicht deinen Erwartungen entspricht.",
   },
   {
     id: "item-12",

@@ -17,7 +17,7 @@ export default function HormoziLanding() {
             <span className="rounded-sm bg-yellow-200 px-1 text-blue-700">profitabel.</span>
           </h1>
           <p className="text-pretty text-base font-medium leading-relaxed text-slate-700 sm:text-lg">
-            Die meisten Kurse enden bei Theorie. Ich fange dort an – wir gehen 2–3x pro Woche live in den Markt. So
+            Die meisten Kurse enden bei Theorie. Ich fange dort an – wir gehen {MENTORSHIP_CONFIG.sessionsPerWeek}× pro Woche live in den Markt. So
             lernst du, was wirklich funktioniert.
           </p>
 
@@ -36,12 +36,11 @@ export default function HormoziLanding() {
 
           <div className="mt-4 flex w-full flex-col items-center gap-3">
             <HormoziLandingCtaButton
-              buttonText="Prüfen, ob Plätze frei sind"
+              buttonText="Einstieg starten"
               className="h-14 w-full px-8 text-base sm:w-auto sm:text-lg"
             />
             <p className="text-xs text-slate-500">
-              {MENTORSHIP_CONFIG.price}€/Monat · monatlich kündbar ·{" "}
-              <span className="rounded-sm bg-yellow-200 px-1 text-blue-700">max. {MENTORSHIP_CONFIG.maxSpots} Plätze</span>
+              Kostenlos anmelden → Konditionen prüfen → sicher über Stripe buchen
             </p>
           </div>
         </div>
@@ -103,7 +102,7 @@ export default function HormoziLanding() {
               {
                   title: 'Ist das für Anfänger?',
                   copy:
-                    'Ja. Die Mentorship ist für Anfänger gebaut. Wenn du keinen Mehrwert merkst, dann kannst du monatlich kündigen.',
+                    'Ja. Die Mentorship ist für Anfänger gebaut. Wenn du keinen Mehrwert merkst, kannst du mit 1 Tag Frist zum Monatsende kündigen.',
                 },
               ].map((item) => (
                 <div key={item.title} className="rounded-xl border border-slate-200 bg-white p-5 text-left sm:p-6 lg:p-7">
@@ -123,7 +122,7 @@ export default function HormoziLanding() {
               {[
               {
                   title: 'Live Trading + Prognosen',
-                  copy: '2–3 Sessions pro Woche am echten Chart. Tages- und Wochenausblicke.',
+                  copy: `${MENTORSHIP_CONFIG.sessionsPerWeek} Sessions pro Woche am echten Chart. Tages- und Wochenausblicke.`,
                 },
                 {
                   title: 'Aufzeichnungen',
@@ -166,7 +165,7 @@ export default function HormoziLanding() {
             <span className="rounded-sm bg-yellow-200 px-1 text-blue-700">ICT Live‑Coaching</span> + klare Regeln
           </h2>
           <p className="text-pretty mt-4 text-sm text-slate-600 sm:text-base">
-            Du bekommst 2–3 Live‑Sessions pro Woche. Du kommst rein, indem du dich anmeldest.
+            Du bekommst {MENTORSHIP_CONFIG.sessionsPerWeek} Live‑Sessions pro Woche. Du kommst rein, indem du dich anmeldest.
           </p>
           <div className="mt-6 flex justify-center">
             {MENTORSHIP_IS_UPCOMING ? (
@@ -186,12 +185,11 @@ export default function HormoziLanding() {
           </div>
           <div className="mt-7 space-y-3">
             <HormoziLandingCtaButton
-              buttonText="Prüfe, ob noch Plätze frei sind"
+              buttonText="Einstieg starten"
               className="h-14 w-full bg-blue-600 px-8 text-base text-white hover:bg-blue-700 sm:h-16 sm:w-auto sm:text-lg"
             />
             <p className="text-xs text-slate-500">
-              {MENTORSHIP_CONFIG.price}€/Monat · monatlich kündbar ·{" "}
-              <span className="rounded-sm bg-yellow-200 px-1 text-blue-700">max. {MENTORSHIP_CONFIG.maxSpots} Plätze</span>
+              Kostenlos anmelden → Konditionen prüfen → sicher über Stripe buchen
             </p>
           </div>
         </div>

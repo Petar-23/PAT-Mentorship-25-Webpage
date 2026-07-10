@@ -15,7 +15,7 @@ const features = [
   {
     icon: <Calendar className="h-4 w-4 sm:h-6 sm:w-6" />,
     title: "Live Sessions",
-    description: "2-3 Live-Sessions pro Woche für Lektionen, Übungen und Live-Trading.",
+    description: `${MENTORSHIP_CONFIG.sessionsPerWeek} Live-Sessions pro Woche für Lektionen, Übungen und Live-Trading.`,
   },
   {
     icon: <Users className="h-4 w-4 sm:h-6 sm:w-6" />,
@@ -29,8 +29,8 @@ const features = [
   },
   {
     icon: <Trophy className="h-4 w-4 sm:h-6 sm:w-6" />,
-    title: "Unbefristeter Zugang",
-    description: "Schließe das einjährige Programm ab und erhalte dauerhaften Zugriff auf alle Materialien.",
+    title: "Aufzeichnungen inklusive",
+    description: "Greife während deiner Mitgliedschaft auf alle Materialien und bisherigen Sessions zu.",
   },
   {
     icon: <CreditCard className="h-4 w-4 sm:h-6 sm:w-6" />,
@@ -62,7 +62,7 @@ function FeatureCard({ feature }: { feature: typeof features[0] }) {
 
 export default function WhyDifferent() {
   return (
-    <section id="why-different" className="py-16 sm:py-24 bg-slate-900">
+    <section id="why-different" className="scroll-mt-20 py-16 sm:py-24 bg-slate-900">
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="text-center mb-8 sm:mb-16">
           <div className="inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-white/10 ring-1 ring-white/20 mb-4 sm:mb-6">

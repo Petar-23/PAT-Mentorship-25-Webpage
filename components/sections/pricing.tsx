@@ -1,7 +1,7 @@
-import { MENTORSHIP_CONFIG } from '@/lib/config'
+import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
 import { Check } from "@phosphor-icons/react/dist/ssr/Check"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { MentorshipEntryCta } from '@/components/sections/mentorship-entry-cta'
 
 const features = [
   "2 Live-Sessions pro Woche (Di + Do)",
@@ -9,7 +9,7 @@ const features = [
   "Tagesausblick am Dienstag und Donnerstag",
   "3-4 vollständige Trading-Modelle mit Trading Plan",
   "Alle Recordings verfügbar solange du dabei bist",
-  `Exklusive Community (max. ${MENTORSHIP_CONFIG.maxSpots} Trader)`,
+  "Fokussierte Community für Austausch und Feedback",
 ]
 
 export default function Pricing() {
@@ -29,7 +29,7 @@ export default function Pricing() {
           
           <div className="absolute top-0 right-0 mr-6 -mt-4">
             <span className="inline-flex items-center rounded-full bg-blue-50 px-4 py-1 text-sm font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-              Nur {MENTORSHIP_CONFIG.maxSpots} Plätze
+              {MENTORSHIP_IS_UPCOMING ? 'Warteliste geöffnet' : 'Laufender Jahrgang'}
             </span>
           </div>
           
@@ -47,7 +47,7 @@ export default function Pricing() {
             <div className="bg-blue-50/50 border-l-4 border-blue-500 p-6 rounded-r-lg">
               <p className="text-gray-700 leading-relaxed italic">
                 Kein 3.000€ Kurs den du im Voraus bezahlst und danach bist du auf dich alleine gestellt. 
-                Du zahlst monatlich — wenn ich als Mentor nicht liefere, kannst du jederzeit gehen. 
+                Du zahlst monatlich — wenn ich als Mentor nicht liefere, kannst du zum Monatsende gehen.
                 Das Risiko liegt bei mir.
               </p>
             </div>
@@ -62,9 +62,13 @@ export default function Pricing() {
             </ul>
 
             <div className="pt-4">
-              <Button className="w-full" size="lg">
-                Prüfen ob Plätze frei sind
-              </Button>
+              <MentorshipEntryCta
+                source="pricing_cta"
+                className="w-full"
+              />
+              <p className="mt-3 text-center text-sm leading-relaxed text-gray-500">
+                Kostenlos anmelden → Konditionen prüfen → sicher über Stripe buchen
+              </p>
             </div>
           </CardContent>
         </Card>

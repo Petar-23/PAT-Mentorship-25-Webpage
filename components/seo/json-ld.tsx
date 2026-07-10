@@ -1,3 +1,5 @@
+import { MENTORSHIP_CONFIG } from '@/lib/config'
+
 export function JsonLd() {
   const organizationSchema = {
     '@context': 'https://schema.org',
@@ -17,7 +19,7 @@ export function JsonLd() {
     '@type': 'Course',
     name: 'PAT Mentorship 2026',
     description:
-      'Live-Mentoring-Programm für Trading nach ICT Smart Money Konzepten. 2-3 Live-Sessions pro Woche, auf Deutsch.',
+      `Live-Mentoring-Programm für Trading nach ICT Smart Money Konzepten. ${MENTORSHIP_CONFIG.sessionsPerWeek} Live-Sessions pro Woche, auf Deutsch.`,
     provider: {
       '@type': 'Organization',
       name: 'Price Action Trader',
@@ -35,9 +37,9 @@ export function JsonLd() {
     educationalLevel: 'Beginner to Advanced',
     offers: {
       '@type': 'Offer',
-      price: '150.00',
-      priceCurrency: 'EUR',
-      availability: 'https://schema.org/LimitedAvailability',
+      price: MENTORSHIP_CONFIG.price.toFixed(2),
+      priceCurrency: MENTORSHIP_CONFIG.currency,
+      availability: 'https://schema.org/InStock',
       url: 'https://price-action-trader.de',
     },
     aggregateRating: {
@@ -58,7 +60,7 @@ export function JsonLd() {
         name: 'Was ist das PAT Mentorship?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Das PAT Mentorship ist ein Live-Mentoring-Programm für Trading nach ICT Smart Money Konzepten. Du lernst in 2-3 Live-Sessions pro Woche, auf Deutsch, direkt von Mentor Petar.',
+          text: `Das PAT Mentorship ist ein Live-Mentoring-Programm für Trading nach ICT Smart Money Konzepten. Du lernst in ${MENTORSHIP_CONFIG.sessionsPerWeek} Live-Sessions pro Woche, auf Deutsch, direkt von Mentor Petar.`,
         },
       },
       {
@@ -66,7 +68,7 @@ export function JsonLd() {
         name: 'Wie viel kostet das Mentorship?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Das PAT Mentorship kostet 150 € pro Monat und ist monatlich kündbar. Es gibt keine langfristigen Verträge.',
+          text: `Das PAT Mentorship kostet ${MENTORSHIP_CONFIG.price} € pro Monat und ist mit 1 Tag Frist zum Monatsende kündbar. Es gibt keine langfristigen Verträge.`,
         },
       },
       {
