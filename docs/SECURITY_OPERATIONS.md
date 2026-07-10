@@ -10,13 +10,13 @@ Bereits erledigt:
 - Production-Runtime auf den gepoolten Prisma-Postgres-Endpunkt umgestellt.
 - Privaten Blob-Store `pat-private-pdfs` angelegt und ausschließlich mit Production als `BLOB_PRIVATE_READ_WRITE_TOKEN` verbunden.
 - `CLERK_ADMIN_ORGANIZATION_ID`, getrennte `CRON_SECRET`/`AGENT_UPLOAD_TOKEN`, `TRADINGVIEW_COOKIE_ENCRYPTION_KEY`, Playback-TTL und das deaktivierte Legacy-Migrationsflag in Production gesetzt.
+- Clerk Production per Backend-API verifiziert: `organization_creation_defaults.enabled=false`; Mitglieder dürfen keine eigenen Organisationen anlegen.
 - `NEXT_PUBLIC_BUNNY_API_KEY` aus Vercel und den lokalen Environment-Dateien entfernt.
 
 Noch vor dem Alias-Cutover erforderlich:
 
 - Den ehemals öffentlich exponierten Bunny Stream API Key rotieren und den neuen Wert ausschließlich als `BUNNY_API_KEY` setzen.
 - Bunny Embed-Key, Read-Only-Webhook-Key, Webhook-URL und die notwendigen Production-/Candidate-Referrer vorbereiten. Player Token Authentication, `BlockNoneReferrer` und die Direct-Play-Sperre erst nach dem Aliaswechsel und einem erfolgreichen Signed-Playback-Test erzwingen; die alte Live-Version verwendet noch unsignierte Embeds.
-- In Clerk die selbstständige Erstellung weiterer Organisationen deaktivieren, sofern sie keine Produktfunktion ist.
 - Die finalen Production-Environment-Scopes am erzeugten Deployment kontrollieren.
 
 Bewusst nach dem Code-Cutover:
@@ -30,7 +30,7 @@ Verbleibende Provider-Grenze: Prisma Postgres erlaubt in der eingesetzten verwal
 
 1. Provider-Logs und Git-History auf konkrete Secret-Expositionen prüfen. Clerk-, Stripe-, PayPal-, Discord- und andere Credentials nur rotieren, wenn ein Leak, ungewöhnliche Provider-Aktivität oder ein sonstiger belastbarer Indikator vorliegt; der Audit hat für diese Keys keinen History-Leak belegt.
 2. `NEXT_PUBLIC_BUNNY_API_KEY` aus allen Vercel-Umgebungen und lokalen Dateien entfernen und den betroffenen Bunny-Key zwingend rotieren. Ein API-Key darf niemals ein `NEXT_PUBLIC_`-Präfix tragen.
-3. `CLERK_ADMIN_ORGANIZATION_ID` in jeder Umgebung auf die exakte Plattform-Organisation setzen. Fehlt der Wert oder zeigt er auf die falsche Organisation, sperrt der Admin-Check absichtlich fail-closed alle Admin- und Owner-Routen. Die Clerk-Einstellung zur selbstständigen Erstellung neuer Organisationen deaktivieren, sofern sie nicht ausdrücklich als Produktfunktion benötigt wird.
+3. `CLERK_ADMIN_ORGANIZATION_ID` in jeder Umgebung auf die exakte Plattform-Organisation setzen. Fehlt der Wert oder zeigt er auf die falsche Organisation, sperrt der Admin-Check absichtlich fail-closed alle Admin- und Owner-Routen. Die Clerk-Einstellung zur selbstständigen Erstellung neuer Organisationen muss deaktiviert bleiben; der Production-Stand wurde am 2026-07-10 per Backend-API mit `organization_creation_defaults.enabled=false` bestätigt.
 4. Bunny Stream unmittelbar vor dem Candidate-Build vorbereiten:
    - Den exponierten Stream API Key rotieren und den neuen Wert ausschließlich serverseitig setzen. Uploads und Provider-Jobs während dieses kurzen Übergangs pausieren, weil bestehende Deployments den alten Key-Snapshot behalten.
    - `BUNNY_EMBED_TOKEN_KEY` als ausschließlich serverseitiges Secret setzen.
