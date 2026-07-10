@@ -7,6 +7,7 @@
     "build": "next build --webpack",
     "vercel-build": "prisma generate && next build --webpack",
     "db:migrate:deploy": "node scripts/migrate-deploy.mjs",
+    "pdf:migrate-private": "node scripts/migrate-private-pdfs.mjs",
     "start": "next start",
     "invoices:download": "node scripts/download-invoices.mjs --env-file .env.local",
     "hermes:upload": "node scripts/hermes-upload.mjs",

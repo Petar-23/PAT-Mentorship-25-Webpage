@@ -57,6 +57,52 @@ Bestehende `*.public.blob.vercel-storage.com/pdfs/...`-Objekte bleiben technisch
 
 Bis Schritt 5 abgeschlossen ist, bleibt die Kenntnis einer alten Public-URL ein Rest-Risiko.
 
+Der Migrationsjob läuft standardmäßig read-only und gibt keine Blob-URLs aus:
+
+```bash
+npm run pdf:migrate-private
+```
+
+Das geschützte Manifest muss außerhalb des Repositories liegen. Der Job legt es mit Modus `0600` an und protokolliert dort die ursprüngliche URL, Hashes, ETags und jeden dauerhaften Phasenübergang. Nach Prüfung des Inventory-Counts zuerst die Migrationsphase trocken ausführen:
+
+```bash
+npm run pdf:migrate-private -- --phase=migrate --manifest=/absolute/private/pdf-migration.jsonl
+```
+
+Für den Canary anschließend denselben Kandidaten explizit scopen und dessen eigenen Count/Digest ablesen:
+
+```bash
+npm run pdf:migrate-private -- --phase=migrate --manifest=/absolute/private/pdf-migration.jsonl --environment-id=production --video-id=<video-id> --limit=1
+```
+
+Danach genau diesen einen Datensatz ohne öffentliche Löschung migrieren:
+
+```bash
+npm run pdf:migrate-private -- --phase=migrate --apply --manifest=/absolute/private/pdf-migration.jsonl --environment-id=production --video-id=<video-id> --expect-count=1 --expect-digest=<dry-run-digest> --limit=1
+```
+
+Der Job prüft Downloadgröße und `%PDF-`-Magic, verwendet einen vollständigen SHA-256 für den deterministischen privaten Pfad, liest die private Kopie erneut vollständig ein und aktualisiert `Video.pdfUrl` per Compare-and-set. Ein PostgreSQL Advisory Lock verhindert Parallelruns. Öffentliche Originale bleiben in dieser Phase immer bestehen.
+
+Nach erfolgreichem berechtigten `200`-, anonymen `401`- und unberechtigten `403`-Test die private Kopie gegen DB und Manifest verifizieren:
+
+```bash
+npm run pdf:migrate-private -- --phase=verify --manifest=/absolute/private/pdf-migration.jsonl --environment-id=production
+npm run pdf:migrate-private -- --phase=verify --apply --manifest=/absolute/private/pdf-migration.jsonl --environment-id=production --expect-count=1 --expect-digest=<verify-dry-run-digest>
+```
+
+Erst danach in einem separaten, explizit bestätigten Lauf das öffentliche Original konditional mit dem manifestierten ETag löschen:
+
+```bash
+npm run pdf:migrate-private -- --phase=delete --manifest=/absolute/private/pdf-migration.jsonl --environment-id=production
+npm run pdf:migrate-private -- --phase=delete --apply --manifest=/absolute/private/pdf-migration.jsonl --environment-id=production --expect-count=1 --expect-digest=<delete-dry-run-digest> --acknowledge-public-deletion
+```
+
+Vor jeder Apply-Phase denselben Befehl ohne `--apply`, `--expect-count` und `--expect-digest` ausführen und anschließend exakt Count und Digest übernehmen. Damit erkennt der Job nicht nur Mengenänderungen, sondern auch einen Austausch der Kandidaten bei gleicher Anzahl. Das Manifest bindet den Lauf zusätzlich an Environment-ID, vollständigen Hash des direkten DB-Zugangs und Fingerprint des privaten Store-Tokens.
+
+Für alle Phasen muss die geschützte Operations-Umgebung `MIGRATION_DATABASE_URL` oder `DIRECT_URL` als direkten, nicht gepoolten PostgreSQL-Endpunkt bereitstellen; nur damit bleibt der Advisory Lock über die gesamte Session wirksam. Für `migrate` und `verify` ist zusätzlich `BLOB_PRIVATE_READ_WRITE_TOKEN` nötig, für `delete` außerdem der davon verschiedene `BLOB_READ_WRITE_TOKEN`. Das Manifest bis zum bestätigten Abschlussinventar geschützt aufbewahren und anschließend nach der internen Aufbewahrungsrichtlinie entfernen.
+
+DB-Credentials und privaten Blob-Token zwischen `migrate`, `verify` und `delete` nicht rotieren: Ihre Fingerprints sind absichtlich Teil des Manifest-Kontexts. Falls eine Rotation unvermeidbar ist, den Lauf stoppen und das Manifest manuell reconciliieren; den Kontext-Guard nicht entfernen oder überschreiben.
+
 ## Sicherer Alias-Cutover
 
 1. Zwei identische Production-Target-Candidates ohne Alias bauen. Candidate A erhält `ALLOW_LEGACY_TRADINGVIEW_COOKIE_MIGRATION=true`, Candidate B `false`; beide müssen auf demselben Security-Commit und denselben übrigen Secrets basieren.
