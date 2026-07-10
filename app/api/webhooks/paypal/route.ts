@@ -2,19 +2,16 @@ import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyPayPalWebhookSignature } from '@/lib/paypal'
+import { sendDiscordChannelMessage } from '@/lib/discord'
 import {
-  removeRoleFromGuildMember,
-  sendDiscordChannelMessage,
-} from '@/lib/discord'
+  enqueueEntitlementRevocation,
+  markEntitlementDesiredActive,
+  processEntitlementRevocationQueue,
+  restoreLinkedDiscordMentorshipRole,
+} from '@/lib/entitlement-revocations'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-
-function requireEnv(name: string): string {
-  const value = process.env[name]
-  if (!value) throw new Error(`Missing ${name}`)
-  return value
-}
 
 type PayPalWebhookEvent = {
   id: string
@@ -74,10 +71,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true })
   } catch (error) {
     console.error('Error in PayPal webhook:', error)
-    return new NextResponse(
-      `Webhook error: ${error instanceof Error ? error.message : 'Unknown Error'}`,
-      { status: 400 }
-    )
+    return new NextResponse('Webhook processing failed', { status: 400 })
   }
 }
 
@@ -134,8 +128,18 @@ async function handleSubscriptionEnd(subscriptionId: string, newStatus: string) 
       data: { status: 'canceled' },
     })
 
-    // Discord-Rolle entfernen (falls verknuepft via Stripe-Metadata)
-    await safeRemoveDiscordRole(subscriber.userId)
+    // Durable revoke: the worker re-checks Stripe/Admin immediately before
+    // removing anything, so an alternative active provider wins.
+    const job = await enqueueEntitlementRevocation({
+      userId: subscriber.userId,
+      entitlement: 'mentorship',
+      reason: `paypal:${newStatus}`,
+    })
+    await processEntitlementRevocationQueue({
+      limit: 1,
+      jobId: job.id,
+      workerId: 'paypal-webhook',
+    })
   }
 
   // Mod-Benachrichtigung
@@ -170,33 +174,12 @@ async function handleSubscriptionActivated(subscriptionId: string) {
       },
       data: { status: 'active' },
     })
-  }
-}
-
-async function safeRemoveDiscordRole(userId: string) {
-  try {
-    // Discord-User-ID ist in Stripe-Customer-Metadata gespeichert.
-    // Wir holen sie ueber die UserSubscription → stripeCustomerId.
-    const { stripe } = await import('@/lib/stripe')
-
-    const sub = await prisma.userSubscription.findUnique({
-      where: { userId },
-      select: { stripeCustomerId: true },
+    await markEntitlementDesiredActive({
+      userId: subscriber.userId,
+      entitlement: 'mentorship',
+      reason: 'paypal:ACTIVE',
     })
-
-    if (!sub?.stripeCustomerId) return
-
-    const customer = await stripe.customers.retrieve(sub.stripeCustomerId)
-    if ('deleted' in customer && customer.deleted) return
-
-    const discordUserId = customer.metadata?.discordUserId
-    if (!discordUserId) return
-
-    const guildId = requireEnv('DISCORD_GUILD_ID')
-    const roleId = requireEnv('DISCORD_ROLE_MENTEE26_ID')
-    await removeRoleFromGuildMember({ guildId, discordUserId, roleId })
-  } catch (err) {
-    console.error('Failed to remove Discord role for PayPal cancellation:', err)
+    await restoreLinkedDiscordMentorshipRole(subscriber.userId)
   }
 }
 

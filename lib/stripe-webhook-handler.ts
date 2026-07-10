@@ -1,12 +1,18 @@
 import { handleRaidMapCheckoutCompleted } from '@/lib/raidmap-fulfillment'
 import { sendCortanaTelegram } from '@/lib/telegram-notify'
+import {
+  enqueueEntitlementRevocation,
+  markEntitlementDesiredActive,
+  processEntitlementRevocationQueue,
+  type RevocableEntitlement,
+} from '@/lib/entitlement-revocations'
+import { getRaidMapAccessState } from '@/lib/raidmap-access'
 import type Stripe from 'stripe'
 import { stripe } from './stripe'
 import { prisma } from './prisma'
 import { ensureCustomerTaxInfo } from './updateCustomers'
 import {
   addRoleToGuildMember,
-  removeRoleFromGuildMember,
   sendDiscordChannelMessage,
 } from './discord'
 
@@ -122,12 +128,18 @@ async function upsertRaidMapSubscription(subscription: Stripe.Subscription) {
   const userId = subscription.metadata?.userId
   if (!userId) {
     console.warn('[raidmap] subscription event ohne metadata.userId — skip', subscription.id)
-    return
+    return null
   }
 
   const customerId =
     typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id
   const priceId = subscription.items?.data?.[0]?.price?.id ?? null
+  const existing = await prisma.raidMapSubscription.findUnique({
+    where: { userId },
+    select: { pastDueSince: true },
+  })
+  const pastDueSince =
+    subscription.status === 'past_due' ? existing?.pastDueSince ?? new Date() : null
 
   await prisma.raidMapSubscription.upsert({
     where: { userId },
@@ -140,6 +152,7 @@ async function upsertRaidMapSubscription(subscription: Stripe.Subscription) {
       priceId,
       cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
       currentPeriodEnd: unixToDate(subscription.current_period_end),
+      pastDueSince,
     },
     update: {
       stripeCustomerId: customerId ?? '',
@@ -149,10 +162,49 @@ async function upsertRaidMapSubscription(subscription: Stripe.Subscription) {
       priceId,
       cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
       currentPeriodEnd: unixToDate(subscription.current_period_end),
+      pastDueSince,
     },
   })
 
   console.log('[raidmap] subscription cached', { userId, status: subscription.status })
+  return userId
+}
+
+async function reconcileRevocationDesiredState(input: {
+  userId: string
+  entitlement: RevocableEntitlement
+  shouldHaveAccess: boolean
+  reason: string
+}) {
+  if (input.shouldHaveAccess) {
+    await markEntitlementDesiredActive({
+      userId: input.userId,
+      entitlement: input.entitlement,
+      reason: input.reason,
+    })
+    return
+  }
+
+  const job = await enqueueEntitlementRevocation({
+    userId: input.userId,
+    entitlement: input.entitlement,
+    reason: input.reason,
+  })
+  await processEntitlementRevocationQueue({
+    limit: 1,
+    jobId: job.id,
+    workerId: `stripe-${input.entitlement}`,
+  })
+}
+
+async function reconcileRaidMapDesiredState(userId: string, reason: string) {
+  const access = await getRaidMapAccessState(userId)
+  await reconcileRevocationDesiredState({
+    userId,
+    entitlement: 'raidmap',
+    shouldHaveAccess: access.hasAccess,
+    reason,
+  })
 }
 
 async function getCustomerInfo(customerId: string): Promise<{
@@ -167,10 +219,32 @@ async function getCustomerInfo(customerId: string): Promise<{
     return { email: null, appUserId: null, discordUserId: null }
   }
 
+  const cachedMappings = customer.metadata?.userId
+    ? []
+    : await prisma.userSubscription.findMany({
+        where: { stripeCustomerId: customerId },
+        select: { userId: true },
+        take: 2,
+      })
+  const appUserId =
+    customer.metadata?.userId ??
+    (cachedMappings.length === 1 ? cachedMappings[0].userId : null)
+  if (!customer.metadata?.userId && cachedMappings.length > 1) {
+    console.error('[stripe-webhook] Ambiguous customer-to-user mapping; skipping lifecycle action.', {
+      customerId,
+    })
+  }
+  const discordAccount = appUserId
+    ? await prisma.userDiscordAccount.findUnique({
+        where: { userId: appUserId },
+        select: { discordUserId: true },
+      })
+    : null
+
   return {
     email: customer.email ?? null,
-    appUserId: customer.metadata?.userId ?? null,
-    discordUserId: customer.metadata?.discordUserId ?? null,
+    appUserId,
+    discordUserId: discordAccount?.discordUserId ?? customer.metadata?.discordUserId ?? null,
   }
 }
 
@@ -203,16 +277,6 @@ async function safeSetMenteeRole(discordUserId: string) {
     await addRoleToGuildMember({ guildId, discordUserId, roleId })
   } catch (err) {
     console.error('Failed to add Discord role:', err)
-  }
-}
-
-async function safeRemoveMenteeRole(discordUserId: string) {
-  try {
-    const guildId = requireEnv('DISCORD_GUILD_ID')
-    const roleId = requireEnv('DISCORD_ROLE_MENTEE26_ID')
-    await removeRoleFromGuildMember({ guildId, discordUserId, roleId })
-  } catch (err) {
-    console.error('Failed to remove Discord role:', err)
   }
 }
 
@@ -260,7 +324,10 @@ export async function handleStripeEvent(event: Stripe.Event) {
         const subscription = event.data.object as Stripe.Subscription
         if (subscription.metadata?.product === 'raidmap') {
           // Raid Map: eigener Cache, kein Mentorship-Discord/-Rollen-Pfad
-          await upsertRaidMapSubscription(subscription)
+          const userId = await upsertRaidMapSubscription(subscription)
+          if (userId) {
+            await reconcileRaidMapDesiredState(userId, `stripe:${event.type}`)
+          }
           break
         }
         const customerId = getCustomerIdFromSubscription(subscription)
@@ -294,12 +361,17 @@ export async function handleStripeEvent(event: Stripe.Event) {
             timestamp: new Date().toISOString()
           })
 
-          if (info.discordUserId) {
-            if (shouldHaveAccessAndRole(subscription)) {
-              await safeSetMenteeRole(info.discordUserId)
-            } else {
-              await safeRemoveMenteeRole(info.discordUserId)
-            }
+          const shouldHaveAccess = shouldHaveAccessAndRole(subscription)
+          if (info.appUserId) {
+            await reconcileRevocationDesiredState({
+              userId: info.appUserId,
+              entitlement: 'mentorship',
+              shouldHaveAccess,
+              reason: `stripe:${event.type}`,
+            })
+          }
+          if (shouldHaveAccess && info.discordUserId) {
+            await safeSetMenteeRole(info.discordUserId)
           }
         }
 
@@ -310,7 +382,10 @@ export async function handleStripeEvent(event: Stripe.Event) {
         const subscription = event.data.object as Stripe.Subscription
         if (subscription.metadata?.product === 'raidmap') {
           // Raid Map: eigener Cache, kein Mentorship-Discord/-Rollen-Pfad
-          await upsertRaidMapSubscription(subscription)
+          const userId = await upsertRaidMapSubscription(subscription)
+          if (userId) {
+            await reconcileRaidMapDesiredState(userId, `stripe:${event.type}`)
+          }
           break
         }
         const customerId = getCustomerIdFromSubscription(subscription)
@@ -411,12 +486,17 @@ export async function handleStripeEvent(event: Stripe.Event) {
           // Access/Rolle steuern:
           // - Active bleibt bis Periodenende
           // - Trial verliert sofort bei Kündigung
-          if (info.discordUserId) {
-            if (shouldHaveAccessAndRole(subscription)) {
-              await safeSetMenteeRole(info.discordUserId)
-            } else {
-              await safeRemoveMenteeRole(info.discordUserId)
-            }
+          const shouldHaveAccess = shouldHaveAccessAndRole(subscription)
+          if (info.appUserId) {
+            await reconcileRevocationDesiredState({
+              userId: info.appUserId,
+              entitlement: 'mentorship',
+              shouldHaveAccess,
+              reason: `stripe:${event.type}`,
+            })
+          }
+          if (shouldHaveAccess && info.discordUserId) {
+            await safeSetMenteeRole(info.discordUserId)
           }
         }
 
@@ -427,7 +507,10 @@ export async function handleStripeEvent(event: Stripe.Event) {
         const subscription = event.data.object as Stripe.Subscription
         if (subscription.metadata?.product === 'raidmap') {
           // Raid Map: eigener Cache, kein Mentorship-Discord/-Rollen-Pfad
-          await upsertRaidMapSubscription(subscription)
+          const userId = await upsertRaidMapSubscription(subscription)
+          if (userId) {
+            await reconcileRaidMapDesiredState(userId, `stripe:${event.type}`)
+          }
           break
         }
         const customerId = getCustomerIdFromSubscription(subscription)
@@ -457,8 +540,13 @@ export async function handleStripeEvent(event: Stripe.Event) {
             timestamp: new Date().toISOString()
           })
 
-          if (info.discordUserId) {
-            await safeRemoveMenteeRole(info.discordUserId)
+          if (info.appUserId) {
+            await reconcileRevocationDesiredState({
+              userId: info.appUserId,
+              entitlement: 'mentorship',
+              shouldHaveAccess: false,
+              reason: `stripe:${event.type}`,
+            })
           }
         }
 

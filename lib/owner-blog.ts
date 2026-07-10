@@ -253,7 +253,36 @@ export async function uploadOwnerBlogImage(file: File): Promise<{
     throw new Error('Max file size: 5MB')
   }
 
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+  const bytes = Buffer.from(await file.arrayBuffer())
+  const hasExpectedMagic =
+    (file.type === 'image/jpeg' &&
+      bytes.length >= 3 &&
+      bytes[0] === 0xff &&
+      bytes[1] === 0xd8 &&
+      bytes[2] === 0xff) ||
+    (file.type === 'image/png' &&
+      bytes.length >= 8 &&
+      bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) ||
+    (file.type === 'image/gif' &&
+      bytes.length >= 6 &&
+      (bytes.subarray(0, 6).toString('ascii') === 'GIF87a' ||
+        bytes.subarray(0, 6).toString('ascii') === 'GIF89a')) ||
+    (file.type === 'image/webp' &&
+      bytes.length >= 12 &&
+      bytes.subarray(0, 4).toString('ascii') === 'RIFF' &&
+      bytes.subarray(8, 12).toString('ascii') === 'WEBP')
+
+  if (!hasExpectedMagic) {
+    throw new Error('File content does not match the declared image type')
+  }
+
+  const extensionByType: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/gif': 'gif',
+  }
+  const ext = extensionByType[file.type]
   const baseName = file.name
     .replace(/\.[^.]+$/, '')
     .toLowerCase()
@@ -263,8 +292,7 @@ export async function uploadOwnerBlogImage(file: File): Promise<{
   const timestamp = Date.now()
   const fileName = `${baseName}-${timestamp}.${ext}`
   const filePath = `public/images/blog/${fileName}`
-  const bytes = await file.arrayBuffer()
-  const base64 = Buffer.from(bytes).toString('base64')
+  const base64 = bytes.toString('base64')
 
   await githubBlogApi(`/contents/${filePath}`, {
     method: 'PUT',

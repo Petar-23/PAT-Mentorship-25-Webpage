@@ -1,39 +1,93 @@
-import { auth } from '@clerk/nextjs/server'
-import { headers } from 'next/headers'
+import { auth, currentUser } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
+import { emailsMatch, getVerifiedPrimaryEmail } from '@/lib/clerk-email'
 import { prisma } from '@/lib/prisma'
 import { getPayPalSubscription } from '@/lib/paypal'
+import { consumePersistentRateLimit } from '@/lib/security-rate-limit'
 
 export const dynamic = 'force-dynamic'
 
 const CLAIM_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
 const CLAIM_RATE_LIMIT_MAX_ATTEMPTS = 5
-const claimAttempts = new Map<string, { count: number; resetAt: number }>()
+const CLAIM_MAX_BODY_BYTES = 1_024
+const EMAIL_MAX_LENGTH = 254
 
-function getClientIp(headersList: Headers) {
-  const forwardedFor = headersList.get('x-forwarded-for')
-  if (forwardedFor) {
-    return forwardedFor.split(',')[0]?.trim() || 'unknown'
-  }
+class ClaimConflictError extends Error {}
 
-  return headersList.get('x-real-ip') || headersList.get('cf-connecting-ip') || 'unknown'
+function isPlausibleEmail(value: string) {
+  return (
+    value.length <= EMAIL_MAX_LENGTH &&
+    value.includes('@') &&
+    !/\s/.test(value) &&
+    /^[^@]+@[^@]+\.[^@]+$/.test(value)
+  )
 }
 
-function isRateLimited(key: string) {
-  const now = Date.now()
-  const current = claimAttempts.get(key)
+function isClaimConflict(error: unknown) {
+  if (error instanceof ClaimConflictError) return true
+  if (!error || typeof error !== 'object') return false
+  return 'code' in error && error.code === 'P2002'
+}
 
-  if (!current || current.resetAt <= now) {
-    claimAttempts.set(key, { count: 1, resetAt: now + CLAIM_RATE_LIMIT_WINDOW_MS })
-    return false
+async function readClaimEmail(req: Request) {
+  const contentLength = Number(req.headers.get('content-length'))
+  if (Number.isFinite(contentLength) && contentLength > CLAIM_MAX_BODY_BYTES) {
+    return { error: 'Request body too large' } as const
   }
 
-  if (current.count >= CLAIM_RATE_LIMIT_MAX_ATTEMPTS) {
-    return true
+  const reader = req.body?.getReader()
+  const chunks: Uint8Array[] = []
+  let totalBytes = 0
+  if (reader) {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      if (!value) continue
+
+      totalBytes += value.byteLength
+      if (totalBytes > CLAIM_MAX_BODY_BYTES) {
+        await reader.cancel().catch(() => undefined)
+        return { error: 'Request body too large' } as const
+      }
+      chunks.push(value)
+    }
   }
 
-  current.count += 1
-  return false
+  const bodyBytes = new Uint8Array(totalBytes)
+  let offset = 0
+  for (const chunk of chunks) {
+    bodyBytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  let rawBody: string
+  try {
+    rawBody = new TextDecoder('utf-8', { fatal: true }).decode(bodyBytes)
+  } catch {
+    return { error: 'Invalid request body' } as const
+  }
+
+  let body: unknown
+  try {
+    body = JSON.parse(rawBody)
+  } catch {
+    return { error: 'Invalid JSON' } as const
+  }
+
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return { error: 'Invalid request body' } as const
+  }
+
+  const paypalEmail = (body as { paypalEmail?: unknown }).paypalEmail
+  if (typeof paypalEmail !== 'string') {
+    return { error: 'Invalid PayPal email' } as const
+  }
+
+  const normalizedEmail = paypalEmail.trim().toLowerCase()
+  if (!isPlausibleEmail(normalizedEmail)) {
+    return { error: 'Invalid PayPal email' } as const
+  }
+
+  return { email: normalizedEmail } as const
 }
 
 /**
@@ -54,22 +108,54 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Nicht eingeloggt' }, { status: 401 })
     }
 
-    const headersList = await headers()
-    const clientIp = getClientIp(headersList)
-    const rateLimitKey = `${userId}:${clientIp}`
-    if (isRateLimited(rateLimitKey)) {
+    let rateLimit
+    try {
+      rateLimit = await consumePersistentRateLimit({
+        // Per-user statt user+IP: wechselnde oder gespoofte Proxy-Header dürfen
+        // das Limit für einen authentifizierten Account nicht umgehen.
+        key: `paypal-claim:user:v1:${userId}`,
+        windowMs: CLAIM_RATE_LIMIT_WINDOW_MS,
+        maxAttempts: CLAIM_RATE_LIMIT_MAX_ATTEMPTS,
+      })
+    } catch (error) {
+      console.error('PayPal claim rate-limit check failed:', error)
       return NextResponse.json(
-        { error: 'Zu viele Versuche. Bitte warte kurz und versuche es dann erneut.' },
-        { status: 429 }
+        { error: 'Der Claim kann gerade nicht sicher geprüft werden. Bitte versuche es später erneut.' },
+        { status: 503 }
       )
     }
 
-    const body = (await req.json().catch(() => null)) as { paypalEmail?: unknown } | null
-    const paypalEmail = typeof body?.paypalEmail === 'string' ? body.paypalEmail.trim().toLowerCase() : ''
-
-    if (!paypalEmail) {
+    if (rateLimit.limited) {
       return NextResponse.json(
-        { error: 'Bitte gib deine PayPal-Email-Adresse ein.' },
+        { error: 'Zu viele Versuche. Bitte warte kurz und versuche es dann erneut.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) },
+        }
+      )
+    }
+
+    const parsedBody = await readClaimEmail(req)
+    if ('error' in parsedBody) {
+      return NextResponse.json(
+        { error: parsedBody.error },
+        { status: parsedBody.error === 'Request body too large' ? 413 : 400 }
+      )
+    }
+    const paypalEmail = parsedBody.email
+
+    const clerkUser = await currentUser()
+    const verifiedPrimaryEmail = getVerifiedPrimaryEmail(clerkUser)
+    if (!verifiedPrimaryEmail) {
+      return NextResponse.json(
+        { error: 'Bitte verifiziere zuerst deine primäre E-Mail-Adresse.' },
+        { status: 403 }
+      )
+    }
+
+    if (!emailsMatch(paypalEmail, verifiedPrimaryEmail)) {
+      return NextResponse.json(
+        { error: 'Die PayPal-E-Mail muss deiner verifizierten primären Account-E-Mail entsprechen.' },
         { status: 400 }
       )
     }
@@ -98,7 +184,6 @@ export async function POST(req: Request) {
       select: {
         id: true,
         paypalSubscriptionId: true,
-        status: true,
       },
     })
 
@@ -113,21 +198,27 @@ export async function POST(req: Request) {
     }
 
     // Live-Verifikation per PayPal API
-    let liveStatus: string
+    let liveInfo: Awaited<ReturnType<typeof getPayPalSubscription>>
     try {
-      const info = await getPayPalSubscription(subscriber.paypalSubscriptionId)
-      liveStatus = info.status
-    } catch {
-      // Falls PayPal API gerade nicht erreichbar: gespeicherten Status verwenden
-      console.error('PayPal API check failed, using stored status')
-      liveStatus = subscriber.status
+      liveInfo = await getPayPalSubscription(subscriber.paypalSubscriptionId)
+    } catch (error) {
+      console.error('PayPal live subscription check failed:', error)
+      return NextResponse.json(
+        { error: 'PayPal konnte gerade nicht sicher verifiziert werden. Bitte versuche es später erneut.' },
+        { status: 503 }
+      )
     }
 
-    if (liveStatus !== 'ACTIVE') {
+    const liveIdentityMatches =
+      liveInfo.id === subscriber.paypalSubscriptionId &&
+      Boolean(liveInfo.subscriberEmail) &&
+      emailsMatch(liveInfo.subscriberEmail, verifiedPrimaryEmail)
+
+    if (liveInfo.status !== 'ACTIVE' || !liveIdentityMatches) {
       // Status in DB aktualisieren
       await prisma.payPalSubscriber.update({
         where: { id: subscriber.id },
-        data: { status: liveStatus },
+        data: { status: liveInfo.status },
       })
 
       return NextResponse.json(
@@ -139,34 +230,51 @@ export async function POST(req: Request) {
       )
     }
 
-    // Claim durchfuehren
-    await prisma.payPalSubscriber.update({
-      where: { id: subscriber.id },
-      data: {
-        userId,
-        claimedAt: new Date(),
-        status: liveStatus,
-      },
-      select: { id: true },
-    })
+    try {
+      await prisma.$transaction(async (tx) => {
+        const claimed = await tx.payPalSubscriber.updateMany({
+          where: {
+            id: subscriber.id,
+            userId: null,
+          },
+          data: {
+            userId,
+            claimedAt: new Date(),
+            status: 'ACTIVE',
+          },
+        })
 
-    // UserSubscription Record anlegen (fuer Access-Check)
-    await prisma.userSubscription.upsert({
-      where: { userId },
-      create: {
-        userId,
-        paypalSubscriptionId: subscriber.paypalSubscriptionId,
-        status: 'active',
-        cancelAtPeriodEnd: false,
-        priceIds: [],
-      },
-      update: {
-        paypalSubscriptionId: subscriber.paypalSubscriptionId,
-        status: 'active',
-        cancelAtPeriodEnd: false,
-      },
-      select: { id: true },
-    })
+        if (claimed.count !== 1) {
+          throw new ClaimConflictError('PayPal subscription was claimed concurrently')
+        }
+
+        // UserSubscription Record anlegen (fuer Access-Check). Beide Writes committen atomar.
+        await tx.userSubscription.upsert({
+          where: { userId },
+          create: {
+            userId,
+            paypalSubscriptionId: subscriber.paypalSubscriptionId,
+            status: 'active',
+            cancelAtPeriodEnd: false,
+            priceIds: [],
+          },
+          update: {
+            paypalSubscriptionId: subscriber.paypalSubscriptionId,
+            status: 'active',
+            cancelAtPeriodEnd: false,
+          },
+          select: { id: true },
+        })
+      })
+    } catch (error) {
+      if (isClaimConflict(error)) {
+        return NextResponse.json(
+          { error: 'Dieser PayPal-Account wurde bereits verknüpft.' },
+          { status: 409 }
+        )
+      }
+      throw error
+    }
 
     return NextResponse.json({ success: true, redirectUrl: '/mentorship' })
   } catch (error) {

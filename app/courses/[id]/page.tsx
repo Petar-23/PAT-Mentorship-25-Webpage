@@ -7,6 +7,7 @@ import { ModulDetailClient } from '@/components/modul-detail-client'
 import { ModuleGridClient } from '@/components/module-grid-client'
 import { getIsAdmin } from '@/lib/authz'
 import { auth } from '@clerk/nextjs/server'
+import { toProtectedPdfUrl } from '@/lib/protected-pdf'
 
 
 interface Props {
@@ -248,7 +249,17 @@ export default async function DynamicCoursePage({ params }: Props) {
 
   if (!modul) notFound()
 
-  const allVideos = modul.chapters.flatMap((ch) => ch.videos)
+  const protectedModul = {
+    ...modul,
+    chapters: modul.chapters.map((chapter) => ({
+      ...chapter,
+      videos: chapter.videos.map((video) => ({
+        ...video,
+        pdfUrl: toProtectedPdfUrl(video.id, video.pdfUrl),
+      })),
+    })),
+  }
+  const allVideos = protectedModul.chapters.flatMap((ch) => ch.videos)
   const initialVideoId =
     allVideos.find((v) => v.bunnyGuid !== null)?.id ?? allVideos[0]?.id ?? null
 
@@ -261,19 +272,19 @@ export default async function DynamicCoursePage({ params }: Props) {
         <Sidebar
           kurse={kurseForSidebar}
           savedSidebarOrder={savedSidebarOrder}
-          activeCourseId={modul.playlist?.id ?? null}
+          activeCourseId={protectedModul.playlist?.id ?? null}
           isAdmin={isAdmin}
         />
       </div>
       <ModulDetailClient
-        modul={modul}
+        modul={protectedModul}
         initialVideoId={initialVideoId}
         initialWatchedVideoIds={initialWatchedVideoIds}
         isAdmin={isAdmin}
         sidebar={{
           kurse: kurseForSidebar,
           savedSidebarOrder,
-          activeCourseId: modul.playlist?.id ?? null,
+          activeCourseId: protectedModul.playlist?.id ?? null,
         }}
       />
     </div>

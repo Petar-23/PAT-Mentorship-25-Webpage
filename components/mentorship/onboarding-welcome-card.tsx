@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { getOnboardingDismissStorageKey, getOnboardingEmbedUrl } from '@/lib/onboarding-video'
+import {
+  getOnboardingDismissStorageKey,
+  getOnboardingPlaybackEndpoint,
+} from '@/lib/onboarding-video'
 import { CalendarDots as CalendarDays } from '@phosphor-icons/react/CalendarDots'
 import { CaretDown as ChevronDown } from '@phosphor-icons/react/CaretDown'
 import { CheckCircle as CheckCircle2 } from '@phosphor-icons/react/CheckCircle'
@@ -15,9 +18,10 @@ type OnboardingWelcomeCardProps = {
 
 export function OnboardingWelcomeCard({ videoId, expiresAtLabel }: OnboardingWelcomeCardProps) {
   const storageKey = getOnboardingDismissStorageKey(videoId)
-  const embedUrl = getOnboardingEmbedUrl(videoId)
 
   const [isDismissed, setIsDismissed] = useState<boolean | null>(null)
+  const [embedUrl, setEmbedUrl] = useState<string | null>(null)
+  const [playbackError, setPlaybackError] = useState(false)
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -30,6 +34,34 @@ export function OnboardingWelcomeCard({ videoId, expiresAtLabel }: OnboardingWel
 
     return () => window.cancelAnimationFrame(frame)
   }, [storageKey])
+
+  useEffect(() => {
+    setEmbedUrl(null)
+    setPlaybackError(false)
+    if (isDismissed !== false) return
+
+    const controller = new AbortController()
+    void (async () => {
+      try {
+        const response = await fetch(getOnboardingPlaybackEndpoint(videoId), {
+          cache: 'no-store',
+          signal: controller.signal,
+        })
+        const payload = (await response.json().catch(() => null)) as
+          | { url?: string; error?: string }
+          | null
+        if (!response.ok || !payload?.url) throw new Error(payload?.error || 'Playback unavailable')
+        setEmbedUrl(payload.url)
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          console.error('Onboarding playback URL failed:', error)
+          setPlaybackError(true)
+        }
+      }
+    })()
+
+    return () => controller.abort()
+  }, [isDismissed, videoId])
 
   const handleToggle = () => {
     if (isDismissed === true) {
@@ -98,15 +130,23 @@ export function OnboardingWelcomeCard({ videoId, expiresAtLabel }: OnboardingWel
           <CardContent className="pt-0">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
               <div className="overflow-hidden rounded-lg border border-border bg-black aspect-video">
-                <iframe
-                  src={embedUrl}
-                  title="Onboarding Video PAT Mentorship 2026"
-                  className="h-full w-full"
-                  allow="accelerometer; gyroscope; encrypted-media; picture-in-picture"
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                />
+                {embedUrl ? (
+                  <iframe
+                    src={embedUrl}
+                    title="Onboarding Video PAT Mentorship 2026"
+                    className="h-full w-full"
+                    allow="accelerometer; gyroscope; encrypted-media; picture-in-picture"
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center px-6 text-center text-sm text-white/80">
+                    {playbackError
+                      ? 'Das Video kann gerade nicht sicher geladen werden.'
+                      : 'Video wird sicher geladen…'}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4 self-center">

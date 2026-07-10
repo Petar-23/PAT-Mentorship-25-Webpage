@@ -3,6 +3,8 @@ import 'server-only'
 
 import Stripe from 'stripe'
 import { prisma, withPrismaRetry } from './prisma'
+import type { VerifiedEmailAddress } from './clerk-email'
+import { selectUniqueEmailFallbackCustomer } from './stripe-customer-policy'
 
 declare global {
   var stripeClient: Stripe | undefined
@@ -77,8 +79,52 @@ function getAccessPriceIdsFromEnv(): string[] {
 }
 
 function hasAnyRequiredPrice(priceIds: string[], requiredPriceIds: string[]): boolean {
-  if (requiredPriceIds.length === 0) return true
+  if (requiredPriceIds.length === 0) return false
   return priceIds.some((id) => requiredPriceIds.includes(id))
+}
+
+function isLiveCustomer(customer: Stripe.Customer | Stripe.DeletedCustomer): customer is Stripe.Customer {
+  return !('deleted' in customer && customer.deleted)
+}
+
+async function findAndLinkUniqueCustomerByVerifiedEmail(
+  userId: string,
+  verifiedEmail: VerifiedEmailAddress
+): Promise<Stripe.Customer | null> {
+  const response = await stripe.customers.list({
+    email: verifiedEmail,
+    limit: 100,
+  })
+  const liveCustomers = response.data.filter(isLiveCustomer)
+  if (response.has_more) return null
+
+  const selected = selectUniqueEmailFallbackCustomer(liveCustomers, userId)
+  if (!selected) return null
+
+  // Refresh immediately before linking so a customer that was bound since the
+  // email lookup is rejected instead of overwriting a foreign metadata.userId.
+  const refreshed = await stripe.customers.retrieve(selected.customer.id)
+  if (!isLiveCustomer(refreshed)) return null
+
+  const refreshedSelection = selectUniqueEmailFallbackCustomer([refreshed], userId)
+  if (!refreshedSelection) return null
+  if (!refreshedSelection.shouldLinkUserId) return refreshed
+
+  return stripe.customers.update(refreshed.id, {
+    metadata: { ...(refreshed.metadata ?? {}), userId },
+  })
+}
+
+async function validateMappedCustomerForUser(customerId: string, userId: string) {
+  const customer = await stripe.customers.retrieve(customerId)
+  if (!isLiveCustomer(customer)) return null
+
+  const ownerUserId = customer.metadata?.userId?.trim()
+  if (ownerUserId && ownerUserId !== userId) {
+    throw new Error('Stripe customer mapping belongs to another user')
+  }
+
+  return customer
 }
 
 function getPriceIdsFromSubscription(subscription: Stripe.Subscription): string[] {
@@ -239,7 +285,11 @@ async function checkPayPalAccess(userId: string): Promise<SubscriptionSnapshot |
 
 export async function getSubscriptionSnapshot(
   userId: string,
-  options: { retryCount?: number; checkForRecentCheckout?: boolean; email?: string } = {}
+  options: {
+    retryCount?: number
+    checkForRecentCheckout?: boolean
+    verifiedEmail?: VerifiedEmailAddress
+  } = {}
 ): Promise<SubscriptionSnapshot> {
   // Nicht parallel gegen den kleinen Serverless-Pool schießen: direkt nach Deploys kann die erste
   // DB-Verbindung kalt sein, und parallele Acquires treffen dann denselben Connection-Timeout.
@@ -247,16 +297,21 @@ export async function getSubscriptionSnapshot(
   if (paypalResult) return paypalResult
 
   const requiredPriceIds = getAccessPriceIdsFromEnv()
+  if (requiredPriceIds.length === 0) {
+    console.error('Stripe mentorship access denied: no access price IDs are configured')
+    return { hasActiveSubscription: false, subscriptionDetails: null }
+  }
+
   const maxRetries = Math.max(1, options.retryCount ?? 1)
   const checkForRecentCheckout = options.checkForRecentCheckout === true
-  const email = options.email
+  const verifiedEmail = options.verifiedEmail
 
   const db = await readSubscriptionFromDb(userId)
   if (db) {
     // Wenn wir schon sicher wissen, dass es kein Abo gibt, wollen wir NICHT jedes Mal Stripe abfragen.
     // Ausnahme: direkt nach Checkout (success=true) erlauben wir Retries zu Stripe.
     // Ausnahme 2: Email vorhanden → wir koennten den User noch per Email bei Stripe finden (M25-Migration).
-    if (db.status === 'none' && !checkForRecentCheckout && !email) {
+    if (db.status === 'none' && !checkForRecentCheckout && !verifiedEmail) {
       return { hasActiveSubscription: false, subscriptionDetails: null }
     }
 
@@ -289,7 +344,7 @@ export async function getSubscriptionSnapshot(
   // Wenn noch kein DB-Record existiert und wir NICHT direkt aus dem Checkout zurückkommen
   // UND keine Email zum Nachschlagen vorhanden ist,
   // behandeln wir den User sofort als "kein Abo" und vermeiden langsame Stripe-Lookups.
-  if (!db && !checkForRecentCheckout && !email) {
+  if (!db && !checkForRecentCheckout && !verifiedEmail) {
     return { hasActiveSubscription: false, subscriptionDetails: null }
   }
 
@@ -297,38 +352,22 @@ export async function getSubscriptionSnapshot(
   // Bei "recent checkout" erlauben wir ein paar Retries, weil Stripe manchmal verzögert ist.
   for (let i = 0; i < maxRetries; i++) {
     try {
-      let customers = await stripe.customers.search({
+      const customers = await stripe.customers.search({
         query: `metadata['userId']:'${userId}'`,
       })
+      let customerCandidates = customers.data.filter(isLiveCustomer)
 
-      // Email-Fallback (M25-Migration): Falls kein Customer per metadata.userId gefunden,
-      // versuchen wir es per Email (gleicher Pattern wie in createCustomerPortalSession).
-      if (!customers.data.length && email) {
-        const emailCustomers = await stripe.customers.search({
-          query: `email:'${email}'`,
-        })
-
-        const liveEmailCustomers = emailCustomers.data
-          .filter((c) => !('deleted' in c && c.deleted))
-          .sort((a, b) => b.created - a.created)
-
-        if (liveEmailCustomers.length > 0) {
-          const picked = liveEmailCustomers[0]
-          // Best-effort: Link the Stripe customer to the app user for future lookups.
-          try {
-            if (picked.metadata?.userId !== userId) {
-              await stripe.customers.update(picked.id, {
-                metadata: { ...(picked.metadata ?? {}), userId },
-              })
-            }
-          } catch (linkError) {
-            console.error('Failed to auto-link Stripe customer via email fallback:', linkError)
-          }
-          customers = { ...emailCustomers, data: liveEmailCustomers }
-        }
+      // Email-Fallback fuer Altkaeufe: nur eine verifizierte Clerk-Primary-Email
+      // und genau ein nicht fremd gebundener Stripe-Customer sind zulässig.
+      if (!customerCandidates.length && verifiedEmail) {
+        const emailCustomer = await findAndLinkUniqueCustomerByVerifiedEmail(
+          userId,
+          verifiedEmail
+        )
+        customerCandidates = emailCustomer ? [emailCustomer] : []
       }
 
-      if (!customers.data.length) {
+      if (!customerCandidates.length) {
         await writeSubscriptionToDb({
           userId,
           stripeCustomerId: null,
@@ -348,7 +387,9 @@ export async function getSubscriptionSnapshot(
         return { hasActiveSubscription: false, subscriptionDetails: null }
       }
 
-      const stripeCustomerId = customers.data[0].id
+      const stripeCustomerId = [...customerCandidates].sort(
+        (a, b) => b.created - a.created
+      )[0].id
 
       const subscriptions = await stripe.subscriptions.list({
         customer: stripeCustomerId,
@@ -467,12 +508,21 @@ export async function getSubscriptionSnapshot(
   return { hasActiveSubscription: false, subscriptionDetails: null }
 }
 
-export async function hasActiveSubscription(userId: string, email?: string): Promise<boolean> {
-  const snapshot = await getSubscriptionSnapshot(userId, { retryCount: 1, email })
+export async function hasActiveSubscription(
+  userId: string,
+  verifiedEmail?: VerifiedEmailAddress
+): Promise<boolean> {
+  const snapshot = await getSubscriptionSnapshot(userId, {
+    retryCount: 1,
+    verifiedEmail,
+  })
   return snapshot.hasActiveSubscription
 }
 
-export async function createCustomerPortalSession(userId: string, userEmail?: string | null) {
+export async function createCustomerPortalSession(
+  userId: string,
+  verifiedEmail?: VerifiedEmailAddress | null
+) {
   try {
     if (!process.env.NEXT_PUBLIC_APP_URL) {
       throw new Error('Missing NEXT_PUBLIC_APP_URL environment variable')
@@ -485,6 +535,10 @@ export async function createCustomerPortalSession(userId: string, userEmail?: st
     })
 
     let stripeCustomerId = db?.stripeCustomerId ?? null
+    if (stripeCustomerId) {
+      const mappedCustomer = await validateMappedCustomerForUser(stripeCustomerId, userId)
+      stripeCustomerId = mappedCustomer?.id ?? null
+    }
 
     // 2) Fallback: search by metadata.userId
     if (!stripeCustomerId) {
@@ -498,34 +552,10 @@ export async function createCustomerPortalSession(userId: string, userEmail?: st
       }
     }
 
-    // 3) Fallback: search by email (older purchases without metadata.userId)
-    if (!stripeCustomerId && userEmail) {
-      const customers = await stripe.customers.search({
-        query: `email:'${userEmail}'`,
-      })
-
-      const liveCustomers = customers.data
-        .filter((c) => !('deleted' in c && c.deleted))
-        .sort((a, b) => b.created - a.created)
-
-      if (liveCustomers.length > 0) {
-        const picked = liveCustomers[0]
-        stripeCustomerId = picked.id
-
-        // Best-effort: link the Stripe customer to the app user for future webhook & lookup stability.
-        try {
-          if (picked.metadata?.userId !== userId) {
-            await stripe.customers.update(picked.id, {
-              metadata: {
-                ...(picked.metadata ?? {}),
-                userId,
-              },
-            })
-          }
-        } catch (error) {
-          console.error('Failed to link Stripe customer metadata.userId in portal flow:', error)
-        }
-      }
+    // 3) Fallback: exakt ein Customer zur verifizierten Clerk-Primary-Email.
+    if (!stripeCustomerId && verifiedEmail) {
+      const customer = await findAndLinkUniqueCustomerByVerifiedEmail(userId, verifiedEmail)
+      stripeCustomerId = customer?.id ?? null
     }
 
     if (!stripeCustomerId) throw new Error('No customer found')
@@ -548,12 +578,20 @@ export async function createCustomerPortalSession(userId: string, userEmail?: st
   }
 }
 
-export async function createCheckoutSession(userId: string, userEmail: string) {
+export async function createCheckoutSession(
+  userId: string,
+  userEmail: VerifiedEmailAddress
+) {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+    const priceId = process.env.STRIPE_PRICE_ID?.trim()
+    const accessPriceIds = getAccessPriceIdsFromEnv()
 
     if (!baseUrl) {
       throw new Error('Missing NEXT_PUBLIC_APP_URL environment variable')
+    }
+    if (!priceId || !accessPriceIds.includes(priceId)) {
+      throw new Error('Missing or inconsistent Stripe mentorship access price configuration')
     }
 
     // Create or get customer
@@ -610,7 +648,7 @@ export async function createCheckoutSession(userId: string, userEmail: string) {
       automatic_tax: { enabled: true },
       line_items: [
         {
-          price: process.env.STRIPE_PRICE_ID,
+          price: priceId,
           quantity: 1,
         },
       ],
@@ -668,7 +706,7 @@ export function getRaidMapPriceId(tier: RaidMapCheckoutTier): string | undefined
 
 export async function createRaidMapCheckoutSession(
   userId: string,
-  userEmail: string,
+  userEmail: VerifiedEmailAddress,
   tier: RaidMapCheckoutTier
 ) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL

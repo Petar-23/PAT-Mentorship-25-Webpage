@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { getIsAdmin, requireAdminApiAccess } from '@/lib/authz'
+import { getMentorshipAccessState } from '@/lib/mentorship-access'
 import { revalidateSidebarData } from '@/lib/sidebar-data'
 
 function generateSlug(title: string): string {
@@ -25,7 +26,14 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const isAdmin = await getIsAdmin(userId, sessionClaims)
+  const [isAdmin, access] = await Promise.all([
+    getIsAdmin(userId, sessionClaims),
+    getMentorshipAccessState(userId, sessionClaims),
+  ])
+
+  if (!isAdmin && !access.allowed) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const pages = await prisma.page.findMany({
     where: isAdmin ? undefined : { published: true },

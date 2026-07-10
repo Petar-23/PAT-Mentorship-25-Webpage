@@ -41,8 +41,8 @@ export async function claimRaidMapAction(tvUsername: string): Promise<RaidMapCla
     indicatorId: indicator.id,
     tvUsername,
     // Raid-Map-Kunden duerfen ihren TV-Namen selbst korrigieren; der alte
-    // TradingView-Grant wird dabei best effort automatisch entzogen —
-    // nur bei Fehlschlag geht eine ⚠️-Telegram-Meldung an Petar.
+    // TradingView-Grant muss dabei fail-closed entzogen werden, bevor Binding
+    // und neuer Claim umgestellt werden.
     allowRebind: true,
   })
 

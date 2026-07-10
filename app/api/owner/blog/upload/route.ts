@@ -7,6 +7,11 @@ export async function POST(req: Request) {
   const access = await requireAdminApiAccess()
   if (!access.ok) return access.response
 
+  const contentLength = Number(req.headers.get('content-length') ?? '0')
+  if (!Number.isFinite(contentLength) || contentLength < 0 || contentLength > 6 * 1024 * 1024) {
+    return NextResponse.json({ error: 'Upload too large' }, { status: 413 })
+  }
+
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File | null

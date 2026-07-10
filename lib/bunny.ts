@@ -1,6 +1,8 @@
 // lib/bunny.ts
 import 'server-only'
 
+import { createSignedBunnyEmbedUrl } from '@/lib/bunny-playback'
+
 import crypto from 'crypto'
 
 interface BunnyVideoList {
@@ -249,7 +251,7 @@ export async function resolveBunnyThumbnailUrl(
   if (!libraryId || !videoGuid) return null
 
   const res = await fetchWithTimeout(
-    `https://iframe.mediadelivery.net/embed/${libraryId}/${videoGuid}`,
+    createSignedBunnyEmbedUrl({ videoGuid, libraryId }).url,
     {
       headers: {
         Referer: options.referer || process.env.NEXT_PUBLIC_APP_URL || 'https://www.price-action-trader.de/',

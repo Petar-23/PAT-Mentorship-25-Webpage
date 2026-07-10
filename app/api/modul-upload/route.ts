@@ -32,6 +32,7 @@ export async function POST(request: Request) {
         // Hier kannst du später z. B. Auth prüfen
         return {
           allowedContentTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+          maximumSizeInBytes: 8 * 1024 * 1024,
           addRandomSuffix: true,
           // Optional: Ordner-Struktur
           // pathname: `modules/${pathname}`,

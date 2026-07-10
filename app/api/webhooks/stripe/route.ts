@@ -33,10 +33,7 @@ export async function POST(req: Request) {
       console.log('Successfully constructed event:', event.type)
     } catch (err) {
       console.error('Error verifying webhook signature:', err)
-      return new NextResponse(
-        `Webhook signature verification failed: ${err instanceof Error ? err.message : 'Unknown Error'}`,
-        { status: 400 }
-      )
+      return new NextResponse('Webhook signature verification failed', { status: 400 })
     }
 
     // Handle the event
@@ -51,10 +48,7 @@ export async function POST(req: Request) {
     })
   } catch (error) {
     console.error('Error in stripe webhook:', error)
-    return new NextResponse(
-      `Webhook error: ${error instanceof Error ? error.message : 'Unknown Error'}`,
-      { status: 400 }
-    )
+    return new NextResponse('Webhook processing failed', { status: 400 })
   }
 }
 

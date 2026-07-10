@@ -6,29 +6,31 @@ import { prisma, withPrismaRetry } from '@/lib/prisma'
 import { revalidateSidebarData } from '@/lib/sidebar-data'
 
 const TUS_ENDPOINT = 'https://video.bunnycdn.com/tusupload/'
-const DEFAULT_SIGNATURE_EXPIRE_MINUTES = 24 * 60
+const DEFAULT_SIGNATURE_EXPIRE_MINUTES = 15
+const MAX_SIGNATURE_EXPIRE_MINUTES = 60
+const MAX_REQUEST_BYTES = 32 * 1024
 
 const prepareSchema = z.object({
   action: z.literal('prepare').optional(),
   type: z.enum(['daily_review', 'advanced_content']),
-  title: z.string().trim().min(1),
-  description: z.string().trim().optional(),
-  date: z.string().trim().optional(),
+  title: z.string().trim().min(1).max(200),
+  description: z.string().trim().max(2_000).optional(),
+  date: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   month: z.string().trim().regex(/^\d{4}-\d{2}$/).optional(),
-  filename: z.string().trim().optional(),
-  playlistName: z.string().trim().min(1).optional(),
-  moduleName: z.string().trim().min(1).optional(),
-  chapterName: z.string().trim().min(1).optional(),
+  filename: z.string().trim().max(255).optional(),
+  playlistName: z.string().trim().min(1).max(120).optional(),
+  moduleName: z.string().trim().min(1).max(120).optional(),
+  chapterName: z.string().trim().min(1).max(120).optional(),
   idempotencyKey: z.string().trim().min(1).max(160).optional(),
   dryRun: z.boolean().optional(),
-  signatureExpireMinutes: z.number().int().positive().max(DEFAULT_SIGNATURE_EXPIRE_MINUTES).optional(),
+  signatureExpireMinutes: z.number().int().positive().max(MAX_SIGNATURE_EXPIRE_MINUTES).optional(),
 })
 
 const finalizeSchema = z.object({
   action: z.literal('finalize'),
   idempotencyKey: z.string().trim().min(1).max(160).optional(),
-  videoId: z.string().trim().min(1),
-  bunnyGuid: z.string().trim().min(1),
+  videoId: z.string().trim().min(1).max(128),
+  bunnyGuid: z.string().trim().uuid(),
 })
 
 const DE_MONTHS = [
@@ -430,9 +432,26 @@ export async function POST(req: NextRequest) {
   const agent = requireAgentUploadAccess(req)
   if (!agent.ok) return agent.response
 
+  const contentLength = Number(req.headers.get('content-length') ?? '0')
+  if (!Number.isFinite(contentLength) || contentLength < 0 || contentLength > MAX_REQUEST_BYTES) {
+    return NextResponse.json({ error: 'Request body too large' }, { status: 413 })
+  }
+
   try {
-    const body = await req.json()
-    const action = body?.action === 'finalize' ? 'finalize' : 'prepare'
+    const rawBody = await req.text()
+    if (Buffer.byteLength(rawBody, 'utf8') > MAX_REQUEST_BYTES) {
+      return NextResponse.json({ error: 'Request body too large' }, { status: 413 })
+    }
+
+    let body: unknown
+    try {
+      body = JSON.parse(rawBody) as unknown
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+
+    const bodyRecord = body && typeof body === 'object' ? (body as Record<string, unknown>) : null
+    const action = bodyRecord?.action === 'finalize' ? 'finalize' : 'prepare'
 
     if (action === 'finalize') {
       const parsed = finalizeSchema.safeParse(body)
@@ -442,7 +461,7 @@ export async function POST(req: NextRequest) {
       return await finalizeUpload(parsed.data)
     }
 
-    const parsed = prepareSchema.safeParse({ ...body, action: 'prepare' })
+    const parsed = prepareSchema.safeParse({ ...(bodyRecord ?? {}), action: 'prepare' })
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
     }

@@ -1,6 +1,4 @@
 export const ONBOARDING_VIDEO_SETTING_KEY = 'onboardingVideoM26'
-export const ONBOARDING_VIDEO_BUNNY_LIBRARY_ID =
-  process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID || process.env.BUNNY_LIBRARY_ID || ''
 export const ONBOARDING_VIDEO_DISMISS_STORAGE_PREFIX = 'pat:onboarding-video:m26'
 export const DEFAULT_ONBOARDING_VIDEO_EXPIRY = '2026-03-15T23:59:59+01:00'
 
@@ -48,6 +46,6 @@ export function getOnboardingDismissStorageKey(videoId: string): string {
   return `${ONBOARDING_VIDEO_DISMISS_STORAGE_PREFIX}:${videoId}`
 }
 
-export function getOnboardingEmbedUrl(videoId: string): string {
-  return `https://iframe.mediadelivery.net/embed/${ONBOARDING_VIDEO_BUNNY_LIBRARY_ID}/${videoId}?autoplay=false`
+export function getOnboardingPlaybackEndpoint(videoId: string): string {
+  return `/api/playback/onboarding/${encodeURIComponent(videoId)}`
 }

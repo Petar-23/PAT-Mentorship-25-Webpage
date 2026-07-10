@@ -144,7 +144,7 @@ const DRAW_AS_POINTS = true
 
 export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffectProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const animationRef = useRef<number>()
+  const animationRef = useRef<number | null>(null)
   const animateRef = useRef<() => void>(() => {})
   const particlesRef = useRef<Particle[]>([])
   const frameCountRef = useRef(0)
@@ -267,7 +267,7 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
     const canvas = canvasRef.current
     if (!canvas) return
     if (!shouldAnimateRef.current) {
-      animationRef.current = undefined
+      animationRef.current = null
       return
     }
 
@@ -344,15 +344,15 @@ export function ParticleTextEffect({ words = DEFAULT_WORDS }: ParticleTextEffect
     }
 
     const stopLoop = () => {
-      if (animationRef.current) {
+      if (animationRef.current !== null) {
         cancelAnimationFrame(animationRef.current)
-        animationRef.current = undefined
+        animationRef.current = null
       }
     }
 
     const startLoop = () => {
       updateShouldAnimate()
-      if (animationRef.current || !shouldAnimateRef.current) return
+      if (animationRef.current !== null || !shouldAnimateRef.current) return
       animationRef.current = requestAnimationFrame(() => animateRef.current())
     }
 

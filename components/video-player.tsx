@@ -66,6 +66,12 @@ type BunnyStatusResponse = {
   transcodingFailed: boolean
 }
 
+type BunnyPlaybackResponse = {
+  url?: string
+  expires?: number
+  error?: string
+}
+
 type BunnyPlayerApi = {
   on: (event: string, callback: (data?: unknown) => void) => void
   off: (event: string, callback?: (data?: unknown) => void) => void
@@ -113,18 +119,13 @@ export function VideoPlayer({
   const [isPlayerJsLoaded, setIsPlayerJsLoaded] = useState(false)
   const [isPlayerApiReady, setIsPlayerApiReady] = useState(false)
   const [isPlaybackPaused, setIsPlaybackPaused] = useState(true)
+  const [iframeSrc, setIframeSrc] = useState<string | null>(null)
+  const [playbackUrlError, setPlaybackUrlError] = useState<string | null>(null)
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
   const playerApiRef = useRef<BunnyPlayerApi | null>(null)
   const autoMarkedRef = useRef<Set<string>>(new Set())
   const announcementAttemptedRef = useRef<Set<string>>(new Set())
-
-  const iframeSrc =
-    activeVideo?.bunnyGuid
-      ? `https://iframe.mediadelivery.net/embed/${process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID}/${activeVideo.bunnyGuid}?autoplay=${
-          autoPlay ? 'true' : 'false'
-        }`
-      : null
 
   const adminPlaybackReady =
     bunnyStatusError != null ||
@@ -141,6 +142,40 @@ export function VideoPlayer({
     const t = window.setTimeout(() => setIsEmbedRequested(true), 0)
     return () => window.clearTimeout(t)
   }, [activeVideo?.id, activeVideo?.bunnyGuid, playbackReadyForEmbed])
+
+  useEffect(() => {
+    setIframeSrc(null)
+    setPlaybackUrlError(null)
+    setIsPlayerLoaded(false)
+
+    if (!isEmbedRequested || !activeVideo?.id || !activeVideo.bunnyGuid) return
+
+    const controller = new AbortController()
+
+    void (async () => {
+      try {
+        const response = await fetch(
+          `/api/playback/video/${encodeURIComponent(activeVideo.id)}?autoplay=${autoPlay ? 'true' : 'false'}`,
+          { cache: 'no-store', signal: controller.signal }
+        )
+        const payload = (await response.json().catch(() => null)) as BunnyPlaybackResponse | null
+
+        if (!response.ok || !payload?.url) {
+          throw new Error(payload?.error || 'Playback URL konnte nicht geladen werden.')
+        }
+
+        setIframeSrc(payload.url)
+      } catch (error) {
+        if (controller.signal.aborted) return
+        console.error('Signed Bunny playback URL failed:', error)
+        setPlaybackUrlError(
+          error instanceof Error ? error.message : 'Playback URL konnte nicht geladen werden.'
+        )
+      }
+    })()
+
+    return () => controller.abort()
+  }, [activeVideo?.id, activeVideo?.bunnyGuid, autoPlay, isEmbedRequested])
 
   // Loader-Overlay erst nach kurzer Verzögerung zeigen, damit es bei schnellen Loads nicht "flackert".
   useEffect(() => {
@@ -730,7 +765,13 @@ export function VideoPlayer({
               }}
             />
           ) : activeVideo?.bunnyGuid ? (
-            isAdmin ? (
+            playbackUrlError ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-950 text-white">
+                <p className="px-6 text-center text-sm">
+                  Das Video kann gerade nicht sicher geladen werden. Bitte versuche es später erneut.
+                </p>
+              </div>
+            ) : isAdmin ? (
               bunnyStatusError != null ? (
                 isEmbedRequested && iframeSrc ? (
                   <>

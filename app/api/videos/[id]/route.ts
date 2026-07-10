@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 import { requireAdminApiAccess } from '@/lib/authz'
 import { deleteVideo } from '@/lib/bunny'
+import { toProtectedPdfUrl } from '@/lib/protected-pdf'
 
 // PATCH – Titel, PDF, bunnyGuid updaten (dein bestehender Code, leicht angepasst)
 export async function PATCH(request: Request,{ params }: { params: Promise<{ id: string }> }) {
@@ -23,7 +24,13 @@ export async function PATCH(request: Request,{ params }: { params: Promise<{ id:
   }
 
   if ('pdfUrl' in body) {
-    updateData.pdfUrl = body.pdfUrl === '' || body.pdfUrl == null ? null : body.pdfUrl
+    if (body.pdfUrl !== '' && body.pdfUrl != null) {
+      return NextResponse.json(
+        { error: 'PDFs müssen über den geschützten Upload-Endpunkt hochgeladen werden' },
+        { status: 400 }
+      )
+    }
+    updateData.pdfUrl = null
   }
 
   if ('bunnyGuid' in body) {
@@ -50,7 +57,10 @@ export async function PATCH(request: Request,{ params }: { params: Promise<{ id:
       },
     })
 
-    return NextResponse.json(updatedVideo)
+    return NextResponse.json({
+      ...updatedVideo,
+      pdfUrl: toProtectedPdfUrl(updatedVideo.id, updatedVideo.pdfUrl),
+    })
   } catch (error) {
     console.error('Video update error:', error)
     return NextResponse.json({ error: 'Konnte Video nicht updaten' }, { status: 500 })

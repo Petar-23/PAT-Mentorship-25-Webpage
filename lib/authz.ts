@@ -3,41 +3,60 @@ import 'server-only'
 import { auth, clerkClient } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { cache } from 'react'
+import {
+  PLATFORM_ADMIN_ROLE,
+  getConfiguredAdminOrganizationId,
+  hasPlatformAdminSessionClaim,
+  isPlatformAdminContext,
+} from '@/lib/authz-policy'
 
-const getIsAdminForUserId = cache(async (userId: string) => {
+const getIsAdminForUserId = cache(async (userId: string, adminOrganizationId: string) => {
   const client = await clerkClient()
   const memberships = await client.users.getOrganizationMembershipList({
     userId,
     limit: 100,
   })
 
-  return memberships.data.some((m) => m.role === 'org:admin')
+  return memberships.data.some(
+    (membership) =>
+      membership.role === PLATFORM_ADMIN_ROLE &&
+      membership.organization.id === adminOrganizationId
+  )
 })
 
-function hasAdminSessionClaim(sessionClaims: unknown) {
-  if (!sessionClaims || typeof sessionClaims !== 'object') return false
-
-  const claims = sessionClaims as Record<string, unknown>
-  return claims.org_role === 'org:admin' || claims.orgRole === 'org:admin'
+function getAdminOrganizationId() {
+  return getConfiguredAdminOrganizationId(process.env.CLERK_ADMIN_ORGANIZATION_ID)
 }
 
 export async function getIsAdmin(userId?: string, sessionClaims?: unknown) {
+  const adminOrganizationId = getAdminOrganizationId()
+  if (!adminOrganizationId) return false
+
   if (userId) {
-    if (hasAdminSessionClaim(sessionClaims)) return true
-    return getIsAdminForUserId(userId)
+    if (hasPlatformAdminSessionClaim(sessionClaims, adminOrganizationId)) return true
+    return getIsAdminForUserId(userId, adminOrganizationId)
   }
 
   const authState = await auth()
   const resolvedUserId = authState.userId
   if (!resolvedUserId) return false
 
-  if (hasAdminSessionClaim(authState.sessionClaims)) return true
+  if (
+    isPlatformAdminContext(
+      { orgId: authState.orgId, orgRole: authState.orgRole },
+      adminOrganizationId
+    ) ||
+    hasPlatformAdminSessionClaim(authState.sessionClaims, adminOrganizationId)
+  ) {
+    return true
+  }
 
-  return getIsAdminForUserId(resolvedUserId)
+  return getIsAdminForUserId(resolvedUserId, adminOrganizationId)
 }
 
 export async function requireAdminApiAccess() {
-  const { userId, sessionClaims } = await auth()
+  const authState = await auth()
+  const { userId, sessionClaims } = authState
   if (!userId) {
     return {
       ok: false as const,
@@ -45,11 +64,25 @@ export async function requireAdminApiAccess() {
     }
   }
 
-  if (hasAdminSessionClaim(sessionClaims)) {
+  const adminOrganizationId = getAdminOrganizationId()
+  if (!adminOrganizationId) {
+    return {
+      ok: false as const,
+      response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }),
+    }
+  }
+
+  if (
+    isPlatformAdminContext(
+      { orgId: authState.orgId, orgRole: authState.orgRole },
+      adminOrganizationId
+    ) ||
+    hasPlatformAdminSessionClaim(sessionClaims, adminOrganizationId)
+  ) {
     return { ok: true as const, userId }
   }
 
-  const isAdmin = await getIsAdminForUserId(userId)
+  const isAdmin = await getIsAdminForUserId(userId, adminOrganizationId)
   if (!isAdmin) {
     return {
       ok: false as const,

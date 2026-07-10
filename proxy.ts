@@ -1,4 +1,3 @@
-// src/middleware.ts
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
@@ -21,7 +20,6 @@ export default clerkMiddleware(async (auth, req) => {
     signInUrl.searchParams.set('redirect_url', returnBackUrl)
     return NextResponse.redirect(signInUrl)
   }
-
 })
 
 export const config = {

@@ -3,8 +3,16 @@ import 'server-only'
 import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 
+const MIN_AGENT_TOKEN_LENGTH = 32
+const MAX_AGENT_TOKEN_LENGTH = 512
+
 function getAgentUploadToken() {
-  return process.env.AGENT_UPLOAD_TOKEN || process.env.HERMES_UPLOAD_TOKEN || null
+  const configured = process.env.AGENT_UPLOAD_TOKEN?.trim()
+  if (!configured) return null
+  if (configured.length < MIN_AGENT_TOKEN_LENGTH || configured.length > MAX_AGENT_TOKEN_LENGTH) {
+    return null
+  }
+  return configured
 }
 
 function safeEqual(left: string, right: string) {
@@ -20,9 +28,13 @@ function safeEqual(left: string, right: string) {
 function readBearerToken(req: NextRequest) {
   const authHeader = req.headers.get('authorization') ?? ''
   const match = authHeader.match(/^Bearer\s+(.+)$/i)
-  if (match?.[1]) return match[1].trim()
+  if (!match?.[1]) return null
 
-  return req.headers.get('x-agent-upload-token')?.trim() ?? null
+  const token = match[1].trim()
+  if (token.length < MIN_AGENT_TOKEN_LENGTH || token.length > MAX_AGENT_TOKEN_LENGTH) {
+    return null
+  }
+  return token
 }
 
 export function requireAgentUploadAccess(req: NextRequest) {

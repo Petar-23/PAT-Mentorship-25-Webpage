@@ -14,7 +14,33 @@ export type RaidMapAccessState = {
   tier: 'monthly' | 'annual' | null
 }
 
-const ACTIVE_STATUSES = new Set(['active', 'trialing', 'past_due'])
+const RAIDMAP_PAST_DUE_GRACE_MS = 72 * 60 * 60 * 1000
+
+function hasTimeBoundSubscriptionAccess(subscription: {
+  status: string
+  currentPeriodEnd: Date | null
+  pastDueSince: Date | null
+  updatedAt: Date
+}) {
+  const now = Date.now()
+  const periodEnd = subscription.currentPeriodEnd?.getTime() ?? 0
+
+  // Missing/stale period data must never create indefinite product access.
+  if (periodEnd <= now) return false
+
+  if (subscription.status === 'active' || subscription.status === 'trialing') {
+    return true
+  }
+
+  // A failed renewal gets a short operational grace period, not access for a
+  // complete new billing cycle simply because Stripe reports a future end.
+  if (subscription.status === 'past_due') {
+    const pastDueSince = subscription.pastDueSince ?? subscription.updatedAt
+    return pastDueSince.getTime() + RAIDMAP_PAST_DUE_GRACE_MS > now
+  }
+
+  return false
+}
 
 export async function getRaidMapAccessState(userId: string): Promise<RaidMapAccessState> {
   // Dev-only Test-Mode: simulierter Abo-Zustand für den Test-User, keine DB-Abfrage
@@ -44,7 +70,7 @@ export async function getRaidMapAccessState(userId: string): Promise<RaidMapAcce
           ? 'monthly'
           : null
 
-  const hasAccess = tier !== null && ACTIVE_STATUSES.has(subscription.status)
+  const hasAccess = tier !== null && hasTimeBoundSubscriptionAccess(subscription)
 
   return { hasAccess, status: subscription.status, tier }
 }

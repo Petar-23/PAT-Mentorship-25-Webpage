@@ -1,11 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import * as tus from 'tus-js-client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { getOnboardingEmbedUrl, sanitizeOnboardingVideoId } from '@/lib/onboarding-video'
+import { getOnboardingPlaybackEndpoint, sanitizeOnboardingVideoId } from '@/lib/onboarding-video'
 import { CheckCircle as CheckCircle2 } from '@phosphor-icons/react/CheckCircle'
 import { CloudArrowUp as UploadCloud } from '@phosphor-icons/react/CloudArrowUp'
 import { FloppyDisk as Save } from '@phosphor-icons/react/FloppyDisk'
@@ -16,7 +16,6 @@ type OnboardingSettingsResponse = {
   videoId: string | null
   updatedAt: string
   expiresAt: string
-  embedUrl: string | null
 }
 
 type BunnyUploadInit = {
@@ -54,7 +53,7 @@ export function OnboardingVideoAdminCard() {
   const uploadInitAbortRef = useRef<AbortController | null>(null)
   const tusUploadRef = useRef<AbortableUpload | null>(null)
 
-  const embedUrl = useMemo(() => (videoId ? getOnboardingEmbedUrl(videoId) : null), [videoId])
+  const [embedUrl, setEmbedUrl] = useState<string | null>(null)
 
   const loadSettings = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -88,6 +87,30 @@ export function OnboardingVideoAdminCard() {
     void loadSettings(controller.signal)
     return () => controller.abort()
   }, [loadSettings])
+
+  useEffect(() => {
+    setEmbedUrl(null)
+    if (!videoId) return
+
+    const controller = new AbortController()
+    void (async () => {
+      try {
+        const response = await fetch(getOnboardingPlaybackEndpoint(videoId), {
+          cache: 'no-store',
+          signal: controller.signal,
+        })
+        const payload = (await response.json().catch(() => null)) as { url?: string } | null
+        if (!response.ok || !payload?.url) return
+        setEmbedUrl(payload.url)
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          console.error('Onboarding preview playback URL failed:', error)
+        }
+      }
+    })()
+
+    return () => controller.abort()
+  }, [videoId])
 
   useEffect(() => {
     return () => {

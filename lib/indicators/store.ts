@@ -2,6 +2,8 @@ import 'server-only'
 
 import { clerkClient } from '@clerk/nextjs/server'
 import { Prisma } from '@prisma/client'
+import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
+import { evaluateIndicatorEntitlement } from '@/lib/indicator-entitlements'
 import { prisma, withPrismaRetry } from '@/lib/prisma'
 import { TradingViewService } from '@/lib/indicators/tradingview'
 import type {
@@ -21,6 +23,11 @@ import type {
 } from '@/lib/indicators/types'
 
 const TV_COOKIE_SETTING_KEY = 'tradingViewIndicatorCookie'
+const TV_COOKIE_ENCRYPTION_AAD = Buffer.from('price-action-trader:tradingview-cookie:v2')
+const TV_COOKIE_MAX_LENGTH = 16_384
+const USER_ID_MAX_LENGTH = 128
+const INDICATOR_ID_MAX_LENGTH = 128
+const TV_USERNAME_MAX_LENGTH = 64
 
 const VALID_CLAIM_STATUSES = new Set<IndicatorClaimStatus>([
   'pending',
@@ -86,14 +93,79 @@ function cookiePreview(cookie: string) {
   return `${value.slice(0, 6)}...${value.slice(-4)}`
 }
 
-function parseSessionSetting(value: unknown): { cookie: string; savedAt: string | null; savedBy: string | null } {
-  if (!value || typeof value !== 'object') return { cookie: '', savedAt: null, savedBy: null }
-  const record = value as Record<string, unknown>
+function sessionMetadata(value: unknown) {
+  const record = value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {}
   return {
-    cookie: typeof record.cookie === 'string' ? record.cookie : '',
     savedAt: typeof record.savedAt === 'string' ? record.savedAt : null,
     savedBy: typeof record.savedBy === 'string' ? record.savedBy : null,
   }
+}
+
+function tradingViewCookieEncryptionKey() {
+  const configured = process.env.TRADINGVIEW_COOKIE_ENCRYPTION_KEY?.trim()
+  if (!configured) {
+    throw new Error('TRADINGVIEW_COOKIE_ENCRYPTION_KEY is not configured.')
+  }
+
+  const key = /^[a-f0-9]{64}$/i.test(configured)
+    ? Buffer.from(configured, 'hex')
+    : Buffer.from(configured, 'base64')
+  if (key.length !== 32) {
+    throw new Error('TRADINGVIEW_COOKIE_ENCRYPTION_KEY must be a 32-byte base64 or hex key.')
+  }
+  return key
+}
+
+function encryptTradingViewCookie(input: {
+  cookie: string
+  savedAt: string
+  savedBy: string | null
+}): Prisma.InputJsonObject {
+  const iv = randomBytes(12)
+  const cipher = createCipheriv('aes-256-gcm', tradingViewCookieEncryptionKey(), iv)
+  cipher.setAAD(TV_COOKIE_ENCRYPTION_AAD)
+  const ciphertext = Buffer.concat([
+    cipher.update(input.cookie, 'utf8'),
+    cipher.final(),
+  ])
+
+  return {
+    version: 2,
+    algorithm: 'aes-256-gcm',
+    iv: iv.toString('base64'),
+    ciphertext: ciphertext.toString('base64'),
+    authTag: cipher.getAuthTag().toString('base64'),
+    savedAt: input.savedAt,
+    savedBy: input.savedBy,
+  }
+}
+
+function decryptTradingViewCookie(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const record = value as Record<string, unknown>
+  if (
+    record.version !== 2 ||
+    record.algorithm !== 'aes-256-gcm' ||
+    typeof record.iv !== 'string' ||
+    typeof record.ciphertext !== 'string' ||
+    typeof record.authTag !== 'string'
+  ) {
+    return null
+  }
+
+  const decipher = createDecipheriv(
+    'aes-256-gcm',
+    tradingViewCookieEncryptionKey(),
+    Buffer.from(record.iv, 'base64')
+  )
+  decipher.setAAD(TV_COOKIE_ENCRYPTION_AAD)
+  decipher.setAuthTag(Buffer.from(record.authTag, 'base64'))
+  return Buffer.concat([
+    decipher.update(Buffer.from(record.ciphertext, 'base64')),
+    decipher.final(),
+  ]).toString('utf8')
 }
 
 function asIndicator(row: {
@@ -264,17 +336,81 @@ async function uniquePackageSlug(name: string) {
   return slug
 }
 
-export async function getTradingViewSessionMeta(): Promise<TradingViewSessionMeta> {
+async function loadTradingViewSessionSetting(
+  allowRaceRetry = true
+): Promise<{ cookie: string; savedAt: string | null; savedBy: string | null }> {
   const setting = await withPrismaRetry(
     () =>
       prisma.adminSetting.findUnique({
         where: { key: TV_COOKIE_SETTING_KEY },
-        select: { value: true },
+        select: { value: true, updatedAt: true },
       }),
     { label: 'Load TradingView cookie setting' }
   )
 
-  const parsed = parseSessionSetting(setting?.value)
+  const metadata = sessionMetadata(setting?.value)
+  if (!setting) return { cookie: '', ...metadata }
+
+  try {
+    const decrypted = decryptTradingViewCookie(setting.value)
+    if (decrypted !== null) {
+      if (!decrypted || decrypted.length > TV_COOKIE_MAX_LENGTH) {
+        throw new Error('Encrypted TradingView cookie has an invalid length.')
+      }
+      return { cookie: decrypted, ...metadata }
+    }
+  } catch (error) {
+    console.error('[indicators] TradingView cookie decryption failed:', error)
+    return { cookie: '', ...metadata }
+  }
+
+  const record =
+    setting.value && typeof setting.value === 'object' && !Array.isArray(setting.value)
+      ? (setting.value as Record<string, unknown>)
+      : null
+  const legacyCookie = typeof record?.cookie === 'string' ? record.cookie.trim() : ''
+  if (!legacyCookie) return { cookie: '', ...metadata }
+
+  // Legacy plaintext is readable only during an explicitly enabled, atomic,
+  // one-time migration. If the encrypted write does not win, plaintext is not
+  // used and the fresh row is loaded again.
+  if (process.env.ALLOW_LEGACY_TRADINGVIEW_COOKIE_MIGRATION !== 'true') {
+    console.error(
+      '[indicators] Legacy plaintext TradingView cookie is blocked. Enable the one-time migration flag.'
+    )
+    return { cookie: '', ...metadata }
+  }
+  if (legacyCookie.length > TV_COOKIE_MAX_LENGTH) {
+    console.error('[indicators] Legacy TradingView cookie exceeds the migration size limit.')
+    return { cookie: '', ...metadata }
+  }
+
+  const encrypted = encryptTradingViewCookie({
+    cookie: legacyCookie,
+    savedAt: metadata.savedAt ?? new Date().toISOString(),
+    savedBy: metadata.savedBy,
+  })
+  const migrated = await withPrismaRetry(
+    () =>
+      prisma.adminSetting.updateMany({
+        where: { key: TV_COOKIE_SETTING_KEY, updatedAt: setting.updatedAt },
+        data: { value: encrypted },
+      }),
+    { label: 'Migrate TradingView cookie encryption' }
+  )
+
+  if (migrated.count !== 1) {
+    return allowRaceRetry
+      ? loadTradingViewSessionSetting(false)
+      : { cookie: '', ...metadata }
+  }
+
+  console.info('[indicators] Legacy TradingView cookie migrated to AES-GCM.')
+  return { cookie: legacyCookie, ...metadata }
+}
+
+export async function getTradingViewSessionMeta(): Promise<TradingViewSessionMeta> {
+  const parsed = await loadTradingViewSessionSetting()
   return {
     configured: Boolean(parsed.cookie),
     savedAt: parsed.savedAt,
@@ -284,33 +420,29 @@ export async function getTradingViewSessionMeta(): Promise<TradingViewSessionMet
 }
 
 export async function getTvSessionSecret() {
-  const setting = await withPrismaRetry(
-    () =>
-      prisma.adminSetting.findUnique({
-        where: { key: TV_COOKIE_SETTING_KEY },
-        select: { value: true },
-      }),
-    { label: 'Load TradingView cookie secret' }
-  )
-
-  return parseSessionSetting(setting?.value).cookie
+  return (await loadTradingViewSessionSetting()).cookie
 }
 
 export async function saveTradingViewCookie(input: { cookie: string; savedBy: string }) {
   const cookie = input.cookie.trim()
   if (!cookie) throw new Error('TradingView cookie is required.')
+  if (cookie.length > TV_COOKIE_MAX_LENGTH) throw new Error('TradingView cookie is too large.')
+  if (!input.savedBy || input.savedBy.length > USER_ID_MAX_LENGTH) {
+    throw new Error('Invalid admin user ID.')
+  }
 
   const savedAt = new Date().toISOString()
+  const encrypted = encryptTradingViewCookie({ cookie, savedAt, savedBy: input.savedBy })
   await withPrismaRetry(
     () =>
       prisma.adminSetting.upsert({
         where: { key: TV_COOKIE_SETTING_KEY },
         create: {
           key: TV_COOKIE_SETTING_KEY,
-          value: { cookie, savedAt, savedBy: input.savedBy },
+          value: encrypted,
         },
         update: {
-          value: { cookie, savedAt, savedBy: input.savedBy },
+          value: encrypted,
         },
       }),
     { label: 'Save TradingView cookie' }
@@ -865,12 +997,8 @@ async function bindTradingViewAccountForUser(input: {
   }
 }
 
-// Best-Effort-Auto-Revoke beim Rebind: entzieht dem ALTEN TradingView-Namen
-// die vorhandenen Grants über die gleiche Session-Cookie-Infrastruktur wie
-// die Grants (POST /pine_perm/remove/). WICHTIG: darf NIE werfen und den
-// Claim des neuen Namens NIE blockieren — auch wenn der alte Name nie ein
-// echter TradingView-Account war oder nie Zugang hatte. Fehler werden nur
-// geloggt, auditiert und im Summary zurückgemeldet (Telegram-Warnung).
+// Fail-closed Revoke vor einem Rebind. Erst wenn jeder moegliche externe Grant
+// erfolgreich entfernt wurde, darf das DB-Binding auf den neuen Namen wechseln.
 async function revokeOldGrantsAfterRebind(input: {
   userId: string
   oldUsername: string
@@ -879,21 +1007,78 @@ async function revokeOldGrantsAfterRebind(input: {
   const summary: RebindRevokeSummary = { attempted: 0, revoked: 0, failed: 0, firstError: null }
 
   try {
-    // Nur Claims, bei denen auf TradingView-Seite überhaupt ein Grant
-    // existieren kann: granted/processing oder mindestens ein Worker-Versuch.
-    // Reine pending-Claims (z. B. Tippfehler, Worker lief nie) haben nichts,
-    // das man entziehen könnte — attempted bleibt dann 0.
+    // Zuerst alle lokalen Claims dieses Bindings laden und Queue-faehige
+    // Eintraege sperren. So kann zwischen Revoke und DB-Rebind kein Worker
+    // noch einen Grant auf den alten Namen schreiben.
     const claims = await prisma.indicatorClaim.findMany({
       where: {
         userId: input.userId,
-        OR: [{ status: { in: ['granted', 'processing'] } }, { attemptCount: { gt: 0 } }],
+        status: { not: 'revoked' },
       },
       include: { indicator: { select: { pineId: true } } },
     })
 
-    const revocable = claims.flatMap((claim) => {
+    // A concurrent grant could land after our revoke. Wait for that worker to
+    // finish and require the member to retry the rebind.
+    if (claims.some((claim) => claim.status === 'processing')) {
+      summary.failed = 1
+      summary.firstError = 'Eine TradingView-Freigabe wird gerade verarbeitet. Bitte gleich erneut versuchen.'
+      return summary
+    }
+
+    const lockableIds = claims
+      .filter((claim) => ['pending', 'failed', 'needs_session'].includes(claim.status))
+      .map((claim) => claim.id)
+    if (lockableIds.length > 0) {
+      await prisma.indicatorClaim.updateMany({
+        where: {
+          id: { in: lockableIds },
+          status: { in: ['pending', 'failed', 'needs_session'] },
+        },
+        data: {
+          status: 'rebind_locked',
+          nextRetryAt: null,
+          lastErrorCode: 'account_rebind_in_progress',
+          errorMessage: 'TradingView-Konto wird sicher auf einen neuen Namen umgestellt.',
+        },
+      })
+
+      const racedWorker = await prisma.indicatorClaim.findFirst({
+        where: { id: { in: lockableIds }, status: 'processing' },
+        select: { id: true },
+      })
+      if (racedWorker) {
+        await prisma.indicatorClaim.updateMany({
+          where: { id: { in: lockableIds }, status: 'rebind_locked' },
+          data: {
+            status: 'pending',
+            nextRetryAt: new Date(),
+            lastErrorCode: 'account_rebind_worker_race',
+            errorMessage: 'Ein Worker war bereits aktiv. Bitte den Rebind gleich erneut versuchen.',
+          },
+        })
+        summary.failed = 1
+        summary.firstError = 'Eine TradingView-Freigabe wurde parallel gestartet. Bitte gleich erneut versuchen.'
+        return summary
+      }
+    }
+
+    // Nur Claims, bei denen auf TradingView-Seite ueberhaupt ein Grant
+    // existieren kann, muessen extern entzogen werden.
+    const potentiallyExternal = claims.filter(
+      (claim) => claim.status === 'granted' || claim.attemptCount > 0
+    )
+    if (potentiallyExternal.some((claim) => !claim.indicator?.pineId)) {
+      summary.failed = 1
+      summary.firstError = 'Ein alter Grant hat keine widerrufbare Pine-ID. Bitte kontaktiere den Support.'
+      return summary
+    }
+
+    const revocable = potentiallyExternal.flatMap((claim) => {
       const pineId = claim.indicator?.pineId
-      return pineId ? [{ indicatorId: claim.indicatorId, tvUsername: claim.tvUsername, pineId }] : []
+      return pineId
+        ? [{ id: claim.id, indicatorId: claim.indicatorId, tvUsername: claim.tvUsername, pineId }]
+        : []
     })
     if (revocable.length === 0) return summary
 
@@ -924,7 +1109,17 @@ async function revokeOldGrantsAfterRebind(input: {
       }
 
       if (result.success) {
-        summary.revoked += 1
+        const updated = await prisma.indicatorClaim.updateMany({
+          where: { id: claim.id, status: { not: 'revoked' } },
+          data: {
+            status: 'revoked',
+            revokedAt: new Date(),
+            nextRetryAt: null,
+            lastErrorCode: 'account_rebind_revoke',
+            errorMessage: 'Alter TradingView-Grant wurde vor dem Rebind widerrufen.',
+          },
+        })
+        summary.revoked += updated.count
       } else {
         summary.failed += 1
         if (!summary.firstError) summary.firstError = result.message
@@ -953,12 +1148,13 @@ async function revokeOldGrantsAfterRebind(input: {
       })
     }
   } catch (error) {
-    // Selbst das Laden der Claims darf den Rebind nicht stoppen.
+    // Any uncertainty blocks the rebind; old and new names must never both be
+    // grantable because an infrastructure failure was treated as best effort.
     summary.failed = Math.max(summary.failed, 1)
     if (!summary.firstError) {
       summary.firstError = error instanceof Error ? error.message : 'Auto-revoke failed unexpectedly.'
     }
-    console.error('[indicators] rebind auto-revoke crashed (non-fatal):', error)
+    console.error('[indicators] rebind precondition revoke failed:', error)
   }
 
   return summary
@@ -972,9 +1168,24 @@ export async function claimIndicatorForUser(input: {
   // Namen (Mentorship-Flows lassen das weiter bewusst nicht zu).
   allowRebind?: boolean
 }): Promise<ClaimIndicatorActionResult> {
+  if (typeof input.userId !== 'string' || !input.userId || input.userId.length > USER_ID_MAX_LENGTH) {
+    return { ok: false, indicatorId: '', message: 'Ungültiges Mitgliedskonto.' }
+  }
+  if (
+    typeof input.indicatorId !== 'string' ||
+    !input.indicatorId ||
+    input.indicatorId.length > INDICATOR_ID_MAX_LENGTH
+  ) {
+    return { ok: false, indicatorId: '', message: 'Ungültiger Indikator.' }
+  }
+
   const requestedTvUsername = normalizeTradingViewUsername(input.tvUsername)
 
-  if (requestedTvUsername.length < 2) {
+  if (
+    requestedTvUsername.length < 2 ||
+    requestedTvUsername.length > TV_USERNAME_MAX_LENGTH ||
+    !/^[A-Za-z0-9_.-]+$/.test(requestedTvUsername)
+  ) {
     return { ok: false, indicatorId: input.indicatorId, message: 'Gib einen gültigen TradingView-Benutzernamen ein.' }
   }
 
@@ -982,7 +1193,7 @@ export async function claimIndicatorForUser(input: {
     () =>
       prisma.indicator.findUnique({
         where: { id: input.indicatorId },
-        select: { id: true, name: true, pineId: true, ready: true, visible: true },
+        select: { id: true, slug: true, name: true, pineId: true, ready: true, visible: true },
       }),
     { label: 'Load claimable indicator' }
   )
@@ -999,6 +1210,32 @@ export async function claimIndicatorForUser(input: {
     }
   }
 
+  const entitlement = await evaluateIndicatorEntitlement({
+    userId: input.userId,
+    indicatorSlug: indicator.slug,
+  })
+  if (!entitlement.allowed) {
+    await writeClaimAudit({
+      userId: input.userId,
+      indicatorId: input.indicatorId,
+      tvUsername: requestedTvUsername,
+      action: 'claim',
+      result: 'failure',
+      errorCode: 'entitlement_missing',
+      metadata: { entitlement: entitlement.entitlement, reason: entitlement.reason },
+    })
+    return {
+      ok: false,
+      indicatorId: input.indicatorId,
+      message:
+        entitlement.entitlement === 'raidmap'
+          ? 'Für PAT Raid Map ist ein aktives Raid-Map-Abo erforderlich.'
+          : 'Für diesen Indikator ist ein aktives Mentorship-Abo erforderlich.',
+    }
+  }
+
+  const allowRebind = input.allowRebind === true && entitlement.entitlement === 'raidmap'
+
   const existingAccount = await prisma.userTradingViewAccount.findUnique({ where: { userId: input.userId } })
   let linkedAccount = existingAccount ? asTradingViewAccount(existingAccount) : null
   let tvUsername = requestedTvUsername
@@ -1008,7 +1245,7 @@ export async function claimIndicatorForUser(input: {
   if (linkedAccount) {
     const requestedKey = normalizedTradingViewKey(requestedTvUsername)
     if (requestedKey !== linkedAccount.normalizedUsername) {
-      if (!input.allowRebind) {
+      if (!allowRebind) {
         await writeClaimAudit({
           userId: input.userId,
           indicatorId: input.indicatorId,
@@ -1027,10 +1264,9 @@ export async function claimIndicatorForUser(input: {
         }
       }
 
-      // Rebind: neuen Namen erst gegen TradingView validieren, dann Konto
-      // umhaengen. Danach wird der ALTE Grant auf TradingView-Seite best
-      // effort automatisch entzogen (revokeOldGrantsAfterRebind); schlaegt
-      // das fehl, bleibt "Manage access" der manuelle Fallback (Telegram).
+      // Rebind: neuen Namen validieren, dann ALLE moeglichen alten Grants
+      // fail-closed entziehen. Erst danach werden Binding und lokale Claims in
+      // einer Transaktion umgestellt.
       const revalidation = await new TradingViewService().validateUsername(requestedTvUsername)
       if (!revalidation.valid) {
         const validationUnavailable = revalidation.reason === 'unavailable'
@@ -1053,16 +1289,59 @@ export async function claimIndicatorForUser(input: {
         }
       }
 
+      const oldUsername = linkedAccount.tvUsername
+      rebindRevoke = await revokeOldGrantsAfterRebind({
+        userId: input.userId,
+        oldUsername,
+        newUsername: revalidation.exactName,
+      })
+      if (rebindRevoke.failed > 0) {
+        return {
+          ok: false,
+          indicatorId: input.indicatorId,
+          tvUsername: oldUsername,
+          message:
+            rebindRevoke.firstError ??
+            'Der alte TradingView-Zugang konnte nicht sicher entfernt werden. Bitte versuche es erneut.',
+        }
+      }
+
       try {
-        const updated = await prisma.userTradingViewAccount.update({
-          where: { userId: input.userId },
-          data: {
-            tvUsername: revalidation.exactName,
-            tvUsernameNormalized: normalizedTradingViewKey(revalidation.exactName),
-            verificationStatus: 'unverified',
-          },
+        const updated = await prisma.$transaction(async (tx) => {
+          const current = await tx.userTradingViewAccount.findUnique({
+            where: { userId: input.userId },
+            select: { tvUsernameNormalized: true },
+          })
+          if (current?.tvUsernameNormalized !== linkedAccount?.normalizedUsername) {
+            throw new Error('rebind_binding_changed')
+          }
+
+          const account = await tx.userTradingViewAccount.update({
+            where: { userId: input.userId },
+            data: {
+              tvUsername: revalidation.exactName,
+              tvUsernameNormalized: normalizedTradingViewKey(revalidation.exactName),
+              verificationStatus: 'unverified',
+            },
+          })
+
+          // Pending/failed claims also target the old username and must never
+          // remain executable after the binding changes. The selected current
+          // indicator is queued again below with the new exact username.
+          await tx.indicatorClaim.updateMany({
+            where: { userId: input.userId, status: { not: 'revoked' } },
+            data: {
+              status: 'revoked',
+              revokedAt: new Date(),
+              nextRetryAt: null,
+              lastErrorCode: 'account_rebound',
+              errorMessage: 'TradingView-Konto wurde sicher auf einen neuen Benutzernamen umgestellt.',
+            },
+          })
+
+          return account
         })
-        reboundFrom = linkedAccount.tvUsername
+        reboundFrom = oldUsername
         linkedAccount = asTradingViewAccount(updated)
         tvUsername = linkedAccount.tvUsername
       } catch (error) {
@@ -1074,16 +1353,16 @@ export async function claimIndicatorForUser(input: {
             message: `@${requestedTvUsername} ist bereits mit einem anderen Mitgliedskonto verknüpft.`,
           }
         }
+        if (error instanceof Error && error.message === 'rebind_binding_changed') {
+          return {
+            ok: false,
+            indicatorId: input.indicatorId,
+            tvUsername: oldUsername,
+            message: 'Die TradingView-Verknüpfung wurde parallel geändert. Bitte lade die Seite neu.',
+          }
+        }
         throw error
       }
-
-      // Auto-Revoke der alten Grants — best effort, blockiert den neuen
-      // Claim nie (auch nicht, wenn der alte Name nie Zugang hatte).
-      rebindRevoke = await revokeOldGrantsAfterRebind({
-        userId: input.userId,
-        oldUsername: reboundFrom,
-        newUsername: tvUsername,
-      })
 
       await writeClaimAudit({
         userId: input.userId,
@@ -1102,11 +1381,9 @@ export async function claimIndicatorForUser(input: {
             first_error: rebindRevoke.firstError,
           },
           note:
-            rebindRevoke.failed > 0
-              ? 'auto-revoke failed — old TradingView grant must be removed manually via Manage access'
-              : rebindRevoke.attempted === 0
-                ? 'no old TradingView grant existed — nothing to revoke'
-                : 'old TradingView grant revoked automatically',
+            rebindRevoke.attempted === 0
+              ? 'no old TradingView grant existed — nothing to revoke'
+              : 'old TradingView grant revoked before binding changed',
         },
       })
     } else {
@@ -1144,7 +1421,7 @@ export async function claimIndicatorForUser(input: {
   }
 
   const validation = linkedAccount
-    ? { valid: true, exactName: linkedAccount.tvUsername, reason: undefined }
+    ? { valid: true, exactName: linkedAccount.tvUsername }
     : await new TradingViewService().validateUsername(tvUsername)
 
   if (!validation.valid) {
@@ -1402,7 +1679,7 @@ export async function processTradingViewClaimQueue({
     },
     include: {
       indicator: {
-        select: { id: true, name: true, pineId: true, ready: true, visible: true },
+        select: { id: true, slug: true, name: true, pineId: true, ready: true, visible: true },
       },
     },
     orderBy: { updatedAt: 'asc' },
@@ -1461,6 +1738,48 @@ export async function processTradingViewClaimQueue({
             skipped_at: new Date().toISOString(),
             reason: 'indicator_not_claimable',
           },
+        },
+      })
+      continue
+    }
+
+    // Do this after taking the claim lock and immediately before the external
+    // grant. A subscription may disappear between claim creation and worker run.
+    const entitlement = await evaluateIndicatorEntitlement({
+      userId: row.userId,
+      indicatorSlug: row.indicator.slug,
+    })
+    if (!entitlement.allowed) {
+      skipped += 1
+      const deniedAt = new Date()
+      await prisma.indicatorClaim.update({
+        where: { id: row.id },
+        data: {
+          status: 'revoked',
+          errorMessage: 'Die Freigabe wurde gestoppt, weil kein aktiver Produktzugang besteht.',
+          revokedAt: deniedAt,
+          nextRetryAt: null,
+          lastErrorCode: 'entitlement_missing',
+          tradingViewResponse: {
+            source: 'tradingview_queue_worker',
+            denied_at: deniedAt.toISOString(),
+            entitlement: entitlement.entitlement,
+            reason: entitlement.reason,
+          },
+        },
+      })
+      await writeClaimAudit({
+        userId: row.userId,
+        indicatorId: row.indicatorId,
+        tvUsername: row.tvUsername,
+        action: 'claim',
+        result: 'failure',
+        errorCode: 'entitlement_missing',
+        metadata: {
+          source: 'tradingview_queue_worker',
+          worker_id: workerId,
+          entitlement: entitlement.entitlement,
+          reason: entitlement.reason,
         },
       })
       continue
@@ -1569,8 +1888,25 @@ export async function processTradingViewClaimInstantly(input: {
 }
 
 export async function resetTradingViewAccountBinding(userId: string) {
+  if (typeof userId !== 'string' || !userId || userId.length > USER_ID_MAX_LENGTH) {
+    return { ok: false, removed: false, revoked: 0, failed: 1, error: 'Ungültige User-ID.' }
+  }
   const account = await getTradingViewAccountForUser(userId)
-  if (!account) return { removed: false, revoked: 0, failed: 0 }
+  if (!account) return { ok: true, removed: false, revoked: 0, failed: 0, error: null }
+
+  const processingClaim = await prisma.indicatorClaim.findFirst({
+    where: { userId, status: 'processing' },
+    select: { id: true },
+  })
+  if (processingClaim) {
+    return {
+      ok: false,
+      removed: false,
+      revoked: 0,
+      failed: 1,
+      error: 'Eine TradingView-Freigabe läuft gerade. Bitte versuche den Reset gleich erneut.',
+    }
+  }
 
   const grantedClaims = await prisma.indicatorClaim.findMany({
     where: { userId, status: 'granted' },
@@ -1580,15 +1916,44 @@ export async function resetTradingViewAccountBinding(userId: string) {
   const tv = new TradingViewService(await getTvSessionSecret())
   let revoked = 0
   let failed = 0
+  let firstError: string | null = null
+
+  if (grantedClaims.length > 0 && !tv.isConfigured) {
+    return {
+      ok: false,
+      removed: false,
+      revoked: 0,
+      failed: grantedClaims.length,
+      error: 'TradingView-Cookie fehlt. Binding bleibt für einen sicheren Retry bestehen.',
+    }
+  }
 
   if (tv.isConfigured) {
     for (const claim of grantedClaims) {
       const pineId = claim.indicator?.pineId
-      if (!pineId) continue
+      if (!pineId) {
+        failed += 1
+        firstError ??= 'Ein Grant hat keine Pine-ID und konnte nicht sicher widerrufen werden.'
+        continue
+      }
 
       const result = await tv.revokeAccess(claim.tvUsername || account.tvUsername, pineId)
-      if (result.success) revoked += 1
-      else failed += 1
+      if (result.success) {
+        const updated = await prisma.indicatorClaim.updateMany({
+          where: { id: claim.id, status: 'granted' },
+          data: {
+            status: 'revoked',
+            revokedAt: new Date(),
+            nextRetryAt: null,
+            lastErrorCode: null,
+            errorMessage: 'TradingView-Verknüpfung wurde vom Admin zurückgesetzt.',
+          },
+        })
+        revoked += updated.count
+      } else {
+        failed += 1
+        firstError ??= result.message
+      }
 
       await writeClaimAudit({
         userId,
@@ -1600,21 +1965,33 @@ export async function resetTradingViewAccountBinding(userId: string) {
         metadata: { reason: 'admin_account_reset' },
       })
     }
-  } else {
-    failed = grantedClaims.length
   }
 
+  if (failed > 0) {
+    return {
+      ok: false,
+      removed: false,
+      revoked,
+      failed,
+      error:
+        firstError ??
+        'Nicht alle TradingView-Grants konnten widerrufen werden. Binding bleibt für Retry bestehen.',
+    }
+  }
+
+  // Erst wenn kein externer Grant uebrig ist, duerfen lokale Queue-Eintraege
+  // und das Account-Binding entfernt werden.
   await prisma.indicatorClaim.updateMany({
     where: { userId, status: { not: 'revoked' } },
     data: {
       status: 'revoked',
       revokedAt: new Date(),
-      errorMessage: tv.isConfigured
-        ? 'TradingView-Verknüpfung wurde vom Admin zurückgesetzt.'
-        : 'Verknüpfung zurückgesetzt; TradingView-Revocation wurde wegen fehlendem Cookie nicht versucht.',
+      nextRetryAt: null,
+      lastErrorCode: 'admin_account_reset',
+      errorMessage: 'TradingView-Verknüpfung wurde vom Admin zurückgesetzt.',
     },
   })
 
   await prisma.userTradingViewAccount.delete({ where: { userId } })
-  return { removed: true, revoked, failed }
+  return { ok: true, removed: true, revoked, failed: 0, error: null }
 }

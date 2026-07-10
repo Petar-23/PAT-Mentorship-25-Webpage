@@ -2,7 +2,7 @@ import 'server-only'
 
 import { currentUser } from '@clerk/nextjs/server'
 import { getIsAdmin, isMentorshipAccessible } from '@/lib/authz'
-import { getEmailFromSessionClaims } from '@/lib/clerk-claims'
+import { getVerifiedPrimaryEmail } from '@/lib/clerk-email'
 import { isMentorshipAccessOverrideEmail } from '@/lib/mentorship-access-overrides'
 import { hasActiveSubscription } from '@/lib/stripe'
 
@@ -41,13 +41,10 @@ export async function getMentorshipAccessState(
   }
 
   // Nur wenn der schnelle Subscription-Check negativ ist, nutzen wir den teureren Email-Fallback.
-  let email = getEmailFromSessionClaims(sessionClaims)
-  if (!email) {
-    const user = await currentUser()
-    email = user?.primaryEmailAddress?.emailAddress ?? null
-  }
+  const user = await currentUser()
+  const verifiedEmail = getVerifiedPrimaryEmail(user)
 
-  if (isMentorshipAccessOverrideEmail(email)) {
+  if (isMentorshipAccessOverrideEmail(verifiedEmail)) {
     return {
       isAdmin: false,
       hasSubscription: true,
@@ -56,8 +53,8 @@ export async function getMentorshipAccessState(
     }
   }
 
-  const hasSubscriptionWithFallback = email
-    ? await hasActiveSubscription(userId, email)
+  const hasSubscriptionWithFallback = verifiedEmail
+    ? await hasActiveSubscription(userId, verifiedEmail)
     : false
 
   return {

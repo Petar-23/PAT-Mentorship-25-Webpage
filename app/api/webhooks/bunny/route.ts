@@ -7,10 +7,7 @@ import { buildBunnyThumbnailUrl } from '@/lib/bunny-thumbnail'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const BUNNY_WEBHOOK_SIGNING_SECRET =
-  process.env.BUNNY_WEBHOOK_SIGNING_SECRET ||
-  process.env.BUNNY_STREAM_READ_ONLY_API_KEY ||
-  process.env.BUNNY_READ_ONLY_API_KEY
+const BUNNY_WEBHOOK_SIGNING_SECRET = process.env.BUNNY_WEBHOOK_SIGNING_SECRET?.trim()
 const THUMBNAIL_FETCH_TIMEOUT_MS = 8_000
 
 /**
@@ -58,9 +55,8 @@ function timingSafeHexEqual(left: string, right: string) {
 function verifyBunnyWebhookSignature(rawBody: string, headers: Headers) {
   if (!BUNNY_WEBHOOK_SIGNING_SECRET) {
     return {
-      ok: true as const,
-      enforced: false as const,
-      reason: 'missing signing secret',
+      ok: false as const,
+      reason: 'signing secret is not configured',
     }
   }
 
@@ -71,7 +67,6 @@ function verifyBunnyWebhookSignature(rawBody: string, headers: Headers) {
   if (version !== 'v1') {
     return {
       ok: false as const,
-      enforced: true as const,
       reason: 'invalid version',
     }
   }
@@ -79,7 +74,6 @@ function verifyBunnyWebhookSignature(rawBody: string, headers: Headers) {
   if (algorithm !== 'hmac-sha256') {
     return {
       ok: false as const,
-      enforced: true as const,
       reason: 'invalid algorithm',
     }
   }
@@ -87,7 +81,6 @@ function verifyBunnyWebhookSignature(rawBody: string, headers: Headers) {
   if (!signature) {
     return {
       ok: false as const,
-      enforced: true as const,
       reason: 'missing signature',
     }
   }
@@ -100,12 +93,11 @@ function verifyBunnyWebhookSignature(rawBody: string, headers: Headers) {
   if (!timingSafeHexEqual(signature, expectedSignature)) {
     return {
       ok: false as const,
-      enforced: true as const,
       reason: 'signature mismatch',
     }
   }
 
-  return { ok: true as const, enforced: true as const, reason: null }
+  return { ok: true as const, reason: null }
 }
 
 async function fetchThumbnailAttachment(thumbnailUrl: string) {
@@ -153,12 +145,6 @@ export async function POST(req: Request) {
         signatureCheck.reason
       )
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-    }
-
-    if (!signatureCheck.enforced) {
-      console.warn(
-        'Bunny webhook signing secret is not configured. Accepting unsigned webhook.'
-      )
     }
 
     let body: unknown

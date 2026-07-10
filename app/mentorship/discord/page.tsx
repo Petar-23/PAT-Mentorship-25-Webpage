@@ -26,28 +26,34 @@ async function getConnectedDiscordAccount(userId: string | null): Promise<{
   }
 
   try {
-    // Prefer DB-cached customerId, fallback to Stripe search
-    const sub = await prisma.userSubscription.findUnique({
+    // Provider-independent binding is authoritative, including PayPal-only users.
+    const durableBinding = await prisma.userDiscordAccount.findUnique({
       where: { userId },
-      select: { stripeCustomerId: true },
+      select: { discordUserId: true },
     })
+    let connectedDiscordUserId = durableBinding?.discordUserId ?? null
 
-    let stripeCustomerId = sub?.stripeCustomerId ?? null
-
-    if (!stripeCustomerId) {
-      const customers = await stripe.customers.search({
-        query: `metadata['userId']:'${userId}'`,
+    if (!connectedDiscordUserId) {
+      // Legacy fallback: migrate old Stripe-only links on the next successful OAuth flow.
+      const sub = await prisma.userSubscription.findUnique({
+        where: { userId },
+        select: { stripeCustomerId: true },
       })
-      stripeCustomerId = customers.data[0]?.id ?? null
-    }
 
-    let connectedDiscordUserId: string | null = null
+      let stripeCustomerId = sub?.stripeCustomerId ?? null
+      if (!stripeCustomerId) {
+        const customers = await stripe.customers.search({
+          query: `metadata['userId']:'${userId}'`,
+        })
+        stripeCustomerId = customers.data[0]?.id ?? null
+      }
 
-    if (stripeCustomerId) {
-      const customer = await stripe.customers.retrieve(stripeCustomerId)
-      if (!('deleted' in customer && customer.deleted)) {
-        const raw = customer.metadata?.discordUserId
-        connectedDiscordUserId = typeof raw === 'string' && raw.length > 0 ? raw : null
+      if (stripeCustomerId) {
+        const customer = await stripe.customers.retrieve(stripeCustomerId)
+        if (!('deleted' in customer && customer.deleted)) {
+          const raw = customer.metadata?.discordUserId
+          connectedDiscordUserId = typeof raw === 'string' && raw.length > 0 ? raw : null
+        }
       }
     }
 

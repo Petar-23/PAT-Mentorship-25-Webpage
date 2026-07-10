@@ -285,8 +285,10 @@ export async function resetTradingViewAccountAction(userId: string): Promise<Ind
     const result = await resetTradingViewAccountBinding(userId)
     revalidateIndicators()
     return {
-      ok: true,
-      message: result.removed
+      ok: result.ok,
+      message: !result.ok
+        ? `${result.error ?? 'Reset nicht vollständig.'} ${result.revoked} Revokes erfolgreich, ${result.failed} retrybar.`
+        : result.removed
         ? `Verknüpfung entfernt. ${result.revoked} Revokes erfolgreich, ${result.failed} fehlgeschlagen.`
         : 'Keine TradingView-Verknüpfung gefunden.',
     }

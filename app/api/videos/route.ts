@@ -3,8 +3,9 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { hasActiveSubscription } from '@/lib/stripe'
-import { getIsAdmin, requireAdminApiAccess } from '@/lib/authz'
+import { requireAdminApiAccess } from '@/lib/authz'
+import { getMentorshipAccessState } from '@/lib/mentorship-access'
+import { toProtectedPdfUrl } from '@/lib/protected-pdf'
 
 export async function POST(request: Request) {
 
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
   }
   
   const body = await request.json()
-  const { title, bunnyGuid, pdfUrl, chapterId } = body
+  const { title, bunnyGuid, chapterId } = body
 
   // Title und chapterId sind Pflicht
   if (!title || !chapterId) {
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
       data: {
         title,
         bunnyGuid: bunnyGuid ?? null, 
-        pdfUrl: pdfUrl ?? null,
+        pdfUrl: null,
         chapterId,
         order: newOrder,  // ← immer am Ende
       },
@@ -54,7 +55,10 @@ export async function POST(request: Request) {
       },
     })
 
-    return NextResponse.json(newVideo, { status: 201 })
+    return NextResponse.json(
+      { ...newVideo, pdfUrl: toProtectedPdfUrl(newVideo.id, newVideo.pdfUrl) },
+      { status: 201 }
+    )
   }
    catch (error) {
     console.error('Video create error:', error)
@@ -72,9 +76,8 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const allowed = (await hasActiveSubscription(userId)) || (await getIsAdmin(userId, sessionClaims))
-
-  if (!allowed) {
+  const access = await getMentorshipAccessState(userId, sessionClaims)
+  if (!access.allowed) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -118,5 +121,10 @@ export async function GET() {
     orderBy: { createdAt: 'desc' },
   })
 
-  return NextResponse.json(videos)
+  return NextResponse.json(
+    videos.map((video) => ({
+      ...video,
+      pdfUrl: toProtectedPdfUrl(video.id, video.pdfUrl),
+    }))
+  )
 }

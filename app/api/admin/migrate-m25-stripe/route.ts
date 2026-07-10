@@ -17,9 +17,9 @@ const M25_PRICE_ID = 'price_1QNjN2I298HTtkSKnHPKgskR'
  * 2. Falls nicht: sucht Clerk-User per Email
  * 3. Falls gefunden: setzt metadata.userId + erstellt DB-Record
  *
- * GET /api/admin/migrate-m25-stripe
+ * POST /api/admin/migrate-m25-stripe
  */
-export async function GET() {
+export async function POST() {
   try {
     const admin = await requireAdminApiAccess()
     if (!admin.ok) {
@@ -88,20 +88,49 @@ export async function GET() {
 
             const clerkUsers = await client.users.getUserList({
               emailAddress: [email],
-              limit: 1,
+              limit: 100,
             })
 
-            if (clerkUsers.data.length === 0) {
+            const normalizedEmail = email.trim().toLowerCase()
+            const matchingUsers = clerkUsers.data.filter((user) => {
+              const primary = user.emailAddresses.find(
+                (address) => address.id === user.primaryEmailAddressId
+              )
+              return (
+                primary?.verification?.status === 'verified' &&
+                primary.emailAddress.trim().toLowerCase() === normalizedEmail
+              )
+            })
+
+            if (matchingUsers.length === 0) {
               results.noClerkUser.push(email)
               continue
             }
+            if (matchingUsers.length !== 1) {
+              results.errors.push(`Customer ${customerId}: Clerk-Email nicht eindeutig`)
+              continue
+            }
 
-            const clerkUser = clerkUsers.data[0]
+            const clerkUser = matchingUsers[0]
+
+            // Re-read immediately before mutation. Never overwrite a userId that
+            // another flow linked while the Clerk lookup was running.
+            const refreshedCustomer = await stripe.customers.retrieve(customerId)
+            if ('deleted' in refreshedCustomer && refreshedCustomer.deleted) {
+              results.errors.push(`Customer ${customerId}: geloescht`)
+              continue
+            }
+            const refreshedUserId = refreshedCustomer.metadata?.userId
+            if (refreshedUserId) {
+              results.alreadyLinked++
+              await ensureDbRecord(refreshedUserId, customerId, subscription)
+              continue
+            }
 
             // Stripe-Customer mit Clerk-User verknuepfen
             await stripe.customers.update(customerId, {
               metadata: {
-                ...(customer.metadata ?? {}),
+                ...(refreshedCustomer.metadata ?? {}),
                 userId: clerkUser.id,
               },
             })

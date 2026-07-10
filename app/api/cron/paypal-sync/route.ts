@@ -1,22 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getPayPalSubscription } from '@/lib/paypal'
+import { sendDiscordChannelMessage } from '@/lib/discord'
 import {
-  removeRoleFromGuildMember,
-  sendDiscordChannelMessage,
-} from '@/lib/discord'
+  enqueueEntitlementRevocation,
+  markEntitlementDesiredActive,
+  processEntitlementRevocationQueue,
+  restoreLinkedDiscordMentorshipRole,
+} from '@/lib/entitlement-revocations'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const PAYPAL_SYNC_CONCURRENCY = 3
 const PAYPAL_API_REQUEST_SPACING_MS = 300
-
-function requireEnv(name: string): string {
-  const value = process.env[name]
-  if (!value) throw new Error(`Missing env var: ${name}`)
-  return value
-}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -50,38 +47,15 @@ async function mapWithConcurrency<T, R>(
 // ---------------------------------------------------------------------------
 
 function isAuthorized(request: NextRequest): boolean {
+  const secret = process.env.CRON_SECRET
+  if (!secret) return false
   const authHeader = request.headers.get('authorization')
-  return authHeader === `Bearer ${process.env.CRON_SECRET}`
+  return authHeader === `Bearer ${secret}`
 }
 
 // ---------------------------------------------------------------------------
-// Discord helpers (mirrors pattern from app/api/webhooks/paypal/route.ts)
+// Notifications
 // ---------------------------------------------------------------------------
-
-async function safeRemoveDiscordRole(userId: string): Promise<void> {
-  try {
-    const { stripe } = await import('@/lib/stripe')
-
-    const sub = await prisma.userSubscription.findUnique({
-      where: { userId },
-      select: { stripeCustomerId: true },
-    })
-
-    if (!sub?.stripeCustomerId) return
-
-    const customer = await stripe.customers.retrieve(sub.stripeCustomerId)
-    if ('deleted' in customer && customer.deleted) return
-
-    const discordUserId = customer.metadata?.discordUserId
-    if (!discordUserId) return
-
-    const guildId = requireEnv('DISCORD_GUILD_ID')
-    const roleId = requireEnv('DISCORD_ROLE_MENTEE26_ID')
-    await removeRoleFromGuildMember({ guildId, discordUserId, roleId })
-  } catch (err) {
-    console.error('[paypal-sync] Failed to remove Discord role:', err)
-  }
-}
 
 async function safeSendModNotification(params: {
   title: string
@@ -189,14 +163,9 @@ export async function GET(request: NextRequest) {
             })
           }
 
-          // 3. If previously ACTIVE and now not ACTIVE → remove Discord role
+          // 3. Send mod notification
           const wasActive = subscriber.status === 'ACTIVE'
           const isNowActive = liveStatus === 'ACTIVE'
-          if (wasActive && !isNowActive && subscriber.userId) {
-            await safeRemoveDiscordRole(subscriber.userId)
-          }
-
-          // 4. Send mod notification
           const deactivated = wasActive && !isNowActive
           const reactivated = !wasActive && isNowActive
           await safeSendModNotification({
@@ -213,6 +182,34 @@ export async function GET(request: NextRequest) {
           })
 
           changed = 1
+        }
+
+        // Persist desired state after the live check. Also backfill a missing
+        // job for accounts that were already inactive before this code shipped.
+        if (subscriber.userId && liveStatus === 'ACTIVE') {
+          await markEntitlementDesiredActive({
+            userId: subscriber.userId,
+            entitlement: 'mentorship',
+            reason: 'paypal-cron:ACTIVE',
+          })
+          await restoreLinkedDiscordMentorshipRole(subscriber.userId)
+        } else if (subscriber.userId) {
+          const existingJob = await prisma.entitlementRevocationJob.findUnique({
+            where: {
+              userId_entitlement: {
+                userId: subscriber.userId,
+                entitlement: 'mentorship',
+              },
+            },
+            select: { id: true },
+          })
+          if (liveStatus !== subscriber.status || !existingJob) {
+            await enqueueEntitlementRevocation({
+              userId: subscriber.userId,
+              entitlement: 'mentorship',
+              reason: `paypal-cron:${liveStatus}`,
+            })
+          }
         }
 
         return { checked: 1, changed, errors: 0 }
@@ -235,6 +232,11 @@ export async function GET(request: NextRequest) {
     { checked: 0, changed: 0, errors: 0 }
   )
 
-  console.log('[paypal-sync] Done:', summary)
-  return NextResponse.json(summary)
+  const revocations = await processEntitlementRevocationQueue({
+    limit: 25,
+    workerId: 'paypal-sync-revocations',
+  })
+
+  console.log('[paypal-sync] Done:', { ...summary, revocations })
+  return NextResponse.json({ ...summary, revocations })
 }

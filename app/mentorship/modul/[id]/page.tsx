@@ -5,6 +5,7 @@ import { ModulDetailClient } from '@/components/modul-detail-client'
 import { getIsAdmin } from '@/lib/authz'
 import { auth } from '@clerk/nextjs/server'
 import { getSidebarData } from '@/lib/sidebar-data'
+import { toProtectedPdfUrl } from '@/lib/protected-pdf'
 
 type SearchParams = { [key: string]: string | string[] | undefined }
 
@@ -81,14 +82,24 @@ export default async function MentorshipModulPage({
 
   if (!modul) notFound()
 
-  const allVideos = modul.chapters.flatMap((ch) => ch.videos)
+  const protectedModul = {
+    ...modul,
+    chapters: modul.chapters.map((chapter) => ({
+      ...chapter,
+      videos: chapter.videos.map((video) => ({
+        ...video,
+        pdfUrl: toProtectedPdfUrl(video.id, video.pdfUrl),
+      })),
+    })),
+  }
+  const allVideos = protectedModul.chapters.flatMap((ch) => ch.videos)
   const defaultInitialVideoId =
     allVideos.find((v) => v.bunnyGuid !== null)?.id ?? allVideos[0]?.id ?? null
   const initialVideoId =
     (requestedVideoId && allVideos.some((v) => v.id === requestedVideoId) ? requestedVideoId : null) ??
     defaultInitialVideoId
 
-  const activeCourseId = modul.playlist?.id ?? null
+  const activeCourseId = protectedModul.playlist?.id ?? null
 
   // Performance: Fortschritt direkt serverseitig und parallel laden → kein extra Client-Fetch nötig.
   const initialWatchedVideoIds = watchedProgressRows.map((r) => r.videoId)
@@ -105,7 +116,7 @@ export default async function MentorshipModulPage({
       </div>
 
       <ModulDetailClient
-        modul={modul}
+        modul={protectedModul}
         initialVideoId={initialVideoId}
         initialWatchedVideoIds={initialWatchedVideoIds}
         isAdmin={isAdmin}

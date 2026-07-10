@@ -3,8 +3,8 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { hasActiveSubscription } from '@/lib/stripe'
-import { getIsAdmin, requireAdminApiAccess } from '@/lib/authz'
+import { requireAdminApiAccess } from '@/lib/authz'
+import { getMentorshipAccessState } from '@/lib/mentorship-access'
 import { revalidateSidebarData } from '@/lib/sidebar-data'
 
 function slugify(input: string) {
@@ -67,9 +67,8 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const allowed = (await hasActiveSubscription(userId)) || (await getIsAdmin(userId, sessionClaims))
-
-  if (!allowed) {
+  const access = await getMentorshipAccessState(userId, sessionClaims)
+  if (!access.allowed) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

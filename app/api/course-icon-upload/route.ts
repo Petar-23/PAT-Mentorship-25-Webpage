@@ -27,6 +27,7 @@ export async function POST(request: Request) {
         // Admin-only: Kurs Icon Uploads
         return {
           allowedContentTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+          maximumSizeInBytes: 5 * 1024 * 1024,
           addRandomSuffix: true,
         }
       },
@@ -41,7 +42,6 @@ export async function POST(request: Request) {
     )
   }
 }
-
 
 
 

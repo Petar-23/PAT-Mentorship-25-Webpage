@@ -27,13 +27,5 @@ export async function GET(req: Request) {
     maxAge: 10 * 60, // 10 Minuten
   })
 
-  res.cookies.set('discord_oauth_uid', userId, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 10 * 60, // 10 Minuten
-  })
-
   return res
 }

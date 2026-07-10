@@ -3,8 +3,8 @@ import { auth, currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { getSubscriptionSnapshot } from '@/lib/stripe'
 import { isMentorshipAccessible } from '@/lib/authz'
+import { getVerifiedPrimaryEmail } from '@/lib/clerk-email'
 import {
-  getEmailFromSessionClaims,
   getFirstNameFromSessionClaims,
 } from '@/lib/clerk-claims'
 import { isMentorshipAccessOverrideEmail } from '@/lib/mentorship-access-overrides'
@@ -36,43 +36,26 @@ export default async function DashboardPage({
   const checkForRecentCheckout = showCheckoutSuccess
   const retryCount = checkForRecentCheckout ? 5 : 3
 
-  let email = getEmailFromSessionClaims(sessionClaims)
   let firstName = getFirstNameFromSessionClaims(sessionClaims)
-  let fallbackUser: Awaited<ReturnType<typeof currentUser>> | null = null
-
-  if (!email) {
-    // If the token has no email, resolve Clerk first so the Stripe fallback runs once
-    // with the best identifier instead of doing a second subscription lookup later.
-    fallbackUser = await currentUser()
-    if (!fallbackUser) {
-      redirect('/sign-in')
-    }
-
-    const user = fallbackUser
-    email =
-      user.primaryEmailAddress?.emailAddress ??
-      user.emailAddresses.find((address) => address.id === user.primaryEmailAddressId)?.emailAddress ??
-      null
-    firstName = firstName ?? user.firstName
+  const fallbackUser = await currentUser()
+  if (!fallbackUser) {
+    redirect('/sign-in')
   }
+  const verifiedEmail = getVerifiedPrimaryEmail(fallbackUser)
+  firstName = firstName ?? fallbackUser.firstName
 
   const snapshotPromise = getSubscriptionSnapshot(userId, {
     retryCount,
     checkForRecentCheckout,
-    email: email ?? undefined,
+    verifiedEmail: verifiedEmail ?? undefined,
   })
 
   if (!firstName) {
-    fallbackUser = fallbackUser ?? (await currentUser())
-    if (!fallbackUser) {
-      redirect('/sign-in')
-    }
-
     firstName = fallbackUser.firstName
   }
 
   let snapshot = await snapshotPromise
-  if (isMentorshipAccessOverrideEmail(email)) {
+  if (isMentorshipAccessOverrideEmail(verifiedEmail)) {
     snapshot = {
       hasActiveSubscription: true,
       subscriptionDetails: {

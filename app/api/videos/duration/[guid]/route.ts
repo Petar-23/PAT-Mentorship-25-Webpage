@@ -2,18 +2,24 @@ import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { BunnyApiError, getBunnyVideoDetails } from '@/lib/bunny'
+import { getMentorshipAccessState } from '@/lib/mentorship-access'
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ guid: string }> }
 ) {
-  const { userId } = await auth()
+  const { userId, sessionClaims } = await auth()
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const access = await getMentorshipAccessState(userId, sessionClaims)
+  if (!access.allowed) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const { guid } = await params
-  if (!guid) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(guid)) {
     return NextResponse.json({ error: 'Missing guid' }, { status: 400 })
   }
 

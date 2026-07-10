@@ -8,6 +8,8 @@ import { requireAdminApiAccess } from '@/lib/authz'
 import { revalidateSidebarData } from '@/lib/sidebar-data'
 
 const BUNNY_DELETE_CONCURRENCY = 4
+const ALLOWED_MODULE_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
+const MAX_MODULE_IMAGE_BYTES = 8 * 1024 * 1024
 
 async function mapWithConcurrency<T, R>(
   items: T[],
@@ -44,6 +46,12 @@ export async function PATCH(request: NextRequest,{ params }: { params: Promise<{
     let imageUrl = null
     const imageFile = formData.get('image') as File | null
     if (imageFile && imageFile.size > 0) {
+    if (!ALLOWED_MODULE_IMAGE_TYPES.has(imageFile.type)) {
+      return NextResponse.json({ error: 'Ungültiges Bildformat' }, { status: 400 })
+    }
+    if (imageFile.size > MAX_MODULE_IMAGE_BYTES) {
+      return NextResponse.json({ error: 'Bild darf maximal 8 MB groß sein' }, { status: 413 })
+    }
     const safeFilename = sanitizeFilename(imageFile.name)
     const blobPath = `modules/${id}-${safeFilename}`
     const { url } = await put(blobPath, imageFile, { 

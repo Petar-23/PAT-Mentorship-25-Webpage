@@ -214,6 +214,49 @@ model IndicatorWorkerHeartbeat {
   updatedAt      DateTime @updatedAt
 }
 
+// Provider-unabhaengige Discord-Verknuepfung. Stripe-Metadata bleibt nur ein
+// Legacy-/Interop-Spiegel; PayPal-only User muessen genauso widerrufbar sein.
+model UserDiscordAccount {
+  userId        String   @id
+  discordUserId String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([updatedAt])
+}
+
+// Dauerhafte Desired-State-/Retry-Queue fuer Entitlement-Revocations.
+// Pro User und Produkt existiert genau ein aktueller Reconciliation-Auftrag.
+model EntitlementRevocationJob {
+  id            String    @id @default(uuid())
+  userId        String
+  entitlement   String
+  desiredState  String    @default("revoked")
+  status        String    @default("pending")
+  reason        String?
+  attemptCount  Int       @default(0)
+  nextRetryAt   DateTime?
+  lastAttemptAt DateTime?
+  lastError     String?
+  lastWorkerId  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, entitlement])
+  @@index([status, nextRetryAt])
+  @@index([userId, status])
+}
+
+// Generischer, prozessuebergreifender Rate-Limit-Bucket fuer Serverless-Routen.
+model RateLimitBucket {
+  keyHash   String   @id
+  count     Int      @default(0)
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
+}
+
 model UserSubscription {
   id     String @id @default(uuid())
   userId String @unique
@@ -250,6 +293,7 @@ model RaidMapSubscription {
   priceId           String?
   cancelAtPeriodEnd Boolean   @default(false)
   currentPeriodEnd  DateTime?
+  pastDueSince      DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

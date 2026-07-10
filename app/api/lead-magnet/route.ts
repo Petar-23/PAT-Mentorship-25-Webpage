@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
+import { consumePersistentRateLimit } from '@/lib/security-rate-limit'
 
 const LEAD_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000
 const LEAD_RATE_LIMIT_MAX_ATTEMPTS = 6
 const BREVO_CONTACT_SYNC_TIMEOUT_MS = 6_000
-const leadAttempts = new Map<string, { count: number; resetAt: number }>()
 
 const isValidEmail = (value: string) => {
   const email = value.trim()
@@ -23,32 +23,6 @@ function getClientIp(request: Request) {
     request.headers.get('cf-connecting-ip') ||
     'unknown'
   )
-}
-
-function consumeRateLimit(key: string) {
-  const now = Date.now()
-  const current = leadAttempts.get(key)
-
-  if (!current || current.resetAt <= now) {
-    leadAttempts.set(key, {
-      count: 1,
-      resetAt: now + LEAD_RATE_LIMIT_WINDOW_MS,
-    })
-    return { limited: false, retryAfterSeconds: 0 }
-  }
-
-  if (current.count >= LEAD_RATE_LIMIT_MAX_ATTEMPTS) {
-    return {
-      limited: true,
-      retryAfterSeconds: Math.max(
-        1,
-        Math.ceil((current.resetAt - now) / 1000)
-      ),
-    }
-  }
-
-  current.count += 1
-  return { limited: false, retryAfterSeconds: 0 }
 }
 
 function sanitizeText(value: unknown, maxLength: number) {
@@ -115,7 +89,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const rateLimit = consumeRateLimit(`${requestHost}:${getClientIp(request)}`)
+    let rateLimit
+    try {
+      rateLimit = await consumePersistentRateLimit({
+        key: `lead-magnet:v1:${requestHost}:${getClientIp(request)}`,
+        windowMs: LEAD_RATE_LIMIT_WINDOW_MS,
+        maxAttempts: LEAD_RATE_LIMIT_MAX_ATTEMPTS,
+      })
+    } catch (error) {
+      console.error('Lead magnet rate-limit check failed:', error)
+      return NextResponse.json(
+        { error: 'Die Anfrage kann gerade nicht sicher geprüft werden.' },
+        { status: 503 }
+      )
+    }
     if (rateLimit.limited) {
       return NextResponse.json(
         {

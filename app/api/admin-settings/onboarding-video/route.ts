@@ -4,7 +4,6 @@ import { requireAdminApiAccess } from '@/lib/authz'
 import {
   ONBOARDING_VIDEO_SETTING_KEY,
   buildOnboardingVideoSetting,
-  getOnboardingEmbedUrl,
   parseOnboardingVideoSetting,
   sanitizeOnboardingVideoId,
 } from '@/lib/onboarding-video'
@@ -24,7 +23,6 @@ export async function GET() {
     videoId: parsed.videoId,
     updatedAt: parsed.updatedAt,
     expiresAt: getOnboardingVideoExpiryDate().toISOString(),
-    embedUrl: parsed.videoId ? getOnboardingEmbedUrl(parsed.videoId) : null,
   })
 }
 
@@ -61,6 +59,5 @@ export async function POST(request: Request) {
     videoId: value.videoId,
     updatedAt: value.updatedAt,
     expiresAt: getOnboardingVideoExpiryDate().toISOString(),
-    embedUrl: value.videoId ? getOnboardingEmbedUrl(value.videoId) : null,
   })
 }

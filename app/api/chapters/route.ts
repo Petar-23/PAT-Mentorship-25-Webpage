@@ -3,8 +3,9 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { hasActiveSubscription } from '@/lib/stripe'
-import { getIsAdmin, requireAdminApiAccess } from '@/lib/authz'
+import { requireAdminApiAccess } from '@/lib/authz'
+import { getMentorshipAccessState } from '@/lib/mentorship-access'
+import { toProtectedPdfUrl } from '@/lib/protected-pdf'
 
 export async function POST(request: Request) {
   const admin = await requireAdminApiAccess()
@@ -63,9 +64,8 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const allowed = (await hasActiveSubscription(userId)) || (await getIsAdmin(userId, sessionClaims))
-
-  if (!allowed) {
+  const access = await getMentorshipAccessState(userId, sessionClaims)
+  if (!access.allowed) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -113,5 +113,13 @@ export async function GET() {
     orderBy: { createdAt: 'desc' },
   })
 
-  return NextResponse.json(chapters)
+  return NextResponse.json(
+    chapters.map((chapter) => ({
+      ...chapter,
+      videos: chapter.videos.map((video) => ({
+        ...video,
+        pdfUrl: toProtectedPdfUrl(video.id, video.pdfUrl),
+      })),
+    }))
+  )
 }

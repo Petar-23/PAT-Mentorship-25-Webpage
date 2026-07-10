@@ -35,13 +35,22 @@ export async function POST(req: Request) {
   }
 
   try {
-    const sub = await prisma.userSubscription.findUnique({
-      where: { userId },
-      select: { stripeCustomerId: true },
-    }).catch(() => null)
+    const [discordAccount, sub] = await Promise.all([
+      prisma.userDiscordAccount.findUnique({
+        where: { userId },
+        select: { discordUserId: true },
+      }),
+      prisma.userSubscription
+        .findUnique({
+          where: { userId },
+          select: { stripeCustomerId: true },
+        })
+        .catch(() => null),
+    ])
 
     let stripeCustomerId = sub?.stripeCustomerId ?? null
-
+    // Find an optional Stripe mirror even for a DB-backed/PayPal link so a
+    // previous OAuth run cannot leave stale metadata behind.
     if (!stripeCustomerId) {
       const customers = await stripe.customers.search({
         query: `metadata['userId']:'${userId}'`,
@@ -49,33 +58,23 @@ export async function POST(req: Request) {
       stripeCustomerId = customers.data[0]?.id ?? null
     }
 
-    if (!stripeCustomerId) {
-      if (wantsHtml(req)) {
-        return redirectToDiscordPage(req, { discord: 'error', reason: 'no_stripe_customer' })
+    let legacyDiscordUserId: string | null = null
+    if (!discordAccount && stripeCustomerId) {
+      const customer = await stripe.customers.retrieve(stripeCustomerId)
+      if (!('deleted' in customer && customer.deleted)) {
+        const raw = customer.metadata?.discordUserId
+        legacyDiscordUserId = typeof raw === 'string' && raw.trim() ? raw.trim() : null
       }
-      return NextResponse.json({ ok: false, error: 'no_stripe_customer' }, { status: 404 })
     }
 
-    const customer = await stripe.customers.retrieve(stripeCustomerId)
+    const discordUserId = discordAccount?.discordUserId ?? legacyDiscordUserId
 
-    // Stripe kann auch ein DeletedCustomer zurückgeben (hat dann { deleted: true })
-    if ('deleted' in customer && customer.deleted) {
-      if (wantsHtml(req)) {
-        return redirectToDiscordPage(req, { discord: 'error', reason: 'deleted_stripe_customer' })
-      }
-      return NextResponse.json(
-        { ok: false, error: 'deleted_stripe_customer' },
-        { status: 404 }
-      )
-    }
-
-    const rawDiscordUserId = customer.metadata?.discordUserId
-    const discordUserId =
-      typeof rawDiscordUserId === 'string' && rawDiscordUserId.length > 0 ? rawDiscordUserId : null
-
-    // Wenn eh nichts verknüpft ist: trotzdem sauber "leer" schreiben und fertig.
+    // Wenn eh nichts verknüpft ist: beide Speicherorte idempotent leeren.
     if (!discordUserId) {
-      await stripe.customers.update(stripeCustomerId, { metadata: { discordUserId: '' } })
+      if (stripeCustomerId) {
+        await stripe.customers.update(stripeCustomerId, { metadata: { discordUserId: '' } })
+      }
+      await prisma.userDiscordAccount.deleteMany({ where: { userId } })
       if (wantsHtml(req)) {
         return redirectToDiscordPage(req, {})
       }
@@ -95,28 +94,36 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'missing_env' }, { status: 500 })
     }
 
-    // Rolle entziehen (wenn sie schon weg ist / Member nicht im Guild ist, ist das okay)
+    // Binding erst nach bestaetigter Rollenentfernung loeschen. Nur ein 404
+    // (Member existiert nicht mehr) ist bereits der gewuenschte Endzustand;
+    // alle anderen Fehler muessen mit erhaltener ID retrybar bleiben.
     try {
       await removeRoleFromGuildMember({ guildId, discordUserId, roleId })
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      // Auth/Permission Fehler sollten wir nicht "schlucken".
-      if (msg.includes('(401)') || msg.includes('(403)')) {
+      if (msg.includes('(404)')) {
+        console.info('Discord member already absent during disconnect.')
+      } else {
         console.error('Discord role remove failed:', err)
         if (wantsHtml(req)) {
-          return redirectToDiscordPage(req, { discord: 'error', reason: 'discord_role_remove_failed' })
+          return redirectToDiscordPage(req, {
+            discord: 'error',
+            reason: 'discord_role_remove_failed',
+          })
         }
         return NextResponse.json(
           { ok: false, error: 'discord_role_remove_failed' },
           { status: 502 }
         )
       }
-
-      console.warn('Discord role remove non-fatal error (ignored):', err)
     }
 
-    // Discord-Link entfernen
-    await stripe.customers.update(stripeCustomerId, { metadata: { discordUserId: '' } })
+    // Discord-Link in beiden Speicherorten entfernen. Der DB-Datensatz wird
+    // erst nach erfolgreichem Legacy-Cleanup geloescht, damit ein Retry moeglich bleibt.
+    if (stripeCustomerId) {
+      await stripe.customers.update(stripeCustomerId, { metadata: { discordUserId: '' } })
+    }
+    await prisma.userDiscordAccount.deleteMany({ where: { userId, discordUserId } })
 
     if (wantsHtml(req)) {
       return redirectToDiscordPage(req, {})
@@ -130,4 +137,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'exception' }, { status: 500 })
   }
 }
-

@@ -1,20 +1,25 @@
 import 'server-only'
 
 import { currentUser } from '@clerk/nextjs/server'
-import { getEmailFromSessionClaims } from '@/lib/clerk-claims'
+import {
+  getVerifiedPrimaryEmail,
+  normalizeEmailAddress,
+  parseNormalizedEmailCsv,
+  type VerifiedEmailAddress,
+} from '@/lib/clerk-email'
 
-const MENTORSHIP_ACCESS_EMAIL_OVERRIDES = new Set(['petar_maric@icloud.com'])
-
-export function isMentorshipAccessOverrideEmail(email: string | null | undefined) {
-  return MENTORSHIP_ACCESS_EMAIL_OVERRIDES.has(String(email ?? '').trim().toLowerCase())
+function getConfiguredOverrideEmails() {
+  return parseNormalizedEmailCsv(process.env.MENTORSHIP_ACCESS_OVERRIDE_EMAILS)
 }
 
-export async function hasMentorshipAccessOverride(sessionClaims?: unknown) {
-  let email = getEmailFromSessionClaims(sessionClaims)
-  if (!email) {
-    const user = await currentUser()
-    email = user?.primaryEmailAddress?.emailAddress ?? null
-  }
+export function isMentorshipAccessOverrideEmail(
+  verifiedEmail: VerifiedEmailAddress | null | undefined
+) {
+  if (!verifiedEmail) return false
+  return getConfiguredOverrideEmails().has(normalizeEmailAddress(verifiedEmail))
+}
 
-  return isMentorshipAccessOverrideEmail(email)
+export async function hasMentorshipAccessOverride(_sessionClaims?: unknown) {
+  const user = await currentUser()
+  return isMentorshipAccessOverrideEmail(getVerifiedPrimaryEmail(user))
 }
