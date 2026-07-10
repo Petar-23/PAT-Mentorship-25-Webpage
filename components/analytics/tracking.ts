@@ -15,17 +15,19 @@ export function trackEvent(eventName: string, eventParams?: Record<string, unkno
  * Spezifische Conversion-Events für Google Ads.
  */
 export const trackConversion = {
-  ctaClick: () => {
+  ctaClick: (source = 'hero_cta') => {
     trackEvent('cta_click', {
       event_category: 'engagement',
-      event_label: 'hero_cta',
+      event_label: source,
+      cta_source: source,
     })
   },
 
-  signInStart: () => {
+  signInStart: (source = 'unknown_cta') => {
     trackEvent('sign_in_start', {
       event_category: 'engagement',
       event_label: 'begin_sign_in',
+      cta_source: source,
     })
   },
 

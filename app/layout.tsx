@@ -11,6 +11,7 @@ import { AnalyticsScriptsLoader } from '@/components/analytics/analytics-scripts
 import { JsonLd } from '@/components/seo/json-ld'
 import { Suspense, lazy } from 'react'
 import { CURRENT_BUNNY_THUMBNAIL_HOST } from '@/lib/bunny-thumbnail'
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 
 // Agentation nur in Development laden (ist devDependency)
 const Agentation = process.env.NODE_ENV === 'development' 
@@ -41,7 +42,7 @@ export const metadata: Metadata = {
     default: 'PAT Mentorship 2026 | Trading nach ICT Konzepten lernen — Live & auf Deutsch',
     template: '%s | PAT Mentorship',
   },
-  description: 'Lerne Trading nach ICT Smart Money Konzepten im Live-Mentoring. 2-3 Sessions pro Woche, auf Deutsch. 130+ erfolgreiche Absolventen. Monatlich kündbar.',
+  description: `Lerne Trading nach ICT Smart Money Konzepten im Live-Mentoring. ${MENTORSHIP_CONFIG.sessionsPerWeek} Sessions pro Woche, auf Deutsch. 130+ erfolgreiche Absolventen. Monatlich kündbar.`,
   keywords: ['ICT Trading', 'Smart Money Concept', 'Price Action Trading', 'Trading Mentoring Deutsch', 'Live Trading lernen', 'ICT auf Deutsch', 'Trading Ausbildung'],
   authors: [{ name: 'Petar', url: 'https://www.price-action-trader.de' }],
   creator: 'Price Action Trader',
@@ -55,7 +56,7 @@ export const metadata: Metadata = {
     url: 'https://www.price-action-trader.de',
     siteName: 'Price Action Trader',
     title: 'PAT Mentorship 2026 | ICT Trading Live & auf Deutsch',
-    description: 'Lerne Trading nach ICT Smart Money Konzepten im Live-Mentoring. 2-3 Sessions/Woche, deutschsprachig, monatlich kündbar.',
+    description: `Lerne Trading nach ICT Smart Money Konzepten im Live-Mentoring. ${MENTORSHIP_CONFIG.sessionsPerWeek} Sessions/Woche, deutschsprachig, monatlich kündbar.`,
     images: [
       {
         url: '/images/pat-banner.jpeg',

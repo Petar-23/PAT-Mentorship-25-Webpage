@@ -83,6 +83,7 @@ export function HeroPill({
       <a
         href={href}
         target={isExternal ? "_blank" : undefined}
+        rel={isExternal ? "noopener noreferrer" : undefined}
         className={cn(
           "inline-flex w-fit items-center space-x-2 rounded-full",
           "pl-2 pr-3 py-1 whitespace-nowrap",
@@ -92,6 +93,7 @@ export function HeroPill({
       >
         {content}
         <svg
+          aria-hidden="true"
           width="12"
           height="12"
           className="ml-1"

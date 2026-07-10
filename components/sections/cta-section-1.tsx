@@ -1,39 +1,12 @@
 // src/components/sections/cta-section.tsx
 'use client'
 
-import { SignInButton, useUser } from '@clerk/nextjs'
-import { useRouter } from 'next/navigation'
 import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { VortexBackground } from "@/components/ui/vortex-wrapper"
-import { trackConversion } from '@/components/analytics/tracking'
+import { MentorshipEntryCta } from '@/components/sections/mentorship-entry-cta'
 import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
 
 export default function CTASection() {
-  const { isSignedIn } = useUser()
-  const router = useRouter()
-  
-  const handleScrollToDetails = () => {
-    const target = document.getElementById('why-different')
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    } else {
-      window.location.hash = 'why-different'
-    }
-  }
-
-  const handleClick = () => {
-    trackConversion.ctaClick()
-    if (isSignedIn) {
-      router.push('/dashboard')
-    }
-  }
-  
-  const handleSignInClick = () => {
-    trackConversion.ctaClick()
-    trackConversion.signInStart()
-  }
-
   return (
     <section className="py-16 sm:py-24 px-0 sm:px-4 bg-slate-950">
       <div className="container mx-auto max-w-6xl">
@@ -49,36 +22,22 @@ export default function CTASection() {
                 <p className="text-base sm:text-lg opacity-90 mb-6">
                   {MENTORSHIP_IS_UPCOMING
                     ? 'Trete jetzt der Warteliste bei und sichere dir als einer der Ersten deinen Platz im Mentorship Programm 2026.'
-                    : 'Steige in die laufende Mentorship 2026 ein, solange noch ein Platz verfügbar ist.'}
+                    : 'Steige in die laufende Mentorship 2026 ein und prüfe alle Konditionen vor der Buchung.'}
                 </p>
-                {isSignedIn ? (
-                  <Button 
-                    size="lg" 
-                    className="w-full sm:w-auto bg-white text-slate-900 hover:bg-white/90"
-                    onClick={handleClick}
-                  >
-                    Sichere dir deinen Platz
-                  </Button>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-                      <Button 
-                        size="lg" 
-                        className="w-full sm:w-auto bg-white text-slate-900 hover:bg-white/90"
-                        onClick={handleSignInClick}
-                      >
-                        Sichere dir deinen Platz
-                      </Button>
-                    </SignInButton>
-                  </div>
-                )}
+                <MentorshipEntryCta
+                  source="section_cta"
+                  className="w-full bg-white text-slate-900 hover:bg-white/90 sm:w-auto"
+                />
+                <p className="mt-3 text-xs text-slate-300 sm:text-sm">
+                  Kostenlos anmelden → Konditionen prüfen → sicher über Stripe buchen
+                </p>
               </div>
               
               <div className="space-y-3 sm:space-y-6">
                 <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/10">
-                  <p className="text-sm sm:text-base font-medium">🎯 Limitiert auf {MENTORSHIP_CONFIG.maxSpots} Plätze</p>
+                  <p className="text-sm sm:text-base font-medium">🎯 Fokussierte Community</p>
                   <p className="text-xs sm:text-sm opacity-90">
-                    Wir halten das Programm exklusiv, um qualitativ hochwertiges Mentoring zu gewährleisten.
+                    Austausch, Rückfragen und direktes Feedback begleiten deinen Lernprozess.
                   </p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/10">
@@ -86,7 +45,7 @@ export default function CTASection() {
                     🚀 {MENTORSHIP_IS_UPCOMING ? `Start im ${MENTORSHIP_CONFIG.startMonthYear}` : MENTORSHIP_CONFIG.enrollmentLabel}
                   </p>
                   <p className="text-xs sm:text-sm opacity-90">
-                    Die Vergabe der Plätze erfolgt nach dem Prinzip: Wer zuerst kommt, mahlt zuerst.
+                    Der Einstieg in den laufenden Jahrgang ist aktuell möglich.
                   </p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/10">
@@ -95,8 +54,8 @@ export default function CTASection() {
                   </p>
                   <p className="text-xs sm:text-sm opacity-90">
                     {MENTORSHIP_IS_UPCOMING
-                      ? `Dein Zahlungsmittel wird erst beim Start der Mentorship mit ${MENTORSHIP_CONFIG.price}€/Monat (inkl. MwSt.) belastet. Du kannst jederzeit kündigen.`
-                      : `${MENTORSHIP_CONFIG.price}€/Monat (inkl. MwSt.). Du kannst jederzeit kündigen.`}
+                      ? `Dein Zahlungsmittel wird erst beim Start der Mentorship mit ${MENTORSHIP_CONFIG.price}€/Monat (inkl. MwSt.) belastet. Kündbar mit 1 Tag Frist zum Monatsende.`
+                      : `${MENTORSHIP_CONFIG.price}€/Monat (inkl. MwSt.). Kündbar mit 1 Tag Frist zum Monatsende.`}
                   </p>
                 </div>
               </div>
