@@ -15,7 +15,7 @@ export default function RaidMapPricing({ lang }: { lang: RaidMapLang }) {
   const c = RAIDMAP_CONFIG
 
   return (
-    <section id="pricing" className="py-20 px-4 md:px-6 bg-gray-50">
+    <section id="pricing" className="scroll-mt-20 bg-gray-50 px-4 py-20 md:px-6">
       <div className="container mx-auto max-w-5xl">
         <div className="text-center mb-14">
           <span className="inline-flex items-center rounded-full bg-blue-600 px-4 py-1 text-sm font-medium text-white">

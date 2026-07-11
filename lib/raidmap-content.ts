@@ -45,7 +45,7 @@ export const raidmapHero: L<{
     badge: 'TradingView indicator · NQ · invite-only · out-of-sample tested',
     title: 'Stop guessing the bias. Read the session like a map.',
     subtitle:
-      'The PAT Raid Map shows the three things that actually decide your session: which level gets raided first, when the run typically starts, and what happens after the purge. Every number on your chart survived a placebo test on 10 years of NQ data — or it was deleted.',
+      'See the likely first raid, the validated run window, and the post-purge path directly on your TradingView chart — backed by 10 years of NQ data.',
     bullets: [
       'First-target map: the most likely first stop of the session, ranked by 10 years of level races',
       'Run-timing windows: the validated minutes when the move actually tends to happen',
@@ -61,7 +61,7 @@ export const raidmapHero: L<{
     badge: 'TradingView-Indikator · NQ · invite-only · Out-of-Sample getestet',
     title: 'Hör auf, den Bias zu raten. Lies die Session wie eine Karte.',
     subtitle:
-      'Die PAT Raid Map zeigt dir die drei Dinge, die deine Session wirklich entscheiden: welches Level zuerst geraidet wird, wann der Run typischerweise startet und was nach dem Purge passiert. Jede Zahl auf deinem Chart hat einen Placebo-Test auf 10 Jahren NQ-Daten überlebt — oder sie wurde gelöscht.',
+      'Sieh den wahrscheinlichen ersten Raid, das validierte Run-Fenster und den Weg nach dem Purge direkt in deinem TradingView-Chart — belegt mit 10 Jahren NQ-Daten.',
     bullets: [
       'First-Target-Karte: der wahrscheinlichste erste Stopp der Session, gerankt aus 10 Jahren Level-Rennen',
       'Run-Timing-Fenster: die validierten Minuten, in denen die Bewegung typischerweise passiert',

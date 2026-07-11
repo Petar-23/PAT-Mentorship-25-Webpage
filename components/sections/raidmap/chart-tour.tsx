@@ -10,7 +10,7 @@ export default function RaidMapChartTour({ lang }: { lang: RaidMapLang }) {
   const t = raidmapChartTour[lang]
 
   return (
-    <section id="chart-tour" className="py-20 px-4 md:px-6 bg-white">
+    <section id="chart-tour" className="scroll-mt-20 bg-white px-4 py-14 md:px-6 md:py-20">
       <div className="container mx-auto max-w-5xl">
         <div className="max-w-3xl mb-10">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 text-balance">{t.title}</h2>
