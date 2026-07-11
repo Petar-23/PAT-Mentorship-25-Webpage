@@ -61,7 +61,7 @@ const productJsonLd = {
 export default function RaidMapPageEn() {
   const hasGuideImage = fs.existsSync(path.join(process.cwd(), 'public', RAIDMAP_CONFIG.guideImagePath))
   return (
-    <main>
+    <div lang="en">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
@@ -76,6 +76,6 @@ export default function RaidMapPageEn() {
       <RaidMapPricing lang="en" />
       <RaidMapTestimonials lang="en" />
       <RaidMapFaq lang="en" />
-    </main>
+    </div>
   )
 }

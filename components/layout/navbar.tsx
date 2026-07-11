@@ -103,6 +103,8 @@ export function Navbar() {
     ? RAIDMAP_CONFIG.accountPathDe
     : RAIDMAP_CONFIG.accountPath
   const raidMapAccountLabel = isRaidMapGerman ? 'Mein Raid Map Account' : 'My Raid Map account'
+  const signInLabel = isRaidMap && !isRaidMapGerman ? 'Sign in →' : 'Anmelden →'
+  const signInRedirectUrl = isRaidMap ? raidMapAccountPath : '/dashboard'
   const isAdmin = user?.organizationMemberships?.some(
     membership => membership.role === 'org:admin'
   )
@@ -242,7 +244,7 @@ export function Navbar() {
             {/* Logo */}
             <Link 
               href="/" 
-              className="flex items-center gap-3 group hover:opacity-90 transition-opacity"
+              className="group flex min-h-11 items-center gap-3 transition-opacity hover:opacity-90"
             >
               <Image
                 src="/images/hero/PAT-logo.png"
@@ -346,17 +348,9 @@ export function Navbar() {
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  {isRaidMap && !isRaidMapAccount ? (
-                    <Button asChild variant="outline" className="flex items-center gap-2">
-                      <Link href={raidMapAccountPath} prefetch={false}>
-                        <CreditCard className="h-4 w-4" />
-                        <span>{raidMapAccountLabel}</span>
-                      </Link>
-                    </Button>
-                  ) : null}
-                  <SignInButton mode="modal" forceRedirectUrl={"/dashboard"}>
+                  <SignInButton mode="modal" forceRedirectUrl={signInRedirectUrl}>
                     <Button>
-                      Anmelden →
+                      {signInLabel}
                     </Button>
                   </SignInButton>
                 </div>
@@ -368,7 +362,7 @@ export function Navbar() {
               {isSignedIn ? (
                 <>
                   {isRaidMap && !isRaidMapAccount ? (
-                    <Button asChild variant="outline" size="sm" className="flex items-center gap-2 px-3">
+                    <Button asChild variant="outline" size="sm" className="flex min-h-11 items-center gap-2 px-3">
                       <Link href={raidMapAccountPath} prefetch={false}>
                         <CreditCard className="h-4 w-4" />
                         <span>Account</span>
@@ -378,7 +372,7 @@ export function Navbar() {
                   {!isMentorship || isAdmin ? (
                     <button
                       onClick={() => setIsOpen(!isOpen)}
-                      className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 transition-colors hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-2"
                       aria-label={isOpen ? 'Menü schließen' : 'Menü öffnen'}
                       aria-expanded={isOpen}
                     >
@@ -400,17 +394,9 @@ export function Navbar() {
                 </>
               ) : (
                 <>
-                  {isRaidMap && !isRaidMapAccount ? (
-                    <Button asChild variant="outline" size="sm" className="flex items-center gap-2 px-3">
-                      <Link href={raidMapAccountPath} prefetch={false}>
-                        <CreditCard className="h-4 w-4" />
-                        <span>Account</span>
-                      </Link>
-                    </Button>
-                  ) : null}
-                  <SignInButton mode="modal" forceRedirectUrl={"/dashboard"}>
-                    <Button size="sm">
-                      Anmelden →
+                  <SignInButton mode="modal" forceRedirectUrl={signInRedirectUrl}>
+                    <Button size="sm" className="min-h-11 px-4">
+                      {signInLabel}
                     </Button>
                   </SignInButton>
                 </>

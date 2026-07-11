@@ -37,7 +37,7 @@ export const metadata: Metadata = {
 export default function RaidMapPageDe() {
   const hasGuideImage = fs.existsSync(path.join(process.cwd(), 'public', RAIDMAP_CONFIG.guideImagePath))
   return (
-    <main>
+    <div lang="de">
       <Suspense fallback={null}>
         <RaidMapSuccessDialog lang="de" hasGuideImage={hasGuideImage} />
       </Suspense>
@@ -48,6 +48,6 @@ export default function RaidMapPageDe() {
       <RaidMapPricing lang="de" />
       <RaidMapTestimonials lang="de" />
       <RaidMapFaq lang="de" />
-    </main>
+    </div>
   )
 }

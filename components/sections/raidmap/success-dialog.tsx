@@ -43,7 +43,7 @@ export function RaidMapSuccessDialog({ lang, hasGuideImage }: { lang: RaidMapLan
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-2xl max-h-[85dvh] overflow-y-auto">
+      <DialogContent lang={lang} className="max-h-[85dvh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">{t.title}</DialogTitle>
           <DialogDescription className="text-pretty">{t.description}</DialogDescription>
