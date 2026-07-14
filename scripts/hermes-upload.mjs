@@ -5,9 +5,11 @@ import fs from 'fs'
 import os from 'os'
 import path from 'path'
 import process from 'process'
+import { pathToFileURL } from 'url'
 import * as tus from 'tus-js-client'
 
 const DEFAULT_BASE_URL = 'https://www.price-action-trader.de'
+const MAX_PDF_BYTES = 25 * 1024 * 1024
 
 function loadEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return
@@ -23,19 +25,18 @@ function loadEnvFile(filePath) {
   }
 }
 
-loadEnvFile(path.join(os.homedir(), '.pat-hermes-upload.env'))
-loadEnvFile(path.join(process.cwd(), '.env.hermes-upload.local'))
-
 function printHelp() {
   console.log(`Hermes PAT video uploader
 
 Usage:
   node scripts/hermes-upload.mjs --type daily_review --file "/Volumes/SSD/2026-06/review.mp4"
   node scripts/hermes-upload.mjs --type advanced_content --file lesson.mp4 --title "Liquidity Sweep Entry"
+  node scripts/hermes-upload.mjs --type advanced_content --file lesson.mp4 --pdf slides.pdf
 
 Options:
   --type daily_review|advanced_content  Required target workflow.
   --file <path>                         Required local video path.
+  --pdf <path>                          Optional PDF slides; attached to the lesson (max 25 MB).
   --title <title>                       Optional; inferred from filename if omitted.
   --date YYYY-MM-DD                     Optional; inferred from filename or file mtime.
   --month YYYY-MM                       Optional; inferred from date.
@@ -56,7 +57,7 @@ Environment:
 `)
 }
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const args = {}
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
@@ -130,6 +131,65 @@ function contentTypeFor(filePath) {
   return 'video/mp4'
 }
 
+export function validatePdfFile(filePath) {
+  const resolvedPath = path.resolve(String(filePath))
+  if (!fs.existsSync(resolvedPath)) throw new Error(`PDF not found: ${resolvedPath}`)
+
+  const stats = fs.statSync(resolvedPath)
+  if (!stats.isFile()) throw new Error(`PDF is not a file: ${resolvedPath}`)
+  if (path.extname(resolvedPath).toLowerCase() !== '.pdf') {
+    throw new Error(`PDF must use the .pdf extension: ${resolvedPath}`)
+  }
+  if (stats.size <= 0 || stats.size > MAX_PDF_BYTES) {
+    throw new Error('PDF must be between 1 byte and 25 MB')
+  }
+
+  const fd = fs.openSync(resolvedPath, 'r')
+  try {
+    const header = Buffer.alloc(5)
+    const bytesRead = fs.readSync(fd, header, 0, header.length, 0)
+    if (bytesRead !== header.length || header.toString('ascii') !== '%PDF-') {
+      throw new Error(`Invalid PDF file: ${resolvedPath}`)
+    }
+  } finally {
+    fs.closeSync(fd)
+  }
+
+  return { filePath: resolvedPath, stats }
+}
+
+export async function uploadPdf(baseUrl, token, pdfPath, videoId) {
+  const { filePath } = validatePdfFile(pdfPath)
+  const formData = new FormData()
+  formData.append('videoId', String(videoId))
+  formData.append(
+    'pdf',
+    new Blob([fs.readFileSync(filePath)], { type: 'application/pdf' }),
+    path.basename(filePath)
+  )
+
+  const res = await fetch(`${baseUrl.replace(/\/$/, '')}/api/upload/pdf`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  })
+  const text = await res.text()
+  let data = null
+  try {
+    data = text ? JSON.parse(text) : null
+  } catch {
+    data = null
+  }
+  if (!res.ok) {
+    throw new Error(`PDF upload failed (${res.status}): ${text}`)
+  }
+  if (!data?.pdfUrl) {
+    throw new Error(`PDF upload returned no pdfUrl: ${text}`)
+  }
+
+  return { videoId, filename: path.basename(filePath), pdfUrl: data.pdfUrl }
+}
+
 async function postJson(baseUrl, token, payload) {
   const res = await fetch(`${baseUrl.replace(/\/$/, '')}/api/agent/uploads`, {
     method: 'POST',
@@ -180,6 +240,9 @@ function uploadTus(filePath, stats, prepared) {
 }
 
 async function main() {
+  loadEnvFile(path.join(os.homedir(), '.pat-hermes-upload.env'))
+  loadEnvFile(path.join(process.cwd(), '.env.hermes-upload.local'))
+
   const args = parseArgs(process.argv.slice(2))
   if (args.help) {
     printHelp()
@@ -196,6 +259,7 @@ async function main() {
   if (!fs.existsSync(filePath)) throw new Error(`File not found: ${filePath}`)
   const stats = fs.statSync(filePath)
   if (!stats.isFile()) throw new Error(`Not a file: ${filePath}`)
+  const pdfPath = args.pdf ? validatePdfFile(args.pdf).filePath : null
 
   const baseUrl = args['base-url'] || process.env.PAT_UPLOAD_BASE_URL || DEFAULT_BASE_URL
   const token = args.token || process.env.PAT_UPLOAD_TOKEN || process.env.AGENT_UPLOAD_TOKEN
@@ -233,20 +297,27 @@ async function main() {
 
   if (prepared.uploadedAt && !args.forceUpload) {
     console.log('Already marked uploaded. Use --force-upload to upload again to the same Bunny video.')
-    return
+  } else {
+    await uploadTus(filePath, stats, prepared)
+    const finalized = await postJson(baseUrl, token, {
+      action: 'finalize',
+      idempotencyKey,
+      videoId: prepared.video.id,
+      bunnyGuid: prepared.video.bunnyGuid,
+    })
+    console.log(JSON.stringify({ finalized, links: prepared.links }, null, 2))
   }
 
-  await uploadTus(filePath, stats, prepared)
-  const finalized = await postJson(baseUrl, token, {
-    action: 'finalize',
-    idempotencyKey,
-    videoId: prepared.video.id,
-    bunnyGuid: prepared.video.bunnyGuid,
-  })
-  console.log(JSON.stringify({ finalized, links: prepared.links }, null, 2))
+  if (pdfPath) {
+    const pdf = await uploadPdf(baseUrl, token, pdfPath, prepared.video.id)
+    console.log(JSON.stringify({ pdf }, null, 2))
+  }
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error)
-  process.exit(1)
-})
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
+if (isMain) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : error)
+    process.exit(1)
+  })
+}
