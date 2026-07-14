@@ -7,6 +7,7 @@ import { put } from '@vercel/blob'
 import sanitizeFilename from 'sanitize-filename'
 import { requireAdminApiAccess } from '@/lib/authz'
 import { requireAgentUploadAccess } from '@/lib/agent-upload-auth'
+import { buildProtectedPdfUrl } from '@/lib/protected-pdf'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -25,6 +26,14 @@ export const POST = async (request: NextRequest) => {
   const access = await requirePdfUploadAccess(request)
   if (!access.ok) {
     return access.response
+  }
+
+  const privateBlobToken = process.env.BLOB_PRIVATE_READ_WRITE_TOKEN?.trim()
+  if (!privateBlobToken) {
+    return NextResponse.json(
+      { error: 'Private PDF storage is not configured' },
+      { status: 503 }
+    )
   }
 
   const contentLength = Number(request.headers.get('content-length') ?? '0')
@@ -65,18 +74,22 @@ export const POST = async (request: NextRequest) => {
     const safeFilename = sanitizeFilename(originalName) || 'document.pdf'
     const blobPath = `pdfs/${videoId}/${randomUUID()}-${safeFilename}`
 
-    const { url } = await put(blobPath, pdfFile, {
-      access: 'public',
+    const blob = await put(blobPath, pdfFile, {
+      access: 'private',
+      token: privateBlobToken,
       contentType: 'application/pdf',
+      cacheControlMaxAge: 60,
     })
+
+    const protectedUrl = buildProtectedPdfUrl(videoId, safeFilename, blob.pathname)
 
     await prisma.video.update({
       where: { id: videoId },
-      data: { pdfUrl: url },
+      data: { pdfUrl: protectedUrl },
       select: { id: true },
     })
 
-    return NextResponse.json({ pdfUrl: url })
+    return NextResponse.json({ pdfUrl: protectedUrl })
   } catch (error) {
     console.error('PDF Upload Fehler:', error)
     return NextResponse.json({ error: 'Upload fehlgeschlagen' }, { status: 500 })
