@@ -2,9 +2,9 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { ModuleCardCover } from '@/components/mentorship/module-cover-gradient'
 
 function formatModuleDuration(totalSeconds: number | null | undefined) {
   if (!totalSeconds || !Number.isFinite(totalSeconds) || totalSeconds <= 0) return '—'
@@ -66,21 +66,7 @@ export function ModuleCardUser({ modul, progress = null }: Props) {
       <Card
         className="overflow-hidden h-full flex flex-col transition-all border-gray-200 hover:border-gray-500/50 cursor-pointer"
       >
-        {/* Bild oben */}
-        <div className="relative aspect-video bg-gradient-to-br from-primary/20 to-primary/10 overflow-hidden flex items-center justify-center cursor-pointer">
-          {modul.imageUrl ? (
-            <Image
-              src={modul.imageUrl}
-              alt={`${modul.name} Thumbnail`}
-              fill
-              className="object-cover cursor-pointer"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              priority={false}
-            />
-          ) : (
-            <span className="text-5xl z-10 cursor-pointer">📚</span>
-          )}
-        </div>
+        <ModuleCardCover id={modul.id} name={modul.name} imageUrl={modul.imageUrl} />
 
         <CardContent className="p-5 flex-1 flex flex-col justify-between">
           <div>
