@@ -1,54 +1,26 @@
 'use client'
 
 import { sanitizePublicEnv } from '@/lib/public-env'
-import { useEffect, useState } from 'react'
+import { syncClarityConsent, type ClarityConsentApi } from '@/lib/clarity-consent'
 import Script from 'next/script'
-
-interface CookieConsent {
-  necessary: boolean
-  analytics: boolean
-  marketing: boolean
-}
+import { useCallback, useEffect } from 'react'
+import { useCookieConsent } from '@/hooks/use-cookie-consent'
 
 export function MicrosoftClarity() {
-  const [isAnalyticsGranted, setIsAnalyticsGranted] = useState(false)
+  const { consent } = useCookieConsent()
   const clarityId = sanitizePublicEnv(process.env.NEXT_PUBLIC_CLARITY_ID)
 
+  const syncConsent = useCallback(() => {
+    if (typeof window === 'undefined') return
+    const clarity = (window as Window & { clarity?: ClarityConsentApi }).clarity
+    syncClarityConsent(clarity, consent.analytics)
+  }, [consent.analytics])
+
   useEffect(() => {
-    const checkConsent = () => {
-      const storedConsent = localStorage.getItem('cookieConsent')
-      if (!storedConsent) {
-        setIsAnalyticsGranted(false)
-        return
-      }
-      try {
-        const consent = JSON.parse(storedConsent) as CookieConsent
-        setIsAnalyticsGranted(consent.analytics === true)
-      } catch {
-        setIsAnalyticsGranted(false)
-      }
-    }
+    if (clarityId) syncConsent()
+  }, [clarityId, syncConsent])
 
-    checkConsent()
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'cookieConsent') {
-        checkConsent()
-      }
-    }
-
-    const handleConsentChange = () => checkConsent()
-
-    window.addEventListener('storage', handleStorageChange)
-    window.addEventListener('cookieConsentChanged', handleConsentChange)
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('cookieConsentChanged', handleConsentChange)
-    }
-  }, [])
-
-  if (!clarityId || !isAnalyticsGranted) {
+  if (!clarityId || !consent.analytics) {
     return null
   }
 
@@ -56,6 +28,7 @@ export function MicrosoftClarity() {
     <Script
       id="microsoft-clarity"
       strategy="afterInteractive"
+      onReady={syncConsent}
       dangerouslySetInnerHTML={{
         __html: `
           (function(c,l,a,r,i,t,y){

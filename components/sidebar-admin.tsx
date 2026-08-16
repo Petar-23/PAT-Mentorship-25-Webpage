@@ -74,6 +74,15 @@ import {
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { usePathname, useRouter } from 'next/navigation'
+import {
+  SIDEBAR_STATIC_IDS,
+  buildCourseSidebarIdentity,
+  buildPageSidebarIdentity,
+  buildStaticSidebarIdentity,
+  orderSidebarItems,
+  resolveActiveSidebarId,
+  type SidebarItemIdentity,
+} from '@/lib/sidebar-model'
 
 type Kurs = {
   id: string
@@ -93,8 +102,7 @@ type Page = {
   published: boolean
 }
 
-type SidebarItem = {
-  id: string
+type SidebarItem = SidebarItemIdentity & {
   title: string
   subtitle: string
   href: string
@@ -110,8 +118,6 @@ type Props = {
   isAdmin: boolean
   openCreateCourseModal?: boolean
 }
-
-const STATIC_SIDEBAR_ITEM_IDS = new Set(['discord', 'indicators'])
 
 export function SidebarAdmin({
   kurse,
@@ -277,22 +283,10 @@ export function SidebarAdmin({
     router.replace('/mentorship', { scroll: false })
   }, [openCreateCourseModal, iconPreviewUrl, router])
 
-  const activeItemId = useMemo(() => {
-    if (pathname?.startsWith('/mentorship/discord')) return 'discord'
-    if (pathname?.startsWith('/mentorship/indicators')) return 'indicators'
-    if (activeCourseId) return activeCourseId
-
-    // Check if on a page route
-    const pageMatch = pathname?.match(/^\/mentorship\/page\/([^/]+)$/)
-    if (pageMatch) {
-      const slug = pageMatch[1]
-      const page = localPages.find((p) => p.slug === slug)
-      if (page) return `page:${page.id}`
-    }
-
-    const match = pathname?.match(/^\/mentorship\/([^/]+)$/)
-    return match?.[1] ?? null
-  }, [pathname, activeCourseId, localPages])
+  const activeItemId = useMemo(
+    () => resolveActiveSidebarId({ pathname, activeCourseId, courses: kurse, pages: localPages }),
+    [pathname, activeCourseId, kurse, localPages]
+  )
 
   async function confirmDeleteCourse(courseId: string) {
     setIsDeletingCourse(true)
@@ -327,7 +321,8 @@ export function SidebarAdmin({
       if (controller.signal.aborted) return
 
       // Sidebar sofort aktualisieren
-      setItems((prev) => prev.filter((i) => i.id !== courseId))
+      const deletedCourseKey = buildCourseSidebarIdentity(courseId).id
+      setItems((prev) => prev.filter((i) => i.id !== deletedCourseKey))
 
       toast({
         title: 'Kurs gelöscht',
@@ -544,7 +539,7 @@ export function SidebarAdmin({
   const staticItems = useMemo<SidebarItem[]>(
     () => [
       {
-        id: 'discord',
+        ...buildStaticSidebarIdentity(SIDEBAR_STATIC_IDS.discord),
         title: 'Discord Community',
         subtitle: 'Live Streams & Chat',
         href: '/mentorship/discord',
@@ -552,7 +547,7 @@ export function SidebarAdmin({
         iconBg: 'from-indigo-700/80 to-indigo-600/70',
       },
       {
-        id: 'indicators',
+        ...buildStaticSidebarIdentity(SIDEBAR_STATIC_IDS.indicators),
         title: 'Indikatoren',
         subtitle: 'TradingView Claims',
         href: '/mentorship/indicators',
@@ -560,7 +555,7 @@ export function SidebarAdmin({
         iconBg: 'from-zinc-700/80 to-zinc-600/70',
       },
       ...kurse.map((kurs) => ({
-        id: kurs.id,
+        ...buildCourseSidebarIdentity(kurs.id),
         title: kurs.name,
         subtitle: `${kurs.modulesLength} ${kurs.modulesLength === 1 ? 'Modul' : 'Module'}`,
         href: `/mentorship/${kurs.id}`,
@@ -581,7 +576,7 @@ export function SidebarAdmin({
         iconBg: 'from-slate-700/80 to-slate-600/70',
       })),
       ...localPages.map((page) => ({
-        id: `page:${page.id}`,
+        ...buildPageSidebarIdentity(page.id),
         title: page.title,
         subtitle: page.description ?? 'Seite',
         href: `/mentorship/page/${page.slug}`,
@@ -605,17 +600,10 @@ export function SidebarAdmin({
     [kurse, localPages]
   )
 
-  const initialItems = useMemo<SidebarItem[]>(() => {
-    if (savedSidebarOrder) {
-      const orderMap = new Map(savedSidebarOrder.map((id, index) => [id, index]))
-      return [...staticItems].sort((a, b) => {
-        const posA = orderMap.get(a.id) ?? staticItems.length
-        const posB = orderMap.get(b.id) ?? staticItems.length
-        return posA - posB
-      })
-    }
-    return staticItems
-  }, [savedSidebarOrder, staticItems])
+  const initialItems = useMemo(
+    () => orderSidebarItems(staticItems, savedSidebarOrder),
+    [savedSidebarOrder, staticItems]
+  )
 
   const [items, setItems] = useState<SidebarItem[]>(initialItems)
 
@@ -747,7 +735,7 @@ export function SidebarAdmin({
           </Link>
 
           {/* 3-Dots Menü – nur Admin */}
-          {isAdmin && !STATIC_SIDEBAR_ITEM_IDS.has(item.id) && (
+          {isAdmin && item.kind !== 'static' && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -761,15 +749,15 @@ export function SidebarAdmin({
                 </Button>
               </DropdownMenuTrigger>
 
-              {item.id.startsWith('page:') ? (
+              {item.kind === 'page' ? (
                 <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem className="gap-2" onSelect={() => openEditPageDialog(item.id.replace('page:', ''))}>
+                  <DropdownMenuItem className="gap-2" onSelect={() => openEditPageDialog(item.resourceId)}>
                     <Pencil className="h-4 w-4" />
                     Bearbeiten
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="gap-2 text-destructive focus:text-destructive"
-                    onSelect={() => setDeletingPageId(item.id.replace('page:', ''))}
+                    onSelect={() => setDeletingPageId(item.resourceId)}
                   >
                     <Trash2 className="h-4 w-4" />
                     Seite löschen
@@ -777,13 +765,13 @@ export function SidebarAdmin({
                 </DropdownMenuContent>
               ) : (
                 <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem className="gap-2" onSelect={() => openEditCourseDialog(item.id)}>
+                  <DropdownMenuItem className="gap-2" onSelect={() => openEditCourseDialog(item.resourceId)}>
                     <Pencil className="h-4 w-4" />
                     Bearbeiten
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="gap-2 text-destructive focus:text-destructive"
-                    onSelect={() => setDeleteCourseId(item.id)}
+                    onSelect={() => setDeleteCourseId(item.resourceId)}
                   >
                     <Trash2 className="h-4 w-4" />
                     Kurs löschen
@@ -1266,7 +1254,8 @@ export function SidebarAdmin({
                   if (controller.signal.aborted) return
 
                   setLocalPages((prev) => prev.filter((p) => p.id !== pageId))
-                  setItems((prev) => prev.filter((i) => i.id !== `page:${pageId}`))
+                  const deletedPageKey = buildPageSidebarIdentity(pageId).id
+                  setItems((prev) => prev.filter((i) => i.id !== deletedPageKey))
                   toast({ title: 'Seite gelöscht', description: 'Die Seite wurde entfernt.' })
                   if (pathname === `/mentorship/page/${localPages.find((p) => p.id === pageId)?.slug}`) {
                     router.push('/mentorship')

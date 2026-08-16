@@ -1,13 +1,11 @@
 'use client'
 
-export function FooterCookieSettingsButton() {
-  const openSettings = () => {
-    window.dispatchEvent(new CustomEvent('openCookieSettings'))
-  }
+import { requestCookieSettings } from '@/lib/cookie-settings'
 
+export function FooterCookieSettingsButton() {
   return (
     <button
-      onClick={openSettings}
+      onClick={requestCookieSettings}
       className="flex items-center gap-3 text-gray-400 hover:text-gray-300 transition-colors group"
     >
       <svg

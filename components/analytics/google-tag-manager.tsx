@@ -1,14 +1,9 @@
 'use client'
 
 import { sanitizePublicEnv } from '@/lib/public-env'
-import { useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect } from 'react'
 import Script from 'next/script'
-
-interface CookieConsent {
-  necessary: boolean
-  analytics: boolean
-  marketing: boolean
-}
+import { useCookieConsent } from '@/hooks/use-cookie-consent'
 
 /**
  * Google Ads Tag (gtag.js) mit Consent Mode v2
@@ -20,73 +15,25 @@ interface CookieConsent {
  * Das ist die offizielle, DSGVO-konforme Google-Lösung.
  */
 export function GoogleTagManager() {
-  const [consentState, setConsentState] = useState<{
-    analytics: 'pending' | 'granted' | 'denied'
-    marketing: 'pending' | 'granted' | 'denied'
-  }>({
-    analytics: 'pending',
-    marketing: 'pending',
-  })
-  const hasInitialized = useRef(false)
+  const { consent } = useCookieConsent()
   const googleAdsId = sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID)
   const googleAnalyticsId = sanitizePublicEnv(process.env.NEXT_PUBLIC_GA_ID)
+  const analyticsConsent = consent.analytics ? 'granted' : 'denied'
+  const marketingConsent = consent.marketing ? 'granted' : 'denied'
 
-  useEffect(() => {
-    // Prüfe initialen Consent
-    const checkConsent = () => {
-      const storedConsent = localStorage.getItem('cookieConsent')
-      if (storedConsent) {
-        const consent = JSON.parse(storedConsent) as CookieConsent
-        setConsentState({
-          analytics: consent.analytics === true ? 'granted' : 'denied',
-          marketing: consent.marketing === true ? 'granted' : 'denied',
-        })
-      } else {
-        // Noch keine Entscheidung getroffen
-        setConsentState({
-          analytics: 'denied',
-          marketing: 'denied',
-        })
-      }
-    }
-
-    checkConsent()
-
-    // Lausche auf Änderungen im localStorage
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'cookieConsent') {
-        checkConsent()
-      }
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-
-    // Custom Event für Same-Tab Updates
-    const handleConsentChange = () => checkConsent()
-    window.addEventListener('cookieConsentChanged', handleConsentChange)
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('cookieConsentChanged', handleConsentChange)
-    }
-  }, [])
-
-  // Update Google Consent wenn sich der Status ändert
-  useEffect(() => {
-    if (
-      consentState.analytics !== 'pending' &&
-      consentState.marketing !== 'pending' &&
-      typeof window !== 'undefined' &&
-      typeof window.gtag === 'function'
-    ) {
+  const syncConsent = useCallback(() => {
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
       window.gtag('consent', 'update', {
-        'ad_storage': consentState.marketing,
-        'ad_user_data': consentState.marketing,
-        'ad_personalization': consentState.marketing,
-        'analytics_storage': consentState.analytics,
+        'ad_storage': marketingConsent,
+        'ad_user_data': marketingConsent,
+        'ad_personalization': marketingConsent,
+        'analytics_storage': analyticsConsent,
       })
     }
-  }, [consentState])
+  }, [analyticsConsent, marketingConsent])
+
+  // Update Google Consent after hydration and whenever the stored choice changes.
+  useEffect(syncConsent, [syncConsent])
 
   const gtagId = googleAnalyticsId ?? googleAdsId
 
@@ -101,6 +48,7 @@ export function GoogleTagManager() {
       <Script
         id="google-consent-init"
         strategy="afterInteractive"
+        onReady={syncConsent}
         dangerouslySetInnerHTML={{
           __html: `
             window.dataLayer = window.dataLayer || [];

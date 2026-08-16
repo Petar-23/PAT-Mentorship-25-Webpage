@@ -4,52 +4,20 @@
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-
-interface CookieConsent {
-  necessary: boolean;
-  analytics: boolean;
-  marketing: boolean;
-}
-
-const defaultConsent: CookieConsent = {
-  necessary: true,
-  analytics: false,
-  marketing: false,
-}
+import { useCookieConsent } from '@/hooks/use-cookie-consent'
+import {
+  saveCookieConsent,
+  subscribeCookieSettingsRequest,
+  type CookieConsent,
+} from '@/lib/cookie-settings'
 
 const CookieSettingsDialog = dynamic(
   () => import('@/components/ui/cookie-settings-dialog').then((mod) => mod.CookieSettingsDialog),
   { ssr: false }
 )
 
-function readStoredConsent(): CookieConsent | null {
-  if (typeof window === 'undefined') return null
-
-  try {
-    const storedConsent = localStorage.getItem('cookieConsent')
-    if (!storedConsent) return null
-
-    const parsedConsent = JSON.parse(storedConsent) as Partial<CookieConsent>
-    if (typeof parsedConsent.necessary !== 'boolean') return null
-
-    return {
-      necessary: true,
-      analytics: parsedConsent.analytics === true,
-      marketing: parsedConsent.marketing === true,
-    }
-  } catch {
-    return null
-  }
-}
-
 export function CookieBanner() {
-  const [{ savedConsent, showBanner }, setConsentState] = useState(() => {
-    const storedConsent = readStoredConsent()
-    return {
-      savedConsent: storedConsent ?? defaultConsent,
-      showBanner: !storedConsent,
-    }
-  })
+  const { consent, hasSavedConsent } = useCookieConsent()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   const openSettings = useCallback(() => {
@@ -57,20 +25,12 @@ export function CookieBanner() {
   }, [])
 
   useEffect(() => {
-    window.addEventListener('openCookieSettings', openSettings)
-    return () => window.removeEventListener('openCookieSettings', openSettings)
+    return subscribeCookieSettingsRequest(openSettings)
   }, [openSettings])
 
   const saveConsent = useCallback((consentData: CookieConsent) => {
-    localStorage.setItem('cookieConsent', JSON.stringify(consentData))
-    setConsentState({
-      savedConsent: consentData,
-      showBanner: false,
-    })
+    saveCookieConsent(consentData)
     setIsSettingsOpen(false)
-
-    // Benachrichtige andere Komponenten (z.B. GTM) über die Consent-Änderung.
-    window.dispatchEvent(new CustomEvent('cookieConsentChanged'))
   }, [])
 
   const handleAcceptAll = useCallback(() => {
@@ -87,7 +47,7 @@ export function CookieBanner() {
 
   return (
     <>
-      {showBanner && !isSettingsOpen ? (
+      {!hasSavedConsent && !isSettingsOpen ? (
         <div className="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 p-4 z-50">
           <div className="container mx-auto">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -119,7 +79,7 @@ export function CookieBanner() {
 
       {isSettingsOpen ? (
         <CookieSettingsDialog
-          initialConsent={savedConsent}
+          initialConsent={consent}
           open={isSettingsOpen}
           onClose={handleClose}
           onSave={saveConsent}

@@ -23,6 +23,10 @@ export interface BlogPost {
   readingTime: string
 }
 
+function isBlogPostPubliclyVisible(post: BlogPost): boolean {
+  return process.env.NODE_ENV !== 'production' || !post.frontmatter.draft
+}
+
 export function getAllPosts(): BlogPost[] {
   if (!fs.existsSync(BLOG_DIR)) return []
 
@@ -33,17 +37,13 @@ export function getAllPosts(): BlogPost[] {
       const slug = file.replace(/\.mdx$/, '')
       return getPostBySlug(slug)
     })
-    .filter((post): post is BlogPost => {
-      if (!post) return false
-      if (process.env.NODE_ENV === 'production' && post.frontmatter.draft) return false
-      return true
-    })
+    .filter((post): post is BlogPost => post !== null)
     .sort((a, b) => new Date(b.frontmatter.date).getTime() - new Date(a.frontmatter.date).getTime())
 
   return posts
 }
 
-export function getPostBySlug(slug: string): BlogPost | null {
+function readBlogPostBySlug(slug: string): BlogPost | null {
   const filePath = path.join(BLOG_DIR, `${slug}.mdx`)
   if (!fs.existsSync(filePath)) return null
 
@@ -68,12 +68,14 @@ export function getPostBySlug(slug: string): BlogPost | null {
   }
 }
 
+export function getPostBySlug(slug: string): BlogPost | null {
+  const post = readBlogPostBySlug(slug)
+  if (!post || !isBlogPostPubliclyVisible(post)) return null
+  return post
+}
+
 export function getAllSlugs(): string[] {
-  if (!fs.existsSync(BLOG_DIR)) return []
-  return fs
-    .readdirSync(BLOG_DIR)
-    .filter((f) => f.endsWith('.mdx'))
-    .map((f) => f.replace(/\.mdx$/, ''))
+  return getAllPosts().map((post) => post.slug)
 }
 
 export function formatDateDE(dateStr: string): string {

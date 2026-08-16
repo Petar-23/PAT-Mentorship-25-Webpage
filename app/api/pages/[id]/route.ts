@@ -66,7 +66,7 @@ export async function PATCH(
 
   const existing = await prisma.page.findUnique({
     where: { id },
-    select: { id: true, slug: true },
+    select: { id: true },
   })
   if (!existing) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -87,13 +87,6 @@ export async function PATCH(
       )
     }
     updateData.title = title
-    if (newSlug !== existing.slug) {
-      const conflict = await prisma.page.findFirst({
-        where: { slug: newSlug, NOT: { id } },
-        select: { id: true },
-      })
-      updateData.slug = conflict ? `${newSlug}-${Date.now()}` : newSlug
-    }
   }
 
   if (body.description !== undefined) {

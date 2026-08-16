@@ -6,6 +6,14 @@ import 'server-only'
 import { cache } from 'react'
 import { revalidateTag, unstable_cache } from 'next/cache'
 import { prisma, withPrismaRetry } from '@/lib/prisma'
+import {
+  SIDEBAR_STATIC_IDS,
+  buildCourseSidebarIdentity,
+  buildPageSidebarIdentity,
+  buildStaticSidebarIdentity,
+  parseSidebarOrder,
+  type SidebarItemIdentity,
+} from '@/lib/sidebar-model'
 
 export const SIDEBAR_DATA_CACHE_TAG = 'mentorship-sidebar-data'
 
@@ -85,7 +93,15 @@ async function loadSidebarData(): Promise<SidebarData> {
     published: page.published,
   }))
 
-  const savedSidebarOrder: string[] | null = savedSetting ? (savedSetting.value as string[]) : null
+  const sidebarIdentities: SidebarItemIdentity[] = [
+    buildStaticSidebarIdentity(SIDEBAR_STATIC_IDS.discord),
+    buildStaticSidebarIdentity(SIDEBAR_STATIC_IDS.indicators),
+    ...kurseForSidebar.map((kurs) => buildCourseSidebarIdentity(kurs.id)),
+    ...pagesForSidebar.map((page) => buildPageSidebarIdentity(page.id)),
+  ]
+  const savedSidebarOrder = savedSetting
+    ? parseSidebarOrder(savedSetting.value, sidebarIdentities)
+    : null
 
   return { kurseForSidebar, pagesForSidebar, savedSidebarOrder }
 }

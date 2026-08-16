@@ -15,6 +15,15 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'
 import { Button } from '@/components/ui/button'
+import {
+  SIDEBAR_STATIC_IDS,
+  buildCourseSidebarIdentity,
+  buildPageSidebarIdentity,
+  buildStaticSidebarIdentity,
+  orderSidebarItems,
+  resolveActiveSidebarId,
+  type SidebarItemIdentity,
+} from '@/lib/sidebar-model'
 
 type Kurs = {
   id: string
@@ -33,8 +42,7 @@ type Page = {
   iconUrl?: string | null
 }
 
-type SidebarItem = {
-  id: string
+type SidebarItem = SidebarItemIdentity & {
   title: string
   subtitle: string
   href: string
@@ -55,26 +63,15 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
   const { user, isLoaded } = useUser()
   const [mobileFooterOpen, setMobileFooterOpen] = useState(false)
 
-  const activeItemId = useMemo(() => {
-    if (pathname?.startsWith('/mentorship/discord')) return 'discord'
-    if (pathname?.startsWith('/mentorship/indicators')) return 'indicators'
-    if (activeCourseId) return activeCourseId
-
-    const pageMatch = pathname?.match(/^\/mentorship\/page\/([^/]+)$/)
-    if (pageMatch) {
-      const slug = pageMatch[1]
-      const page = pages.find((p) => p.slug === slug)
-      if (page) return `page:${page.id}`
-    }
-
-    const match = pathname?.match(/^\/mentorship\/([^/]+)$/)
-    return match?.[1] ?? null
-  }, [pathname, activeCourseId, pages])
+  const activeItemId = useMemo(
+    () => resolveActiveSidebarId({ pathname, activeCourseId, courses: kurse, pages }),
+    [pathname, activeCourseId, kurse, pages]
+  )
 
   const staticItems = useMemo<SidebarItem[]>(
     () => [
       {
-        id: 'discord',
+        ...buildStaticSidebarIdentity(SIDEBAR_STATIC_IDS.discord),
         title: 'Discord Community',
         subtitle: 'Live Streams & Chat',
         href: '/mentorship/discord',
@@ -82,7 +79,7 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
         iconBg: 'from-indigo-700/80 to-indigo-600/70',
       },
       {
-        id: 'indicators',
+        ...buildStaticSidebarIdentity(SIDEBAR_STATIC_IDS.indicators),
         title: 'Indikatoren',
         subtitle: 'TradingView Claims',
         href: '/mentorship/indicators',
@@ -90,7 +87,7 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
         iconBg: 'from-zinc-700/80 to-zinc-600/70',
       },
       ...kurse.map((kurs) => ({
-        id: kurs.id,
+        ...buildCourseSidebarIdentity(kurs.id),
         title: kurs.name,
         subtitle: `${kurs.modulesLength} ${kurs.modulesLength === 1 ? 'Modul' : 'Module'}`,
         href: `/mentorship/${kurs.id}`,
@@ -111,7 +108,7 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
         iconBg: 'from-slate-700/80 to-slate-600/70',
       })),
       ...pages.map((page) => ({
-        id: `page:${page.id}`,
+        ...buildPageSidebarIdentity(page.id),
         title: page.title,
         subtitle: page.description ?? 'Seite',
         href: `/mentorship/page/${page.slug}`,
@@ -135,17 +132,10 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
     [kurse, pages]
   )
 
-  const items = useMemo<SidebarItem[]>(() => {
-    if (savedSidebarOrder) {
-      const orderMap = new Map(savedSidebarOrder.map((id, index) => [id, index]))
-      return [...staticItems].sort((a, b) => {
-        const posA = orderMap.get(a.id) ?? staticItems.length
-        const posB = orderMap.get(b.id) ?? staticItems.length
-        return posA - posB
-      })
-    }
-    return staticItems
-  }, [savedSidebarOrder, staticItems])
+  const items = useMemo(
+    () => orderSidebarItems(staticItems, savedSidebarOrder),
+    [savedSidebarOrder, staticItems]
+  )
 
   const displayName =
     user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Mitglied'
