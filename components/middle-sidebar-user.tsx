@@ -10,6 +10,7 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { VideoThumbnail } from '@/components/mentorship/video-thumbnail'
+import { ChapterCoverThumb } from '@/components/mentorship/mesh-cover'
 
 type Video = {
   id: string
@@ -238,6 +239,8 @@ export function MiddleSidebarUser({
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         )}
                       </span>
+
+                      <ChapterCoverThumb chapterId={chapter.id} name={chapter.name} />
 
                       <h3 className="text-md font-bold truncate flex-1 px-2 py-1 rounded select-text">
                         {chapter.name}

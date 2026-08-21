@@ -529,7 +529,7 @@ export function ModulDetailClient({
     
           toast({
             title: 'Kapitel angelegt',
-            description: '„Neues Kapitel“ wurde hinzugefügt. Du kannst es jetzt umbenennen.',
+            description: '„Neues Kapitel“ hat automatisch ein Cover. Du kannst es jetzt umbenennen.',
           })
     
           // Optional: Direkt in Edit-Modus gehen
