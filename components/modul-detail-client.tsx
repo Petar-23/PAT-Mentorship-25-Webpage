@@ -18,6 +18,7 @@ const VideoPlayer = dynamic(
 import { useToast } from '@/hooks/use-toast'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { useSearchParams } from 'next/navigation'
+import type { VideoAttachment } from '@/lib/video-attachments'
 
 type Video = {
   id: string
@@ -25,6 +26,7 @@ type Video = {
   bunnyGuid: string | null
   thumbnailUrl: string | null
   pdfUrl: string | null
+  attachments?: VideoAttachment[]
   duration?: number | null
   order: number
   updatedAt?: string | Date

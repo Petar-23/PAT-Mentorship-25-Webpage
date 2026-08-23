@@ -16,6 +16,7 @@ import { Play } from '@phosphor-icons/react/Play'
 import { Rewind } from '@phosphor-icons/react/Rewind'
 import { Trash as Trash2 } from '@phosphor-icons/react/Trash'
 import { useToast } from '@/hooks/use-toast'
+import type { VideoAttachment } from '@/lib/video-attachments'
 
 const UploadZone = dynamic(() => import('./upload-zone').then((mod) => mod.UploadZone), {
   ssr: false,
@@ -35,12 +36,25 @@ const PdfUploadZone = dynamic(() => import('./pdf-upload-zone').then((mod) => mo
   ),
 })
 
+const AttachmentUploadZone = dynamic(
+  () => import('./attachment-upload-zone').then((mod) => mod.AttachmentUploadZone),
+  {
+    ssr: false,
+    loading: () => (
+      <Button variant="secondary" disabled>
+        Markdown-Upload wird geladen...
+      </Button>
+    ),
+  }
+)
+
 type Video = {
   id: string
   title: string
   bunnyGuid: string | null
   thumbnailUrl: string | null
   pdfUrl: string | null
+  attachments?: VideoAttachment[]
   duration?: number | null
   order: number
   updatedAt?: string | Date
@@ -926,16 +940,32 @@ export function VideoPlayer({
 
                 {/* File attachments und Delete video in einer Zeile */}
                 <div className="mt-8 sm:mt-10 lg:mt-12">
-          <p className="text-sm font-medium text-foreground mb-3">PDF Anhänge:</p>
+          <p className="text-sm font-medium text-foreground mb-3">Dateianhänge:</p>
 
           <div className="flex items-center justify-between flex-wrap gap-4 sm:gap-6">
             <div className="flex flex-wrap items-center gap-4">
               {/* Upload Button */}
               {isAdmin && activeVideo && (
-                <PdfUploadZone
-                  videoId={activeVideo.id}
-                  onUploadSuccess={(pdfUrl) => onVideoUpdate({ ...activeVideo, pdfUrl })}
-                />
+                <>
+                  <PdfUploadZone
+                    videoId={activeVideo.id}
+                    onUploadSuccess={(pdfUrl) => onVideoUpdate({ ...activeVideo, pdfUrl })}
+                  />
+                  <AttachmentUploadZone
+                    videoId={activeVideo.id}
+                    onUploadSuccess={(attachment) =>
+                      onVideoUpdate({
+                        ...activeVideo,
+                        attachments: [
+                          ...(activeVideo.attachments ?? []).filter(
+                            (item) => item.filename !== attachment.filename
+                          ),
+                          attachment,
+                        ],
+                      })
+                    }
+                  />
+                </>
               )}
 
               {/* Vorhandene PDF als Chip */}
@@ -962,6 +992,22 @@ export function VideoPlayer({
                   )}
                 </div>
               )}
+
+              {(activeVideo?.attachments ?? []).map((attachment) => (
+                <div
+                  key={attachment.id}
+                  className="flex items-center gap-2 bg-secondary/60 rounded-full px-4 py-2"
+                >
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                  <a
+                    href={attachment.url}
+                    className="text-sm font-medium hover:underline"
+                    download
+                  >
+                    {attachment.filename}
+                  </a>
+                </div>
+              ))}
             </div>
 
             {/* Rechts: Admin = Delete Video, User = "Als angesehen markieren" */}

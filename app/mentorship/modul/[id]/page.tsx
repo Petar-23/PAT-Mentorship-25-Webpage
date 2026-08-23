@@ -5,6 +5,7 @@ import { ModulDetailClient } from '@/components/modul-detail-client'
 import { getIsAdmin } from '@/lib/authz'
 import { auth } from '@clerk/nextjs/server'
 import { getSidebarData } from '@/lib/sidebar-data'
+import { readVideoAttachmentMap } from '@/lib/video-attachment-store'
 
 type SearchParams = { [key: string]: string | string[] | undefined }
 
@@ -81,7 +82,21 @@ export default async function MentorshipModulPage({
 
   if (!modul) notFound()
 
-  const allVideos = modul.chapters.flatMap((ch) => ch.videos)
+  const attachmentMap = await readVideoAttachmentMap(
+    modul.chapters.flatMap((chapter) => chapter.videos.map((video) => video.id))
+  )
+  const modulWithAttachments = {
+    ...modul,
+    chapters: modul.chapters.map((chapter) => ({
+      ...chapter,
+      videos: chapter.videos.map((video) => ({
+        ...video,
+        attachments: attachmentMap.get(video.id) ?? [],
+      })),
+    })),
+  }
+
+  const allVideos = modulWithAttachments.chapters.flatMap((ch) => ch.videos)
   const defaultInitialVideoId =
     allVideos.find((v) => v.bunnyGuid !== null)?.id ?? allVideos[0]?.id ?? null
   const initialVideoId =
@@ -105,7 +120,7 @@ export default async function MentorshipModulPage({
       </div>
 
       <ModulDetailClient
-        modul={modul}
+        modul={modulWithAttachments}
         initialVideoId={initialVideoId}
         initialWatchedVideoIds={initialWatchedVideoIds}
         isAdmin={isAdmin}
