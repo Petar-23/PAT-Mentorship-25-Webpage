@@ -3,6 +3,7 @@ import { get } from '@vercel/blob'
 import { NextResponse } from 'next/server'
 import { getMentorshipAccessState } from '@/lib/mentorship-access'
 import { prisma } from '@/lib/prisma'
+import { verifyVideoAttachmentBytes } from '@/lib/video-attachment-integrity'
 import {
   parseVideoAttachmentSetting,
   videoAttachmentSettingKey,
@@ -34,7 +35,7 @@ function downloadHeaders(filename: string, contentLength?: number | null, etag?:
 }
 
 export async function GET(
-  request: Request,
+  _request: Request,
   {
     params,
   }: {
@@ -78,19 +79,30 @@ export async function GET(
     access: 'private',
     token: privateBlobToken,
     useCache: false,
-    ifNoneMatch: request.headers.get('if-none-match') ?? undefined,
     abortSignal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
   })
   if (!result) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (result.statusCode === 304) {
-    return new Response(null, {
-      status: 304,
-      headers: downloadHeaders(attachment.filename, null, result.blob.etag),
-    })
+
+  if (result.statusCode !== 200) {
+    return NextResponse.json({ error: 'Attachment download failed' }, { status: 502 })
   }
 
-  return new Response(result.stream, {
+  // Markdown attachments are capped at 2 MB. Buffering them lets us verify the
+  // exact payload before responding and avoids propagating a missing upstream
+  // Content-Length as `0`, which causes browsers to save an empty file.
+  const bytes = new Uint8Array(await new Response(result.stream).arrayBuffer())
+  if (!verifyVideoAttachmentBytes(bytes, attachment.size, attachment.sha256)) {
+    console.error('Attachment integrity check failed', {
+      attachmentId: attachment.id,
+      videoId,
+      expectedSize: attachment.size,
+      receivedSize: bytes.byteLength,
+    })
+    return NextResponse.json({ error: 'Attachment integrity check failed' }, { status: 502 })
+  }
+
+  return new Response(bytes, {
     status: 200,
-    headers: downloadHeaders(attachment.filename, result.blob.size, result.blob.etag),
+    headers: downloadHeaders(attachment.filename, bytes.byteLength, result.blob.etag),
   })
 }
