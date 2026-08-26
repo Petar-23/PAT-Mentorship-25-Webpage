@@ -2,6 +2,7 @@
 import 'server-only'
 
 import Stripe from 'stripe'
+import { MENTORSHIP_SOURCE_CUSTOM_FIELDS } from './pat-source'
 import { prisma, withPrismaRetry } from './prisma'
 
 declare global {
@@ -621,6 +622,8 @@ export async function createCheckoutSession(userId: string, userEmail: string) {
           signupType: now < launchDate ? "pre_launch_2026" : "launch_2026"
         }
       },
+      // Herkunftsfrage nur auf diesem Mentorship-Checkout (150€). Raid Map bleibt unberührt.
+      custom_fields: MENTORSHIP_SOURCE_CUSTOM_FIELDS,
       success_url: `${baseUrl}/dashboard?success=true`,
       cancel_url: `${baseUrl}/dashboard?canceled=true`,
       metadata: {
