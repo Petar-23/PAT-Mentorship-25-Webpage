@@ -247,7 +247,7 @@ export function ModuleGridAdmin({ modules, playlistId, playlistName, mobileCours
                   <CardContent className="flex-1 p-8 flex flex-col items-center justify-center text-center">
                     <div className="text-2xl mb-6 text-muted-foreground">+</div>
                     <h3 className="text-md font-semibold mb-1">Neues Modul</h3>
-                    <p className="text-sm text-muted-foreground">Anlegen mit Titelbild</p>
+                    <p className="text-sm text-muted-foreground">Cover wird automatisch zugewiesen</p>
                   </CardContent>
                 </Card>
               </DialogTrigger>
@@ -256,7 +256,7 @@ export function ModuleGridAdmin({ modules, playlistId, playlistName, mobileCours
                 <DialogHeader>
                   <DialogTitle>Neues Modul zu {playlistId || 'Playlist'}</DialogTitle>
                   <DialogDescription>
-                    Name, Beschreibung und Titelbild direkt hochladen.
+                    Name und Beschreibung. Ohne Upload erhält das Modul automatisch ein Cover.
                   </DialogDescription>
                 </DialogHeader>
 
@@ -300,7 +300,7 @@ export function ModuleGridAdmin({ modules, playlistId, playlistName, mobileCours
                       }}
                     />
 
-                    {previewUrl && (
+                    {previewUrl ? (
                       <div className="relative aspect-video rounded-lg overflow-hidden border">
                         <Image
                           src={previewUrl}
@@ -310,6 +310,10 @@ export function ModuleGridAdmin({ modules, playlistId, playlistName, mobileCours
                           className="object-cover"
                         />
                       </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Ohne Bild erhält das Modul automatisch ein Cover. Kapitel bekommen beim Anlegen ebenfalls ein eigenes Cover.
+                      </p>
                     )}
                   </div>
 

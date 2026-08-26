@@ -17,6 +17,7 @@ import { DotsThreeVertical as MoreVertical } from '@phosphor-icons/react/DotsThr
 import { PencilSimple as Edit } from '@phosphor-icons/react/PencilSimple'
 import { Trash as Trash2 } from '@phosphor-icons/react/Trash'
 import { useToast } from '@/hooks/use-toast'
+import { MeshCover } from '@/components/mentorship/mesh-cover'
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle
@@ -192,21 +193,7 @@ export function ModuleCard({ modul, progress = null }: Props) {
               </DropdownMenuContent>
             </DropdownMenu>
             )}
-            {/* Bild oben */}
-            <div className="relative aspect-video bg-gradient-to-br from-primary/20 to-primary/10 overflow-hidden flex items-center justify-center cursor-pointer">
-                {modul.imageUrl ? (
-                    <Image 
-                    src={modul.imageUrl} 
-                    alt={`${modul.name} Thumbnail`}
-                    fill 
-                    className="object-cover cursor-pointer"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    priority={false}  // Nicht für LCP, da viele Cards
-                    />
-                ) : (
-                    <span className="text-5xl z-10 cursor-pointer">📚</span>  // z-10 über Image falls nötig
-                )}
-            </div>
+            <MeshCover seed={modul.id} name={modul.name} imageUrl={modul.imageUrl} />
       
             <CardContent className="p-5 flex-1 flex flex-col justify-between">
               <div>
@@ -267,9 +254,8 @@ export function ModuleCard({ modul, progress = null }: Props) {
                     {/* Cover Section – Preview + Upload (einmalig!) */}
                     <div className="space-y-3">
                         <label className="text-sm font-medium block">Modul-Cover (optional)</label>
-                        
-                        {/* Preview wenn vorhanden */}
-                        {modul.imageUrl && (
+
+                        {modul.imageUrl ? (
                         <div className="flex items-start space-x-3 p-3 border rounded-md bg-muted/30">
                             <Image 
                             src={modul.imageUrl} 
@@ -284,6 +270,17 @@ export function ModuleCard({ modul, progress = null }: Props) {
                             </p>
                             <p className="text-xs text-muted-foreground">Neues hochladen → ersetzt automatisch.</p>
                             </div>
+                        </div>
+                        ) : (
+                        <div className="space-y-2">
+                            <MeshCover
+                              seed={modul.id}
+                              name={modul.name}
+                              className="rounded-md border"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Automatisches Cover. Upload ersetzt es.
+                            </p>
                         </div>
                         )}
                         

@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { hasActiveSubscription } from '@/lib/stripe'
 import { getIsAdmin, requireAdminApiAccess } from '@/lib/authz'
+import { withChapterCover } from '@/lib/chapter-covers'
 
 export async function POST(request: Request) {
   const admin = await requireAdminApiAccess()
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
       },
     })
 
-    return NextResponse.json(newChapter, { status: 201 })
+    return NextResponse.json(withChapterCover(newChapter), { status: 201 })
   } catch (error) {
     console.error('Chapter create error:', error)
     return NextResponse.json(
@@ -113,5 +114,5 @@ export async function GET() {
     orderBy: { createdAt: 'desc' },
   })
 
-  return NextResponse.json(chapters)
+  return NextResponse.json(chapters.map(withChapterCover))
 }

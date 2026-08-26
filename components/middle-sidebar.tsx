@@ -46,6 +46,7 @@ import { useRouter } from 'next/navigation'
 
 import { CSS } from '@dnd-kit/utilities'
 import { VideoThumbnail } from '@/components/mentorship/video-thumbnail'
+import { ChapterCoverThumb } from '@/components/mentorship/mesh-cover'
 
 const DURATION_RETRY_MS = 15_000
 const MAX_DURATION_ATTEMPTS = 30
@@ -793,6 +794,8 @@ export function MiddleSidebar({
                         <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       )}
                     </span>
+
+                    <ChapterCoverThumb chapterId={chapter.id} name={chapter.name} />
 
                     {/* Kapitel-Titel oder Edit-Modus */}
                     {isAdmin && editingChapterId === chapter.id ? (

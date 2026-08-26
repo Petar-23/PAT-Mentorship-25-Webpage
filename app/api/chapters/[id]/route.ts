@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 import { deleteVideo } from '@/lib/bunny'
 import { requireAdminApiAccess } from '@/lib/authz'
+import { withChapterCover } from '@/lib/chapter-covers'
 
 const BUNNY_DELETE_CONCURRENCY = 4
 
@@ -48,7 +49,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         moduleId: true,
       },
     })
-    return NextResponse.json(updatedChapter)
+    return NextResponse.json(withChapterCover(updatedChapter))
   } catch (error) {
     console.error('Chapter update error:', error)
     return NextResponse.json({ error: 'Konnte Kapitel nicht umbenennen' }, { status: 500 })
