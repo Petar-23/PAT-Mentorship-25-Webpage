@@ -1,3 +1,4 @@
+import { persistPatSourceFromMentorshipCheckout } from '@/lib/pat-source'
 import { handleRaidMapCheckoutCompleted } from '@/lib/raidmap-fulfillment'
 import { sendCortanaTelegram } from '@/lib/telegram-notify'
 import type Stripe from 'stripe'
@@ -528,6 +529,7 @@ export async function handleStripeEvent(event: Stripe.Event) {
           await handleRaidMapCheckoutCompleted(session)
         } else {
           console.log('Checkout completed, customer and subscription events will follow')
+          await persistPatSourceFromMentorshipCheckout(session, stripe)
         }
         break
       }
