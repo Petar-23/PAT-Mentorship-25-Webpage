@@ -1,5 +1,6 @@
 import { handleRaidMapCheckoutCompleted } from '@/lib/raidmap-fulfillment'
 import { sendCortanaTelegram } from '@/lib/telegram-notify'
+import { readPatSourceFromCheckoutSession } from '@/lib/pat-source'
 import type Stripe from 'stripe'
 import { stripe } from './stripe'
 import { prisma } from './prisma'
@@ -153,6 +154,53 @@ async function upsertRaidMapSubscription(subscription: Stripe.Subscription) {
   })
 
   console.log('[raidmap] subscription cached', { userId, status: subscription.status })
+}
+
+function getCustomerIdFromSession(session: Stripe.Checkout.Session): string | null {
+  if (!session.customer) return null
+  return typeof session.customer === 'string' ? session.customer : session.customer.id
+}
+
+// Mentorship-Checkout: Herkunft nur fuer NEUE Sessions auf den Customer
+// schreiben. Bestehende Customers (inkl. bereits gesetztem pat_source) bleiben
+// unveraendert. Fehler sind nie fatal fuer den Webhook.
+async function persistMentorshipSourceFromCheckout(session: Stripe.Checkout.Session) {
+  try {
+    const source = readPatSourceFromCheckoutSession(session)
+    if (!source) {
+      console.log('[pat-source] Keine Herkunft im Checkout — Customer bleibt unverändert')
+      return
+    }
+
+    const customerId = getCustomerIdFromSession(session)
+    if (!customerId) {
+      console.warn('[pat-source] checkout.session.completed ohne customer')
+      return
+    }
+
+    const customer = await stripe.customers.retrieve(customerId)
+    if ('deleted' in customer && customer.deleted) {
+      console.warn('[pat-source] Customer gelöscht — skip', { customerId })
+      return
+    }
+
+    if (customer.metadata?.pat_source) {
+      console.log('[pat-source] Customer hat bereits pat_source — nicht überschreiben', {
+        customerId,
+      })
+      return
+    }
+
+    await stripe.customers.update(customerId, {
+      metadata: {
+        pat_source: source,
+      },
+    })
+
+    console.log('[pat-source] Herkunft gespeichert', { customerId, source })
+  } catch (error) {
+    console.error('[pat-source] Herkunft speichern fehlgeschlagen (nicht fatal):', error)
+  }
 }
 
 async function getCustomerInfo(customerId: string): Promise<{
@@ -528,6 +576,7 @@ export async function handleStripeEvent(event: Stripe.Event) {
           await handleRaidMapCheckoutCompleted(session)
         } else {
           console.log('Checkout completed, customer and subscription events will follow')
+          await persistMentorshipSourceFromCheckout(session)
         }
         break
       }
