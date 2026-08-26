@@ -3,6 +3,7 @@ import 'server-only'
 
 import Stripe from 'stripe'
 import { prisma, withPrismaRetry } from './prisma'
+import { mentorshipSourceCustomFields } from './pat-source'
 
 declare global {
   var stripeClient: Stripe | undefined
@@ -623,6 +624,7 @@ export async function createCheckoutSession(userId: string, userEmail: string) {
       },
       success_url: `${baseUrl}/dashboard?success=true`,
       cancel_url: `${baseUrl}/dashboard?canceled=true`,
+      custom_fields: mentorshipSourceCustomFields(),
       metadata: {
         userId: userId,
       },
