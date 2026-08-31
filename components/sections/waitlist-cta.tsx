@@ -6,7 +6,7 @@ import { Vortex } from "@/components/ui/vortex"
 
 export default function WaitlistCTA() {
   return (
-    <section id="waitlist" className="py-20 px-4 md:px-6 bg-white">
+    <section id="join" className="py-20 px-4 md:px-6 bg-white">
       <div className="container mx-auto max-w-6xl">
         <div className="relative">
           <Card className="relative overflow-hidden bg-slate-900 text-white p-8 md:p-12">

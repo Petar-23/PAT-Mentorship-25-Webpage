@@ -16,7 +16,6 @@ export const MENTORSHIP_CONFIG = {
   maxSpots: 100,
   startDate: '2026-03-01T00:00:00+01:00',
   startDateFormatted: '01.03.2026',
-  startMonthYear: 'März 2026',
   enrollmentPhase: 'active' as MentorshipEnrollmentPhase,
   enrollmentLabel: 'Limitiert auf 100 Plätze • Einstieg jederzeit möglich',
   enrollmentLabelEn: 'Limited to 100 spots • Join anytime',
