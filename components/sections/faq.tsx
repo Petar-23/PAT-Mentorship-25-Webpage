@@ -1,14 +1,10 @@
-import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 
 const faqs = [
   {
     id: "item-1",
-    question: MENTORSHIP_IS_UPCOMING
-      ? `Warum startet das Programm im ${MENTORSHIP_CONFIG.startMonthYear}?`
-      : 'Kann ich noch in die Mentorship 2026 einsteigen?',
-    answer: MENTORSHIP_IS_UPCOMING
-      ? `Der Start am ${MENTORSHIP_CONFIG.startDateFormatted} ermöglicht es mir, alle Teilnehmer einzusammeln und sicherzustellen, dass alle gemeinsam beginnen, um von Tag eins an eine starke Community aufzubauen. Dies gibt dir auch die Zeit, deinen Platz zu sichern und dich auf das Programm vorzubereiten.`
-      : 'Ja. Nach der Freischaltung erhältst du direkten Zugang zum laufenden Programm, zu den bisherigen Aufzeichnungen und zur Community.',
+    question: 'Kann ich noch in die Mentorship 2026 einsteigen?',
+    answer: 'Ja. Einstieg in den laufenden Jahrgang jederzeit möglich. Nach der Freischaltung erhältst du direkten Zugang zum laufenden Programm, zu den bisherigen Aufzeichnungen und zur Community.',
   },
   {
     id: "item-2",
@@ -23,7 +19,7 @@ const faqs = [
   {
     id: "item-4",
     question: "Wann finden die Live Calls statt und was ist der Wochenplan?",
-    answer: "Die wöchentlichen Live Calls sind Dienstag um 15:00 Uhr und Donnerstag um 19:00 Uhr. Am Sonntag gibt es ein aufgezeichnetes Video zur Wochenvorbereitung. Zusätzlich gibt es am Dienstag und Donnerstag ein Daily Review (voraufgezeichnet), das jeweils vor 15:30 Uhr veröffentlicht wird. Alles ist als Aufzeichnung verfügbar, falls du live nicht kannst.",
+    answer: "Die wöchentlichen Live Calls sind Dienstag um 19:00 Uhr und Donnerstag um 19:00 Uhr (Europe/Berlin). Am Sonntagabend gibt es ein Weekly Recap. Zusätzlich gibt es am Dienstag und Donnerstag morgens gegen 08:00 Uhr ein Daily Review (voraufgezeichnet). Alles ist als Aufzeichnung verfügbar, falls du live nicht kannst.",
   },
   {
     id: "item-5",

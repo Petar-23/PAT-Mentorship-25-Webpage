@@ -1,6 +1,5 @@
 import Image from 'next/image'
-import { Countdown } from '@/components/ui/countdown'
-import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { HormoziLandingCtaButton } from '@/components/sections/hormozi-landing-cta-button'
 
 export default function HormoziLanding() {
@@ -36,7 +35,7 @@ export default function HormoziLanding() {
 
           <div className="mt-4 flex w-full flex-col items-center gap-3">
             <HormoziLandingCtaButton
-              buttonText="Einstieg starten"
+              buttonText="Jetzt einsteigen"
               className="h-14 w-full px-8 text-base sm:w-auto sm:text-lg"
             />
             <p className="text-xs text-slate-500">
@@ -168,24 +167,13 @@ export default function HormoziLanding() {
             Du bekommst {MENTORSHIP_CONFIG.sessionsPerWeek} Live‑Sessions pro Woche. Du kommst rein, indem du dich anmeldest.
           </p>
           <div className="mt-6 flex justify-center">
-            {MENTORSHIP_IS_UPCOMING ? (
-              <div className="max-w-sm">
-                <p className="text-[11px] text-slate-500">Anmeldung schließt in</p>
-                <Countdown
-                  targetDate={MENTORSHIP_CONFIG.startDate}
-                  variant="light"
-                  className="mt-2 scale-75 sm:scale-90 sm:[&>div]:flex-nowrap"
-                />
-              </div>
-            ) : (
-              <p className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-medium text-blue-700">
-                {MENTORSHIP_CONFIG.enrollmentLabel}
-              </p>
-            )}
+            <p className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-medium text-blue-700">
+              {MENTORSHIP_CONFIG.enrollmentLabel}
+            </p>
           </div>
           <div className="mt-7 space-y-3">
             <HormoziLandingCtaButton
-              buttonText="Einstieg starten"
+              buttonText="Jetzt einsteigen"
               className="h-14 w-full bg-blue-600 px-8 text-base text-white hover:bg-blue-700 sm:h-16 sm:w-auto sm:text-lg"
             />
             <p className="text-xs text-slate-500">

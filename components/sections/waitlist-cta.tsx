@@ -1,5 +1,5 @@
 'use client'
-import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Vortex } from "@/components/ui/vortex"
@@ -32,12 +32,10 @@ export default function WaitlistCTA() {
                     Ready to Transform Your Career?
                   </h2>
                   <p className="text-lg opacity-90 mb-6">
-                    {MENTORSHIP_IS_UPCOMING
-                      ? 'Join our waitlist today and be among the first to secure your spot in our 2026 Mentorship Program.'
-                      : 'Join the current 2026 Mentorship Program while places are still available.'}
+                    Join the current 2026 Mentorship Program anytime while places are still available.
                   </p>
                   <Button size="lg" variant="secondary" className="w-full sm:w-auto">
-                    {MENTORSHIP_IS_UPCOMING ? 'Join Waitlist Now' : 'Check Availability'}
+                    Join now
                   </Button>
                 </div>
                 <div className="space-y-6">
@@ -49,16 +47,16 @@ export default function WaitlistCTA() {
                   </div>
                   <div className="bg-black/10 backdrop-blur-sm rounded-lg p-4">
                     <p className="font-medium">
-                      🚀 {MENTORSHIP_IS_UPCOMING ? `Program starts ${MENTORSHIP_CONFIG.startMonthYear}` : MENTORSHIP_CONFIG.enrollmentLabelEn}
+                      🚀 {MENTORSHIP_CONFIG.enrollmentLabelEn}
                     </p>
                     <p className="text-sm opacity-90">
-                      {MENTORSHIP_IS_UPCOMING ? 'Early waitlist members get priority access' : 'Get access after your place is confirmed'}
+                      Get access after your place is confirmed
                     </p>
                   </div>
                   <div className="bg-black/10 backdrop-blur-sm rounded-lg p-4">
-                    <p className="font-medium">💎 {MENTORSHIP_IS_UPCOMING ? 'No payment until program starts' : 'Flexible monthly membership'}</p>
+                    <p className="font-medium">💎 Flexible monthly membership</p>
                     <p className="text-sm opacity-90">
-                      {MENTORSHIP_IS_UPCOMING ? 'Secure your spot now, pay when the program begins' : 'Monthly billing with the option to cancel'}
+                      Monthly billing with the option to cancel
                     </p>
                   </div>
                 </div>

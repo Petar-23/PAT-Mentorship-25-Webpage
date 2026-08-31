@@ -8,12 +8,11 @@ import { Medal as Award } from "@phosphor-icons/react/Medal"
 import { SealCheck as BadgeCheck } from "@phosphor-icons/react/SealCheck"
 import { Star } from "@phosphor-icons/react/Star"
 import { Users } from "@phosphor-icons/react/Users"
-import { Countdown } from "@/components/ui/countdown"
 import Image from "next/image"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { MentorshipEntryCta } from '@/components/sections/mentorship-entry-cta'
 import { HeroPill } from '@/components/ui/hero-pill'
-import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { getWhopReviewStats } from '@/lib/whop-review-stats'
 
 const GLSLHills = dynamic(
@@ -181,11 +180,7 @@ export default function Hero() {
                   size="sm"
                   className="whitespace-normal py-2 text-center leading-snug"
                   announcement="🚀"
-                  label={
-                    MENTORSHIP_IS_UPCOMING
-                      ? `Start ${MENTORSHIP_CONFIG.startDateFormatted}`
-                      : 'Einstieg möglich'
-                  }
+                  label={MENTORSHIP_CONFIG.enrollmentLabel}
                 />
               </div>
               
@@ -218,11 +213,7 @@ export default function Hero() {
                   variant="blue"
                   size="sm"
                   announcement="🚀"
-                  label={
-                    MENTORSHIP_IS_UPCOMING
-                      ? `Start am ${MENTORSHIP_CONFIG.startDateFormatted}`
-                      : MENTORSHIP_CONFIG.enrollmentLabel
-                  }
+                  label={MENTORSHIP_CONFIG.enrollmentLabel}
                 />
               </div>
               <h1 className="text-balance text-[2rem] font-bold leading-[1.08] text-gray-900 lg:hidden">
@@ -291,15 +282,6 @@ export default function Hero() {
                 </div>
               </div>
 
-              {MENTORSHIP_IS_UPCOMING ? (
-                <div className="pt-3 hidden lg:block text-left">
-                  <div className="inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-blue-50 ring-1 ring-blue-200 mb-3">
-                    <div className="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs sm:text-sm">⏰</div>
-                    <span className="text-xs sm:text-sm font-medium text-blue-700">Verbleibende Zeit zur Einschreibung</span>
-                  </div>
-                  <Countdown targetDate={MENTORSHIP_CONFIG.startDate} />
-                </div>
-              ) : null}
             </div>
 
             {/* Right Column - Visual Element */}
@@ -366,22 +348,9 @@ export default function Hero() {
                     size="sm"
                     className="w-full justify-center whitespace-normal py-2 text-center leading-snug"
                     announcement="🚀"
-                    label={
-                      MENTORSHIP_IS_UPCOMING
-                        ? `Start am ${MENTORSHIP_CONFIG.startDateFormatted}`
-                        : MENTORSHIP_CONFIG.enrollmentLabel
-                    }
+                    label={MENTORSHIP_CONFIG.enrollmentLabel}
                   />
                 </div>
-
-                {MENTORSHIP_IS_UPCOMING ? (
-                  <div className="mt-4 lg:hidden text-center">
-                    <p className="text-xs text-gray-700 mb-2">
-                      Verbleibende Zeit zur Einschreibung in die Warteliste
-                    </p>
-                    <Countdown targetDate={MENTORSHIP_CONFIG.startDate} />
-                  </div>
-                ) : null}
 
                 <div className="mt-2 flex flex-col items-center lg:grid lg:grid-cols-2 gap-3 lg:items-stretch">
                   <a

@@ -72,30 +72,30 @@ interface WeeklySession {
 const weeklySchedule: WeeklySession[] = [
   {
     day: "Dienstag",
-    time: "15:00 Uhr",
+    time: "19:00 Uhr",
     type: "Live Marktanalyse",
-    description: "Anwendung der Konzepte an der Live Price Action",
+    description: "Anwendung der Konzepte an der Live Price Action (Europe/Berlin)",
     gradientColor: "rgba(96, 165, 250, 0.2)" // Blue
   },
   {
     day: "Donnerstag",
     time: "19:00 Uhr",
     type: "Live Call (Training & Markt)",
-    description: "Neue Inhalte, gemeinsame Analyse und praktische Anwendung",
+    description: "Neue Inhalte, gemeinsame Analyse und praktische Anwendung (Europe/Berlin)",
     gradientColor: "rgba(167, 139, 250, 0.2)" // Purple
   },
   {
     day: "Sonntag",
-    time: "Video",
-    type: "Wochenvorbereitung (Aufzeichnung)",
-    description: "Planung der kommenden Woche und wichtiger Kontext",
+    time: "Abend",
+    type: "Weekly Recap",
+    description: "Wochenrückblick am Sonntagabend (Europe/Berlin)",
     gradientColor: "rgba(52, 211, 153, 0.2)" // Green
   },
   {
     day: "Di & Do",
-    time: "bis 15:30 Uhr",
+    time: "ca. 08:00 Uhr",
     type: "Daily Review (Aufzeichnung)",
-    description: "Voraufgezeichnetes Daily Review – Veröffentlichung vor 15:30",
+    description: "Voraufgezeichnetes Daily Review – Veröffentlichung morgens gegen 08:00",
     gradientColor: "rgba(244, 63, 94, 0.18)" // Rose
   }
 ];
@@ -195,7 +195,7 @@ export default function ProgramStructure() {
               ))}
             </div>
             <p className="mt-2 text-center text-gray-500 text-[10px] italic">
-              * Zeitplan kann je nach Marktbedingungen und Gruppenbedürfnissen angepasst werden
+              * Alle Zeiten in Europe/Berlin. Zeitplan kann je nach Marktbedingungen und Gruppenbedürfnissen angepasst werden
             </p>
           </div>
 
@@ -295,7 +295,7 @@ export default function ProgramStructure() {
             </div>
 
             <p className="mt-6 text-center text-gray-500 text-sm italic">
-              * Zeitplan kann je nach Marktbedingungen und Gruppenbedürfnissen angepasst werden
+              * Alle Zeiten in Europe/Berlin. Zeitplan kann je nach Marktbedingungen und Gruppenbedürfnissen angepasst werden
             </p>
           </div>
 
