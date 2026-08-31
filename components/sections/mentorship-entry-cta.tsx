@@ -17,7 +17,7 @@ type MentorshipEntryCtaProps = Pick<ButtonProps, 'size' | 'variant'> & {
 
 export function MentorshipEntryCta({
   className,
-  label = 'Einstieg starten',
+  label = 'Jetzt einsteigen',
   size = 'lg',
   source,
   variant = 'default',

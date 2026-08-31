@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
-import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 
 const FinalCTA = dynamic(() => import('@/components/sections/final-cta'), {
   ssr: false,
@@ -59,30 +59,17 @@ function FinalCtaFallback() {
             Bereit, ICT <span className="text-blue-400">live anzuwenden?</span>
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-pretty text-sm text-gray-300 sm:mt-6 sm:text-xl">
-            {MENTORSHIP_IS_UPCOMING
-              ? `Melde dich für den Start im ${MENTORSHIP_CONFIG.startMonthYear} an und sichere dir Zugang zu Live-Sessions, Aufzeichnungen und Community.`
-              : 'Steig in die laufende Mentorship ein und erhalte Zugang zu Live-Sessions, Aufzeichnungen und Community.'}
+            Steig in die laufende Mentorship ein und erhalte Zugang zu Live-Sessions, Aufzeichnungen und Community.
           </p>
         </div>
 
-        {MENTORSHIP_IS_UPCOMING ? (
-          <div className="mx-auto mb-12 grid max-w-md grid-cols-2 gap-2 text-center sm:grid-cols-4">
-            {['Tage', 'Std', 'Min', 'Sek'].map((label) => (
-              <div key={label} className="rounded-md border border-slate-700 bg-slate-900/80 px-4 py-3 text-slate-100">
-                <div className="text-xl font-bold">00</div>
-                <div className="text-xs uppercase tracking-wide text-slate-400">{label}</div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="mx-auto mb-12 w-fit rounded-full border border-blue-400/30 bg-blue-400/10 px-4 py-2 text-sm font-medium text-blue-200">
-            {MENTORSHIP_CONFIG.enrollmentLabel}
-          </p>
-        )}
+        <p className="mx-auto mb-12 w-fit rounded-full border border-blue-400/30 bg-blue-400/10 px-4 py-2 text-sm font-medium text-blue-200">
+          {MENTORSHIP_CONFIG.enrollmentLabel}
+        </p>
 
         <div className="text-center">
           <div className="inline-flex h-12 items-center justify-center rounded-md bg-white/90 px-6 text-sm font-medium text-slate-900 sm:h-14 sm:px-8 sm:text-lg">
-            Einstieg starten
+            Jetzt einsteigen
           </div>
           <p className="mt-4 sm:mt-6 text-xs sm:text-base text-gray-400">
             Kostenlos anmelden → Konditionen prüfen → sicher über Stripe buchen

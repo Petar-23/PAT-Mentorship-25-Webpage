@@ -5,9 +5,8 @@ import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 
 import { Clock } from "@phosphor-icons/react/Clock"
 import { Trophy } from "@phosphor-icons/react/Trophy"
 import { Users } from "@phosphor-icons/react/Users"
-import { Countdown } from "@/components/ui/countdown"
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { MentorshipEntryCta } from '@/components/sections/mentorship-entry-cta'
 
 const Vortex = dynamic(
@@ -129,24 +128,13 @@ export default function FinalCTA() {
                             Bereit, ICT <span className="text-blue-400">live anzuwenden?</span>
                         </h2>
                         <p className="mx-auto mt-4 max-w-2xl text-pretty text-sm text-gray-300 sm:mt-6 sm:text-xl">
-                            {MENTORSHIP_IS_UPCOMING
-                                ? `Melde dich für den Start im ${MENTORSHIP_CONFIG.startMonthYear} an und sichere dir Zugang zu Live-Sessions, Aufzeichnungen und Community.`
-                                : 'Steig in die laufende Mentorship ein und erhalte Zugang zu Live-Sessions, Aufzeichnungen und Community.'}
+                            Steig in die laufende Mentorship ein und erhalte Zugang zu Live-Sessions, Aufzeichnungen und Community.
                         </p>
                     </div>
                     <div className="mt-6 sm:mt-8 flex justify-center">
-                        {MENTORSHIP_IS_UPCOMING ? (
-                            <div className="max-w-md w-full">
-                                <p className="text-xs sm:text-sm text-gray-200 mb-2 sm:mb-3">
-                                    Verbleibende Zeit zur Anmeldung in die Warteliste
-                                </p>
-                                <Countdown targetDate={MENTORSHIP_CONFIG.startDate} variant="dark" />
-                            </div>
-                        ) : (
-                            <p className="rounded-full border border-blue-400/30 bg-blue-400/10 px-4 py-2 text-sm font-medium text-blue-200">
-                                {MENTORSHIP_CONFIG.enrollmentLabel}
-                            </p>
-                        )}
+                        <p className="rounded-full border border-blue-400/30 bg-blue-400/10 px-4 py-2 text-sm font-medium text-blue-200">
+                            {MENTORSHIP_CONFIG.enrollmentLabel}
+                        </p>
                     </div>
                 </div>
 
@@ -161,9 +149,7 @@ export default function FinalCTA() {
                         {
                             icon: <Clock className="h-8 w-8 text-purple-400 mb-4" />,
                             title: "Flexibler Einstieg",
-                            description: MENTORSHIP_IS_UPCOMING
-                                ? `Start im ${MENTORSHIP_CONFIG.startMonthYear}; kündbar mit 1 Tag Frist zum Monatsende.`
-                                : "Der laufende Jahrgang ist offen und mit 1 Tag Frist zum Monatsende kündbar.",
+                            description: "Der laufende Jahrgang ist offen und mit 1 Tag Frist zum Monatsende kündbar.",
                             glowColor: "#A78BFA" // purple-400
                         },
                         {

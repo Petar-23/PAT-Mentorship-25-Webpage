@@ -1,4 +1,4 @@
-import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { Check } from "@phosphor-icons/react/dist/ssr/Check"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MentorshipEntryCta } from '@/components/sections/mentorship-entry-cta'
@@ -29,7 +29,7 @@ export default function Pricing() {
           
           <div className="absolute top-0 right-0 mr-6 -mt-4">
             <span className="inline-flex items-center rounded-full bg-blue-50 px-4 py-1 text-sm font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-              {MENTORSHIP_IS_UPCOMING ? 'Warteliste geöffnet' : 'Laufender Jahrgang'}
+              Einstieg jederzeit möglich
             </span>
           </div>
           

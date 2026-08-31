@@ -4,7 +4,7 @@
 import { Card } from "@/components/ui/card"
 import { VortexBackground } from "@/components/ui/vortex-wrapper"
 import { MentorshipEntryCta } from '@/components/sections/mentorship-entry-cta'
-import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
+import { MENTORSHIP_CONFIG } from '@/lib/config'
 
 export default function CTASection() {
   return (
@@ -20,9 +20,7 @@ export default function CTASection() {
                   Bereit dein Trading zu transformieren?
                 </h2>
                 <p className="text-base sm:text-lg opacity-90 mb-6">
-                  {MENTORSHIP_IS_UPCOMING
-                    ? 'Trete jetzt der Warteliste bei und sichere dir als einer der Ersten deinen Platz im Mentorship Programm 2026.'
-                    : 'Steige in die laufende Mentorship 2026 ein und prüfe alle Konditionen vor der Buchung.'}
+                  Steige in die laufende Mentorship 2026 ein und prüfe alle Konditionen vor der Buchung.
                 </p>
                 <MentorshipEntryCta
                   source="section_cta"
@@ -42,7 +40,7 @@ export default function CTASection() {
                 </div>
                 <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/10">
                   <p className="text-sm sm:text-base font-medium">
-                    🚀 {MENTORSHIP_IS_UPCOMING ? `Start im ${MENTORSHIP_CONFIG.startMonthYear}` : MENTORSHIP_CONFIG.enrollmentLabel}
+                    🚀 {MENTORSHIP_CONFIG.enrollmentLabel}
                   </p>
                   <p className="text-xs sm:text-sm opacity-90">
                     Der Einstieg in den laufenden Jahrgang ist aktuell möglich.
@@ -50,12 +48,10 @@ export default function CTASection() {
                 </div>
                 <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/10">
                   <p className="text-sm sm:text-base font-medium">
-                    💎 {MENTORSHIP_IS_UPCOMING ? 'Kostenlose Reservierung' : 'Flexibles Monatsabo'}
+                    💎 Flexibles Monatsabo
                   </p>
                   <p className="text-xs sm:text-sm opacity-90">
-                    {MENTORSHIP_IS_UPCOMING
-                      ? `Dein Zahlungsmittel wird erst beim Start der Mentorship mit ${MENTORSHIP_CONFIG.price}€/Monat (inkl. MwSt.) belastet. Kündbar mit 1 Tag Frist zum Monatsende.`
-                      : `${MENTORSHIP_CONFIG.price}€/Monat (inkl. MwSt.). Kündbar mit 1 Tag Frist zum Monatsende.`}
+                    {`${MENTORSHIP_CONFIG.price}€/Monat (inkl. MwSt.). Kündbar mit 1 Tag Frist zum Monatsende.`}
                   </p>
                 </div>
               </div>
