@@ -47,6 +47,7 @@ Options:
   --base-url <url>                      Defaults to PAT_UPLOAD_BASE_URL or production.
   --token <token>                       Defaults to PAT_UPLOAD_TOKEN or AGENT_UPLOAD_TOKEN.
   --prepare-only                        Create/resolve platform target, but do not upload.
+  --announce                            Queue one member-channel post after verified 1080p readiness.
   --dry-run                             Resolve names only; creates nothing.
   --force-upload                        Upload even if idempotency says it was uploaded already.
 
@@ -61,6 +62,10 @@ export function parseArgs(argv) {
   const args = {}
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
+    if (arg === '--announce') {
+      args.announce = true
+      continue
+    }
     if (arg === '--help' || arg === '-h') {
       args.help = true
       continue
@@ -311,6 +316,14 @@ async function main() {
   if (pdfPath) {
     const pdf = await uploadPdf(baseUrl, token, pdfPath, prepared.video.id)
     console.log(JSON.stringify({ pdf }, null, 2))
+  }
+  if (args.announce) {
+    const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/discord/video-announcement`, {
+      method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoId: prepared.video.id }),
+    })
+    if (!response.ok) throw new Error(`Announcement queue request failed (${response.status}); upload is preserved. Retry with the same file and --announce.`)
+    console.log(JSON.stringify({ announcement: await response.json() }, null, 2))
   }
 }
 
