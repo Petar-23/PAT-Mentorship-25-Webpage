@@ -150,47 +150,6 @@ export async function generateTusSignature(
   }
 }
 
-export async function listVideos(page = 1): Promise<BunnyVideoList> {
-  const { baseUrl, headers } = getBunnyConfig()
-  const res = await fetchWithTimeout(
-    `${baseUrl}/video?page=${page}`,
-    { headers },
-    BUNNY_API_TIMEOUT_MS,
-    'Bunny list videos'
-  )
-  if (!res.ok) throw new Error(`List videos failed: ${await res.text()}`)
-  return await res.json() as BunnyVideoList
-}
-
-export async function listCollections(): Promise<BunnyVideoList> {
-  const { baseUrl, headers } = getBunnyConfig()
-  const res = await fetchWithTimeout(
-    `${baseUrl}/collection`,
-    { headers },
-    BUNNY_API_TIMEOUT_MS,
-    'Bunny list collections'
-  )
-  if (!res.ok) throw new Error(`List collections failed: ${await res.text()}`)
-  return await res.json() as BunnyVideoList
-}
-
-export async function createCollection(name: string): Promise<{ guid: string }> {
-  const { baseUrl, headers } = getBunnyConfig()
-  const res = await fetchWithTimeout(
-    `${baseUrl}/collection`,
-    {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ name }),
-    },
-    BUNNY_API_TIMEOUT_MS,
-    'Bunny create collection'
-  )
-  if (!res.ok) throw new Error(`Create collection failed: ${await res.text()}`)
-  const data = await res.json()
-  return { guid: data.guid }
-}
-
 export async function deleteVideo(videoGuid: string): Promise<void> {
   const { baseUrl, headers } = getBunnyConfig()
   const res = await fetchWithTimeout(
