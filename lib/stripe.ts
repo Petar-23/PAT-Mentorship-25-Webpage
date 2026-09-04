@@ -638,22 +638,6 @@ export async function createCheckoutSession(userId: string, userEmail: string) {
   }
 }
 
-export async function getSubscriptionDetails(
-  userId: string, 
-  options = { 
-    retryCount: 3,
-    checkForRecentCheckout: false 
-  }
-) {
-  const snapshot = await getSubscriptionSnapshot(userId, {
-    retryCount: options.retryCount,
-    checkForRecentCheckout: options.checkForRecentCheckout,
-  })
-
-  // Wir behalten das bisherige Verhalten: null wenn keine Subscription-Historie existiert.
-  return snapshot.subscriptionDetails
-}
-
 // ---------------------------------------------------------------------------
 // PAT Raid Map (TradingView-Indikator, Einzelprodukt) — eigener Checkout.
 // Price-IDs kommen ausschliesslich aus Env-Vars (siehe docs/RAIDMAP_STRIPE_SETUP.md):
