@@ -31,9 +31,9 @@ type MemberIndicatorFilter = 'all' | 'claimable' | 'active' | 'queued' | 'needsA
 
 const MEMBER_FILTERS: Array<{ value: MemberIndicatorFilter; label: string }> = [
   { value: 'all', label: 'Alle' },
-  { value: 'claimable', label: 'Claimbar' },
+  { value: 'claimable', label: 'Verfügbar' },
   { value: 'active', label: 'Aktiv' },
-  { value: 'queued', label: 'In Queue' },
+  { value: 'queued', label: 'In Bearbeitung' },
   { value: 'needsAction', label: 'Prüfen' },
 ]
 
@@ -62,14 +62,9 @@ function matchesMemberFilter(
 function AvailabilityPill({ claimable }: { claimable: boolean }) {
   return (
     <span
-      className={cn(
-        'inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium',
-        claimable
-          ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-          : 'border-amber-200 bg-amber-50 text-amber-800'
-      )}
+      className="m-status-success inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium"
     >
-      {claimable ? 'Claimbar' : 'In Vorbereitung'}
+      {claimable ? 'Verfügbar' : 'In Vorbereitung'}
     </span>
   )
 }
@@ -141,12 +136,12 @@ export function IndicatorMemberBoard({ packages, claims, tradingViewAccount }: P
   }
 
   return (
-    <div className="space-y-6">
+    <div className="m-indicators">
       <Card>
         <CardHeader>
           <CardTitle className="text-balance">TradingView Account</CardTitle>
           <CardDescription className="text-pretty">
-            Dein Benutzername wird beim ersten Claim fest mit deinem Member-Account verbunden.
+            Dein Benutzername wird bei der ersten Aktivierung fest mit deinem Member-Account verbunden.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -163,7 +158,7 @@ export function IndicatorMemberBoard({ packages, claims, tradingViewAccount }: P
             </div>
 
             {lockedUsername ? (
-              <div className="inline-flex h-10 items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 text-sm text-emerald-800">
+              <div className="m-status-success inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm">
                 <CheckCircle className="h-4 w-4" />
                 @{lockedUsername}
               </div>
@@ -174,7 +169,7 @@ export function IndicatorMemberBoard({ packages, claims, tradingViewAccount }: P
             <div
               className={cn(
                 'flex items-start gap-2 rounded-md border px-3 py-2 text-sm',
-                result.ok ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-red-200 bg-red-50 text-red-900'
+                result.ok ? 'm-status-success' : 'm-status-error'
               )}
             >
               {result.ok ? <CheckCircle className="mt-0.5 h-4 w-4 shrink-0" /> : <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" />}
@@ -189,14 +184,14 @@ export function IndicatorMemberBoard({ packages, claims, tradingViewAccount }: P
           <CardHeader>
             <CardTitle>Noch keine Indikatoren</CardTitle>
             <CardDescription>
-              Sobald Indikatoren freigegeben wurden, erscheinen sie hier zum Claim.
+              Sobald Indikatoren freigegeben wurden, kannst du sie hier aktivieren.
             </CardDescription>
           </CardHeader>
         </Card>
       ) : (
         <>
-          <Card>
-            <CardContent className="space-y-4 p-4">
+          <div className="m-indicator-filters">
+            <div className="space-y-4">
               <div className="grid gap-3 lg:grid-cols-[1fr_240px]">
                 <div className="space-y-2">
                   <Label htmlFor="indicator-search">Indikator suchen</Label>
@@ -229,6 +224,7 @@ export function IndicatorMemberBoard({ packages, claims, tradingViewAccount }: P
               <div className="flex flex-wrap items-center gap-2">
                 {MEMBER_FILTERS.map((filter) => (
                   <Button
+                    aria-pressed={statusFilter === filter.value}
                     key={filter.value}
                     type="button"
                     size="sm"
@@ -238,12 +234,12 @@ export function IndicatorMemberBoard({ packages, claims, tradingViewAccount }: P
                     {filter.label}
                   </Button>
                 ))}
-                <span className="ml-auto text-xs text-muted-foreground">
+                <span aria-live="polite" className="ml-auto text-xs text-muted-foreground">
                   {filteredIndicatorCount}/{totalIndicators}
                 </span>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {!hasFilteredIndicators ? (
             <Card>
@@ -278,9 +274,9 @@ export function IndicatorMemberBoard({ packages, claims, tradingViewAccount }: P
                       : claimState?.status === 'processing'
                         ? 'Wird aktiviert'
                         : claimState?.status === 'pending'
-                          ? 'In Queue'
+                          ? 'In Bearbeitung'
                           : claimState?.status === 'needs_session'
-                            ? 'Session wird aktualisiert'
+                            ? 'Verbindung wird vorbereitet'
                             : isBusy
                               ? 'Wird gespeichert...'
                               : !claimable
@@ -289,7 +285,7 @@ export function IndicatorMemberBoard({ packages, claims, tradingViewAccount }: P
                                   ? 'TradingView Namen eintragen'
                                   : claimState?.status === 'failed'
                                     ? 'Erneut versuchen'
-                                    : 'Indikator claimen'
+                                    : 'Indikator aktivieren'
 
                   return (
                     <Card key={indicator.id} className="overflow-hidden">

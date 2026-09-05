@@ -6,7 +6,6 @@ import { Sidebar } from '@/components/Sidebar'
 import { ModulDetailClient } from '@/components/modul-detail-client'
 import { ModuleGridClient } from '@/components/module-grid-client'
 import { getIsAdmin } from '@/lib/authz'
-import { MobileCoursesDrawer } from '@/components/mobile-courses-drawer'
 import { auth } from '@clerk/nextjs/server'
 import { getSidebarData } from '@/lib/sidebar-data'
 
@@ -145,7 +144,7 @@ export default async function DynamicCoursePage({ params }: Props) {
 
     return (
       <div className="flex h-full min-h-0 bg-background">
-        <div className="hidden lg:block">
+        <div className={isAdmin ? "hidden lg:block" : "hidden xl:block"}>
           <Sidebar
             kurse={kurseForSidebar}
             pages={pagesForSidebar}
@@ -155,7 +154,7 @@ export default async function DynamicCoursePage({ params }: Props) {
           />
         </div>
 
-        <div className="flex-1 p-4 sm:p-6 lg:p-8 pb-[calc(1.5rem+env(safe-area-inset-bottom))] lg:pb-8">
+        <div className="m-page-scroll">
 
         <div className="flex flex-wrap gap-6 sm:gap-8 items-start">  {/* Neuer Flex-Wrapper: Module links breit, + rechts kompakt */}
             {/* 1. Alle Module: volle Breite */}
@@ -165,16 +164,6 @@ export default async function DynamicCoursePage({ params }: Props) {
               playlistName={kurs.name}
               isAdmin={isAdmin}
               initialProgressByModuleId={!isAdmin && userId ? progressByModuleId : undefined}
-              mobileCoursesDrawer={
-                <MobileCoursesDrawer
-                  variant="icon"
-                  kurse={kurseForSidebar}
-                  pages={pagesForSidebar}
-                  savedSidebarOrder={savedSidebarOrder}
-                  activeCourseId={kurs.id}
-                  isAdmin={isAdmin}
-                />
-              }
             />
             
           </div>
@@ -245,7 +234,7 @@ export default async function DynamicCoursePage({ params }: Props) {
 
   return (
     <div className="flex h-full min-h-0 bg-background">
-      <div className="hidden lg:block">
+      <div className={isAdmin ? "hidden lg:block" : "hidden xl:block"}>
         <Sidebar
           kurse={kurseForSidebar}
           pages={pagesForSidebar}
@@ -259,11 +248,6 @@ export default async function DynamicCoursePage({ params }: Props) {
         initialVideoId={initialVideoId}
         initialWatchedVideoIds={initialWatchedVideoIds}
         isAdmin={isAdmin}
-        sidebar={{
-          kurse: kurseForSidebar,
-          savedSidebarOrder,
-          activeCourseId: modul.playlist?.id ?? null,
-        }}
       />
     </div>
   )

@@ -100,6 +100,7 @@ export function VideoPlayer({
   autoPlay = false,
 }: Props) {
   const { toast } = useToast()
+  const VideoHeading = onBack ? 'h1' : 'h2'
 
   const [isEditing, setIsEditing] = useState(false)
   const [tempTitle, setTempTitle] = useState('')
@@ -651,14 +652,14 @@ export function VideoPlayer({
         />
       ) : null}
 
-      <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 flex flex-col max-w-7xl">
+      <div className="m-video-player flex flex-col">
       {/* Header (wie Middle-Sidebar): Back + Chapter + Video Titel */}
-      <div className="mb-6 sm:mb-8 flex items-start gap-3">
+      <div className="m-video-heading flex items-start gap-3">
         {onBack ? (
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 p-0 hover:bg-gray-300"
+            className="m-icon-button"
             onClick={onBack}
             aria-label="Zurück zur Inhaltsübersicht"
           >
@@ -698,9 +699,9 @@ export function VideoPlayer({
                 ].join(' ')}
                 onClick={isAdmin && activeVideo ? startEdit : undefined}
               >
-                <h2 className="text-2xl sm:text-3xl font-bold leading-tight">
+                <VideoHeading className="text-2xl sm:text-3xl font-bold leading-tight">
                   {activeVideo ? activeVideo.title : 'Wähle ein Video aus'}
-                </h2>
+                </VideoHeading>
               </div>
             )}
           </div>
@@ -735,6 +736,7 @@ export function VideoPlayer({
                 isEmbedRequested && iframeSrc ? (
                   <>
                     <iframe
+                          title={activeVideo?.title ?? 'Lektionsvideo'}
                       src={iframeSrc}
                       className={[
                         'w-full h-full absolute inset-0 transition-opacity duration-300',
@@ -811,6 +813,7 @@ export function VideoPlayer({
                     {isEmbedRequested && iframeSrc ? (
                       <>
                         <iframe
+                          title={activeVideo?.title ?? 'Lektionsvideo'}
                           src={iframeSrc}
                           className={[
                             'w-full h-full absolute inset-0 transition-opacity duration-300',
@@ -841,6 +844,7 @@ export function VideoPlayer({
               isEmbedRequested && iframeSrc ? (
                 <>
                   <iframe
+                          title={activeVideo?.title ?? 'Lektionsvideo'}
                     ref={iframeRef}
                     src={iframeSrc}
                     className={[
@@ -885,7 +889,7 @@ export function VideoPlayer({
         </div>
 
         {!isAdmin && activeVideo?.bunnyGuid ? (
-          <div className="mt-3 flex self-center rounded-full bg-neutral-950/95 p-2 shadow-lg ring-1 ring-white/10 sm:hidden">
+          <div className="m-playback-controls">
             <Button
               type="button"
               variant="secondary"
@@ -925,8 +929,8 @@ export function VideoPlayer({
         ) : null}
 
                 {/* File attachments und Delete video in einer Zeile */}
-                <div className="mt-8 sm:mt-10 lg:mt-12">
-          <p className="text-sm font-medium text-foreground mb-3">PDF Anhänge:</p>
+                <div className="m-lesson-actions">
+          {isAdmin || activeVideo?.pdfUrl ? <p className="m-attachment-label">Unterlagen zur Lektion</p> : null}
 
           <div className="flex items-center justify-between flex-wrap gap-4 sm:gap-6">
             <div className="flex flex-wrap items-center gap-4">
@@ -940,7 +944,7 @@ export function VideoPlayer({
 
               {/* Vorhandene PDF als Chip */}
               {activeVideo?.pdfUrl && (
-                <div className="flex items-center gap-2 bg-secondary/60 rounded-full px-4 py-2">
+                <div className="m-attachment">
                   <FileText className="h-5 w-5 text-muted-foreground" />
                   <a
                     href={activeVideo.pdfUrl}
@@ -971,9 +975,11 @@ export function VideoPlayer({
                 Delete video
               </Button>
             ) : !isAdmin && activeVideo ? (
-              <div className="w-full sm:w-auto grid grid-cols-2 gap-2 sm:flex sm:gap-3">
+              <div className="w-full flex flex-wrap gap-3 [&>button]:flex-1">
                 <Button
-                  variant={activeVideoWatched ? 'outline' : 'default'}
+                  variant={activeVideoWatched ? 'secondary' : 'outline'}
+                  aria-pressed={activeVideoWatched}
+                  aria-label={activeVideoWatched ? 'Als nicht abgeschlossen markieren' : 'Als abgeschlossen markieren'}
                   onClick={async () => {
                     if (!activeVideo) return
                     if (isSavingWatched) return
@@ -995,17 +1001,17 @@ export function VideoPlayer({
                   className="w-full"
                 >
                   <Check className="mr-2 h-4 w-4" />
-                  {activeVideoWatched ? 'Nicht angesehen' : 'Angesehen?'}
+                  {isSavingWatched ? 'Wird gespeichert…' : activeVideoWatched ? 'Abgeschlossen' : 'Abschließen'}
                 </Button>
 
                 <Button
                   variant="default"
                   onClick={onNextVideo}
                   disabled={!onNextVideo || nextVideoDisabled}
-                  className="w-full bg-blue-700"
+                  className="w-full"
                 >
                   <ArrowRight className="mr-2 h-4 w-4" />
-                  Nächstes Video
+                  Nächste Lektion
                 </Button>
               </div>
             ) : null}

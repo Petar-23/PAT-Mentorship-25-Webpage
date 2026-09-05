@@ -49,26 +49,11 @@ type Modul = {
   playlist?: Playlist | null
 }
 
-type SidebarKurs = {
-  id: string
-  name: string
-  slug: string
-  modulesLength: number
-  description?: string | null
-  iconUrl?: string | null
-}
-
 type Props = {
   modul: Modul
   initialVideoId?: string | null
   initialWatchedVideoIds?: string[]
   isAdmin: boolean
-  sidebar: {
-    kurse: SidebarKurs[]
-    savedSidebarOrder?: string[] | null
-    activeCourseId?: string | null
-    openCreateCourseModal?: boolean
-  }
 }
 
 
@@ -79,7 +64,7 @@ const MiddleSidebar = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full lg:w-96 h-full min-h-0 border-r border-border bg-background p-4 sm:p-6 lg:p-8">
+      <div className="w-full lg:w-[300px] h-full min-h-0 border-r border-border bg-background p-4 sm:p-6 lg:p-8">
         <div className="space-y-4">
           <div className={`${skeletonBase} h-6 w-32`} />
           <div className="space-y-3">
@@ -101,7 +86,6 @@ export function ModulDetailClient({
   initialVideoId = null,
   initialWatchedVideoIds,
   isAdmin,
-  sidebar,
 }: Props) {
   const { toast } = useToast()
   const searchParams = useSearchParams()
@@ -112,7 +96,7 @@ export function ModulDetailClient({
   const [activeVideoId, setActiveVideoId] = useState<string | null>(initialVideoId)
   const [watchedVideoIds, setWatchedVideoIds] = useState<string[]>(initialWatchedVideoIds ?? [])
   const [mobileView, setMobileView] = useState<'player' | 'content'>(() =>
-    view === 'content' ? 'content' : 'player'
+    view === 'content' || (view !== 'player' && !videoParam) ? 'content' : 'player'
   )
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const lastViewedSentRef = useRef<string | null>(null)
@@ -184,8 +168,8 @@ export function ModulDetailClient({
 
   // URL → State sync (z.B. wenn User direkt /...?view=content öffnet)
   useEffect(() => {
-    if (view === 'content') setMobileView('content')
-  }, [view])
+    setMobileView(view === 'content' || (view !== 'player' && !videoParam) ? 'content' : 'player')
+  }, [view, videoParam, modul.id])
 
   // "Zuletzt angesehen" speichern (für /mentorship Dashboard → Weiterlernen)
   useEffect(() => {
@@ -702,7 +686,7 @@ export function ModulDetailClient({
   }
 
   return (
-    <div className="flex-1 flex min-w-0">
+    <div className="m-lesson-workspace">
       {/* Desktop: MiddleSidebar dauerhaft sichtbar */}
       {isDesktop ? (
         <MiddleSidebar
@@ -744,7 +728,7 @@ export function ModulDetailClient({
         />
       ) : (
         // Platzhalter nur für Desktop vor der ersten MediaQuery-Auswertung (verhindert Layout-Jump)
-        <div className="hidden lg:flex w-96 h-full min-h-0 border-r border-border bg-background p-4 sm:p-6 lg:p-8">
+        <div className="hidden lg:flex w-[300px] h-full min-h-0 border-r border-border bg-background p-4 sm:p-6 lg:p-8">
           <div className="w-full space-y-4">
             <div className={`${skeletonBase} h-6 w-32`} />
             <div className="space-y-3">
@@ -760,9 +744,8 @@ export function ModulDetailClient({
       )}
 
       {/* Video + Mobile Controls */}
-      <div className="flex-1 min-w-0 flex flex-col">
-        {/* Platz unten, damit die Mobile Bottom-Bar nichts verdeckt */}
-        <div className="pb-[calc(7rem+env(safe-area-inset-bottom))] lg:pb-0">
+      <div className="m-player-scroll">
+        <div className="min-h-0">
           <VideoPlayer
             activeVideo={activeVideo || null}
             activeChapterName={activeChapter?.name || null}

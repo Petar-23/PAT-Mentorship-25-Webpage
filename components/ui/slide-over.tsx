@@ -48,14 +48,15 @@ const slideOverContentVariants = cva(
 type SlideOverContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> &
   VariantProps<typeof slideOverContentVariants> & {
     title?: string
+    overlayClassName?: string
   }
 
 const SlideOverContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   SlideOverContentProps
->(({ side, title = "Dialog", className, children, ...props }, ref) => (
+>(({ side, title = "Dialog", overlayClassName, className, children, ...props }, ref) => (
   <SlideOverPortal>
-    <SlideOverOverlay />
+    <SlideOverOverlay className={overlayClassName} />
     <DialogPrimitive.Content
       ref={ref}
       className={cn(slideOverContentVariants({ side }), className)}
@@ -72,5 +73,4 @@ const SlideOverContent = React.forwardRef<
 SlideOverContent.displayName = DialogPrimitive.Content.displayName
 
 export { SlideOver, SlideOverTrigger, SlideOverClose, SlideOverPortal, SlideOverOverlay, SlideOverContent }
-
 

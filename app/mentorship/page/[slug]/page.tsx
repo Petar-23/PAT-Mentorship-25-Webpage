@@ -9,7 +9,6 @@ import { notFound } from 'next/navigation'
 import { Sidebar } from '@/components/Sidebar'
 import { getIsAdmin } from '@/lib/authz'
 import { getSidebarData } from '@/lib/sidebar-data'
-import { MobileCoursesDrawer } from '@/components/mobile-courses-drawer'
 import { PageEditorLoader } from '@/components/page-editor-loader'
 import { PageViewer } from '@/components/page-viewer'
 
@@ -54,7 +53,7 @@ export default async function PageSlugRoute({ params }: Props) {
 
   return (
     <div className="flex h-full min-h-0 bg-background">
-      <div className="hidden lg:block">
+      <div className={isAdmin ? "hidden lg:block" : "hidden xl:block"}>
         <Sidebar
           kurse={kurseForSidebar}
           pages={pagesForSidebar}
@@ -64,15 +63,6 @@ export default async function PageSlugRoute({ params }: Props) {
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="lg:hidden p-4">
-          <MobileCoursesDrawer
-            variant="icon"
-            kurse={kurseForSidebar}
-            savedSidebarOrder={savedSidebarOrder}
-            isAdmin={isAdmin}
-          />
-        </div>
-
         {isAdmin ? (
           <PageEditorLoader page={pageData} />
         ) : (

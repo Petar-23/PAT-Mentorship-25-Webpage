@@ -2,11 +2,11 @@ import { cn } from '@/lib/utils'
 import type { IndicatorClaimStatus } from '@/lib/indicators/types'
 
 const STATUS_LABELS: Record<IndicatorClaimStatus, string> = {
-  pending: 'In Queue',
+  pending: 'In Bearbeitung',
   processing: 'Wird aktiviert',
   granted: 'Aktiv',
   failed: 'Fehler',
-  needs_session: 'Session nötig',
+  needs_session: 'Wartet auf Verbindung',
   revoked: 'Zurückgesetzt',
 }
 
@@ -19,6 +19,7 @@ export function IndicatorStatusPill({
 }) {
   return (
     <span
+      data-indicator-status={status}
       className={cn(
         'inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium',
         status === 'granted' && 'border-emerald-200 bg-emerald-50 text-emerald-800',

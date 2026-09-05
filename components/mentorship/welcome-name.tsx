@@ -23,11 +23,7 @@ export function MentorshipWelcomeName() {
     )
   }, [isLoaded, user?.firstName, user?.fullName, user?.username])
 
-  if (!firstName) return null
+  if (!firstName) return <span>.</span>
 
-  return <span>, {firstName}!</span>
+  return <span>, {firstName}.</span>
 }
-
-
-
-

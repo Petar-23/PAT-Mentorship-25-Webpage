@@ -14,7 +14,7 @@ export default function MentorshipModulLoading() {
 
   return (
     <div className="flex h-full min-h-0 bg-background">
-      <div className="hidden lg:block">
+      <div className="hidden xl:block">
         <MentorshipSidebarSkeleton />
       </div>
       {showContent ? <MentorshipMiddleSidebarSkeleton /> : <MentorshipModulDetailSkeleton />}

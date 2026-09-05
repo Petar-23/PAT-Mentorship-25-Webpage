@@ -270,11 +270,6 @@ export default async function DynamicCoursePage({ params }: Props) {
         initialVideoId={initialVideoId}
         initialWatchedVideoIds={initialWatchedVideoIds}
         isAdmin={isAdmin}
-        sidebar={{
-          kurse: kurseForSidebar,
-          savedSidebarOrder,
-          activeCourseId: modul.playlist?.id ?? null,
-        }}
       />
     </div>
   )

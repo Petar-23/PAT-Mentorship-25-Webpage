@@ -1,15 +1,14 @@
 'use client'
 
-import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Progress } from '@/components/ui/progress'
 import { ArrowLeft } from '@phosphor-icons/react/ArrowLeft'
-import { CaretDown as ChevronDown } from '@phosphor-icons/react/CaretDown'
 import { CaretRight as ChevronRight } from '@phosphor-icons/react/CaretRight'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { VideoThumbnail } from '@/components/mentorship/video-thumbnail'
+import { Play } from '@phosphor-icons/react/Play'
+import { Check } from '@phosphor-icons/react/Check'
 
 type Video = {
   id: string
@@ -75,52 +74,6 @@ function formatDuration(seconds: number | null | undefined) {
   return `${s}s`
 }
 
-function VideoRow({
-  video,
-  isActive,
-  onClick,
-  durationText,
-  isWatched,
-  tabIndex,
-}: {
-  video: Video
-  isActive: boolean
-  onClick: () => void
-  durationText: string
-  isWatched: boolean
-  tabIndex?: number
-}) {
-  return (
-    <button
-      type="button"
-      className={[
-        'w-full p-2 flex items-center space-x-2 cursor-pointer text-left transition-colors rounded-md border border-l-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-        isActive
-          ? 'bg-gray-100 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 border-l-gray-400 dark:border-l-gray-400'
-          : 'border-transparent border-l-transparent hover:bg-gray-100 dark:hover:bg-gray-800/40',
-      ].join(' ')}
-      onClick={onClick}
-      aria-current={isActive ? 'true' : undefined}
-      tabIndex={tabIndex}
-    >
-      <VideoThumbnail
-        bunnyGuid={video.bunnyGuid}
-        thumbnailUrl={video.thumbnailUrl}
-        title={video.title}
-        isWatched={isWatched}
-        updatedAt={video.updatedAt ?? null}
-      />
-
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium leading-snug overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
-          {video.title}
-        </p>
-        <p className="text-xs text-muted-foreground">{durationText}</p>
-      </div>
-    </button>
-  )
-}
-
 export function MiddleSidebarUser({
   modul,
   courseTitle,
@@ -170,125 +123,43 @@ export function MiddleSidebarUser({
     })
   }
 
-  const getDurationText = (video: Video) => {
-    return formatDuration(video.duration ?? null)
-  }
-
   return (
-    <div className="w-full lg:w-96 border-r border-border bg-background p-4 sm:p-6 lg:p-8 flex flex-col h-full min-h-0">
-      <div className="mb-6 sm:mb-8 flex items-start gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 p-0 hover:bg-gray-300"
-          onClick={() => {
-            if (courseId) {
-              router.push(`/mentorship/${courseId}`)
-              return
-            }
-            router.back()
-          }}
-          aria-label="Zurück zur Modulübersicht"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-
-        <div className="min-w-0 flex-1">
-          {courseTitle ? <p className="text-xs text-muted-foreground truncate">{courseTitle}</p> : null}
-          <h1 className="text-2xl sm:text-3xl font-bold leading-tight truncate">{modul.name}</h1>
+    <div className="m-lesson-outline">
+      <div className="m-outline-header">
+        <Button variant="ghost" size="icon" className="m-icon-button"
+          onClick={() => courseId ? router.push(`/mentorship/${courseId}`) : router.back()}
+          aria-label="Zurück zur Modulübersicht"><ArrowLeft aria-hidden="true" /></Button>
+        <div>
+          {courseTitle ? <p>{courseTitle}</p> : null}
+          <h1>{modul.name}</h1>
         </div>
       </div>
-
-      {userProgress ? (
-        <Card className="mb-6 border border-border shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between gap-4 mb-3">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">Fortschritt</p>
-                <p className="text-xs text-muted-foreground">
-                  {userProgress.completedLessons} von {userProgress.totalLessons} Lektionen abgeschlossen
-                </p>
-              </div>
-              <div className="text-sm font-semibold tabular-nums text-foreground">
-                {userProgress.percent}%
-              </div>
+      {userProgress ? <div className="m-outline-progress">
+        <p><span>{userProgress.completedLessons} von {userProgress.totalLessons} Lektionen</span><span>{userProgress.percent}%</span></p>
+        <Progress value={userProgress.percent} aria-label="Modulfortschritt" />
+      </div> : null}
+      <ScrollArea className="flex-1 min-h-0">
+        {sortedChapters.map(chapter => {
+          const isOpen = openChapters.has(chapter.id)
+          const videos = [...chapter.videos].sort((a, b) => (a.order || 0) - (b.order || 0))
+          const contentId = `chapter-videos-${chapter.id}`
+          return <section className="m-chapter" key={chapter.id}>
+            <button type="button" className="m-chapter-toggle" onClick={() => toggleChapter(chapter.id)} aria-expanded={isOpen} aria-controls={contentId}>
+              <ChevronRight aria-hidden="true" /><span>{chapter.name}</span><small>{videos.length}</small>
+            </button>
+            <div id={contentId} hidden={!isOpen}>
+              {videos.length ? videos.map((video, index) => {
+                const isActive = video.id === activeVideoId
+                const isWatched = watchedVideoIdSet.has(video.id)
+                return <button key={video.id} type="button" className="m-lesson-row" onClick={() => onVideoClick(video.id)}
+                  aria-current={isActive ? 'true' : undefined}>
+                  <span className="m-lesson-state" aria-hidden="true">{isActive ? <Play weight="fill" /> : isWatched ? <Check /> : String(index + 1).padStart(2, '0')}</span>
+                  <span><span className="block text-xs leading-relaxed">{video.title}</span><span className="block mt-1 text-[10px] text-muted-foreground">{formatDuration(video.duration)}{isWatched ? ' · Abgeschlossen' : ''}</span></span>
+                </button>
+              }) : <p className="px-3 pb-4 text-xs text-muted-foreground">Die Lektionen folgen hier.</p>}
             </div>
-            <Progress value={userProgress.percent} className="h-2.5" />
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <ScrollArea className="flex-1 min-h-0 pb-2 sm:pb-4">
-        <div className="space-y-2 pr-2">
-          {sortedChapters.map((chapter) => {
-            const isOpen = openChapters.has(chapter.id)
-            const sortedVideos = [...chapter.videos].sort((a, b) => (a.order || 0) - (b.order || 0))
-            const chapterContentId = `chapter-videos-${chapter.id}`
-
-            return (
-              <Card className="border border-border shadow-sm" key={chapter.id}>
-                <CardContent className="p-2">
-                  <div className="flex items-center justify-between select-none">
-                    <div className="flex items-center space-x-3 flex-1">
-                      <button
-                        type="button"
-                        className="h-8 w-8 cursor-pointer rounded flex flex-shrink-0 items-center justify-center hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          toggleChapter(chapter.id)
-                        }}
-                        aria-expanded={isOpen}
-                        aria-controls={chapterContentId}
-                        aria-label={`${chapter.name} ${isOpen ? 'einklappen' : 'ausklappen'}`}
-                      >
-                        {isOpen ? (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </button>
-
-                      <h3 className="text-md font-bold truncate flex-1 px-2 py-1 rounded select-text">
-                        {chapter.name}
-                      </h3>
-                    </div>
-                  </div>
-
-                  <div
-                    id={chapterContentId}
-                    aria-hidden={!isOpen}
-                    className={`grid transition-all duration-300 ease-in-out ${
-                      isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-                    }`}
-                  >
-                    <div className="overflow-hidden">
-                      <div className="mt-3 border-t border-border pt-2">
-                        {sortedVideos.length === 0 ? (
-                          <div className="p-8 text-center text-muted-foreground">Noch keine Videos</div>
-                        ) : (
-                          sortedVideos.map((video) => {
-                            const isWatched = watchedVideoIdSet.has(video.id)
-                            return (
-                              <VideoRow
-                                key={video.id}
-                                video={video}
-                                isActive={video.id === activeVideoId}
-                                onClick={() => onVideoClick(video.id)}
-                                durationText={getDurationText(video)}
-                                isWatched={isWatched}
-                                tabIndex={isOpen ? 0 : -1}
-                              />
-                            )
-                          })
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
+          </section>
+        })}
       </ScrollArea>
     </div>
   )

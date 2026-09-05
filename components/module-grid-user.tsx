@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ModuleCardUser } from './module-card-user'
 import type { ReactNode } from 'react'
+import { MagnifyingGlass } from '@phosphor-icons/react/MagnifyingGlass'
 
 type Props = {
   modules: Array<{
@@ -29,6 +30,8 @@ export function ModuleGridUser({
   initialProgressByModuleId,
   mobileCoursesDrawer,
 }: Props) {
+  const [query, setQuery] = useState('')
+  const [progressLoading, setProgressLoading] = useState(!initialProgressByModuleId)
   const [fetchedProgressByModuleId, setFetchedProgressByModuleId] = useState<
     Record<string, { percent: number; completedLessons: number; totalLessons: number }>
   >({})
@@ -79,6 +82,7 @@ export function ModuleGridUser({
         if (controller.signal.aborted) return
         // Progress is non-critical; keep the existing UI state on transient failures.
       } finally {
+        if (!cancelled) setProgressLoading(false)
         if (progressAbortRef.current === controller) {
           progressAbortRef.current = null
         }
@@ -103,23 +107,35 @@ export function ModuleGridUser({
     }
   }, [playlistId, initialProgressByModuleId])
 
-  return (
-    <div className="flex flex-col flex-1 min-w-0">
-      <div className="mb-8 flex items-center gap-2">
-        {mobileCoursesDrawer}
-        <h1 className="text-lg font-semibold text-foreground">{playlistName || 'Module'}</h1>
-      </div>
+  const search = query.trim().toLocaleLowerCase('de')
+  const visibleModules = search ? modules.filter(module =>
+    `${module.name} ${module.description ?? ''}`.toLocaleLowerCase('de').includes(search)
+  ) : modules
 
-      <div className="grid w-full max-w-[1920px] grid-cols-1 md:grid-cols-2 xl:grid-cols-3 min-[1800px]:grid-cols-4 gap-6 auto-rows-fr">
-        {modules.map((modul) => (
-          <ModuleCardUser
-            key={modul.id}
-            modul={modul}
-            progress={progressByModuleId[modul.id] ?? null}
-          />
-        ))}
+  return (
+    <div className="m-page">
+      <div className="m-page-header">
+        {mobileCoursesDrawer}
+        <div>
+          <p className="m-eyebrow">Deine Kurse</p>
+          <h1 className="m-page-title">{playlistName || 'Module'}</h1>
+          <p className="m-page-intro">Wissen aufbauen. Zusammenhänge erkennen. Im Chart wiederfinden.</p>
+        </div>
       </div>
+      <div className="m-modules-toolbar">
+        <p aria-live="polite">{search ? `${visibleModules.length} Treffer · ` : ''}{modules.length} {modules.length === 1 ? 'Modul' : 'Module'}</p>
+        <label className="m-search">
+          <MagnifyingGlass aria-hidden="true" />
+          <input type="search" aria-label="Module durchsuchen" placeholder="Modul finden…" value={query} onChange={event => setQuery(event.target.value)} />
+        </label>
+      </div>
+      {visibleModules.length ? <div className="m-module-grid">
+        {visibleModules.map(modul => <ModuleCardUser key={modul.id} modul={modul} artwork={modules.indexOf(modul) % 2 ? 'focus' : 'structure'} progress={progressByModuleId[modul.id] ?? null} progressLoading={progressLoading} />)}
+      </div> : <div className="m-empty" role="status">
+        <h2>{search ? 'Noch nicht gefunden.' : 'Hier geht es bald los.'}</h2>
+        <p>{search ? 'Versuch es mit einem anderen Begriff.' : 'Die Module für diesen Kurs erscheinen hier, sobald sie bereit sind.'}</p>
+        {search ? <button type="button" className="mt-4 underline underline-offset-4" onClick={() => setQuery('')}>Alle Module anzeigen</button> : null}
+      </div>}
     </div>
   )
 }
-

@@ -2,6 +2,11 @@ import type { ReactNode } from 'react'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { getMentorshipAccessState } from '@/lib/mentorship-access'
+import { cookies } from 'next/headers'
+import { MentorshipShell } from '@/components/mentorship/shell'
+import { getSidebarData } from '@/lib/sidebar-data'
+import { MobileCoursesDrawer } from '@/components/mobile-courses-drawer'
+import './mentorship.css'
 
 export default async function CoursesLayout({ children }: { children: ReactNode }) {
   const { userId, sessionClaims } = await auth()
@@ -22,13 +27,15 @@ export default async function CoursesLayout({ children }: { children: ReactNode 
     }
   }
 
-  // Wichtig für UX: Mentorship ist "App-like" und braucht eine definierte Höhe,
-  // damit interne ScrollAreas (MiddleSidebar) wirklich scrollen statt die Seite endlos zu verlängern.
-  // 4rem = Navbar-Höhe (h-16).
+  const [preferences, navigation] = await Promise.all([cookies(), getSidebarData()])
+  const theme = preferences.get('pat-mentorship-theme')?.value === 'dark' ? 'dark' : 'light'
+
   return (
     <>
       <div hidden data-hide-root-footer="true" />
-      <div className="mentorship-typography h-[calc(100dvh-4rem)] min-h-0">{children}</div>
+      <MentorshipShell initialTheme={theme} headerNavigation={<MobileCoursesDrawer
+        kurse={navigation.kurseForSidebar} pages={navigation.pagesForSidebar} savedSidebarOrder={navigation.savedSidebarOrder}
+      />}>{children}</MentorshipShell>
     </>
   )
 }

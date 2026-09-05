@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Card, CardContent } from '@/components/ui/card'
+import { CheckCircle } from '@phosphor-icons/react/CheckCircle'
 import { Progress } from '@/components/ui/progress'
 
 function formatModuleDuration(totalSeconds: number | null | undefined) {
@@ -13,8 +13,8 @@ function formatModuleDuration(totalSeconds: number | null | undefined) {
   const h = Math.floor(totalMinutes / 60)
   const m = totalMinutes % 60
 
-  if (h > 0) return `${h}h ${m}m`
-  return `${m}m`
+  if (h > 0) return `${h} Std. ${m} Min.`
+  return `${m} Min.`
 }
 
 type Props = {
@@ -26,6 +26,8 @@ type Props = {
     chaptersCount: number
     totalDurationSeconds?: number | null
   }
+  progressLoading?: boolean
+  artwork?: 'structure' | 'focus'
   progress?: {
     percent: number
     completedLessons: number
@@ -33,94 +35,33 @@ type Props = {
   } | null
 }
 
-export function ModuleCardUser({ modul, progress = null }: Props) {
+export function ModuleCardUser({ modul, progress = null, progressLoading = false, artwork = 'structure' }: Props) {
   const router = useRouter()
-  const desktopHref = `/mentorship/modul/${modul.id}`
-  const mobileHref = `${desktopHref}?view=content`
+  const href = `/mentorship/modul/${modul.id}`
 
   return (
     <Link
-      href={desktopHref}
+      href={href}
       prefetch={false}
-      className="relative group block w-full h-full"
-      onMouseEnter={() => router.prefetch(desktopHref)}
-      onClick={(event) => {
-        if (
-          typeof window === 'undefined' ||
-          event.metaKey ||
-          event.ctrlKey ||
-          event.shiftKey ||
-          event.altKey ||
-          event.button !== 0
-        ) {
-          return
-        }
-
-        const isDesktop = window.matchMedia('(min-width: 1024px)').matches
-        if (!isDesktop) {
-          event.preventDefault()
-          router.push(mobileHref)
-        }
-      }}
+      className="m-module-card"
+      onMouseEnter={() => router.prefetch(href)}
+      onFocus={() => router.prefetch(href)}
     >
-      <Card
-        className="overflow-hidden h-full flex flex-col transition-all border-gray-200 hover:border-gray-500/50 cursor-pointer"
-      >
-        {/* Bild oben */}
-        <div className="relative aspect-video bg-gradient-to-br from-primary/20 to-primary/10 overflow-hidden flex items-center justify-center cursor-pointer">
-          {modul.imageUrl ? (
-            <Image
-              src={modul.imageUrl}
-              alt={`${modul.name} Thumbnail`}
-              fill
-              className="object-cover cursor-pointer"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              priority={false}
-            />
-          ) : (
-            <span className="text-5xl z-10 cursor-pointer">📚</span>
-          )}
-        </div>
-
-        <CardContent className="p-5 flex-1 flex flex-col justify-between">
-          <div>
-            <h3 className="text-md font-semibold mb-1 leading-tight">{modul.name}</h3>
-            <p className="text-sm font-light text-muted-foreground mb-6 line-clamp-3 leading-relaxed">
-              {modul.description || ''}
-            </p>
-
-            <div className="mb-5">
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <p className="text-xs text-muted-foreground">
-                  {progress ? (
-                    <>
-                      zu{' '}
-                      <span className="font-medium text-foreground">{progress.percent}%</span>{' '}
-                      komplettiert
-                    </>
-                  ) : (
-                    'Fortschritt wird geladen...'
-                  )}
-                </p>
-                {progress ? (
-                  <p className="text-xs text-muted-foreground tabular-nums">
-                    {progress.completedLessons}/{progress.totalLessons}
-                  </p>
-                ) : null}
-              </div>
-              <Progress
-                value={progress?.percent ?? 0}
-                className={`h-2.5 ${progress ? '' : 'animate-pulse opacity-60'}`}
-              />
-            </div>
-
-            <div className="text-xs text-gray-500 flex items-center justify-between gap-3">
-              <span>{modul.chaptersCount} Kapitel</span>
-              <span>{formatModuleDuration(modul.totalDurationSeconds ?? null)}</span>
-            </div>
+      <div className="m-module-cover">
+        <Image src={modul.imageUrl || `/images/mentorship/market-${artwork}.webp`} alt="" fill sizes="(max-width: 639px) 100vw, (max-width: 1279px) 50vw, 33vw" />
+      </div>
+      <div className="m-module-content">
+        <div className="m-module-meta"><span>{modul.chaptersCount} Kapitel</span><span>{formatModuleDuration(modul.totalDurationSeconds)}</span></div>
+        <h2>{modul.name}</h2>
+        {modul.description ? <p className="m-module-description line-clamp-3">{modul.description}</p> : null}
+        <div className="m-module-progress">
+          <div className="m-module-progress-label">
+            <span>{progress ? `${progress.completedLessons} von ${progress.totalLessons} Lektionen` : progressLoading ? 'Fortschritt wird geladen…' : 'Fortschritt nicht verfügbar'}</span>
+            {progress?.percent === 100 ? <CheckCircle aria-label="Abgeschlossen" /> : progress ? <span>{progress.percent}%</span> : null}
           </div>
-        </CardContent>
-      </Card>
+          {progress ? <Progress value={progress.percent} aria-label={`Fortschritt in ${modul.name}`} /> : progressLoading ? <div className="h-1 rounded-full bg-neutral-200 animate-pulse" /> : null}
+        </div>
+      </div>
     </Link>
   )
 }

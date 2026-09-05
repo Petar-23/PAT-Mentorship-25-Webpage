@@ -69,7 +69,7 @@ export default async function MentorshipModulPage({
         })
       : Promise.resolve([])
   )
-  const [resolvedParams, { kurseForSidebar, savedSidebarOrder }, modul, isAdmin, watchedProgressRows] =
+  const [resolvedParams, { kurseForSidebar, pagesForSidebar, savedSidebarOrder }, modul, isAdmin, watchedProgressRows] =
     await Promise.all([
       searchParamsPromise,
       sidebarDataPromise,
@@ -95,9 +95,10 @@ export default async function MentorshipModulPage({
 
   return (
     <div className="flex h-full min-h-0 bg-background">
-      <div className="hidden lg:block">
+      <div className={isAdmin ? "hidden lg:block" : "hidden xl:block"}>
         <Sidebar
           kurse={kurseForSidebar}
+          pages={pagesForSidebar}
           savedSidebarOrder={savedSidebarOrder}
           activeCourseId={activeCourseId}
           isAdmin={isAdmin}
@@ -109,11 +110,6 @@ export default async function MentorshipModulPage({
         initialVideoId={initialVideoId}
         initialWatchedVideoIds={initialWatchedVideoIds}
         isAdmin={isAdmin}
-        sidebar={{
-          kurse: kurseForSidebar,
-          savedSidebarOrder,
-          activeCourseId,
-        }}
       />
     </div>
   )

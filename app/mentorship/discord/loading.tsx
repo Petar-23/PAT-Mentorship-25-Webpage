@@ -3,7 +3,7 @@ import { MentorshipDiscordSkeleton, MentorshipSidebarSkeleton } from '@/componen
 export default function MentorshipDiscordLoading() {
   return (
     <div className="flex h-full min-h-0 bg-background">
-      <div className="hidden lg:block">
+      <div className="hidden xl:block">
         <MentorshipSidebarSkeleton />
       </div>
       <MentorshipDiscordSkeleton />
