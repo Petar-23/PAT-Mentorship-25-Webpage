@@ -1,15 +1,11 @@
 'use client'
 
-import Link from 'next/link'
-import Image from 'next/image'
-import { BookOpen } from '@phosphor-icons/react/BookOpen'
-import { ChartLineUp } from '@phosphor-icons/react/ChartLineUp'
-import { FileText } from '@phosphor-icons/react/FileText'
-import { House } from '@phosphor-icons/react/House'
-import { Users } from '@phosphor-icons/react/Users'
-import { ArrowUpRight } from '@phosphor-icons/react/ArrowUpRight'
+import { BookOpen, BookBookmark, CalendarDots, ChartLineUp, FileText, House, Users, Stack, Strategy, SlidersHorizontal, CreditCard, UserCircle } from '@/components/mentorship/icons'
+import { MentorshipLink as Link } from '@/components/mentorship/navigation-link'
 import { usePathname } from 'next/navigation'
 import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'
+import { useMentorshipNavigation } from '@/components/mentorship/shell'
+import { Fragment } from 'react'
 
 type Kurs = {
   id: string
@@ -28,13 +24,25 @@ type Props = {
   onNavigate?: () => void
 }
 
+function courseIcon(slug: string) {
+  switch (slug) {
+    case 'weekly-reviews': return CalendarDots
+    case 'daily-reviews': return ChartLineUp
+    case 'advanced-content': return Stack
+    case '03---model-series': return Strategy
+    default: return BookOpen
+  }
+}
+
 export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourseId, onNavigate }: Props) {
   const pathname = usePathname()
+  const navigationOpen = useMentorshipNavigation()
+  const hidden = !onNavigate && !navigationOpen
   const items = [
-    { id: 'discord', title: 'Community', href: '/mentorship/discord', Icon: Users, iconUrl: null, count: null },
-    { id: 'indicators', title: 'Indikatoren', href: '/mentorship/indicators', Icon: ChartLineUp, iconUrl: null, count: null },
-    ...kurse.map(kurs => ({ id: kurs.id, title: kurs.name, href: `/mentorship/${kurs.id}`, Icon: BookOpen, iconUrl: kurs.iconUrl, count: kurs.modulesLength })),
-    ...pages.map(page => ({ id: `page:${page.id}`, title: page.title, href: `/mentorship/page/${page.slug}`, Icon: FileText, iconUrl: page.iconUrl, count: null })),
+    { id: 'discord', title: 'Community', href: '/mentorship/discord', Icon: Users, group: 'resources' },
+    { id: 'indicators', title: 'Indikatoren', href: '/mentorship/indicators', Icon: SlidersHorizontal, group: 'tools' },
+    ...kurse.map(kurs => ({ id: kurs.id, title: kurs.name, href: `/mentorship/${kurs.id}`, Icon: courseIcon(kurs.slug), group: 'series' })),
+    ...pages.map(page => ({ id: `page:${page.id}`, title: page.title, href: `/mentorship/page/${page.slug}`, Icon: page.slug === 'glossar' ? BookBookmark : FileText, group: 'resources' })),
   ]
   if (savedSidebarOrder) {
     const order = new Map(savedSidebarOrder.map((id, index) => [id, index]))
@@ -42,27 +50,30 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
   }
 
   return (
-    <aside className="m-sidebar" aria-label="Mentorship-Navigation">
+    <aside className="m-sidebar" id={onNavigate ? undefined : 'mentorship-desktop-navigation'}
+      aria-label="Mentorship-Navigation" aria-hidden={hidden || undefined}
+      ref={element => { if (element) element.inert = hidden }}>
       <nav className="m-nav">
-        <Link href="/mentorship" className="m-nav-link m-nav-home" aria-current={pathname === '/mentorship' ? 'page' : undefined} onClick={onNavigate}>
+        <Link href="/mentorship" className="m-nav-link m-nav-home" aria-current={pathname === '/mentorship' ? 'page' : undefined} onNavigate={onNavigate}>
           <House aria-hidden="true" /><span>Übersicht</span>
         </Link>
-        <p className="m-nav-label">Deine Mentorship</p>
+        <p className="m-nav-label">Inhalte</p>
         <div className="m-nav-items">
-          {items.map(({ id, title, href, Icon, iconUrl, count }) => (
-            <Link key={id} href={href} prefetch={false} className="m-nav-link" onClick={onNavigate}
+          {items.map(({ id, title, href, Icon, group }, index) => (
+            <Fragment key={id}>
+            {onNavigate && index > 0 && group !== items[index - 1].group ? <hr className="m-nav-divider" aria-hidden="true" /> : null}
+            <Link href={href} prefetch={false} className="m-nav-link" onNavigate={onNavigate}
               aria-current={pathname === href || (activeCourseId === id && pathname?.startsWith('/mentorship/modul/')) ? 'page' : undefined}>
-              {iconUrl ? <Image src={iconUrl} alt="" width={20} height={20} className="m-nav-image" quality={70} /> : <Icon aria-hidden="true" />}
+              <Icon aria-hidden="true" />
               <span>{title}</span>
-              {count !== null ? <small aria-label={`${count} Module`}>{count}</small> : null}
             </Link>
+            </Fragment>
           ))}
         </div>
       </nav>
       <div className="m-sidebar-footer">
-        <p>Ein Chart nach dem anderen.</p>
-        <ManageSubscriptionButton variant="ghost" label="Mitgliedschaft" className="m-account-link" />
-        <Link href="/dashboard" prefetch={false} className="m-account-link" onClick={onNavigate}>Mein Konto <ArrowUpRight aria-hidden="true" /></Link>
+        <ManageSubscriptionButton variant="ghost" label="Mitgliedschaft" className="m-account-link" icon={<CreditCard aria-hidden="true" />} />
+        <Link href="/dashboard" prefetch={false} className="m-account-link" onNavigate={onNavigate}><UserCircle aria-hidden="true" /><span>Mein Konto</span></Link>
       </div>
     </aside>
   )

@@ -1,14 +1,14 @@
 'use client'
 
+import { MentorshipLink } from '@/components/mentorship/navigation-link'
+
+import { ArrowLeft, CaretRight as ChevronRight, FileText, Play, Check } from '@/components/mentorship/icons'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Progress } from '@/components/ui/progress'
-import { ArrowLeft } from '@phosphor-icons/react/ArrowLeft'
-import { CaretRight as ChevronRight } from '@phosphor-icons/react/CaretRight'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
+import * as Accordion from '@radix-ui/react-accordion'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Play } from '@phosphor-icons/react/Play'
-import { Check } from '@phosphor-icons/react/Check'
+import { formatLearningDuration } from '@/lib/mentorship-learning'
 
 type Video = {
   id: string
@@ -62,18 +62,6 @@ export type MiddleSidebarProps = {
   onDeleteChapter?: (chapterId: string) => void
 }
 
-function formatDuration(seconds: number | null | undefined) {
-  if (!seconds || !Number.isFinite(seconds) || seconds <= 0) return '—'
-
-  const h = Math.floor(seconds / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
-  const s = Math.floor(seconds % 60)
-
-  if (h > 0) return `${h}h ${m}m`
-  if (m > 0) return `${m}m ${String(s).padStart(2, '0')}s`
-  return `${s}s`
-}
-
 export function MiddleSidebarUser({
   modul,
   courseTitle,
@@ -84,6 +72,7 @@ export function MiddleSidebarUser({
   watchedVideoIds,
 }: MiddleSidebarProps) {
   const router = useRouter()
+  const [presentLessons, setPresentLessons] = useState(true)
   const watchedVideoIdSet = useMemo(() => new Set(watchedVideoIds ?? []), [watchedVideoIds])
 
   const sortedChapters = useMemo(() => {
@@ -113,53 +102,59 @@ export function MiddleSidebarUser({
   const openChapters =
     openChaptersState.key === openChaptersKey ? openChaptersState.chapters : defaultOpenChapters
 
-  const toggleChapter = (chapterId: string) => {
-    setOpenChaptersState((prev) => {
-      const base = prev.key === openChaptersKey ? prev.chapters : defaultOpenChapters
-      const next = new Set(base)
-      if (next.has(chapterId)) next.delete(chapterId)
-      else next.add(chapterId)
-      return { key: openChaptersKey, chapters: next }
-    })
-  }
-
   return (
-    <div className="m-lesson-outline">
+    <div className="m-lesson-outline" data-present={presentLessons} onFocusCapture={() => setPresentLessons(false)}>
       <div className="m-outline-header">
-        <Button variant="ghost" size="icon" className="m-icon-button"
-          onClick={() => courseId ? router.push(`/mentorship/${courseId}`) : router.back()}
-          aria-label="Zurück zur Modulübersicht"><ArrowLeft aria-hidden="true" /></Button>
-        <div>
-          {courseTitle ? <p>{courseTitle}</p> : null}
-          <h1>{modul.name}</h1>
-        </div>
+        {courseId ? <MentorshipLink href={`/mentorship/${courseId}`} className="m-outline-back"
+          aria-label={courseTitle ? `Zurück zur Modulübersicht von ${courseTitle}` : 'Zurück zur Modulübersicht'}>
+          <ArrowLeft aria-hidden="true" /><span>{courseTitle || 'Modulübersicht'}</span>
+        </MentorshipLink> : <button type="button" className="m-outline-back" onClick={() => router.back()} aria-label="Zurück zur Modulübersicht">
+          <ArrowLeft aria-hidden="true" /><span>Modulübersicht</span>
+        </button>}
+        <h1>{modul.name}</h1>
       </div>
       {userProgress ? <div className="m-outline-progress">
         <p><span>{userProgress.completedLessons} von {userProgress.totalLessons} Lektionen</span><span>{userProgress.percent}%</span></p>
-        <Progress value={userProgress.percent} aria-label="Modulfortschritt" />
+        <Progress value={userProgress.percent} aria-label={`Fortschritt im Modul ${modul.name}`} />
       </div> : null}
-      <ScrollArea className="flex-1 min-h-0">
-        {sortedChapters.map(chapter => {
+      <ScrollArea className="m-outline-scroll flex-1 min-h-0">
+        <Accordion.Root type="multiple" value={Array.from(openChapters)}
+          onValueChange={(chapters) => {
+            setPresentLessons(false)
+            setOpenChaptersState({ key: openChaptersKey, chapters: new Set(chapters) })
+          }}>
+        {sortedChapters.map((chapter, chapterIndex) => {
+          const lessonOffset = sortedChapters.slice(0, chapterIndex).reduce((sum, item) => sum + item.videos.length, 0)
           const isOpen = openChapters.has(chapter.id)
           const videos = [...chapter.videos].sort((a, b) => (a.order || 0) - (b.order || 0))
           const contentId = `chapter-videos-${chapter.id}`
-          return <section className="m-chapter" key={chapter.id}>
-            <button type="button" className="m-chapter-toggle" onClick={() => toggleChapter(chapter.id)} aria-expanded={isOpen} aria-controls={contentId}>
-              <ChevronRight aria-hidden="true" /><span>{chapter.name}</span><small>{videos.length}</small>
+          return <Accordion.Item asChild value={chapter.id} key={chapter.id}><section className="m-chapter">
+            <Accordion.Header className="m-chapter-heading" style={{ '--m-chapter-delay': `${60 + Math.min(chapterIndex, 4) * 35}ms` } as CSSProperties}><Accordion.Trigger asChild>
+            <button type="button" className="m-chapter-toggle" aria-expanded={isOpen} aria-controls={contentId}>
+              <span className="m-chapter-name">{chapter.name}</span><small>{videos.length}<span className="sr-only"> {videos.length === 1 ? 'Lektion' : 'Lektionen'}</span></small><ChevronRight aria-hidden="true" />
             </button>
-            <div id={contentId} hidden={!isOpen}>
+            </Accordion.Trigger></Accordion.Header>
+            <Accordion.Content className="m-chapter-reveal" id={contentId}>
+            <div className="m-chapter-lessons">
               {videos.length ? videos.map((video, index) => {
                 const isActive = video.id === activeVideoId
                 const isWatched = watchedVideoIdSet.has(video.id)
-                return <button key={video.id} type="button" className="m-lesson-row" onClick={() => onVideoClick(video.id)}
-                  aria-current={isActive ? 'true' : undefined}>
-                  <span className="m-lesson-state" aria-hidden="true">{isActive ? <Play weight="fill" /> : isWatched ? <Check /> : String(index + 1).padStart(2, '0')}</span>
-                  <span><span className="block text-xs leading-relaxed">{video.title}</span><span className="block mt-1 text-[10px] text-muted-foreground">{formatDuration(video.duration)}{isWatched ? ' · Abgeschlossen' : ''}</span></span>
+                const isPdf = !video.bunnyGuid?.trim() && Boolean(video.pdfUrl?.trim())
+                const detail = isPdf ? 'PDF' : formatLearningDuration(video.duration)
+                return <button key={video.id} type="button" className="m-lesson-row"
+                  style={{ '--m-lesson-delay': `${100 + Math.min(index, 5) * 35}ms` } as CSSProperties}
+                  onClick={() => { setPresentLessons(false); onVideoClick(video.id) }}
+                  aria-current={isActive ? 'true' : undefined} data-completed={isWatched} data-has-detail={Boolean(detail)} title={video.title}>
+                  <span className="m-lesson-state" aria-hidden="true">{isActive ? isPdf ? <FileText /> : <Play /> : isWatched ? <Check /> : String(lessonOffset + index + 1).padStart(2, '0')}</span>
+                  <span className="m-lesson-copy"><span className="m-lesson-title">{video.title}</span>{isWatched ? <span className="sr-only"> · Abgeschlossen</span> : null}</span>
+                  {detail ? <span className="m-lesson-meta">{detail}</span> : null}
                 </button>
               }) : <p className="px-3 pb-4 text-xs text-muted-foreground">Die Lektionen folgen hier.</p>}
             </div>
-          </section>
+            </Accordion.Content>
+          </section></Accordion.Item>
         })}
+        </Accordion.Root>
       </ScrollArea>
     </div>
   )

@@ -1,7 +1,7 @@
 // src/components/manage-subscription.tsx
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { useToast } from "@/hooks/use-toast"
@@ -15,6 +15,8 @@ type Props = {
   className?: string
   label?: string
   iconClassName?: string
+  icon?: ReactNode
+  iconPosition?: 'start' | 'end'
   iconWrapperClassName?: string
   spinnerClassName?: string
   loadingLabel?: string
@@ -40,6 +42,8 @@ export function ManageSubscriptionButton({
   className,
   label = 'Abonnement Verwalten',
   iconClassName,
+  icon,
+  iconPosition = 'start',
   iconWrapperClassName,
   spinnerClassName,
   loadingLabel = 'Lädt…',
@@ -162,15 +166,15 @@ export function ManageSubscriptionButton({
     >
       {loading ? (
         <>
-          <span className={cn('flex items-center justify-center shrink-0', iconWrapperClassName)}>
+          <span className={cn('flex items-center justify-center shrink-0', iconPosition === 'end' && 'order-last', iconWrapperClassName)}>
             <LoadingSpinner className={cn('h-4 w-4', spinnerClassName)} />
           </span>
           <span>{loadingLabel}</span>
         </>
       ) : (
         <>
-          <span className={cn('flex items-center justify-center shrink-0', iconWrapperClassName)}>
-            <CreditCard className={cn('h-4 w-4', iconClassName)} />
+          <span className={cn('flex items-center justify-center shrink-0', iconPosition === 'end' && 'order-last', iconWrapperClassName)}>
+            {icon ?? <CreditCard className={cn('h-4 w-4', iconClassName)} />}
           </span>
           <span>{label}</span>
         </>

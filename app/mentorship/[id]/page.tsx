@@ -1,3 +1,4 @@
+import { hasLearningMaterial, learningPercent } from '@/lib/mentorship-learning'
 // app/mentorship/[id]/page.tsx
 
 import { prisma } from '@/lib/prisma'
@@ -14,10 +15,7 @@ interface Props {
   params: Promise<{ id: string }>
 }
 
-function percent(completed: number, total: number) {
-  if (!Number.isFinite(total) || total <= 0) return 0
-  return Math.max(0, Math.min(100, Math.round((completed / total) * 100)))
-}
+
 
 export default async function DynamicCoursePage({ params }: Props) {
   const { id } = await params
@@ -28,6 +26,7 @@ export default async function DynamicCoursePage({ params }: Props) {
     select: {
       id: true,
       name: true,
+      description: true,
     },
   })
   const { userId, sessionClaims } = await authPromise
@@ -42,7 +41,7 @@ export default async function DynamicCoursePage({ params }: Props) {
       await Promise.all([
         prisma.module.findMany({
           where: { playlistId: kurs.id },
-          orderBy: { order: 'asc' },
+          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
           select: {
             id: true,
             name: true,
@@ -123,7 +122,7 @@ export default async function DynamicCoursePage({ params }: Props) {
         progressByModuleId[m.id] = {
           totalLessons,
           completedLessons,
-          percent: percent(completedLessons, totalLessons),
+          percent: learningPercent(completedLessons, totalLessons),
         }
       }
     }
@@ -143,8 +142,8 @@ export default async function DynamicCoursePage({ params }: Props) {
     })
 
     return (
-      <div className="flex h-full min-h-0 bg-background">
-        <div className={isAdmin ? "hidden lg:block" : "hidden xl:block"}>
+      <div className={isAdmin ? "flex h-full min-h-0 bg-background" : "m-workspace"}>
+        <div className={isAdmin ? "hidden lg:block" : "m-desktop-sidebar hidden xl:block"}>
           <Sidebar
             kurse={kurseForSidebar}
             pages={pagesForSidebar}
@@ -162,6 +161,7 @@ export default async function DynamicCoursePage({ params }: Props) {
               modules={modulesForGrid}
               playlistId={kurs.id}
               playlistName={kurs.name}
+              playlistDescription={kurs.description}
               isAdmin={isAdmin}
               initialProgressByModuleId={!isAdmin && userId ? progressByModuleId : undefined}
             />
@@ -185,13 +185,13 @@ export default async function DynamicCoursePage({ params }: Props) {
         },
       },
       chapters: {
-        orderBy: { order: 'asc' },
+        orderBy: [{ order: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
         select: {
           id: true,
           name: true,
           order: true,
           videos: {
-            orderBy: { order: 'asc' },
+            orderBy: [{ order: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
             select: {
               id: true,
               title: true,
@@ -227,14 +227,14 @@ export default async function DynamicCoursePage({ params }: Props) {
 
   const allVideos = modul.chapters.flatMap((ch) => ch.videos)
   const initialVideoId =
-    allVideos.find((v) => v.bunnyGuid !== null)?.id ?? allVideos[0]?.id ?? null
+    allVideos.find(hasLearningMaterial)?.id ?? allVideos[0]?.id ?? null
 
   // Performance: Fortschritt direkt serverseitig und parallel laden → kein extra Client-Fetch nötig.
   const initialWatchedVideoIds = watchedProgressRows.map((r) => r.videoId)
 
   return (
-    <div className="flex h-full min-h-0 bg-background">
-      <div className={isAdmin ? "hidden lg:block" : "hidden xl:block"}>
+    <div className={isAdmin ? "flex h-full min-h-0 bg-background" : "m-workspace"}>
+      <div className={isAdmin ? "hidden lg:block" : "m-desktop-sidebar hidden xl:block"}>
         <Sidebar
           kurse={kurseForSidebar}
           pages={pagesForSidebar}

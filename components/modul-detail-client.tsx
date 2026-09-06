@@ -2,6 +2,9 @@
 
 'use client'
 
+import { learningPercent } from '@/lib/mentorship-learning'
+import { MentorshipLoadingIndicator, MentorshipOutlineLoading } from '@/components/mentorship/loading-state'
+
 import { useState, useEffect, useMemo, useRef } from 'react'
 import dynamic from 'next/dynamic'
 const VideoPlayer = dynamic(
@@ -9,8 +12,8 @@ const VideoPlayer = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 flex flex-col max-w-7xl">
-        <div className="aspect-video bg-black/90 rounded-2xl overflow-hidden animate-pulse" />
+      <div className="m-video-player">
+        <div className="aspect-video"><MentorshipLoadingIndicator label="Player wird geladen" /></div>
       </div>
     ),
   }
@@ -56,28 +59,11 @@ type Props = {
   isAdmin: boolean
 }
 
-
-const skeletonBase = 'animate-pulse rounded-md bg-neutral-200/80 dark:bg-neutral-800/70'
-
 const MiddleSidebar = dynamic(
   () => import('./middle-sidebar-entry').then((mod) => mod.MiddleSidebar),
   {
     ssr: false,
-    loading: () => (
-      <div className="w-full lg:w-[300px] h-full min-h-0 border-r border-border bg-background p-4 sm:p-6 lg:p-8">
-        <div className="space-y-4">
-          <div className={`${skeletonBase} h-6 w-32`} />
-          <div className="space-y-3">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="space-y-2">
-                <div className={`${skeletonBase} h-4 w-3/4`} />
-                <div className={`${skeletonBase} h-3 w-1/2 opacity-70`} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    ),
+    loading: () => <MentorshipOutlineLoading />,
   }
 )
 
@@ -218,8 +204,7 @@ export function ModulDetailClient({
 
   const totalLessons = allVideos.length
   const completedLessons = watchedVideoIds.length
-  const progressPercent =
-    totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
+  const progressPercent = learningPercent(completedLessons, totalLessons)
 
   // Performance: `watchedVideoIds` kommt serverseitig als Prop (kein extra Fetch nötig).
 
@@ -640,7 +625,7 @@ export function ModulDetailClient({
   // Wichtig: Dieser Block muss NACH den Handler-Definitionen stehen (sonst ReferenceError/TDZ).
   if (!isDesktop && mobileView === 'content') {
     return (
-      <div className="flex h-full min-h-0 flex-1">
+      <div className={isAdmin ? "flex h-full min-h-0 flex-1" : "m-lesson-workspace"}>
         <MiddleSidebar
           modul={localModul}
           courseTitle={localModul.playlist?.name ?? null}
@@ -728,19 +713,7 @@ export function ModulDetailClient({
         />
       ) : (
         // Platzhalter nur für Desktop vor der ersten MediaQuery-Auswertung (verhindert Layout-Jump)
-        <div className="hidden lg:flex w-[300px] h-full min-h-0 border-r border-border bg-background p-4 sm:p-6 lg:p-8">
-          <div className="w-full space-y-4">
-            <div className={`${skeletonBase} h-6 w-32`} />
-            <div className="space-y-3">
-              {Array.from({ length: 10 }).map((_, i) => (
-                <div key={i} className="space-y-2">
-                  <div className={`${skeletonBase} h-4 w-3/4`} />
-                  <div className={`${skeletonBase} h-3 w-1/2 opacity-70`} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <div className="hidden lg:block"><MentorshipOutlineLoading /></div>
       )}
 
       {/* Video + Mobile Controls */}

@@ -1,5 +1,5 @@
+import { Check } from '@/components/mentorship/icons'
 import Image from 'next/image'
-import { Check } from '@phosphor-icons/react/dist/ssr/Check'
 import { DiscordLinkButton } from '@/components/discord/discord-link-button'
 
 export function MentorshipCommunityContent({ connected, accountLabel, status, reason }: {

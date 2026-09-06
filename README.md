@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Price Action Trader
 
-## Getting Started
+PAT-Website, Mentorship-Mitgliederbereich und Verwaltung mit Next.js App Router, React, Clerk, Prisma und Stripe.
 
-First, run the development server:
+## Lokal arbeiten
+
+`npm run dev` startet die App. Datenbank, Authentifizierung und Zahlungsdienste verwenden die lokal konfigurierten Umgebungsvariablen.
+
+Die Mentorship-Gestaltung und ihre private Vorschau sind in [MENTORSHIP_DESIGN.md](docs/MENTORSHIP_DESIGN.md) beschrieben. Die Vorschau verwendet echte UI-Komponenten mit einem ausschließlich gelesenen Kurskatalog und lokalem Fortschritt. Der PR enthält den anpassbaren OFL-Entwurf PAT Sans und PAT Serif. Herkunft und Änderungen stehen in [MENTORSHIP_FONTS.md](docs/MENTORSHIP_FONTS.md); die privaten Vergleichsschriften gehören nicht zum Produktionsrepository. Die freigegebenen Cover für 21 bestehende Module sind in `lib/mentorship-module-artwork.ts` zugeordnet. Weitere Module verwenden ihr gespeichertes Kursbild oder ein Standardmotiv.
+
+## Änderungen prüfen
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm run measure:mentorship
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- `typecheck` führt TypeScript ohne Ausgabe aus.
+- `test` bündelt die Node-Tests für Lernfortsetzung und Fortschritt, Veröffentlichungsbereitschaft, Discord-Zielprüfung, Idempotenz und Uploads. Der Upload-Test benötigt einen temporären lokalen HTTP-Port.
+- `build` prüft den Produktions-Build einschließlich TypeScript. Ein frischer Build lädt die bestehende Sora-Schrift von Google Fonts. Mit Platzhalterzugängen kann er abschließen, obwohl datenabhängige Vorschauen fehlen; das belegt keine funktionsfähige Dienstanbindung.
+- `measure:mentorship` liest den letzten Produktions-Build und gibt die pro Mentorship-Route referenzierten JavaScript-Dateien als Byte- und gzip-Summen aus. Für einen Vergleich müssen beide Stände mit denselben Abhängigkeiten gebaut sein. Das misst Dateigrößen, keine Ladezeiten.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Für UI-Änderungen zusätzlich die tatsächlichen Abläufe in beiden Darstellungen prüfen: Navigation, Suche und Rücksetzen, Abschluss und Fehler beim Speichern, Unterlagen, nächste Lektion sowie Tastaturfokus. Aktueller Prüfstand: [PR-Verifikation vom 6. September 2026](docs/MENTORSHIP_PR_VERIFICATION_2026-09-06.md).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Auslieferung und Inhalte
 
-## Learn More
+`vercel-build` führt zusätzlich zur Prisma-Generierung die Datenbankmigrationen aus. Es ist kein Ersatz für den lokalen Build-Check.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Mitgliedervideos veröffentlichen](docs/MENTORSHIP_PUBLICATION.md)
+- [Mentorship-Bildmotive](docs/MENTORSHIP_ARTWORK.md)
+- [Raid-Map-Startcheck](docs/RAIDMAP_LAUNCH_CHECKLIST.md)

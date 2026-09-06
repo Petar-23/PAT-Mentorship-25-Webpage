@@ -1,77 +1,96 @@
+import { ArrowRight, Check, FileText, Play } from '@/components/mentorship/icons'
 import type { ReactNode } from 'react'
-import Link from 'next/link'
+import { MentorshipLink as Link } from './navigation-link'
 import Image from 'next/image'
-import { ArrowRight } from '@phosphor-icons/react/dist/ssr/ArrowRight'
-import { BookOpen } from '@phosphor-icons/react/dist/ssr/BookOpen'
-import { Play } from '@phosphor-icons/react/dist/ssr/Play'
 import { Progress } from '@/components/ui/progress'
+import { formatLearningDuration } from '@/lib/mentorship-learning'
+import type { CourseLearningProgress, LearningTarget, NewLearningContent } from '@/lib/mentorship-learning'
 import { MentorshipWelcomeName } from './welcome-name'
 
 type Props = {
-  courses: Array<{ id: string; name: string; modulesLength: number }>
-  continueLearning: {
-    moduleId: string; moduleName: string; videoId: string; videoTitle: string; courseName: string | null
-    watchedLessons: number; totalLessons: number; percent: number
-  } | null
-  newContent: Array<{ videoId: string; videoTitle: string; moduleId: string; moduleName: string; courseName: string | null }>
+  courses: CourseLearningProgress[]
+  continueLearning: LearningTarget | null
+  newContent: NewLearningContent[]
   onboarding?: ReactNode
 }
 
-export function MentorshipHomeContent({ courses, continueLearning, newContent, onboarding }: Props) {
-  const resumeHref = continueLearning
-    ? `/mentorship/modul/${continueLearning.moduleId}?video=${continueLearning.videoId}`
-    : courses[0] ? `/mentorship/${courses[0].id}` : null
+const labels = {
+  'last-opened': 'Zuletzt geöffnet', next: 'Als Nächstes', gap: 'Noch offen',
+  'next-module': 'Nächstes Modul', start: 'Dein Start',
+}
+const dateFormat = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/Berlin' })
 
-  return (
-    <div className="m-page">
-      <div className="m-page-header">
-        <div>
-          <p className="m-eyebrow">Dein Lernplatz</p>
-          <h1 className="m-page-title">Schön, dass du da bist<MentorshipWelcomeName /></h1>
-          <p className="m-page-intro">Mach es dir bequem. Der nächste Aha-Moment wartet schon.</p>
-        </div>
+function LearningCard({ target }: { target: LearningTarget }) {
+  const isLesson = target.kind === 'lesson'
+  const moduleHref = target.kind !== 'completed' && target.moduleId ? `/mentorship/modul/${target.moduleId}` : null
+  const courseHref = `/mentorship/${target.courseId}`
+  const href = isLesson ? `${moduleHref}?video=${target.videoId}` : moduleHref ?? courseHref
+  const label = isLesson ? labels[target.reason] : target.kind === 'completed' ? 'Kurs abgeschlossen' : 'Weitere Lektionen folgen'
+  const title = isLesson ? target.videoTitle : target.kind === 'completed' ? target.courseName : target.moduleName ?? target.courseName
+  const meta = isLesson
+    ? [target.courseName, target.moduleName, `Lektion ${target.position} von ${target.totalLessons}`, target.isPdf ? 'PDF' : formatLearningDuration(target.duration)].filter(Boolean).join(' · ')
+    : target.kind === 'waiting' && target.moduleName
+      ? target.hasAvailableLessons ? `Alle verfügbaren Lektionen in ${target.courseName} sind abgeschlossen.` : `In ${target.courseName} ist noch kein Lernmaterial verfügbar.`
+      : null
+  const action = isLesson
+    ? target.reason === 'last-opened' ? 'Weiterlernen' : target.reason === 'start' ? 'Erste Lektion starten' : 'Lektion starten'
+    : target.kind === 'completed' ? 'Kurs öffnen' : moduleHref ? 'Modulübersicht öffnen' : 'Kurs öffnen'
+
+  return <section className="m-resume" aria-labelledby="resume-heading" data-learning-state={isLesson ? target.reason : target.kind}>
+    <div className="m-resume-copy">
+      <p className="m-resume-label">{target.kind === 'completed' ? <Check aria-hidden="true" /> : isLesson ? target.isPdf ? <FileText aria-hidden="true" /> : <Play aria-hidden="true" /> : null}{label}</p>
+      <h2 id="resume-heading">{title}</h2>
+      {meta ? <p className="m-resume-meta">{meta}</p> : null}
+      {target.totalLessons > 0 ? <div className="m-resume-progress">
+        {target.kind !== 'completed' ? <Progress value={target.percent} aria-label={`Fortschritt ${target.moduleName ? `im Modul ${target.moduleName}` : `im Kurs ${target.courseName}`}`} /> : null}
+        <p>{target.completedLessons} von {target.totalLessons} Lektionen abgeschlossen</p>
+      </div> : null}
+      <div className="m-resume-actions">
+        <Link href={href} className="m-primary-link" prefetch={false}>{action}<ArrowRight aria-hidden="true" /></Link>
+        {isLesson ? <Link href={target.reason === 'start' ? courseHref : moduleHref ?? courseHref} className="m-text-link" prefetch={false}>{target.reason === 'start' ? 'Kursübersicht' : 'Modulübersicht'}</Link> : null}
       </div>
-      {onboarding}
-      <section className="m-resume" aria-labelledby="resume-heading">
-        <div className="m-resume-copy">
-          <p className="m-resume-label"><Play weight="fill" aria-hidden="true" />{continueLearning ? 'Hier geht’s weiter' : 'Dein erster Schritt'}</p>
-          <h2 id="resume-heading">{continueLearning?.videoTitle ?? 'Zeit, den Chart besser zu verstehen.'}</h2>
-          <p className="m-resume-meta">{continueLearning ? [continueLearning.courseName, continueLearning.moduleName].filter(Boolean).join(' · ') : 'Beginne mit einem Kurs. Alles Weitere kommt Schritt für Schritt.'}</p>
-          {continueLearning ? (
-            <div className="m-resume-progress">
-              <Progress value={continueLearning.percent} aria-label="Modulfortschritt" />
-              <p>{continueLearning.watchedLessons} von {continueLearning.totalLessons} Lektionen abgeschlossen</p>
-            </div>
-          ) : <div className="h-6" />}
-          {resumeHref ? <Link href={resumeHref} className="m-primary-link" prefetch={false}>{continueLearning ? 'Weiterlernen' : 'Ersten Kurs öffnen'}<ArrowRight aria-hidden="true" /></Link> : <p className="m-resume-meta">Deine Kurse erscheinen hier, sobald sie verfügbar sind.</p>}
-        </div>
-        <div className="m-resume-art" aria-hidden="true">
-          <Image src="/images/mentorship/market-focus.webp" alt="" fill sizes="(max-width: 639px) 100vw, 450px" />
-        </div>
-      </section>
-      <div className="m-home-columns">
-        <section aria-labelledby="courses-heading">
-          <div className="m-section-heading"><h2 id="courses-heading">Deine Kurse</h2><span>{courses.length} {courses.length === 1 ? 'Kurs' : 'Kurse'}</span></div>
-          {courses.length ? courses.map(course => (
-            <Link key={course.id} href={`/mentorship/${course.id}`} prefetch={false} className="m-content-row">
-              <span className="m-row-icon"><BookOpen aria-hidden="true" /></span>
-              <div><h3>{course.name}</h3><p>{course.modulesLength} {course.modulesLength === 1 ? 'Modul' : 'Module'}</p></div>
-              <ArrowRight aria-hidden="true" />
-            </Link>
-          )) : <p className="m-empty">Hier ist noch Platz für deinen ersten Kurs.</p>}
-        </section>
-        <section aria-labelledby="latest-heading">
-          <div className="m-section-heading"><h2 id="latest-heading">Frisch dazugekommen</h2><span>Neue Lektionen</span></div>
-          {newContent.length ? newContent.map((item, index) => (
-            <Link key={item.videoId} href={`/mentorship/modul/${item.moduleId}?video=${item.videoId}`} prefetch={false} className="m-content-row">
-              <span className="m-row-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
-              <div><h3>{item.videoTitle}</h3><p>{item.courseName ? `${item.courseName} · ` : ''}{item.moduleName}</p></div>
-              <ArrowRight aria-hidden="true" />
-            </Link>
-          )) : <p className="m-empty">Alles auf dem aktuellen Stand. Neue Lektionen findest du hier.</p>}
-        </section>
-      </div>
-      <p className="m-quiet-note">Dein Tempo ist das richtige Tempo.</p>
     </div>
-  )
+    <div className="m-resume-art" aria-hidden="true">
+      <Image src="/images/mentorship/market-focus.webp" alt="" fill sizes="(max-width: 639px) 64px, 360px" />
+    </div>
+  </section>
+}
+
+export function MentorshipHomeContent({ courses, continueLearning, newContent, onboarding }: Props) {
+  return <div className="m-page">
+    <div className="m-page-header"><div>
+      <p className="m-eyebrow">Übersicht</p>
+      <h1 className="m-page-title">Schön, dass du da bist<MentorshipWelcomeName /></h1>
+    </div></div>
+    {continueLearning ? <LearningCard target={continueLearning} /> : null}
+    {onboarding}
+    {!courses.length ? <p className="m-dashboard-empty">Deine Kurse erscheinen hier, sobald sie verfügbar sind.</p> : <div className="m-home-columns">
+      <section aria-labelledby="courses-heading">
+        <div className="m-section-heading"><h2 id="courses-heading">Kurse</h2></div>
+        {courses.map(course => {
+          const completed = course.totalLessons > 0 && course.completedLessons === course.totalLessons
+          const moduleLabel = `${course.modulesLength} ${course.modulesLength === 1 ? 'Modul' : 'Module'}`
+          const progressLabel = completed ? 'Abgeschlossen' : course.totalLessons === 0 ? 'Lektionen folgen'
+            : course.completedLessons === null ? `${course.totalLessons} Lektionen` : `${course.completedLessons} von ${course.totalLessons} Lektionen abgeschlossen`
+          return <Link key={course.id} href={`/mentorship/${course.id}`} prefetch={false} className="m-content-row" data-completed={completed}>
+            <div>
+              <h3>{completed ? <Check aria-hidden="true" /> : null}{course.name}</h3>
+              <p>{progressLabel} · {moduleLabel}</p>
+              {!completed && course.totalLessons > 0 && course.percent !== null ? <div className="m-course-progress"><Progress value={course.percent} aria-label={`Fortschritt im Kurs ${course.name}`} /></div> : null}
+            </div>
+          </Link>
+        })}
+      </section>
+      {newContent.length ? <section aria-labelledby="latest-heading">
+        <div className="m-section-heading"><h2 id="latest-heading">Neue Lektionen</h2><span>Hinzugefügt</span></div>
+        {newContent.map(item => <Link key={item.videoId} href={`/mentorship/modul/${item.moduleId}?video=${item.videoId}`} prefetch={false} className="m-content-row" data-completed={item.watched}>
+          <div>
+            <h3>{item.watched ? <Check aria-hidden="true" /> : null}{item.videoTitle}</h3>
+            <p>{[item.watched ? 'Abgeschlossen' : null, item.courseName, item.moduleName, item.isPdf ? 'PDF' : null].filter(Boolean).join(' · ')}</p>
+          </div>
+          <time dateTime={item.addedAt}><span className="sr-only">Hinzugefügt am </span>{dateFormat.format(new Date(item.addedAt))}</time>
+        </Link>)}
+      </section> : null}
+    </div>}
+  </div>
 }

@@ -1,11 +1,13 @@
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+import { ChartLineUp } from '@/components/mentorship/icons'
+import type { ReactNode } from 'react'
 import { auth } from '@clerk/nextjs/server'
-import { ChartLineUp } from '@phosphor-icons/react/dist/ssr/ChartLineUp'
 import { Sidebar } from '@/components/Sidebar'
 import { IndicatorAdminPanel } from '@/components/indicators/indicator-admin-panel'
 import { IndicatorMemberBoard } from '@/components/indicators/indicator-member-board'
+import { IndicatorUsageGuide } from '@/components/indicators/indicator-usage-guide'
 import { getIsAdmin } from '@/lib/authz'
 import { getSidebarData } from '@/lib/sidebar-data'
 import {
@@ -25,19 +27,27 @@ export default async function MentorshipIndicatorsPage() {
     sidebarDataPromise,
   ])
 
-  const content = isAdmin ? (
-    <IndicatorAdminPanel overview={await getIndicatorAdminOverview()} />
-  ) : (
-    <IndicatorMemberBoard
-      packages={await listVisibleIndicatorPackages()}
-      claims={userId ? await listIndicatorClaimsForUser(userId) : []}
-      tradingViewAccount={userId ? await getTradingViewAccountForUser(userId) : null}
-    />
-  )
+  let content: ReactNode
+  if (isAdmin) {
+    content = <IndicatorAdminPanel overview={await getIndicatorAdminOverview()} />
+  } else {
+    const [packages, claims, tradingViewAccount] = await Promise.all([
+      listVisibleIndicatorPackages(),
+      userId ? listIndicatorClaimsForUser(userId) : [],
+      userId ? getTradingViewAccountForUser(userId) : null,
+    ])
+    // Keep static Markdown on the server; the client only filters and claims indicators.
+    const usageGuides = Object.fromEntries(packages.flatMap(pkg => pkg.indicators
+      .filter(indicator => indicator.usageGuide)
+      .map(indicator => [indicator.id, <IndicatorUsageGuide key={indicator.id} content={indicator.usageGuide} className="mt-3" />])
+    ))
+    content = <IndicatorMemberBoard packages={packages} claims={claims}
+      tradingViewAccount={tradingViewAccount} usageGuides={usageGuides} />
+  }
 
   return (
-    <div className="flex h-full min-h-0 bg-background">
-      <div className={isAdmin ? "hidden lg:block" : "hidden xl:block"}>
+    <div className={isAdmin ? "flex h-full min-h-0 bg-background" : "m-workspace"}>
+      <div className={isAdmin ? "hidden lg:block" : "m-desktop-sidebar hidden xl:block"}>
         <Sidebar
           kurse={kurseForSidebar}
           pages={pagesForSidebar}

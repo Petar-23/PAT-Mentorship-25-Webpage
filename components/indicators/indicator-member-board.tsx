@@ -1,16 +1,13 @@
 'use client'
 
+import { ArrowRight, CheckCircle, WarningCircle } from '@/components/mentorship/icons'
 import Image from 'next/image'
-import { useMemo, useState, useTransition } from 'react'
-import { ArrowRight } from '@phosphor-icons/react/ArrowRight'
-import { CheckCircle } from '@phosphor-icons/react/CheckCircle'
-import { WarningCircle } from '@phosphor-icons/react/WarningCircle'
+import { useMemo, useState, useTransition, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { IndicatorUsageGuide } from '@/components/indicators/indicator-usage-guide'
 import type {
   Indicator,
   IndicatorClaim,
@@ -25,6 +22,7 @@ type Props = {
   packages: IndicatorPackage[]
   claims: IndicatorClaim[]
   tradingViewAccount: TradingViewAccountBinding | null
+  usageGuides: Record<string, ReactNode>
 }
 
 type MemberIndicatorFilter = 'all' | 'claimable' | 'active' | 'queued' | 'needsAction'
@@ -69,7 +67,7 @@ function AvailabilityPill({ claimable }: { claimable: boolean }) {
   )
 }
 
-export function IndicatorMemberBoard({ packages, claims, tradingViewAccount }: Props) {
+export function IndicatorMemberBoard({ packages, claims, tradingViewAccount, usageGuides }: Props) {
   const [tvUsername, setTvUsername] = useState(tradingViewAccount?.tvUsername ?? '')
   const [activeIndicatorId, setActiveIndicatorId] = useState<string | null>(null)
   const [result, setResult] = useState<IndicatorActionResult | null>(null)
@@ -325,7 +323,7 @@ export function IndicatorMemberBoard({ packages, claims, tradingViewAccount }: P
                             <summary className="cursor-pointer select-none text-sm font-medium">
                               Anleitung
                             </summary>
-                            <IndicatorUsageGuide content={indicator.usageGuide} className="mt-3" />
+                            {usageGuides[indicator.id]}
                           </details>
                         ) : null}
 

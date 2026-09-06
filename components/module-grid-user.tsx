@@ -1,9 +1,9 @@
 'use client'
 
+import { MagnifyingGlass, SquaresFour, ListBullets } from '@/components/mentorship/icons'
 import { useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { ModuleCardUser } from './module-card-user'
-import type { ReactNode } from 'react'
-import { MagnifyingGlass } from '@phosphor-icons/react/MagnifyingGlass'
 
 type Props = {
   modules: Array<{
@@ -14,128 +14,106 @@ type Props = {
     chaptersCount: number
     totalDurationSeconds: number | null
   }>
-  playlistId: string
   playlistName?: string
-  initialProgressByModuleId?: Record<
+  playlistDescription?: string | null
+  progressByModuleId: Record<
     string,
     { percent: number; completedLessons: number; totalLessons: number }
   >
-  mobileCoursesDrawer?: ReactNode
 }
 
 export function ModuleGridUser({
   modules,
-  playlistId,
   playlistName,
-  initialProgressByModuleId,
-  mobileCoursesDrawer,
+  playlistDescription,
+  progressByModuleId,
 }: Props) {
   const [query, setQuery] = useState('')
-  const [progressLoading, setProgressLoading] = useState(!initialProgressByModuleId)
-  const [fetchedProgressByModuleId, setFetchedProgressByModuleId] = useState<
-    Record<string, { percent: number; completedLessons: number; totalLessons: number }>
-  >({})
-  const progressAbortRef = useRef<AbortController | null>(null)
-
-  const progressByModuleId = initialProgressByModuleId ?? fetchedProgressByModuleId
-
-  useEffect(() => {
-    if (initialProgressByModuleId) return
-
-    let cancelled = false
-
-    const load = async () => {
-      const controller = new AbortController()
-      progressAbortRef.current?.abort()
-      progressAbortRef.current = controller
-
-      try {
-        const res = await fetch(`/api/progress/playlist/${playlistId}`, {
-          cache: 'no-store',
-          signal: controller.signal,
-        })
-        if (!res.ok) return
-        const data = (await res.json()) as { modules?: unknown }
-        if (cancelled || controller.signal.aborted) return
-
-        const raw = data.modules
-        if (!raw || typeof raw !== 'object') return
-
-        const next: Record<
-          string,
-          { percent: number; completedLessons: number; totalLessons: number }
-        > = {}
-
-        const byModule = raw as Record<string, unknown>
-        for (const [moduleId, value] of Object.entries(byModule)) {
-          if (!value || typeof value !== 'object') continue
-          const v = value as Record<string, unknown>
-          const percent = typeof v.percent === 'number' ? v.percent : 0
-          const completedLessons =
-            typeof v.completedLessons === 'number' ? v.completedLessons : 0
-          const totalLessons = typeof v.totalLessons === 'number' ? v.totalLessons : 0
-          next[moduleId] = { percent, completedLessons, totalLessons }
-        }
-
-        setFetchedProgressByModuleId(next)
-      } catch (error) {
-        if (controller.signal.aborted) return
-        // Progress is non-critical; keep the existing UI state on transient failures.
-      } finally {
-        if (!cancelled) setProgressLoading(false)
-        if (progressAbortRef.current === controller) {
-          progressAbortRef.current = null
-        }
-      }
-    }
-
-    void load()
-
-    const onFocus = () => void load()
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') void load()
-    }
-
-    window.addEventListener('focus', onFocus)
-    document.addEventListener('visibilitychange', onVisibility)
-
-    return () => {
-      cancelled = true
-      progressAbortRef.current?.abort()
-      window.removeEventListener('focus', onFocus)
-      document.removeEventListener('visibilitychange', onVisibility)
-    }
-  }, [playlistId, initialProgressByModuleId])
-
+  const [view, setView] = useState<'grid' | 'list'>('grid')
+  const [selectedView, setSelectedView] = useState<'grid' | 'list'>('grid')
+  const [presentCards, setPresentCards] = useState(true)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const animationRef = useRef<Animation | null>(null)
+  const requestedViewRef = useRef<'grid' | 'list'>('grid')
   const search = query.trim().toLocaleLowerCase('de')
-  const visibleModules = search ? modules.filter(module =>
+  const orderedModules = modules.map((module, index) => ({ ...module, artwork: index % 2 ? 'focus' as const : 'structure' as const }))
+  const visibleModules = search ? orderedModules.filter(module =>
     `${module.name} ${module.description ?? ''}`.toLocaleLowerCase('de').includes(search)
-  ) : modules
+  ) : orderedModules
+
+  useEffect(() => () => {
+    animationRef.current?.cancel()
+    animationRef.current = null
+  }, [])
+
+  async function changeView(nextView: 'grid' | 'list') {
+    if (nextView === requestedViewRef.current) return
+    requestedViewRef.current = nextView
+    setSelectedView(nextView)
+    setPresentCards(false)
+
+    const grid = gridRef.current
+    const currentStyle = grid ? getComputedStyle(grid) : null
+    const from = { opacity: currentStyle?.opacity ?? '1', transform: currentStyle?.transform ?? 'none' }
+    animationRef.current?.cancel()
+    animationRef.current = null
+
+    if (!grid || !visibleModules.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setView(nextView)
+      return
+    }
+
+    const leaving = grid.animate([from, { opacity: 0, transform: 'translateY(-4px)' }], {
+      duration: 100, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards',
+    })
+    animationRef.current = leaving
+    await leaving.finished.catch(() => null)
+    if (animationRef.current !== leaving) return
+
+    // Change the layout while invisible, before the browser starts revealing it.
+    flushSync(() => setView(nextView))
+    const entering = grid.animate([
+      { opacity: 0, transform: 'translateY(4px)' },
+      { opacity: 1, transform: 'none' },
+    ], { duration: 200, easing: 'cubic-bezier(.22,.7,.2,1)', fill: 'both' })
+    animationRef.current = entering
+    leaving.cancel()
+    await entering.finished.catch(() => null)
+    if (animationRef.current === entering) {
+      entering.cancel()
+      animationRef.current = null
+    }
+  }
 
   return (
-    <div className="m-page">
+    <div className="m-page m-course-page">
       <div className="m-page-header">
-        {mobileCoursesDrawer}
         <div>
-          <p className="m-eyebrow">Deine Kurse</p>
+          <p className="m-eyebrow">Kurs</p>
           <h1 className="m-page-title">{playlistName || 'Module'}</h1>
-          <p className="m-page-intro">Wissen aufbauen. Zusammenhänge erkennen. Im Chart wiederfinden.</p>
+          {playlistDescription?.trim() ? <p className="m-page-intro">{playlistDescription}</p> : null}
         </div>
       </div>
       <div className="m-modules-toolbar">
-        <p aria-live="polite">{search ? `${visibleModules.length} Treffer · ` : ''}{modules.length} {modules.length === 1 ? 'Modul' : 'Module'}</p>
         <label className="m-search">
           <MagnifyingGlass aria-hidden="true" />
-          <input type="search" aria-label="Module durchsuchen" placeholder="Modul finden…" value={query} onChange={event => setQuery(event.target.value)} />
+          <input type="search" aria-label="Module durchsuchen" placeholder="Modul finden…" value={query} onChange={event => { setPresentCards(false); setQuery(event.target.value) }} />
         </label>
+        <div className="m-view-options">
+          <p aria-live="polite">{search ? `${visibleModules.length} Treffer` : `${modules.length} ${modules.length === 1 ? 'Modul' : 'Module'}`}</p>
+          <div className="m-view-control" data-view={selectedView} role="group" aria-label="Modulansicht">
+            <button type="button" aria-label="Kachelansicht" title="Kachelansicht" aria-pressed={selectedView === 'grid'} onClick={() => changeView('grid')}><SquaresFour /></button>
+            <button type="button" aria-label="Listenansicht" title="Listenansicht" aria-pressed={selectedView === 'list'} onClick={() => changeView('list')}><ListBullets /></button>
+          </div>
+        </div>
       </div>
-      {visibleModules.length ? <div className="m-module-grid">
-        {visibleModules.map(modul => <ModuleCardUser key={modul.id} modul={modul} artwork={modules.indexOf(modul) % 2 ? 'focus' : 'structure'} progress={progressByModuleId[modul.id] ?? null} progressLoading={progressLoading} />)}
-      </div> : <div className="m-empty" role="status">
-        <h2>{search ? 'Noch nicht gefunden.' : 'Hier geht es bald los.'}</h2>
-        <p>{search ? 'Versuch es mit einem anderen Begriff.' : 'Die Module für diesen Kurs erscheinen hier, sobald sie bereit sind.'}</p>
-        {search ? <button type="button" className="mt-4 underline underline-offset-4" onClick={() => setQuery('')}>Alle Module anzeigen</button> : null}
-      </div>}
+      <div ref={gridRef} className={visibleModules.length ? 'm-module-grid' : 'm-empty'} data-view={view} data-present={presentCards} role={visibleModules.length ? undefined : 'status'}>
+        {visibleModules.length ? visibleModules.map((modul, index) => <ModuleCardUser key={modul.id} modul={modul} entranceOrder={index} artwork={modul.artwork} progress={progressByModuleId[modul.id] ?? null} />) : <>
+          <h2>{search ? 'Noch nicht gefunden.' : 'Hier geht es bald los.'}</h2>
+          <p>{search ? 'Versuch es mit einem anderen Begriff.' : 'Die Module für diesen Kurs erscheinen hier, sobald sie bereit sind.'}</p>
+          {search ? <button type="button" className="m-text-link mt-4" onClick={() => setQuery('')}>Alle Module anzeigen</button> : null}
+        </>}
+      </div>
     </div>
   )
 }

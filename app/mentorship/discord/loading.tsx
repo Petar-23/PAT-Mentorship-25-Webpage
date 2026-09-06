@@ -1,14 +1,5 @@
-import { MentorshipDiscordSkeleton, MentorshipSidebarSkeleton } from '@/components/skeletons/mentorship-skeleton'
+import { MentorshipLoadingScreen } from '@/components/mentorship/loading-state'
 
 export default function MentorshipDiscordLoading() {
-  return (
-    <div className="flex h-full min-h-0 bg-background">
-      <div className="hidden xl:block">
-        <MentorshipSidebarSkeleton />
-      </div>
-      <MentorshipDiscordSkeleton />
-    </div>
-  )
+  return <MentorshipLoadingScreen label="Community wird geladen" />
 }
-
-

@@ -2,19 +2,11 @@
 
 'use client'
 
+import { ArrowLeft, ArrowRight, Check, FastForward, FileText, Pause, Play, Rewind, Trash as Trash2 } from '@/components/mentorship/icons'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Script from 'next/script'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft } from '@phosphor-icons/react/ArrowLeft'
-import { ArrowRight } from '@phosphor-icons/react/ArrowRight'
-import { Check } from '@phosphor-icons/react/Check'
-import { FastForward } from '@phosphor-icons/react/FastForward'
-import { FileText } from '@phosphor-icons/react/FileText'
-import { Pause } from '@phosphor-icons/react/Pause'
-import { Play } from '@phosphor-icons/react/Play'
-import { Rewind } from '@phosphor-icons/react/Rewind'
-import { Trash as Trash2 } from '@phosphor-icons/react/Trash'
 import { useToast } from '@/hooks/use-toast'
 
 const UploadZone = dynamic(() => import('./upload-zone').then((mod) => mod.UploadZone), {
@@ -101,8 +93,10 @@ export function VideoPlayer({
 }: Props) {
   const { toast } = useToast()
   const VideoHeading = onBack ? 'h1' : 'h2'
+  const isDocumentLesson = !isAdmin && !activeVideo?.bunnyGuid?.trim() && Boolean(activeVideo?.pdfUrl?.trim())
 
   const [isEditing, setIsEditing] = useState(false)
+  const [presentPlayer, setPresentPlayer] = useState(true)
   const [tempTitle, setTempTitle] = useState('')
   const [isPlayerLoaded, setIsPlayerLoaded] = useState(false)
   const [isEmbedRequested, setIsEmbedRequested] = useState(false)
@@ -652,7 +646,7 @@ export function VideoPlayer({
         />
       ) : null}
 
-      <div className="m-video-player flex flex-col">
+      <div className="m-video-player flex flex-col" data-present={!isAdmin && presentPlayer} onFocusCapture={() => setPresentPlayer(false)}>
       {/* Header (wie Middle-Sidebar): Back + Chapter + Video Titel */}
       <div className="m-video-heading flex items-start gap-3">
         {onBack ? (
@@ -699,8 +693,8 @@ export function VideoPlayer({
                 ].join(' ')}
                 onClick={isAdmin && activeVideo ? startEdit : undefined}
               >
-                <VideoHeading className="text-2xl sm:text-3xl font-bold leading-tight">
-                  {activeVideo ? activeVideo.title : 'Wähle ein Video aus'}
+                <VideoHeading>
+                  {activeVideo ? activeVideo.title : 'Wähle eine Lektion aus'}
                 </VideoHeading>
               </div>
             )}
@@ -710,8 +704,17 @@ export function VideoPlayer({
 
       {/* Player oder UploadZone */}
       <div className="flex-1 flex flex-col">
-        <div className="aspect-video bg-black/90 rounded-2xl overflow-hidden relative">
-          {isAdmin && activeVideo && (uploadViewVideoId === activeVideo.id || !activeVideo.bunnyGuid) ? (
+        <div className={`m-video-stage ${!isAdmin && !activeVideo?.bunnyGuid?.trim() ? 'm-document-lesson' : 'aspect-video bg-black/90 rounded-2xl overflow-hidden relative'}`}>
+          {isDocumentLesson && activeVideo?.pdfUrl ? (
+            <>
+              <FileText aria-hidden="true" />
+              <h2>Unterlagen zur Lektion</h2>
+              <p>Diese Lektion besteht aus Unterlagen. Öffne die PDF und markiere die Lektion danach als abgeschlossen.</p>
+              <Button asChild variant="outline" className="mt-6">
+                <a href={activeVideo.pdfUrl} target="_blank" rel="noopener noreferrer">PDF öffnen<span className="sr-only"> (neuer Tab)</span></a>
+              </Button>
+            </>
+          ) : isAdmin && activeVideo && (uploadViewVideoId === activeVideo.id || !activeVideo.bunnyGuid) ? (
             <UploadZone
               videoId={activeVideo.id}
               onUploadStart={() => setUploadViewVideoId(activeVideo.id)}
@@ -730,7 +733,7 @@ export function VideoPlayer({
                 setIsPlayerLoaded(false)
               }}
             />
-          ) : activeVideo?.bunnyGuid ? (
+          ) : activeVideo?.bunnyGuid?.trim() ? (
             isAdmin ? (
               bunnyStatusError != null ? (
                 isEmbedRequested && iframeSrc ? (
@@ -874,27 +877,18 @@ export function VideoPlayer({
               ) : null
             )
           ) : (
-            <>
-              {(
-                <div className="w-full h-full flex items-center justify-center bg-black/70 text-white">
-                  <p className="text-sm text-center px-6">
-                    {activeVideo
-                      ? 'Dieses Video ist noch nicht verfügbar.'
-                      : 'Bitte wähle ein Video aus.'}
-                  </p>
-                </div>
-              )}
-            </>
+            <div className={isAdmin ? 'w-full h-full flex items-center justify-center bg-black/70 text-white' : undefined}>
+              <p>{activeVideo ? 'Diese Lektion ist noch nicht verfügbar.' : 'Bitte wähle eine Lektion aus.'}</p>
+            </div>
           )}
         </div>
 
-        {!isAdmin && activeVideo?.bunnyGuid ? (
+        {!isAdmin && activeVideo?.bunnyGuid?.trim() ? (
           <div className="m-playback-controls">
             <Button
               type="button"
               variant="secondary"
               size="icon"
-              className="size-14 rounded-full border border-white/30 bg-white/10 text-white shadow-sm hover:bg-white/20 hover:text-white disabled:text-white/70 disabled:opacity-60 [&_svg]:!size-6"
               onClick={() => seekActiveVideoBy(-10)}
               disabled={!isPlayerApiReady}
               aria-label="10 Sekunden zurück"
@@ -906,7 +900,6 @@ export function VideoPlayer({
               type="button"
               variant="default"
               size="icon"
-              className="mx-3 size-16 rounded-full bg-white text-neutral-950 shadow-md hover:bg-neutral-100 disabled:bg-white/70 disabled:text-neutral-950 disabled:opacity-70 [&_svg]:!size-7"
               onClick={togglePlayerPlayback}
               disabled={!isPlayerApiReady}
               aria-label={isPlaybackPaused ? 'Video abspielen' : 'Video pausieren'}
@@ -918,7 +911,6 @@ export function VideoPlayer({
               type="button"
               variant="secondary"
               size="icon"
-              className="size-14 rounded-full border border-white/30 bg-white/10 text-white shadow-sm hover:bg-white/20 hover:text-white disabled:text-white/70 disabled:opacity-60 [&_svg]:!size-6"
               onClick={() => seekActiveVideoBy(10)}
               disabled={!isPlayerApiReady}
               aria-label="10 Sekunden vor"
@@ -930,7 +922,7 @@ export function VideoPlayer({
 
                 {/* File attachments und Delete video in einer Zeile */}
                 <div className="m-lesson-actions">
-          {isAdmin || activeVideo?.pdfUrl ? <p className="m-attachment-label">Unterlagen zur Lektion</p> : null}
+          {isAdmin || (activeVideo?.pdfUrl && !isDocumentLesson) ? <p className="m-attachment-label">Unterlagen zur Lektion</p> : null}
 
           <div className="flex items-center justify-between flex-wrap gap-4 sm:gap-6">
             <div className="flex flex-wrap items-center gap-4">
@@ -943,7 +935,7 @@ export function VideoPlayer({
               )}
 
               {/* Vorhandene PDF als Chip */}
-              {activeVideo?.pdfUrl && (
+              {activeVideo?.pdfUrl && !isDocumentLesson && (
                 <div className="m-attachment">
                   <FileText className="h-5 w-5 text-muted-foreground" />
                   <a
@@ -975,9 +967,9 @@ export function VideoPlayer({
                 Delete video
               </Button>
             ) : !isAdmin && activeVideo ? (
-              <div className="w-full flex flex-wrap gap-3 [&>button]:flex-1">
+              <div className="m-lesson-buttons">
                 <Button
-                  variant={activeVideoWatched ? 'secondary' : 'outline'}
+                  variant="outline"
                   aria-pressed={activeVideoWatched}
                   aria-label={activeVideoWatched ? 'Als nicht abgeschlossen markieren' : 'Als abgeschlossen markieren'}
                   onClick={async () => {
@@ -1000,7 +992,7 @@ export function VideoPlayer({
                   disabled={isSavingWatched}
                   className="w-full"
                 >
-                  <Check className="mr-2 h-4 w-4" />
+                  <Check aria-hidden="true" />
                   {isSavingWatched ? 'Wird gespeichert…' : activeVideoWatched ? 'Abgeschlossen' : 'Abschließen'}
                 </Button>
 
@@ -1010,8 +1002,8 @@ export function VideoPlayer({
                   disabled={!onNextVideo || nextVideoDisabled}
                   className="w-full"
                 >
-                  <ArrowRight className="mr-2 h-4 w-4" />
                   Nächste Lektion
+                  <ArrowRight aria-hidden="true" />
                 </Button>
               </div>
             ) : null}

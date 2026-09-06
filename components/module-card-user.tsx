@@ -1,21 +1,12 @@
 'use client'
 
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { CheckCircle } from '@/components/mentorship/icons'
+import { MentorshipLink as Link } from '@/components/mentorship/navigation-link'
 import Image from 'next/image'
-import { CheckCircle } from '@phosphor-icons/react/CheckCircle'
 import { Progress } from '@/components/ui/progress'
-
-function formatModuleDuration(totalSeconds: number | null | undefined) {
-  if (!totalSeconds || !Number.isFinite(totalSeconds) || totalSeconds <= 0) return '—'
-
-  const totalMinutes = Math.max(1, Math.round(totalSeconds / 60))
-  const h = Math.floor(totalMinutes / 60)
-  const m = totalMinutes % 60
-
-  if (h > 0) return `${h} Std. ${m} Min.`
-  return `${m} Min.`
-}
+import { formatLearningDuration } from '@/lib/mentorship-learning'
+import { mentorshipModuleArtwork } from '@/lib/mentorship-module-artwork'
+import type { CSSProperties } from 'react'
 
 type Props = {
   modul: {
@@ -26,8 +17,8 @@ type Props = {
     chaptersCount: number
     totalDurationSeconds?: number | null
   }
-  progressLoading?: boolean
   artwork?: 'structure' | 'focus'
+  entranceOrder?: number
   progress?: {
     percent: number
     completedLessons: number
@@ -35,31 +26,31 @@ type Props = {
   } | null
 }
 
-export function ModuleCardUser({ modul, progress = null, progressLoading = false, artwork = 'structure' }: Props) {
-  const router = useRouter()
+export function ModuleCardUser({ modul, progress = null, artwork = 'structure', entranceOrder = 0 }: Props) {
   const href = `/mentorship/modul/${modul.id}`
+  const imageUrl = mentorshipModuleArtwork[modul.id] || modul.imageUrl || `/images/mentorship/market-${artwork}.webp`
+  const completed = Boolean(progress && progress.totalLessons > 0 && progress.completedLessons === progress.totalLessons)
 
   return (
     <Link
       href={href}
       prefetch={false}
       className="m-module-card"
-      onMouseEnter={() => router.prefetch(href)}
-      onFocus={() => router.prefetch(href)}
+      style={{ '--m-card-delay': `${Math.min(entranceOrder, 5) * 40}ms` } as CSSProperties}
     >
       <div className="m-module-cover">
-        <Image src={modul.imageUrl || `/images/mentorship/market-${artwork}.webp`} alt="" fill sizes="(max-width: 639px) 100vw, (max-width: 1279px) 50vw, 33vw" />
+        <Image src={imageUrl} alt="" fill sizes="(max-width: 639px) 100vw, (max-width: 1279px) 50vw, 33vw" />
       </div>
       <div className="m-module-content">
-        <div className="m-module-meta"><span>{modul.chaptersCount} Kapitel</span><span>{formatModuleDuration(modul.totalDurationSeconds)}</span></div>
+        <div className="m-module-meta"><span>{modul.chaptersCount} Kapitel</span>{formatLearningDuration(modul.totalDurationSeconds) ? <span>{formatLearningDuration(modul.totalDurationSeconds)}</span> : null}</div>
         <h2>{modul.name}</h2>
         {modul.description ? <p className="m-module-description line-clamp-3">{modul.description}</p> : null}
         <div className="m-module-progress">
           <div className="m-module-progress-label">
-            <span>{progress ? `${progress.completedLessons} von ${progress.totalLessons} Lektionen` : progressLoading ? 'Fortschritt wird geladen…' : 'Fortschritt nicht verfügbar'}</span>
-            {progress?.percent === 100 ? <CheckCircle aria-label="Abgeschlossen" /> : progress ? <span>{progress.percent}%</span> : null}
+            <span>{completed ? 'Abgeschlossen' : progress ? `${progress.completedLessons} von ${progress.totalLessons} Lektionen` : 'Fortschritt nicht verfügbar'}</span>
+            {completed ? <CheckCircle aria-hidden="true" /> : progress ? <span>{progress.percent}%</span> : null}
           </div>
-          {progress ? <Progress value={progress.percent} aria-label={`Fortschritt in ${modul.name}`} /> : progressLoading ? <div className="h-1 rounded-full bg-neutral-200 animate-pulse" /> : null}
+          {progress && !completed ? <Progress value={progress.percent} aria-label={`Fortschritt in ${modul.name}`} /> : null}
         </div>
       </div>
     </Link>

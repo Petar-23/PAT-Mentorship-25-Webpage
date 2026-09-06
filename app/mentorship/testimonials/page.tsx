@@ -1,9 +1,9 @@
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+import { Star } from '@/components/mentorship/icons'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
-import { Star } from '@phosphor-icons/react/dist/ssr/Star'
 import { Sidebar } from '@/components/Sidebar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'

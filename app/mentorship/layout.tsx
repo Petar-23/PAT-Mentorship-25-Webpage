@@ -6,6 +6,7 @@ import { cookies } from 'next/headers'
 import { MentorshipShell } from '@/components/mentorship/shell'
 import { getSidebarData } from '@/lib/sidebar-data'
 import { MobileCoursesDrawer } from '@/components/mobile-courses-drawer'
+import { mentorshipSans, mentorshipSerif } from './fonts'
 import './mentorship.css'
 
 export default async function CoursesLayout({ children }: { children: ReactNode }) {
@@ -33,7 +34,7 @@ export default async function CoursesLayout({ children }: { children: ReactNode 
   return (
     <>
       <div hidden data-hide-root-footer="true" />
-      <MentorshipShell initialTheme={theme} headerNavigation={<MobileCoursesDrawer
+      <MentorshipShell className={`m-pat-fonts ${mentorshipSans.variable} ${mentorshipSerif.variable}`} initialTheme={theme} headerNavigation={<MobileCoursesDrawer
         kurse={navigation.kurseForSidebar} pages={navigation.pagesForSidebar} savedSidebarOrder={navigation.savedSidebarOrder}
       />}>{children}</MentorshipShell>
     </>

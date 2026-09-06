@@ -10,7 +10,10 @@
     "invoices:download": "node scripts/download-invoices.mjs --env-file .env.local",
     "hermes:upload": "node scripts/hermes-upload.mjs",
     "test:hermes-upload": "node --test scripts/hermes-upload.test.mjs",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test lib/*.test.mjs scripts/*.test.mjs",
+    "measure:mentorship": "node scripts/measure-mentorship-bundle.mjs"
   },
   "dependencies": {
     "@clerk/localizations": "^3.32.1",

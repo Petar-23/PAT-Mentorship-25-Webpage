@@ -1,5 +1,3 @@
-'use client'
-
 /* eslint-disable @next/next/no-img-element */
 import ReactMarkdown, { type Components } from 'react-markdown'
 import rehypeSanitize from 'rehype-sanitize'

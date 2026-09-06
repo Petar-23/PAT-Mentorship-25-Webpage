@@ -98,8 +98,8 @@ export default async function DiscordPage({
   const connectedDiscordLabel = connectedDiscord.label
 
   return (
-    <div className="flex h-full min-h-0">
-      <div className={isAdmin ? "hidden lg:block" : "hidden xl:block"}><Sidebar kurse={kurseForSidebar} pages={pagesForSidebar} savedSidebarOrder={savedSidebarOrder} isAdmin={isAdmin} /></div>
+    <div className={isAdmin ? "flex h-full min-h-0" : "m-workspace"}>
+      <div className={isAdmin ? "hidden lg:block" : "m-desktop-sidebar hidden xl:block"}><Sidebar kurse={kurseForSidebar} pages={pagesForSidebar} savedSidebarOrder={savedSidebarOrder} isAdmin={isAdmin} /></div>
       <div className="m-page-scroll">
         <MentorshipCommunityContent connected={Boolean(connectedDiscordUserId)} accountLabel={connectedDiscordLabel} status={discord} reason={reason} />
       </div>

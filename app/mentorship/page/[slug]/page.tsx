@@ -52,8 +52,8 @@ export default async function PageSlugRoute({ params }: Props) {
   }
 
   return (
-    <div className="flex h-full min-h-0 bg-background">
-      <div className={isAdmin ? "hidden lg:block" : "hidden xl:block"}>
+    <div className={isAdmin ? "flex h-full min-h-0 bg-background" : "m-workspace"}>
+      <div className={isAdmin ? "hidden lg:block" : "m-desktop-sidebar hidden xl:block"}>
         <Sidebar
           kurse={kurseForSidebar}
           pages={pagesForSidebar}
@@ -62,7 +62,7 @@ export default async function PageSlugRoute({ params }: Props) {
         />
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className={isAdmin ? "flex-1 min-h-0 overflow-y-auto" : "m-document-scroll flex-1 min-h-0 overflow-y-auto"}>
         {isAdmin ? (
           <PageEditorLoader page={pageData} />
         ) : (
