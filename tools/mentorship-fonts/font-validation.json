@@ -1,5 +1,5 @@
 {
-  "version": "0.4",
+  "version": "0.5",
   "upstream_commit": "5e35378e6bda803962ee6fd257e444a7d459660d",
   "families": [
     {
@@ -37,7 +37,7 @@
       "axis_suffix": "[opsz,wght]",
       "license": "sourceserif4-OFL.txt",
       "pin": {
-        "opsz": 28
+        "opsz": 34
       },
       "sx": 1.095,
       "caps_sx": 1.18,
@@ -76,12 +76,13 @@
       "descender": 240,
       "width_factor": 1.03,
       "weights": {
-        "400": 450,
-        "500": 555,
-        "600": 675,
-        "700": 755
+        "400": 442,
+        "500": 542,
+        "600": 650,
+        "700": 738
       },
-      "version": "0.4"
+      "spacing_reduction": 8,
+      "version": "0.5"
     }
   ],
   "fonts": [
@@ -99,7 +100,12 @@
       "glyphs": 504,
       "unicode_characters": 346,
       "contour_refinements": [],
+      "rounded_serif_brackets": [],
       "width_refinements": [],
+      "spacing_reduction_units": 0,
+      "spacing_glyphs": 0,
+      "italic_angle": 0.0,
+      "italic_construction": null,
       "additional_kerning_pairs": 0,
       "clearance_adjustments": [],
       "rebuilt_ligatures": [],
@@ -124,7 +130,12 @@
       "glyphs": 504,
       "unicode_characters": 346,
       "contour_refinements": [],
+      "rounded_serif_brackets": [],
       "width_refinements": [],
+      "spacing_reduction_units": 0,
+      "spacing_glyphs": 0,
+      "italic_angle": 0.0,
+      "italic_construction": null,
       "additional_kerning_pairs": 0,
       "clearance_adjustments": [],
       "rebuilt_ligatures": [],
@@ -149,7 +160,12 @@
       "glyphs": 504,
       "unicode_characters": 346,
       "contour_refinements": [],
+      "rounded_serif_brackets": [],
       "width_refinements": [],
+      "spacing_reduction_units": 0,
+      "spacing_glyphs": 0,
+      "italic_angle": 0.0,
+      "italic_construction": null,
       "additional_kerning_pairs": 0,
       "clearance_adjustments": [],
       "rebuilt_ligatures": [],
@@ -174,7 +190,12 @@
       "glyphs": 504,
       "unicode_characters": 346,
       "contour_refinements": [],
+      "rounded_serif_brackets": [],
       "width_refinements": [],
+      "spacing_reduction_units": 0,
+      "spacing_glyphs": 0,
+      "italic_angle": 0.0,
+      "italic_construction": null,
       "additional_kerning_pairs": 0,
       "clearance_adjustments": [],
       "rebuilt_ligatures": [],
@@ -199,7 +220,12 @@
       "glyphs": 504,
       "unicode_characters": 346,
       "contour_refinements": [],
+      "rounded_serif_brackets": [],
       "width_refinements": [],
+      "spacing_reduction_units": 0,
+      "spacing_glyphs": 0,
+      "italic_angle": -13.0,
+      "italic_construction": null,
       "additional_kerning_pairs": 0,
       "clearance_adjustments": [],
       "rebuilt_ligatures": [],
@@ -224,7 +250,12 @@
       "glyphs": 504,
       "unicode_characters": 346,
       "contour_refinements": [],
+      "rounded_serif_brackets": [],
       "width_refinements": [],
+      "spacing_reduction_units": 0,
+      "spacing_glyphs": 0,
+      "italic_angle": -13.0,
+      "italic_construction": null,
       "additional_kerning_pairs": 0,
       "clearance_adjustments": [],
       "rebuilt_ligatures": [],
@@ -237,14 +268,14 @@
     },
     {
       "file": "PATSerif-Regular.woff2",
-      "version": "0.4",
-      "bytes": 99560,
-      "sha256": "135e5bb933594bc97d8f75cb0f9f094f377902e0b65cfd7d35acf5596f086aa3",
+      "version": "0.5",
+      "bytes": 99756,
+      "sha256": "680a814fc33bda78fc8985f085ceacea7ced9926327337c10d27fa0d84b0773f",
       "source": "SourceSerif4[opsz,wght].ttf",
       "source_sha256": "97b2d4da6e3cb494b5a1e66ae176914d852ccabef49e0c02c0df25f3e39aca0b",
       "axes": {
-        "opsz": 28,
-        "wght": 450
+        "opsz": 34,
+        "wght": 442
       },
       "glyphs": 1463,
       "unicode_characters": 918,
@@ -262,6 +293,30 @@
         "a",
         "\u00df",
         "\u1e9e"
+      ],
+      "rounded_serif_brackets": [
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "P",
+        "R",
+        "T",
+        "U",
+        "Y",
+        "h",
+        "i",
+        "k",
+        "l",
+        "m",
+        "n",
+        "p",
+        "r"
       ],
       "width_refinements": [
         "I",
@@ -306,11 +361,31 @@
         "uni1ECA",
         "uni1ECB"
       ],
+      "spacing_reduction_units": 8,
+      "spacing_glyphs": 419,
+      "italic_angle": 0.0,
+      "italic_construction": null,
       "additional_kerning_pairs": 60,
       "clearance_adjustments": [
         {
           "pair": "Y\u00e4",
-          "x_advance_added": 11
+          "x_advance_added": 7
+        },
+        {
+          "pair": "fb",
+          "x_advance_added": 8
+        },
+        {
+          "pair": "fh",
+          "x_advance_added": 8
+        },
+        {
+          "pair": "fk",
+          "x_advance_added": 8
+        },
+        {
+          "pair": "fl",
+          "x_advance_added": 8
         }
       ],
       "rebuilt_ligatures": [
@@ -326,21 +401,21 @@
       ],
       "required_characters": "pass",
       "shaping_roundtrip": "pass",
-      "tabular_figures": 563,
+      "tabular_figures": 557,
       "umlaut_composition": "pass",
-      "cap_height": 747,
+      "cap_height": 748,
       "x_height": 518
     },
     {
       "file": "PATSerif-Medium.woff2",
-      "version": "0.4",
-      "bytes": 100588,
-      "sha256": "a75af8f9b50b954ca4d7a2200e2169208ed962a696c93f0ef39630bb900acaa1",
+      "version": "0.5",
+      "bytes": 101136,
+      "sha256": "a29b355bd50472197b7e4d8155931b2303ca215058adeaff310b3b5d161b9a84",
       "source": "SourceSerif4[opsz,wght].ttf",
       "source_sha256": "97b2d4da6e3cb494b5a1e66ae176914d852ccabef49e0c02c0df25f3e39aca0b",
       "axes": {
-        "opsz": 28,
-        "wght": 555
+        "opsz": 34,
+        "wght": 542
       },
       "glyphs": 1463,
       "unicode_characters": 918,
@@ -358,6 +433,30 @@
         "a",
         "\u00df",
         "\u1e9e"
+      ],
+      "rounded_serif_brackets": [
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "P",
+        "R",
+        "T",
+        "U",
+        "Y",
+        "h",
+        "i",
+        "k",
+        "l",
+        "m",
+        "n",
+        "p",
+        "r"
       ],
       "width_refinements": [
         "I",
@@ -402,15 +501,35 @@
         "uni1ECA",
         "uni1ECB"
       ],
+      "spacing_reduction_units": 8,
+      "spacing_glyphs": 419,
+      "italic_angle": 0.0,
+      "italic_construction": null,
       "additional_kerning_pairs": 60,
       "clearance_adjustments": [
         {
           "pair": "Y\u00e4",
-          "x_advance_added": 12
+          "x_advance_added": 13
         },
         {
           "pair": "Y\u00f6",
-          "x_advance_added": 7
+          "x_advance_added": 6
+        },
+        {
+          "pair": "fb",
+          "x_advance_added": 9
+        },
+        {
+          "pair": "fh",
+          "x_advance_added": 10
+        },
+        {
+          "pair": "fk",
+          "x_advance_added": 11
+        },
+        {
+          "pair": "fl",
+          "x_advance_added": 9
         }
       ],
       "rebuilt_ligatures": [
@@ -426,21 +545,21 @@
       ],
       "required_characters": "pass",
       "shaping_roundtrip": "pass",
-      "tabular_figures": 574,
+      "tabular_figures": 567,
       "umlaut_composition": "pass",
       "cap_height": 748,
       "x_height": 518
     },
     {
       "file": "PATSerif-Semibold.woff2",
-      "version": "0.4",
-      "bytes": 101060,
-      "sha256": "42eb977788839160e405e6720d7ad5c14a075a1ccefbcad523de8c3eb0bbff55",
+      "version": "0.5",
+      "bytes": 101868,
+      "sha256": "2e19910fdb51c826b10fcdd8fc7a47c3d8e9228801e3d8314edbb682bea69c47",
       "source": "SourceSerif4[opsz,wght].ttf",
       "source_sha256": "97b2d4da6e3cb494b5a1e66ae176914d852ccabef49e0c02c0df25f3e39aca0b",
       "axes": {
-        "opsz": 28,
-        "wght": 675
+        "opsz": 34,
+        "wght": 650
       },
       "glyphs": 1463,
       "unicode_characters": 918,
@@ -458,6 +577,30 @@
         "a",
         "\u00df",
         "\u1e9e"
+      ],
+      "rounded_serif_brackets": [
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "P",
+        "R",
+        "T",
+        "U",
+        "Y",
+        "h",
+        "i",
+        "k",
+        "l",
+        "m",
+        "n",
+        "p",
+        "r"
       ],
       "width_refinements": [
         "I",
@@ -502,39 +645,47 @@
         "uni1ECA",
         "uni1ECB"
       ],
+      "spacing_reduction_units": 8,
+      "spacing_glyphs": 419,
+      "italic_angle": 0.0,
+      "italic_construction": null,
       "additional_kerning_pairs": 60,
       "clearance_adjustments": [
         {
           "pair": "V\u00e4",
-          "x_advance_added": 7
+          "x_advance_added": 8
         },
         {
           "pair": "V\u00f6",
-          "x_advance_added": 18
+          "x_advance_added": 15
         },
         {
           "pair": "Y\u00e4",
-          "x_advance_added": 19
+          "x_advance_added": 21
         },
         {
           "pair": "Y\u00f6",
-          "x_advance_added": 20
+          "x_advance_added": 19
         },
         {
           "pair": "fb",
-          "x_advance_added": 6
+          "x_advance_added": 12
         },
         {
           "pair": "fh",
-          "x_advance_added": 6
+          "x_advance_added": 12
         },
         {
           "pair": "fk",
-          "x_advance_added": 7
+          "x_advance_added": 13
         },
         {
           "pair": "fl",
-          "x_advance_added": 5
+          "x_advance_added": 11
+        },
+        {
+          "pair": "\u00dfJ",
+          "x_advance_added": 7
         }
       ],
       "rebuilt_ligatures": [
@@ -550,21 +701,21 @@
       ],
       "required_characters": "pass",
       "shaping_roundtrip": "pass",
-      "tabular_figures": 598,
+      "tabular_figures": 586,
       "umlaut_composition": "pass",
       "cap_height": 748,
       "x_height": 518
     },
     {
       "file": "PATSerif-Bold.woff2",
-      "version": "0.4",
-      "bytes": 100800,
-      "sha256": "f54a09171d565de47c6d08c60e0f8d1e23ba6bb8339ec132c80d19b009aa19a0",
+      "version": "0.5",
+      "bytes": 102072,
+      "sha256": "56e72e17d6c906debfb6013a9c9fab3fd2586a6bd2d757ea2284bbb0e78cf68c",
       "source": "SourceSerif4[opsz,wght].ttf",
       "source_sha256": "97b2d4da6e3cb494b5a1e66ae176914d852ccabef49e0c02c0df25f3e39aca0b",
       "axes": {
-        "opsz": 28,
-        "wght": 755
+        "opsz": 34,
+        "wght": 738
       },
       "glyphs": 1463,
       "unicode_characters": 918,
@@ -582,6 +733,30 @@
         "a",
         "\u00df",
         "\u1e9e"
+      ],
+      "rounded_serif_brackets": [
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "P",
+        "R",
+        "T",
+        "U",
+        "Y",
+        "h",
+        "i",
+        "k",
+        "l",
+        "m",
+        "n",
+        "p",
+        "r"
       ],
       "width_refinements": [
         "I",
@@ -626,51 +801,71 @@
         "uni1ECA",
         "uni1ECB"
       ],
+      "spacing_reduction_units": 8,
+      "spacing_glyphs": 419,
+      "italic_angle": 0.0,
+      "italic_construction": null,
       "additional_kerning_pairs": 60,
       "clearance_adjustments": [
         {
           "pair": "V\u00e4",
-          "x_advance_added": 12
+          "x_advance_added": 14
         },
         {
           "pair": "V\u00f6",
-          "x_advance_added": 28
+          "x_advance_added": 29
         },
         {
           "pair": "W\u00f6",
-          "x_advance_added": 15
+          "x_advance_added": 13
         },
         {
           "pair": "Y\u00e4",
-          "x_advance_added": 19
+          "x_advance_added": 25
         },
         {
           "pair": "Y\u00f6",
-          "x_advance_added": 24
+          "x_advance_added": 29
         },
         {
-          "pair": "fb",
+          "pair": "cJ",
           "x_advance_added": 6
         },
         {
+          "pair": "fb",
+          "x_advance_added": 14
+        },
+        {
           "pair": "fh",
-          "x_advance_added": 7
+          "x_advance_added": 14
         },
         {
           "pair": "fk",
-          "x_advance_added": 7
+          "x_advance_added": 15
         },
         {
           "pair": "fl",
-          "x_advance_added": 5
+          "x_advance_added": 13
         },
         {
           "pair": "jV",
-          "x_advance_added": 8
+          "x_advance_added": 10
+        },
+        {
+          "pair": "jW",
+          "x_advance_added": 6
+        },
+        {
+          "pair": "sJ",
+          "x_advance_added": 5
+        },
+        {
+          "pair": "yy",
+          "x_advance_added": 5
         },
         {
           "pair": "\u00dfJ",
-          "x_advance_added": 8
+          "x_advance_added": 17
         }
       ],
       "rebuilt_ligatures": [
@@ -686,595 +881,323 @@
       ],
       "required_characters": "pass",
       "shaping_roundtrip": "pass",
-      "tabular_figures": 609,
+      "tabular_figures": 602,
       "umlaut_composition": "pass",
       "cap_height": 748,
       "x_height": 518
     },
     {
       "file": "PATSerif-Italic.woff2",
-      "version": "0.4",
-      "bytes": 78748,
-      "sha256": "2ffba08ba0eb65435c7148323805257411f883c5370bd0135e1fcc860a57784b",
-      "source": "SourceSerif4-Italic[opsz,wght].ttf",
-      "source_sha256": "15fbc7e4679489a501998c3669272637a6646388ef7e4bd77eebb5bf967a1f42",
+      "version": "0.5",
+      "bytes": 104492,
+      "sha256": "9aee3dfc873921c92c729f9c2fa4086d01640631c91dac3d13810f43c55db5ff",
+      "source": "SourceSerif4[opsz,wght].ttf",
+      "source_sha256": "97b2d4da6e3cb494b5a1e66ae176914d852ccabef49e0c02c0df25f3e39aca0b",
       "axes": {
-        "opsz": 28,
-        "wght": 450
+        "opsz": 34,
+        "wght": 442
       },
-      "glyphs": 1093,
+      "glyphs": 1463,
       "unicode_characters": 918,
-      "contour_refinements": [],
-      "width_refinements": [],
-      "additional_kerning_pairs": 0,
+      "contour_refinements": [
+        "W",
+        "w",
+        "J",
+        "Q",
+        "R",
+        "r",
+        "t",
+        "f",
+        "j",
+        "y",
+        "a",
+        "\u00df",
+        "\u1e9e"
+      ],
+      "rounded_serif_brackets": [
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "P",
+        "R",
+        "T",
+        "U",
+        "Y",
+        "h",
+        "i",
+        "k",
+        "l",
+        "m",
+        "n",
+        "p",
+        "r"
+      ],
+      "width_refinements": [
+        "I",
+        "J",
+        "i",
+        "j",
+        "l",
+        "r",
+        "Igrave",
+        "Iacute",
+        "Icircumflex",
+        "Idieresis",
+        "igrave",
+        "iacute",
+        "icircumflex",
+        "idieresis",
+        "Itilde",
+        "itilde",
+        "Imacron",
+        "imacron",
+        "Iogonek",
+        "iogonek",
+        "Idotaccent",
+        "Jcircumflex",
+        "jcircumflex",
+        "lacute",
+        "uni013C",
+        "lcaron",
+        "racute",
+        "uni0157",
+        "rcaron",
+        "uni01CF",
+        "uni01D0",
+        "uni1E37",
+        "uni1E39",
+        "uni1E3B",
+        "uni1E5B",
+        "uni1E5D",
+        "uni1E5F",
+        "uni1EC8",
+        "uni1EC9",
+        "uni1ECA",
+        "uni1ECB"
+      ],
+      "spacing_reduction_units": 8,
+      "spacing_glyphs": 419,
+      "italic_angle": -14.0,
+      "italic_construction": "oblique Roman at 14 degrees",
+      "additional_kerning_pairs": 60,
       "clearance_adjustments": [
         {
-          "pair": "KA",
-          "x_advance_added": 56
-        },
-        {
-          "pair": "KV",
-          "x_advance_added": 34
-        },
-        {
-          "pair": "KW",
-          "x_advance_added": 28
-        },
-        {
-          "pair": "KX",
-          "x_advance_added": 16
-        },
-        {
-          "pair": "KY",
-          "x_advance_added": 43
-        },
-        {
-          "pair": "K\u00c4",
-          "x_advance_added": 56
-        },
-        {
-          "pair": "Qf",
-          "x_advance_added": 151
-        },
-        {
-          "pair": "Qj",
-          "x_advance_added": 50
-        },
-        {
-          "pair": "Qp",
-          "x_advance_added": 44
-        },
-        {
-          "pair": "Qy",
-          "x_advance_added": 77
-        },
-        {
-          "pair": "Q\u00df",
-          "x_advance_added": 179
-        },
-        {
-          "pair": "RA",
-          "x_advance_added": 41
-        },
-        {
-          "pair": "RX",
-          "x_advance_added": 52
-        },
-        {
-          "pair": "R\u00c4",
-          "x_advance_added": 41
-        },
-        {
-          "pair": "VU",
-          "x_advance_added": 19
-        },
-        {
-          "pair": "VV",
-          "x_advance_added": 34
-        },
-        {
-          "pair": "VW",
-          "x_advance_added": 39
-        },
-        {
-          "pair": "VY",
-          "x_advance_added": 44
-        },
-        {
-          "pair": "V\u00dc",
-          "x_advance_added": 19
-        },
-        {
-          "pair": "WU",
-          "x_advance_added": 12
-        },
-        {
-          "pair": "WV",
-          "x_advance_added": 27
-        },
-        {
-          "pair": "WW",
-          "x_advance_added": 32
-        },
-        {
-          "pair": "WY",
-          "x_advance_added": 27
-        },
-        {
-          "pair": "Wb",
-          "x_advance_added": 6
-        },
-        {
-          "pair": "Wk",
-          "x_advance_added": 6
-        },
-        {
-          "pair": "Wl",
-          "x_advance_added": 5
-        },
-        {
-          "pair": "W\u00dc",
-          "x_advance_added": 12
-        },
-        {
-          "pair": "YU",
-          "x_advance_added": 5
-        },
-        {
-          "pair": "YV",
-          "x_advance_added": 31
-        },
-        {
-          "pair": "YW",
-          "x_advance_added": 36
-        },
-        {
-          "pair": "YY",
-          "x_advance_added": 31
-        },
-        {
-          "pair": "Yb",
-          "x_advance_added": 10
-        },
-        {
-          "pair": "Yh",
-          "x_advance_added": 6
-        },
-        {
-          "pair": "Yk",
-          "x_advance_added": 10
-        },
-        {
-          "pair": "Yl",
-          "x_advance_added": 9
-        },
-        {
-          "pair": "Y\u00dc",
-          "x_advance_added": 5
-        },
-        {
-          "pair": "fB",
-          "x_advance_added": 31
-        },
-        {
-          "pair": "fD",
-          "x_advance_added": 27
-        },
-        {
-          "pair": "fE",
-          "x_advance_added": 27
-        },
-        {
-          "pair": "fF",
-          "x_advance_added": 27
-        },
-        {
-          "pair": "fH",
-          "x_advance_added": 31
-        },
-        {
-          "pair": "fI",
-          "x_advance_added": 27
-        },
-        {
-          "pair": "fJ",
-          "x_advance_added": 33
-        },
-        {
-          "pair": "fK",
-          "x_advance_added": 30
-        },
-        {
-          "pair": "fL",
-          "x_advance_added": 27
-        },
-        {
-          "pair": "fM",
-          "x_advance_added": 11
-        },
-        {
-          "pair": "fN",
-          "x_advance_added": 31
-        },
-        {
-          "pair": "fP",
-          "x_advance_added": 33
-        },
-        {
-          "pair": "fR",
-          "x_advance_added": 25
-        },
-        {
-          "pair": "fT",
-          "x_advance_added": 15
-        },
-        {
-          "pair": "fU",
-          "x_advance_added": 57
-        },
-        {
-          "pair": "fV",
-          "x_advance_added": 65
-        },
-        {
-          "pair": "fW",
-          "x_advance_added": 70
-        },
-        {
-          "pair": "fX",
-          "x_advance_added": 25
-        },
-        {
-          "pair": "fY",
-          "x_advance_added": 70
-        },
-        {
-          "pair": "fZ",
-          "x_advance_added": 30
-        },
-        {
-          "pair": "fb",
-          "x_advance_added": 92
-        },
-        {
-          "pair": "fh",
-          "x_advance_added": 88
-        },
-        {
-          "pair": "fk",
-          "x_advance_added": 91
-        },
-        {
-          "pair": "fl",
-          "x_advance_added": 91
-        },
-        {
-          "pair": "f\u00dc",
-          "x_advance_added": 57
-        },
-        {
-          "pair": "g\u00df",
-          "x_advance_added": 38
-        },
-        {
-          "pair": "kA",
-          "x_advance_added": 32
-        },
-        {
-          "pair": "kM",
-          "x_advance_added": 13
-        },
-        {
-          "pair": "kX",
+          "pair": "Y\u00e4",
           "x_advance_added": 8
         },
         {
-          "pair": "k\u00c4",
-          "x_advance_added": 32
+          "pair": "fb",
+          "x_advance_added": 8
         },
         {
-          "pair": "qf",
-          "x_advance_added": 89
+          "pair": "fh",
+          "x_advance_added": 7
         },
         {
-          "pair": "qy",
-          "x_advance_added": 14
+          "pair": "fk",
+          "x_advance_added": 8
         },
         {
-          "pair": "q\u00df",
-          "x_advance_added": 95
+          "pair": "fl",
+          "x_advance_added": 7
         }
       ],
-      "rebuilt_ligatures": [],
+      "rebuilt_ligatures": [
+        "ffi",
+        "ffj",
+        "ffl",
+        "fft",
+        "ff",
+        "fi",
+        "fj",
+        "fl",
+        "ft"
+      ],
       "required_characters": "pass",
       "shaping_roundtrip": "pass",
-      "tabular_figures": 572,
+      "tabular_figures": 557,
       "umlaut_composition": "pass",
       "cap_height": 748,
       "x_height": 518
     },
     {
       "file": "PATSerif-BoldItalic.woff2",
-      "version": "0.4",
-      "bytes": 79080,
-      "sha256": "e3025654ef399a844b04538f2db84c50b6fca6a3e710b8cc8e563ef957f9bb7b",
-      "source": "SourceSerif4-Italic[opsz,wght].ttf",
-      "source_sha256": "15fbc7e4679489a501998c3669272637a6646388ef7e4bd77eebb5bf967a1f42",
+      "version": "0.5",
+      "bytes": 106688,
+      "sha256": "18be9a105a79526619563185ed448d1051773cdad0f0a8f8ef206de12f815d60",
+      "source": "SourceSerif4[opsz,wght].ttf",
+      "source_sha256": "97b2d4da6e3cb494b5a1e66ae176914d852ccabef49e0c02c0df25f3e39aca0b",
       "axes": {
-        "opsz": 28,
-        "wght": 755
+        "opsz": 34,
+        "wght": 738
       },
-      "glyphs": 1093,
+      "glyphs": 1463,
       "unicode_characters": 918,
-      "contour_refinements": [],
-      "width_refinements": [],
-      "additional_kerning_pairs": 0,
+      "contour_refinements": [
+        "W",
+        "w",
+        "J",
+        "Q",
+        "R",
+        "r",
+        "t",
+        "f",
+        "j",
+        "y",
+        "a",
+        "\u00df",
+        "\u1e9e"
+      ],
+      "rounded_serif_brackets": [
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "P",
+        "R",
+        "T",
+        "U",
+        "Y",
+        "h",
+        "i",
+        "k",
+        "l",
+        "m",
+        "n",
+        "p",
+        "r"
+      ],
+      "width_refinements": [
+        "I",
+        "J",
+        "i",
+        "j",
+        "l",
+        "r",
+        "Igrave",
+        "Iacute",
+        "Icircumflex",
+        "Idieresis",
+        "igrave",
+        "iacute",
+        "icircumflex",
+        "idieresis",
+        "Itilde",
+        "itilde",
+        "Imacron",
+        "imacron",
+        "Iogonek",
+        "iogonek",
+        "Idotaccent",
+        "Jcircumflex",
+        "jcircumflex",
+        "lacute",
+        "uni013C",
+        "lcaron",
+        "racute",
+        "uni0157",
+        "rcaron",
+        "uni01CF",
+        "uni01D0",
+        "uni1E37",
+        "uni1E39",
+        "uni1E3B",
+        "uni1E5B",
+        "uni1E5D",
+        "uni1E5F",
+        "uni1EC8",
+        "uni1EC9",
+        "uni1ECA",
+        "uni1ECB"
+      ],
+      "spacing_reduction_units": 8,
+      "spacing_glyphs": 419,
+      "italic_angle": -14.0,
+      "italic_construction": "oblique Roman at 14 degrees",
+      "additional_kerning_pairs": 60,
       "clearance_adjustments": [
         {
-          "pair": "KA",
-          "x_advance_added": 47
+          "pair": "V\u00e4",
+          "x_advance_added": 14
         },
         {
-          "pair": "KV",
-          "x_advance_added": 39
+          "pair": "V\u00f6",
+          "x_advance_added": 29
         },
         {
-          "pair": "KW",
-          "x_advance_added": 32
-        },
-        {
-          "pair": "KX",
+          "pair": "W\u00f6",
           "x_advance_added": 13
         },
         {
-          "pair": "KY",
-          "x_advance_added": 23
-        },
-        {
-          "pair": "K\u00c4",
-          "x_advance_added": 47
-        },
-        {
-          "pair": "QJ",
-          "x_advance_added": 39
-        },
-        {
-          "pair": "Qf",
-          "x_advance_added": 107
-        },
-        {
-          "pair": "Qy",
-          "x_advance_added": 15
-        },
-        {
-          "pair": "Q\u00df",
-          "x_advance_added": 122
-        },
-        {
-          "pair": "RA",
-          "x_advance_added": 40
-        },
-        {
-          "pair": "RM",
-          "x_advance_added": 5
-        },
-        {
-          "pair": "RX",
-          "x_advance_added": 48
-        },
-        {
-          "pair": "R\u00c4",
-          "x_advance_added": 40
-        },
-        {
-          "pair": "VU",
-          "x_advance_added": 13
-        },
-        {
-          "pair": "VV",
-          "x_advance_added": 28
-        },
-        {
-          "pair": "VW",
-          "x_advance_added": 33
-        },
-        {
-          "pair": "VY",
-          "x_advance_added": 39
-        },
-        {
-          "pair": "V\u00dc",
-          "x_advance_added": 13
-        },
-        {
-          "pair": "WU",
-          "x_advance_added": 6
-        },
-        {
-          "pair": "WV",
-          "x_advance_added": 21
-        },
-        {
-          "pair": "WW",
-          "x_advance_added": 26
-        },
-        {
-          "pair": "WY",
-          "x_advance_added": 22
-        },
-        {
-          "pair": "W\u00dc",
-          "x_advance_added": 6
-        },
-        {
-          "pair": "XV",
-          "x_advance_added": 6
-        },
-        {
-          "pair": "XY",
-          "x_advance_added": 6
-        },
-        {
-          "pair": "YU",
-          "x_advance_added": 8
-        },
-        {
-          "pair": "YV",
-          "x_advance_added": 26
-        },
-        {
-          "pair": "YW",
-          "x_advance_added": 31
-        },
-        {
-          "pair": "YY",
-          "x_advance_added": 27
-        },
-        {
-          "pair": "Y\u00dc",
-          "x_advance_added": 8
-        },
-        {
-          "pair": "fB",
-          "x_advance_added": 31
-        },
-        {
-          "pair": "fD",
-          "x_advance_added": 27
-        },
-        {
-          "pair": "fE",
-          "x_advance_added": 27
-        },
-        {
-          "pair": "fF",
-          "x_advance_added": 27
-        },
-        {
-          "pair": "fH",
-          "x_advance_added": 31
-        },
-        {
-          "pair": "fI",
-          "x_advance_added": 27
-        },
-        {
-          "pair": "fJ",
-          "x_advance_added": 43
-        },
-        {
-          "pair": "fK",
-          "x_advance_added": 32
-        },
-        {
-          "pair": "fL",
-          "x_advance_added": 27
-        },
-        {
-          "pair": "fN",
-          "x_advance_added": 31
-        },
-        {
-          "pair": "fP",
-          "x_advance_added": 32
-        },
-        {
-          "pair": "fR",
+          "pair": "Y\u00e4",
           "x_advance_added": 25
         },
         {
-          "pair": "fU",
-          "x_advance_added": 52
+          "pair": "Y\u00f6",
+          "x_advance_added": 29
         },
         {
-          "pair": "fV",
-          "x_advance_added": 66
-        },
-        {
-          "pair": "fW",
-          "x_advance_added": 70
-        },
-        {
-          "pair": "fX",
-          "x_advance_added": 28
-        },
-        {
-          "pair": "fY",
-          "x_advance_added": 59
-        },
-        {
-          "pair": "fZ",
-          "x_advance_added": 36
+          "pair": "cJ",
+          "x_advance_added": 6
         },
         {
           "pair": "fb",
-          "x_advance_added": 81
+          "x_advance_added": 14
         },
         {
           "pair": "fh",
-          "x_advance_added": 78
+          "x_advance_added": 15
         },
         {
           "pair": "fk",
-          "x_advance_added": 81
+          "x_advance_added": 16
         },
         {
           "pair": "fl",
-          "x_advance_added": 75
-        },
-        {
-          "pair": "f\u00dc",
-          "x_advance_added": 52
-        },
-        {
-          "pair": "gf",
-          "x_advance_added": 20
-        },
-        {
-          "pair": "g\u00df",
-          "x_advance_added": 61
-        },
-        {
-          "pair": "kA",
-          "x_advance_added": 32
-        },
-        {
-          "pair": "kM",
-          "x_advance_added": 19
-        },
-        {
-          "pair": "kN",
-          "x_advance_added": 16
-        },
-        {
-          "pair": "kX",
-          "x_advance_added": 16
-        },
-        {
-          "pair": "k\u00c4",
-          "x_advance_added": 32
-        },
-        {
-          "pair": "k\u1e9e",
-          "x_advance_added": 25
-        },
-        {
-          "pair": "qf",
-          "x_advance_added": 67
-        },
-        {
-          "pair": "q\u00df",
-          "x_advance_added": 76
-        },
-        {
-          "pair": "\u00f6Y",
           "x_advance_added": 14
+        },
+        {
+          "pair": "jV",
+          "x_advance_added": 11
+        },
+        {
+          "pair": "jW",
+          "x_advance_added": 7
+        },
+        {
+          "pair": "yy",
+          "x_advance_added": 5
+        },
+        {
+          "pair": "\u00dfJ",
+          "x_advance_added": 17
         }
       ],
-      "rebuilt_ligatures": [],
+      "rebuilt_ligatures": [
+        "ffi",
+        "ffj",
+        "ffl",
+        "fft",
+        "ff",
+        "fi",
+        "fj",
+        "fl",
+        "ft"
+      ],
       "required_characters": "pass",
       "shaping_roundtrip": "pass",
-      "tabular_figures": 612,
+      "tabular_figures": 602,
       "umlaut_composition": "pass",
       "cap_height": 748,
       "x_height": 518

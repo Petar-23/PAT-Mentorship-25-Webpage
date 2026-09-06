@@ -121,15 +121,16 @@ def refine_serif(font, italic=False):
     name = cmap[ord('r')]
     parts = contours(record_glyph(font, name))
     aw = font['hmtx'][name][0]
-    weight_ratio = font['OS/2'].usWeightClass / 675
+    weight_ratio = font['OS/2'].usWeightClass / 650
     shoulder = [
         ('moveTo', ((.50*aw, .575*xh),)),
         ('lineTo', ((.44*aw, .72*xh),)),
         ('lineTo', ((.50*aw, .72*xh),)),
-        ('qCurveTo', ((.61*aw, .955*xh), (.83*aw, 1.025*xh))),
-        ('lineTo', ((.975*aw, 1.025*xh),)),
-        ('lineTo', ((.975*aw, (1.025-.23*weight_ratio)*xh),)),
-        ('qCurveTo', ((.82*aw, (.97-.09*weight_ratio)*xh), (.71*aw, (.94-.10*weight_ratio)*xh))),
+        ('qCurveTo', ((.61*aw, .975*xh), (.83*aw, 1.025*xh))),
+        ('qCurveTo', ((.985*aw, 1.055*xh), (1.005*aw, .965*xh))),
+        ('qCurveTo', ((1.025*aw, (1.015-.18*weight_ratio)*xh), (.945*aw, (1.015-.22*weight_ratio)*xh))),
+        ('qCurveTo', ((.865*aw, (.995-.22*weight_ratio)*xh), (.775*aw, (.995-.13*weight_ratio)*xh))),
+        ('qCurveTo', ((.715*aw, (.985-.085*weight_ratio)*xh), (.67*aw, .83*xh))),
         ('qCurveTo', ((.565*aw, .77*xh), (.50*aw, .575*xh))),
         ('closePath', ()),
     ]
@@ -323,6 +324,100 @@ def refine_widths(font):
         changes.append(name)
     font._pat_anchor_xmaps = maps
     return changes
+
+
+def round_serif_brackets(font):
+    """Replace straight serif shoulders with tangent quadratic brackets.
+
+    Only the source's separate six-point serif polygons are considered.
+    Stem edges come from the same licensed glyph at the joining height;
+    widths, serif tips, baseline and cap line are preserved.
+    """
+    from audit_spacing import SegmentsPen
+    cmap = font.getBestCmap()
+    glyphs = font.getGlyphSet()
+    result = []
+    for letter in 'BDEFGHIJKLMNPRTUYbdhiklmnpru':
+        name = cmap[ord(letter)]
+        parts = contours(record_glyph(font, name))
+        pen = SegmentsPen(glyphs)
+        glyphs[name].draw(pen)
+        changed = False
+        replacements = []
+        for part in parts:
+            if len(part) != 7 or any(op not in ('moveTo', 'lineTo', 'closePath') for op, _ in part):
+                replacements.extend(part)
+                continue
+            points = [p[0] for op, p in part if op != 'closePath']
+            xs = sorted(set(round(p[0], 4) for p in points))
+            ys = sorted(set(round(p[1], 4) for p in points))
+            if len(xs) != 4 or len(ys) != 3:
+                replacements.extend(part)
+                continue
+            left, right = xs[0], xs[-1]
+            inner = [p for p in points if left+.01 < p[0] < right-.01]
+            if len(inner) != 2 or abs(inner[0][1]-inner[1][1]) > .01:
+                replacements.extend(part)
+                continue
+            shoulder = inner[0][1]
+            bottom = abs(shoulder-ys[-1]) < .01
+            if not bottom and abs(shoulder-ys[0]) >= .01:
+                replacements.extend(part)
+                continue
+            base, tip = (ys[0], ys[1]) if bottom else (ys[-1], ys[1])
+            direction = 1 if bottom else -1
+            height = min((right-left)*.24, max(30, abs(tip-base)*1.65))
+            join = tip + direction*height
+            crossings = sorted(x1+(join-y1)*(x2-x1)/(y2-y1)
+                               for (x1,y1),(x2,y2) in pen.segments
+                               if y1 != y2 and min(y1,y2) <= join < max(y1,y2))
+            center = (inner[0][0]+inner[1][0])/2
+            stems = [(a,b) for a,b in zip(crossings[::2],crossings[1::2]) if a <= center <= b]
+            if len(stems) != 1:
+                replacements.extend(part)
+                continue
+            lo, hi = stems[0]
+            if not left < lo < hi < right:
+                replacements.extend(part)
+                continue
+            lo += .75  # Join just inside the existing stroke.
+            hi -= .75
+            if bottom:
+                curve = [('moveTo',((left,base),)), ('lineTo',((left,tip),)),
+                         ('qCurveTo',((lo,tip),(lo,join))), ('lineTo',((hi,join),)),
+                         ('qCurveTo',((hi,tip),(right,tip))), ('lineTo',((right,base),)),
+                         ('closePath',())]
+            else:
+                curve = [('moveTo',((left,base),)), ('lineTo',((right,base),)),
+                         ('lineTo',((right,tip),)), ('qCurveTo',((hi,tip),(hi,join))),
+                         ('lineTo',((lo,join),)), ('qCurveTo',((lo,tip),(left,tip))),
+                         ('closePath',())]
+            replacements.extend(curve)
+            changed = True
+        if changed:
+            replace_glyph(font,name,replacements)
+            result.append(letter)
+    return result
+
+
+def compact_spacing(font, amount):
+    """Reduce Latin side space without horizontally scaling the outlines.
+
+    The outline origin and mark anchors stay together. Pair clearance is
+    checked afterwards. Common f ligatures are rebuilt at their new advances.
+    """
+    if not amount:
+        return 0
+    cmap = font.getBestCmap()
+    names = set()
+    for code, name in cmap.items():
+        char = chr(code)
+        if char.isalpha() and 'LATIN' in unicodedata.name(char, ''):
+            names.add(name)
+    for name in names:
+        advance, bearing = font['hmtx'][name]
+        font['hmtx'][name] = (advance-int(amount), bearing)
+    return len(names)
 
 
 def add_pair_adjustments(font, pairs):

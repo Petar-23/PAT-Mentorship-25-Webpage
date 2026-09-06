@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import io
 import json
+import math
 import unicodedata
 
 from fontTools.ttLib import TTFont
@@ -16,14 +17,14 @@ from fontTools.pens.recordingPen import DecomposingRecordingPen
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.misc.roundTools import otRound
 import uharfbuzz as hb
-from serif_refinements import refine_serif, refine_widths, refine_kerning, protect_pair_clearance, rebuild_f_ligatures
+from serif_refinements import refine_serif, refine_widths, refine_kerning, protect_pair_clearance, rebuild_f_ligatures, compact_spacing, round_serif_brackets
 
 ROOT = Path(__file__).resolve().parent
 STYLES = [(400, 'Regular'), (500, 'Medium'), (600, 'Semibold'), (700, 'Bold')]
 REQUIRED = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ÄÖÜäöüßẞ€%‰−–—„“‚‘’…:;,.!?()[]{}<>/\\@#&+*= °²³±×÷→←↑↓'
 FAMILIES = [
     {'name': 'PAT Sans', 'source': 'InstrumentSans', 'axis_suffix': '[wdth,wght]', 'license': 'instrumentsans-OFL.txt', 'pin': {'wdth': 100}, 'sx': 1.025, 'caps_sx': 1.0, 'widths': {'a': 1.13, 'W': .95, 'M': 1.03, 'R': 1.02, 'A': 1.03}, 'xheight': 534, 'cap': 728, 'ascender': 750, 'descender': 220, 'width_factor': .965, 'weights': {400: 455, 500: 555, 600: 650, 700: 700}},
-    {'name': 'PAT Serif', 'source': 'SourceSerif4', 'axis_suffix': '[opsz,wght]', 'license': 'sourceserif4-OFL.txt', 'pin': {'opsz': 28}, 'sx': 1.095, 'caps_sx': 1.18, 'widths': {'A': 1.22, 'B': 1.14, 'C': 1.20, 'H': 1.14, 'K': 1.15, 'M': 1.12, 'P': 1.12, 'R': 1.20, 'U': 1.08, 'V': 1.21, 'W': 1.14, 'X': 1.26, 'Y': 1.20, 'ẞ': 1.24, 'a': 1.08, 'b': 1.08, 'c': 1.03, 'e': 1.035, 'f': 1.065, 'g': 1.085, 'k': 1.065, 'o': 1.06, 'p': 1.08, 'q': 1.07, 's': 1.07, 't': 1.06, 'w': 1.065}, 'xheight': 518, 'cap': 748, 'ascender': 768, 'descender': 240, 'width_factor': 1.03, 'weights': {400: 450, 500: 555, 600: 675, 700: 755}, 'version': '0.4'},
+    {'name': 'PAT Serif', 'source': 'SourceSerif4', 'axis_suffix': '[opsz,wght]', 'license': 'sourceserif4-OFL.txt', 'pin': {'opsz': 34}, 'sx': 1.095, 'caps_sx': 1.18, 'widths': {'A': 1.22, 'B': 1.14, 'C': 1.20, 'H': 1.14, 'K': 1.15, 'M': 1.12, 'P': 1.12, 'R': 1.20, 'U': 1.08, 'V': 1.21, 'W': 1.14, 'X': 1.26, 'Y': 1.20, 'ẞ': 1.24, 'a': 1.08, 'b': 1.08, 'c': 1.03, 'e': 1.035, 'f': 1.065, 'g': 1.085, 'k': 1.065, 'o': 1.06, 'p': 1.08, 'q': 1.07, 's': 1.07, 't': 1.06, 'w': 1.065}, 'xheight': 518, 'cap': 748, 'ascender': 768, 'descender': 240, 'width_factor': 1.03, 'weights': {400: 442, 500: 542, 600: 650, 700: 738}, 'spacing_reduction': 8, 'version': '0.5'},
 ]
 
 
@@ -64,11 +65,11 @@ def glyph_transforms(font, config):
     return transforms
 
 
-def transform_anchor(anchor, glyph, transforms):
+def transform_anchor(anchor, glyph, transforms, shear=0):
     if anchor is None:
         return
     sx, ymap, xmap = transforms[glyph]
-    anchor.XCoordinate = otRound(xmap(anchor.XCoordinate) * sx)
+    anchor.XCoordinate = otRound(xmap(anchor.XCoordinate) * sx + shear * ymap(anchor.YCoordinate))
     anchor.YCoordinate = otRound(ymap(anchor.YCoordinate))
     # Contour point indices no longer refer to the re-encoded outlines.
     if anchor.Format == 2:
@@ -76,11 +77,11 @@ def transform_anchor(anchor, glyph, transforms):
         del anchor.AnchorPoint
 
 
-def transform_layout(font, transforms, scale_classes=False):
+def transform_layout(font, transforms, scale_classes=False, shear=0):
     """Move base/mark/ligature anchors with their own glyph transformation."""
     def marks(coverage, array):
         for glyph, record in zip(coverage.glyphs, array.MarkRecord):
-            transform_anchor(record.MarkAnchor, glyph, transforms)
+            transform_anchor(record.MarkAnchor, glyph, transforms, shear)
 
     def value(record, glyph):
         if record is None:
@@ -100,22 +101,22 @@ def transform_layout(font, transforms, scale_classes=False):
             marks(sub.MarkCoverage, sub.MarkArray)
             for glyph, record in zip(sub.BaseCoverage.glyphs, sub.BaseArray.BaseRecord):
                 for anchor in record.BaseAnchor:
-                    transform_anchor(anchor, glyph, transforms)
+                    transform_anchor(anchor, glyph, transforms, shear)
         elif kind == 5:
             marks(sub.MarkCoverage, sub.MarkArray)
             for glyph, attach in zip(sub.LigatureCoverage.glyphs, sub.LigatureArray.LigatureAttach):
                 for record in attach.ComponentRecord:
                     for anchor in record.LigatureAnchor:
-                        transform_anchor(anchor, glyph, transforms)
+                        transform_anchor(anchor, glyph, transforms, shear)
         elif kind == 6:
             marks(sub.Mark1Coverage, sub.Mark1Array)
             for glyph, record in zip(sub.Mark2Coverage.glyphs, sub.Mark2Array.Mark2Record):
                 for anchor in record.Mark2Anchor:
-                    transform_anchor(anchor, glyph, transforms)
+                    transform_anchor(anchor, glyph, transforms, shear)
         elif kind == 3:
             for glyph, record in zip(sub.Coverage.glyphs, sub.EntryExitRecord):
-                transform_anchor(record.EntryAnchor, glyph, transforms)
-                transform_anchor(record.ExitAnchor, glyph, transforms)
+                transform_anchor(record.EntryAnchor, glyph, transforms, shear)
+                transform_anchor(record.ExitAnchor, glyph, transforms, shear)
         elif kind == 1:
             if sub.Format == 1:
                 value(sub.Value, sub.Coverage.glyphs[0])
@@ -218,9 +219,9 @@ def build(source_root, family_filter=None, weight_filter=None):
     for family in FAMILIES:
         used_paths.add('licenses/'+family['license'])
         for italic in (False, True):
-            used_paths.add('source-fonts/'+family['source']+('-Italic' if italic else '')+family['axis_suffix']+'.ttf')
+            used_paths.add('source-fonts/'+family['source']+('-Italic' if italic and family['name'] != 'PAT Serif' else '')+family['axis_suffix']+'.ttf')
     output_manifest = {**manifest, 'files': [entry for entry in manifest['files'] if entry['path'] in used_paths]}
-    report = {'version': '0.4', 'upstream_commit': manifest['commit'], 'families': FAMILIES, 'fonts': []}
+    report = {'version': '0.5', 'upstream_commit': manifest['commit'], 'families': FAMILIES, 'fonts': []}
     (ROOT/'fonts').mkdir(exist_ok=True)
     (ROOT/'licenses').mkdir(exist_ok=True)
     for config in FAMILIES:
@@ -230,7 +231,8 @@ def build(source_root, family_filter=None, weight_filter=None):
         (ROOT/'licenses'/config['license']).write_text(license_text)
         for italic in (False, True):
             styles = STYLES if not italic else [STYLES[0], STYLES[-1]]
-            source_name = config['source'] + ('-Italic' if italic else '') + config['axis_suffix'] + '.ttf'
+            serif = config['name'] == 'PAT Serif'
+            source_name = config['source'] + ('-Italic' if italic and not serif else '') + config['axis_suffix'] + '.ttf'
             source = source_root/'source-fonts'/source_name
             source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
             assert source_hash == expected['source-fonts/'+source_name]['sha256']
@@ -240,8 +242,10 @@ def build(source_root, family_filter=None, weight_filter=None):
                 style = ('Italic' if weight == 400 else style+' Italic') if italic else style
                 axes = {**config['pin'], 'wght': config['weights'][weight]}
                 font = instantiateVariableFont(TTFont(source), axes, inplace=True)
-                refinements = refine_serif(font, italic) if config['name'] == 'PAT Serif' else []
-                width_refinements = refine_widths(font) if config['name'] == 'PAT Serif' and not italic else []
+                refinements = refine_serif(font) if serif else []
+                brackets = round_serif_brackets(font) if serif else []
+                width_refinements = refine_widths(font) if serif else []
+                shear = math.tan(math.radians(14)) if serif and italic else 0
                 transforms = glyph_transforms(font, config)
                 glyph_set = font.getGlyphSet()
                 recordings = {}
@@ -253,14 +257,19 @@ def build(source_root, family_filter=None, weight_filter=None):
                     pen = TTGlyphPen(None)
                     sx, ymap, _ = transforms[name]
                     for operation, points in rec.value:
-                        mapped = [None if p is None else (p[0]*sx, ymap(p[1])) for p in points]
+                        mapped = [None if p is None else (p[0]*sx + shear*ymap(p[1]), ymap(p[1])) for p in points]
                         getattr(pen, operation)(*mapped)
                     new_glyph(font, name, pen, font['hmtx'][name][0] * sx)
                 # Keep PAT Sans 0.3 unchanged while refining the Serif class kerning.
-                transform_layout(font, transforms, scale_classes=config['name'] == 'PAT Serif')
-                adjusted_pairs = refine_kerning(font) if config['name'] == 'PAT Serif' and not italic else 0
-                clearance_pairs = protect_pair_clearance(font) if config['name'] == 'PAT Serif' else []
-                rebuilt_ligatures = rebuild_f_ligatures(font) if config['name'] == 'PAT Serif' and not italic else []
+                transform_layout(font, transforms, scale_classes=serif, shear=shear)
+                spacing_changes = compact_spacing(font, config.get('spacing_reduction', 0)) if serif else 0
+                adjusted_pairs = refine_kerning(font) if serif else 0
+                clearance_pairs = protect_pair_clearance(font) if serif else []
+                rebuilt_ligatures = rebuild_f_ligatures(font) if serif else []
+                if serif:
+                    font['post'].italicAngle = -14 if italic else 0
+                    font['hhea'].caretSlopeRise = 1000 if italic else 1
+                    font['hhea'].caretSlopeRun = otRound(shear*1000)
                 assert any(r.FeatureTag == 'tnum' for r in font['GSUB'].table.FeatureList.FeatureRecord), 'Pinned sources must retain tnum'
                 ensure_symbols(font)
                 os2 = font['OS/2']
@@ -318,7 +327,7 @@ def build(source_root, family_filter=None, weight_filter=None):
                 for letter in 'aou':
                     composed = unicodedata.normalize('NFC', letter+'\u0308')
                     assert shape(raw_bytes, composed) == shape(raw_bytes, letter+'\u0308'), (output.name, 'umlaut composition')
-                report['fonts'].append({'file': output.name, 'version': version, 'bytes': output.stat().st_size, 'sha256': hashlib.sha256(output.read_bytes()).hexdigest(), 'source': source_name, 'source_sha256': source_hash, 'axes': axes, 'glyphs': len(reopened.getGlyphOrder()), 'unicode_characters': len(reopened.getBestCmap()), 'contour_refinements': refinements, 'width_refinements': width_refinements, 'additional_kerning_pairs': adjusted_pairs, 'clearance_adjustments': clearance_pairs, 'rebuilt_ligatures': rebuilt_ligatures, 'required_characters': 'pass', 'shaping_roundtrip': 'pass', 'tabular_figures': digit_widths[0], 'umlaut_composition': 'pass', 'cap_height': reopened['glyf'][reopened.getBestCmap()[ord('H')]].yMax, 'x_height': reopened['glyf'][reopened.getBestCmap()[ord('x')]].yMax})
+                report['fonts'].append({'file': output.name, 'version': version, 'bytes': output.stat().st_size, 'sha256': hashlib.sha256(output.read_bytes()).hexdigest(), 'source': source_name, 'source_sha256': source_hash, 'axes': axes, 'glyphs': len(reopened.getGlyphOrder()), 'unicode_characters': len(reopened.getBestCmap()), 'contour_refinements': refinements, 'rounded_serif_brackets': brackets, 'width_refinements': width_refinements, 'spacing_reduction_units': config.get('spacing_reduction', 0), 'spacing_glyphs': spacing_changes, 'italic_angle': reopened['post'].italicAngle, 'italic_construction': 'oblique Roman at 14 degrees' if serif and italic else None, 'additional_kerning_pairs': adjusted_pairs, 'clearance_adjustments': clearance_pairs, 'rebuilt_ligatures': rebuilt_ligatures, 'required_characters': 'pass', 'shaping_roundtrip': 'pass', 'tabular_figures': digit_widths[0], 'umlaut_composition': 'pass', 'cap_height': reopened['glyf'][reopened.getBestCmap()[ord('H')]].yMax, 'x_height': reopened['glyf'][reopened.getBestCmap()[ord('x')]].yMax})
                 print(output.name, output.stat().st_size, 'bytes; cmap, shaping, figures, umlauts PASS', flush=True)
     (ROOT/'font-validation.json').write_text(json.dumps(report, indent=2)+'\n')
     (ROOT/'source-manifest.json').write_text(json.dumps(output_manifest, indent=2)+'\n')

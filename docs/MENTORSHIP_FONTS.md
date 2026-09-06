@@ -1,4 +1,4 @@
-# PAT Sans 0.3 und PAT Serif 0.4
+# PAT Sans 0.3 und PAT Serif 0.5
 
 Stand: 6. September 2026. Die angepassten Open-Font-Schriften beruhen auf Instrument Sans und Source Serif 4. Ihre Grundformen stammen aus diesen beiden Familien; Proportionen, einzelne Konturen, Serifen und Abstände wurden für die Mentorship bearbeitet. Es sind OFL-Ableitungen, keine vollständig neu gezeichneten oder exklusiven Schriftfamilien. Keine Anthropic-Fontdatei ist eine Eingabe der Build- oder Prüfskripte.
 
@@ -6,21 +6,25 @@ Stand: 6. September 2026. Die angepassten Open-Font-Schriften beruhen auf Instru
 
 PAT Sans verwendet Instrument Sans mit eigener Gewichtung und veränderten Proportionen. Großbuchstaben erreichen 728, die x-Höhe 534 und Oberlängen 750 von 1.000 Einheiten. Die Ausgangsgewichte 455 / 555 / 650 / 700 werden als 400 / 500 / 600 / 700 ausgeliefert. Die sechs Sans-Dateien bleiben gegenüber der zuletzt geprüften Version 0.3 bytegenau unverändert.
 
-PAT Serif verwendet Source Serif 4 bei optischer Ausgangsgröße 28 und kräftigeren Ausgangsgewichten 450 / 555 / 675 / 755 für die ausgegebenen Schnitte 400 / 500 / 600 / 700. Großbuchstaben erreichen weiterhin 748, die x-Höhe 518 und Oberlängen 768 Einheiten. Die Breiten sind nach Buchstaben abgestimmt, einschließlich deutscher Varianten. Diese Einstellungen verstärken die kräftigen Teile der Stämme und Rundungen bei erhaltenen Höhen.
+PAT Serif verwendet Source Serif 4 bei optischer Ausgangsgröße 34 und Ausgangsgewichten 442 / 542 / 650 / 738 für die ausgegebenen Schnitte 400 / 500 / 600 / 700. Großbuchstaben erreichen weiterhin 748, die x-Höhe 518 und Oberlängen 768 Einheiten. Die Breiten sind nach Buchstaben abgestimmt, einschließlich deutscher Varianten. Gegenüber Version 0.4 sind die Striche etwas feiner und die optische Ausgangsgröße leicht erhöht; die Höhen bleiben erhalten.
 
 Der aufrechte Serif-Entwurf enthält folgende zusätzliche Konturarbeit:
 
 - W und w erhalten eine Mittelspitze ohne den separaten horizontalen Serif-Ansatz der Ausgangsschrift.
 - J erhält einen breiteren Bogen nahe der Grundlinie; Q einen flacheren Schweif und R ein diagonales Bein.
-- r erhält einen keilförmigen Abschluss, t einen geschwungenen oberen Übergang. Die Enden von f, j, y und a sind überarbeitet.
+- r erhält eine gerundete, weich auslaufende Schulter anstelle des kantigen Keils aus Version 0.4; t einen geschwungenen oberen Übergang. Die Enden von f, j, y und a sind überarbeitet.
 - ß erhält den kurzen linken Ansatz; ẞ eine neu aufgebaute Form mit geradem oberen Abschluss.
 - Bei I, i und l werden die Serifen verkürzt, ohne die Stämme pauschal schmaler zu skalieren. Der rechte Abschluss von r und die Laufweiten von J und j sind separat abgestimmt. Die entsprechenden Anker werden mitgeführt.
 
-Je Familie gibt es vier aufrechte Schnitte sowie echtes Regular Italic und Bold Italic. Kursivformen stammen aus den kursiven Ausgangsschriften. Sie übernehmen die Gewichts- und Proportionseinstellungen, aber nicht die für aufrechte Buchstaben gezeichneten Einzelkonturen. Die häufigen f-Ligaturen werden aus den überarbeiteten aufrechten Buchstaben und deren Positionierung neu zusammengesetzt.
+Zusätzlich erhalten die getrennten Serifenpolygone von 22 Grundbuchstaben geschwungene Einzüge zum Stamm. Die quadratischen Kurven verlaufen an den äußeren Serifenenden horizontal und schließen in den senkrechten Stamm hinein an. Die Stammkanten werden aus demselben offen lizenzierten Ausgangsglyphen ermittelt. Serifenenden und Grund- beziehungsweise Kapitallinie bleiben erhalten; Akzentformen übernehmen ihre bearbeiteten Grundbuchstaben.
+
+Je Familie gibt es vier aufrechte und zwei als Italic ausgelieferte Schnitte. Bei PAT Serif 0.5 sind die beiden kursiven Dateien bewusst **Oblique-Schnitte**: Die bearbeiteten aufrechten Formen werden um 14 Grad geneigt. Damit behalten a, f, g, W, ß und die übrigen Zeichen dieselbe Formensprache. Mark-Anker und die Neigung der Textmarke werden mitgeführt. Es handelt sich nicht um die separate echte Kursive von Source Serif 4; diese war die Grundlage von Serif 0.4. PAT Sans verwendet weiterhin ihre unveränderten echten Kursivformen. Die häufigen f-Ligaturen werden in allen sechs Serif-Schnitten aus den überarbeiteten Buchstaben und deren Positionierung neu zusammengesetzt.
+
+In der lokalen Referenzvorschau wird nur Anthropic Roman geladen; ihre Kursivdarstellung wird vom Browser erzeugt. Der Vergleich belegt keine Übereinstimmung mit einem separat gestalteten Anthropic-Italic-Font.
 
 ## Abstände und Prüfung
 
-Klassenkerning berücksichtigt die geänderten horizontalen Proportionen. Zusätzliche Paarregeln behandeln unter anderem We und Wo, V-, T-, F- und Y-Verbindungen sowie r vor runden Kleinbuchstaben. Umlaute erhalten bei Bedarf zusätzlichen Platz. Die Prüfung öffnet ausschließlich Paare, deren Konturen sich ansonsten überschneiden; sie ersetzt keine optische Beurteilung. PAT-Serif-Titel verwenden normales Tracking, damit CSS die abgestimmten Abstände nicht erneut pauschal zusammendrückt.
+Die lateinischen Zeichen erhalten acht Einheiten weniger seitlichen Vorschub bei unveränderter horizontaler Konturskalierung. Zusammen mit der geänderten Ausgangsform laufen die dokumentierten Überschriften und Wörter etwa drei Prozent kompakter als in 0.4. Klassenkerning berücksichtigt die geänderten horizontalen Proportionen. Zusätzliche Paarregeln behandeln unter anderem We und Wo, V-, T-, F- und Y-Verbindungen sowie r vor runden Kleinbuchstaben. Umlaute erhalten bei Bedarf zusätzlichen Platz. Die Prüfung öffnet ausschließlich Paare, deren Konturen sich ansonsten überschneiden; sie ersetzt keine optische Beurteilung. PAT-Serif-Titel verwenden normales Tracking, damit CSS die abgestimmten Abstände nicht erneut pauschal zusammendrückt.
 
 Alle 60 Groß- und Kleinbuchstaben einschließlich Ä, Ö, Ü, ä, ö, ü, ß und ẞ wurden in einer vergrößerten Browserprobe einzeln betrachtet. Die Abstandsprobe enthält alle 3.600 Kombinationen dieses Zeichensatzes sowie einen direkten Vergleich typischer und anspruchsvoller Paare. Das sichtbare Wortbild wurde zusätzlich an Kursbegriffen, deutschen Wörtern, langen Absätzen und den tatsächlichen Mentorship-Komponenten geprüft.
 
@@ -34,7 +38,7 @@ Die Dateien besitzen eigene Familien-, Schnitt- und PostScript-Namen, vollständ
 
 Die mitgelieferten Lizenzen erlauben Nutzung und Weiterbearbeitung unter SIL OFL 1.1. Die abgeleiteten Dateien bleiben ebenfalls unter OFL. Es fällt keine Webfont-Lizenzgebühr an. Die Lizenz betrifft die Fonts, nicht die Website oder Kursinhalte.
 
-Quellen: Google Fonts, Commit 5e35378e6bda803962ee6fd257e444a7d459660d. Die vier Eingabefonts, zwei Lizenzen, Downloadadressen und SHA-256-Prüfsummen stehen in tools/mentorship-fonts/source-manifest.json. Das Buildskript prüft die Eingabefonts vor jeder Bearbeitung.
+Quellen: Google Fonts, Commit 5e35378e6bda803962ee6fd257e444a7d459660d. Die drei Eingabefonts, zwei Lizenzen, Downloadadressen und SHA-256-Prüfsummen stehen in tools/mentorship-fonts/source-manifest.json. Das Buildskript prüft die Eingabefonts vor jeder Bearbeitung.
 
 - [Instrument Sans und OFL](https://github.com/google/fonts/tree/5e35378e6bda803962ee6fd257e444a7d459660d/ofl/instrumentsans)
 - [Source Serif 4 und OFL](https://github.com/google/fonts/tree/5e35378e6bda803962ee6fd257e444a7d459660d/ofl/sourceserif4)

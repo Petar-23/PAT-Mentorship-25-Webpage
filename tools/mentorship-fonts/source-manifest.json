@@ -10,12 +10,6 @@
       "bytes": 1209508
     },
     {
-      "path": "source-fonts/SourceSerif4-Italic[opsz,wght].ttf",
-      "url": "https://raw.githubusercontent.com/google/fonts/5e35378e6bda803962ee6fd257e444a7d459660d/ofl/sourceserif4/SourceSerif4-Italic%5Bopsz%2Cwght%5D.ttf",
-      "sha256": "15fbc7e4679489a501998c3669272637a6646388ef7e4bd77eebb5bf967a1f42",
-      "bytes": 855432
-    },
-    {
       "path": "licenses/sourceserif4-OFL.txt",
       "url": "https://raw.githubusercontent.com/google/fonts/5e35378e6bda803962ee6fd257e444a7d459660d/ofl/sourceserif4/OFL.txt",
       "sha256": "5f94c3fd3a23131a417ab5a0c8452de57e70c3cfb9f604d88241f7065ebf9fd9",
