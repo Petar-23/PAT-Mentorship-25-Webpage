@@ -66,6 +66,8 @@
   --m-danger: #f29b96;
   color-scheme: dark;
 }
+/* Headings inherit the member area's UI or prose font instead of the public Sora rule. */
+:is(.mentorship-typography,.mentorship-portal) :is(h1,h2,h3,h4,h5,h6) { font-family: inherit; }
 .mentorship-typography :is(h1,h2,h3,h4,.mentorship-ui-heading) { letter-spacing: -.015em; font-weight: 600; }
 .mentorship-typography :is(a,button,input,select,textarea):focus-visible, .mentorship-portal :is(a,button):focus-visible { outline: 2px solid var(--m-accent); outline-offset: 2px; box-shadow: none; }
 .mentorship-typography ::selection { background: var(--m-tint); color: var(--m-text); }
