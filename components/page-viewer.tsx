@@ -80,8 +80,8 @@ export async function PageViewer({ pageId, title, content, updatedAt }: Props) {
   const html = content ? await renderCachedPageHtml(pageId, updatedAt, content) : ''
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">{title}</h1>
+    <div className="m-prose mx-auto">
+      <h1 className="m-page-title mb-8">{title}</h1>
       {content ? (
         <div
           className="ProseMirror max-w-none"

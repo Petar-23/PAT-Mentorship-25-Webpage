@@ -2,6 +2,9 @@
 
 'use client'
 
+import { learningPercent } from '@/lib/mentorship-learning'
+import { MentorshipLoadingIndicator, MentorshipOutlineLoading } from '@/components/mentorship/loading-state'
+
 import { useState, useEffect, useMemo, useRef } from 'react'
 import dynamic from 'next/dynamic'
 const VideoPlayer = dynamic(
@@ -9,8 +12,8 @@ const VideoPlayer = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 flex flex-col max-w-7xl">
-        <div className="aspect-video bg-black/90 rounded-2xl overflow-hidden animate-pulse" />
+      <div className="m-video-player">
+        <div className="aspect-video"><MentorshipLoadingIndicator label="Player wird geladen" /></div>
       </div>
     ),
   }
@@ -49,50 +52,18 @@ type Modul = {
   playlist?: Playlist | null
 }
 
-type SidebarKurs = {
-  id: string
-  name: string
-  slug: string
-  modulesLength: number
-  description?: string | null
-  iconUrl?: string | null
-}
-
 type Props = {
   modul: Modul
   initialVideoId?: string | null
   initialWatchedVideoIds?: string[]
   isAdmin: boolean
-  sidebar: {
-    kurse: SidebarKurs[]
-    savedSidebarOrder?: string[] | null
-    activeCourseId?: string | null
-    openCreateCourseModal?: boolean
-  }
 }
-
-
-const skeletonBase = 'animate-pulse rounded-md bg-neutral-200/80 dark:bg-neutral-800/70'
 
 const MiddleSidebar = dynamic(
   () => import('./middle-sidebar-entry').then((mod) => mod.MiddleSidebar),
   {
     ssr: false,
-    loading: () => (
-      <div className="w-full lg:w-96 h-full min-h-0 border-r border-border bg-background p-4 sm:p-6 lg:p-8">
-        <div className="space-y-4">
-          <div className={`${skeletonBase} h-6 w-32`} />
-          <div className="space-y-3">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="space-y-2">
-                <div className={`${skeletonBase} h-4 w-3/4`} />
-                <div className={`${skeletonBase} h-3 w-1/2 opacity-70`} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    ),
+    loading: () => <MentorshipOutlineLoading />,
   }
 )
 
@@ -101,7 +72,6 @@ export function ModulDetailClient({
   initialVideoId = null,
   initialWatchedVideoIds,
   isAdmin,
-  sidebar,
 }: Props) {
   const { toast } = useToast()
   const searchParams = useSearchParams()
@@ -112,7 +82,7 @@ export function ModulDetailClient({
   const [activeVideoId, setActiveVideoId] = useState<string | null>(initialVideoId)
   const [watchedVideoIds, setWatchedVideoIds] = useState<string[]>(initialWatchedVideoIds ?? [])
   const [mobileView, setMobileView] = useState<'player' | 'content'>(() =>
-    view === 'content' ? 'content' : 'player'
+    view === 'content' || (view !== 'player' && !videoParam) ? 'content' : 'player'
   )
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const lastViewedSentRef = useRef<string | null>(null)
@@ -184,8 +154,8 @@ export function ModulDetailClient({
 
   // URL → State sync (z.B. wenn User direkt /...?view=content öffnet)
   useEffect(() => {
-    if (view === 'content') setMobileView('content')
-  }, [view])
+    setMobileView(view === 'content' || (view !== 'player' && !videoParam) ? 'content' : 'player')
+  }, [view, videoParam, modul.id])
 
   // "Zuletzt angesehen" speichern (für /mentorship Dashboard → Weiterlernen)
   useEffect(() => {
@@ -234,8 +204,7 @@ export function ModulDetailClient({
 
   const totalLessons = allVideos.length
   const completedLessons = watchedVideoIds.length
-  const progressPercent =
-    totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
+  const progressPercent = learningPercent(completedLessons, totalLessons)
 
   // Performance: `watchedVideoIds` kommt serverseitig als Prop (kein extra Fetch nötig).
 
@@ -656,7 +625,7 @@ export function ModulDetailClient({
   // Wichtig: Dieser Block muss NACH den Handler-Definitionen stehen (sonst ReferenceError/TDZ).
   if (!isDesktop && mobileView === 'content') {
     return (
-      <div className="flex h-full min-h-0 flex-1">
+      <div className={isAdmin ? "flex h-full min-h-0 flex-1" : "m-lesson-workspace"}>
         <MiddleSidebar
           modul={localModul}
           courseTitle={localModul.playlist?.name ?? null}
@@ -702,7 +671,7 @@ export function ModulDetailClient({
   }
 
   return (
-    <div className="flex-1 flex min-w-0">
+    <div className="m-lesson-workspace">
       {/* Desktop: MiddleSidebar dauerhaft sichtbar */}
       {isDesktop ? (
         <MiddleSidebar
@@ -744,25 +713,12 @@ export function ModulDetailClient({
         />
       ) : (
         // Platzhalter nur für Desktop vor der ersten MediaQuery-Auswertung (verhindert Layout-Jump)
-        <div className="hidden lg:flex w-96 h-full min-h-0 border-r border-border bg-background p-4 sm:p-6 lg:p-8">
-          <div className="w-full space-y-4">
-            <div className={`${skeletonBase} h-6 w-32`} />
-            <div className="space-y-3">
-              {Array.from({ length: 10 }).map((_, i) => (
-                <div key={i} className="space-y-2">
-                  <div className={`${skeletonBase} h-4 w-3/4`} />
-                  <div className={`${skeletonBase} h-3 w-1/2 opacity-70`} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <div className="hidden lg:block"><MentorshipOutlineLoading /></div>
       )}
 
       {/* Video + Mobile Controls */}
-      <div className="flex-1 min-w-0 flex flex-col">
-        {/* Platz unten, damit die Mobile Bottom-Bar nichts verdeckt */}
-        <div className="pb-[calc(7rem+env(safe-area-inset-bottom))] lg:pb-0">
+      <div className="m-player-scroll">
+        <div className="min-h-0">
           <VideoPlayer
             activeVideo={activeVideo || null}
             activeChapterName={activeChapter?.name || null}

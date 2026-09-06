@@ -1,7 +1,6 @@
 'use client'
 
 import { useUser } from '@clerk/nextjs'
-import { useMemo } from 'react'
 
 function getFirstNameLike(value: string | null | undefined) {
   if (!value) return null
@@ -13,21 +12,11 @@ function getFirstNameLike(value: string | null | undefined) {
 export function MentorshipWelcomeName() {
   const { user, isLoaded } = useUser()
 
-  const firstName = useMemo(() => {
-    if (!isLoaded) return null
-    return (
-      getFirstNameLike(user?.firstName) ??
-      getFirstNameLike(user?.fullName) ??
-      getFirstNameLike(user?.username) ??
-      null
-    )
-  }, [isLoaded, user?.firstName, user?.fullName, user?.username])
+  const firstName = isLoaded
+    ? getFirstNameLike(user?.firstName) ?? getFirstNameLike(user?.fullName) ?? getFirstNameLike(user?.username)
+    : null
 
-  if (!firstName) return null
+  if (!firstName) return <span>.</span>
 
-  return <span>, {firstName}!</span>
+  return <span>, {firstName}.</span>
 }
-
-
-
-

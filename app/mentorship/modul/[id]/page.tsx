@@ -5,6 +5,7 @@ import { ModulDetailClient } from '@/components/modul-detail-client'
 import { getIsAdmin } from '@/lib/authz'
 import { auth } from '@clerk/nextjs/server'
 import { getSidebarData } from '@/lib/sidebar-data'
+import { hasLearningMaterial } from '@/lib/mentorship-learning'
 
 type SearchParams = { [key: string]: string | string[] | undefined }
 
@@ -33,13 +34,13 @@ export default async function MentorshipModulPage({
         },
       },
       chapters: {
-        orderBy: { order: 'asc' },
+        orderBy: [{ order: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
         select: {
           id: true,
           name: true,
           order: true,
           videos: {
-            orderBy: { order: 'asc' },
+            orderBy: [{ order: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
             select: {
               id: true,
               title: true,
@@ -69,7 +70,7 @@ export default async function MentorshipModulPage({
         })
       : Promise.resolve([])
   )
-  const [resolvedParams, { kurseForSidebar, savedSidebarOrder }, modul, isAdmin, watchedProgressRows] =
+  const [resolvedParams, { kurseForSidebar, pagesForSidebar, savedSidebarOrder }, modul, isAdmin, watchedProgressRows] =
     await Promise.all([
       searchParamsPromise,
       sidebarDataPromise,
@@ -83,7 +84,7 @@ export default async function MentorshipModulPage({
 
   const allVideos = modul.chapters.flatMap((ch) => ch.videos)
   const defaultInitialVideoId =
-    allVideos.find((v) => v.bunnyGuid !== null)?.id ?? allVideos[0]?.id ?? null
+    allVideos.find(hasLearningMaterial)?.id ?? allVideos[0]?.id ?? null
   const initialVideoId =
     (requestedVideoId && allVideos.some((v) => v.id === requestedVideoId) ? requestedVideoId : null) ??
     defaultInitialVideoId
@@ -94,10 +95,11 @@ export default async function MentorshipModulPage({
   const initialWatchedVideoIds = watchedProgressRows.map((r) => r.videoId)
 
   return (
-    <div className="flex h-full min-h-0 bg-background">
-      <div className="hidden lg:block">
+    <div className={isAdmin ? "flex h-full min-h-0 bg-background" : "m-workspace"}>
+      <div className={isAdmin ? "hidden lg:block" : "m-desktop-sidebar hidden xl:block"}>
         <Sidebar
           kurse={kurseForSidebar}
+          pages={pagesForSidebar}
           savedSidebarOrder={savedSidebarOrder}
           activeCourseId={activeCourseId}
           isAdmin={isAdmin}
@@ -105,15 +107,11 @@ export default async function MentorshipModulPage({
       </div>
 
       <ModulDetailClient
+        key={modul.id}
         modul={modul}
         initialVideoId={initialVideoId}
         initialWatchedVideoIds={initialWatchedVideoIds}
         isAdmin={isAdmin}
-        sidebar={{
-          kurse: kurseForSidebar,
-          savedSidebarOrder,
-          activeCourseId,
-        }}
       />
     </div>
   )

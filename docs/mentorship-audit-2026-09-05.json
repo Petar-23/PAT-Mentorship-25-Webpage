@@ -1,0 +1,66 @@
+{
+  "baselineCommit": "5fd95404",
+  "before": {
+    "build": "7e5ZGC9RrPnVzb3ljds6f",
+    "routes": {
+      "page": {
+        "bytes": 601363,
+        "gzipBytes": 178804,
+        "files": 20
+      },
+      "[id]/page": {
+        "bytes": 625408,
+        "gzipBytes": 187264,
+        "files": 23
+      },
+      "modul/[id]/page": {
+        "bytes": 614409,
+        "gzipBytes": 182976,
+        "files": 23
+      },
+      "indicators/page": {
+        "bytes": 938591,
+        "gzipBytes": 276336,
+        "files": 24
+      }
+    }
+  },
+  "after": {
+    "build": "spnHjaiCdTExU54NCiDlN",
+    "routes": {
+      "page": {
+        "bytes": 573803,
+        "gzipBytes": 171891,
+        "files": 18
+      },
+      "[id]/page": {
+        "bytes": 593806,
+        "gzipBytes": 179132,
+        "files": 21
+      },
+      "modul/[id]/page": {
+        "bytes": 587760,
+        "gzipBytes": 176391,
+        "files": 21
+      },
+      "indicators/page": {
+        "bytes": 756938,
+        "gzipBytes": 223135,
+        "files": 22
+      }
+    }
+  },
+  "uiChecksPassed": 63,
+  "javascriptExceptions": [],
+  "viewports": [
+    1440,
+    1024,
+    390,
+    320
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "data": "local fixtures; no real account actions or video playback"
+}

@@ -236,6 +236,8 @@ export function Navbar() {
     }
   }, [isOpen])
 
+  if (isMentorship) return null
+
   return (
     <>
       <header className="sticky top-0 bg-white z-50">

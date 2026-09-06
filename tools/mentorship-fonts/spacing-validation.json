@@ -1,0 +1,1277 @@
+{
+  "method": "24-segment quadratic approximation; 2-unit scanlines; actual HarfBuzz shaping; negative ink gaps flagged; visual quality requires separate proof",
+  "fonts": [
+    {
+      "family": "PAT Serif",
+      "style": "Bold",
+      "version": "Version 0.500; PAT OFL derivative prototype",
+      "letters": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÄÖÜäöüßẞ",
+      "pairs_checked": 3600,
+      "kerned_pairs": 2445,
+      "ligatures_enabled": true,
+      "shaped_ligatures": [
+        "ff",
+        "fi",
+        "fj",
+        "fl",
+        "ft"
+      ],
+      "contour_collisions": [],
+      "closest_pairs": [
+        {
+          "pair": "tJ",
+          "minimum_gap_units": 0.73,
+          "kern_units": -16
+        },
+        {
+          "pair": "jA",
+          "minimum_gap_units": 1.0,
+          "kern_units": -20
+        },
+        {
+          "pair": "jÄ",
+          "minimum_gap_units": 1.0,
+          "kern_units": -20
+        },
+        {
+          "pair": "vy",
+          "minimum_gap_units": 1.0,
+          "kern_units": 1
+        },
+        {
+          "pair": "wy",
+          "minimum_gap_units": 1.0,
+          "kern_units": 1
+        },
+        {
+          "pair": "yv",
+          "minimum_gap_units": 1.0,
+          "kern_units": 7
+        },
+        {
+          "pair": "yw",
+          "minimum_gap_units": 2.0,
+          "kern_units": 7
+        },
+        {
+          "pair": "aX",
+          "minimum_gap_units": 3.0,
+          "kern_units": 0
+        },
+        {
+          "pair": "vv",
+          "minimum_gap_units": 3.0,
+          "kern_units": 7
+        },
+        {
+          "pair": "wv",
+          "minimum_gap_units": 3.0,
+          "kern_units": 7
+        },
+        {
+          "pair": "äX",
+          "minimum_gap_units": 3.0,
+          "kern_units": 0
+        },
+        {
+          "pair": "jv",
+          "minimum_gap_units": 3.11,
+          "kern_units": 0
+        },
+        {
+          "pair": "vw",
+          "minimum_gap_units": 4.0,
+          "kern_units": 7
+        },
+        {
+          "pair": "ww",
+          "minimum_gap_units": 4.0,
+          "kern_units": 7
+        },
+        {
+          "pair": "yy",
+          "minimum_gap_units": 4.0,
+          "kern_units": 6
+        },
+        {
+          "pair": "jV",
+          "minimum_gap_units": 4.06,
+          "kern_units": -19
+        },
+        {
+          "pair": "jW",
+          "minimum_gap_units": 4.06,
+          "kern_units": -19
+        },
+        {
+          "pair": "jw",
+          "minimum_gap_units": 4.11,
+          "kern_units": 0
+        },
+        {
+          "pair": "ßJ",
+          "minimum_gap_units": 4.11,
+          "kern_units": -15
+        },
+        {
+          "pair": "Vö",
+          "minimum_gap_units": 4.21,
+          "kern_units": -103
+        },
+        {
+          "pair": "Wö",
+          "minimum_gap_units": 4.21,
+          "kern_units": -104
+        },
+        {
+          "pair": "Yö",
+          "minimum_gap_units": 4.21,
+          "kern_units": -104
+        },
+        {
+          "pair": "Vä",
+          "minimum_gap_units": 4.27,
+          "kern_units": -77
+        },
+        {
+          "pair": "Yä",
+          "minimum_gap_units": 4.27,
+          "kern_units": -78
+        }
+      ],
+      "words": [
+        {
+          "text": "Weekly Reviews",
+          "advance_units": 7797,
+          "glyphs": 14
+        },
+        {
+          "text": "Welche Dealing Range zählt?",
+          "advance_units": 14024,
+          "glyphs": 27
+        },
+        {
+          "text": "größere Märkte",
+          "advance_units": 7409,
+          "glyphs": 14
+        },
+        {
+          "text": "Straße",
+          "advance_units": 3198,
+          "glyphs": 6
+        },
+        {
+          "text": "heißen",
+          "advance_units": 3431,
+          "glyphs": 6
+        },
+        {
+          "text": "Äußere Liquidität",
+          "advance_units": 8664,
+          "glyphs": 17
+        },
+        {
+          "text": "AVATAR",
+          "advance_units": 4324,
+          "glyphs": 6
+        },
+        {
+          "text": "To Wa We Wo Wi",
+          "advance_units": 8128,
+          "glyphs": 14
+        },
+        {
+          "text": "TÄ TÖ TÜ Tä Tö Tü",
+          "advance_units": 9401,
+          "glyphs": 17
+        },
+        {
+          "text": "Fä Yö Vü",
+          "advance_units": 4155,
+          "glyphs": 8
+        },
+        {
+          "text": "ßa ße ßi ßo ßu",
+          "advance_units": 7196,
+          "glyphs": 14
+        },
+        {
+          "text": "ẞA ẞE ẞI ẞO ẞU",
+          "advance_units": 8870,
+          "glyphs": 14
+        },
+        {
+          "text": "Illiquide Märkte",
+          "advance_units": 7687,
+          "glyphs": 16
+        },
+        {
+          "text": "fff fi fl ffi ffl",
+          "advance_units": 5660,
+          "glyphs": 10
+        }
+      ],
+      "file": "PATSerif-Bold.woff2"
+    },
+    {
+      "family": "PAT Serif",
+      "style": "Bold Italic",
+      "version": "Version 0.500; PAT OFL derivative prototype",
+      "letters": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÄÖÜäöüßẞ",
+      "pairs_checked": 3600,
+      "kerned_pairs": 2445,
+      "ligatures_enabled": true,
+      "shaped_ligatures": [
+        "ff",
+        "fi",
+        "fj",
+        "fl",
+        "ft"
+      ],
+      "contour_collisions": [],
+      "closest_pairs": [
+        {
+          "pair": "sJ",
+          "minimum_gap_units": -0.34,
+          "kern_units": -33
+        },
+        {
+          "pair": "tJ",
+          "minimum_gap_units": 0.57,
+          "kern_units": -16
+        },
+        {
+          "pair": "vy",
+          "minimum_gap_units": 1.0,
+          "kern_units": 1
+        },
+        {
+          "pair": "wy",
+          "minimum_gap_units": 1.0,
+          "kern_units": 1
+        },
+        {
+          "pair": "yv",
+          "minimum_gap_units": 1.0,
+          "kern_units": 7
+        },
+        {
+          "pair": "jA",
+          "minimum_gap_units": 1.24,
+          "kern_units": -20
+        },
+        {
+          "pair": "jÄ",
+          "minimum_gap_units": 1.24,
+          "kern_units": -20
+        },
+        {
+          "pair": "yw",
+          "minimum_gap_units": 2.0,
+          "kern_units": 7
+        },
+        {
+          "pair": "aX",
+          "minimum_gap_units": 2.55,
+          "kern_units": 0
+        },
+        {
+          "pair": "äX",
+          "minimum_gap_units": 2.55,
+          "kern_units": 0
+        },
+        {
+          "pair": "vv",
+          "minimum_gap_units": 3.0,
+          "kern_units": 7
+        },
+        {
+          "pair": "wv",
+          "minimum_gap_units": 3.0,
+          "kern_units": 7
+        },
+        {
+          "pair": "jv",
+          "minimum_gap_units": 3.1,
+          "kern_units": 0
+        },
+        {
+          "pair": "vw",
+          "minimum_gap_units": 4.0,
+          "kern_units": 7
+        },
+        {
+          "pair": "ww",
+          "minimum_gap_units": 4.0,
+          "kern_units": 7
+        },
+        {
+          "pair": "yy",
+          "minimum_gap_units": 4.0,
+          "kern_units": 6
+        },
+        {
+          "pair": "cJ",
+          "minimum_gap_units": 4.06,
+          "kern_units": -32
+        },
+        {
+          "pair": "jw",
+          "minimum_gap_units": 4.1,
+          "kern_units": 0
+        },
+        {
+          "pair": "Yö",
+          "minimum_gap_units": 4.19,
+          "kern_units": -104
+        },
+        {
+          "pair": "ßJ",
+          "minimum_gap_units": 4.19,
+          "kern_units": -15
+        },
+        {
+          "pair": "Vö",
+          "minimum_gap_units": 4.22,
+          "kern_units": -103
+        },
+        {
+          "pair": "Wö",
+          "minimum_gap_units": 4.22,
+          "kern_units": -104
+        },
+        {
+          "pair": "Yä",
+          "minimum_gap_units": 4.25,
+          "kern_units": -78
+        },
+        {
+          "pair": "Vä",
+          "minimum_gap_units": 4.28,
+          "kern_units": -77
+        }
+      ],
+      "words": [
+        {
+          "text": "Weekly Reviews",
+          "advance_units": 7797,
+          "glyphs": 14
+        },
+        {
+          "text": "Welche Dealing Range zählt?",
+          "advance_units": 14024,
+          "glyphs": 27
+        },
+        {
+          "text": "größere Märkte",
+          "advance_units": 7409,
+          "glyphs": 14
+        },
+        {
+          "text": "Straße",
+          "advance_units": 3198,
+          "glyphs": 6
+        },
+        {
+          "text": "heißen",
+          "advance_units": 3431,
+          "glyphs": 6
+        },
+        {
+          "text": "Äußere Liquidität",
+          "advance_units": 8664,
+          "glyphs": 17
+        },
+        {
+          "text": "AVATAR",
+          "advance_units": 4324,
+          "glyphs": 6
+        },
+        {
+          "text": "To Wa We Wo Wi",
+          "advance_units": 8128,
+          "glyphs": 14
+        },
+        {
+          "text": "TÄ TÖ TÜ Tä Tö Tü",
+          "advance_units": 9401,
+          "glyphs": 17
+        },
+        {
+          "text": "Fä Yö Vü",
+          "advance_units": 4155,
+          "glyphs": 8
+        },
+        {
+          "text": "ßa ße ßi ßo ßu",
+          "advance_units": 7196,
+          "glyphs": 14
+        },
+        {
+          "text": "ẞA ẞE ẞI ẞO ẞU",
+          "advance_units": 8870,
+          "glyphs": 14
+        },
+        {
+          "text": "Illiquide Märkte",
+          "advance_units": 7687,
+          "glyphs": 16
+        },
+        {
+          "text": "fff fi fl ffi ffl",
+          "advance_units": 5662,
+          "glyphs": 10
+        }
+      ],
+      "file": "PATSerif-BoldItalic.woff2"
+    },
+    {
+      "family": "PAT Serif",
+      "style": "Italic",
+      "version": "Version 0.500; PAT OFL derivative prototype",
+      "letters": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÄÖÜäöüßẞ",
+      "pairs_checked": 3600,
+      "kerned_pairs": 2347,
+      "ligatures_enabled": true,
+      "shaped_ligatures": [
+        "ff",
+        "fi",
+        "fj",
+        "fl",
+        "ft"
+      ],
+      "contour_collisions": [],
+      "closest_pairs": [
+        {
+          "pair": "ax",
+          "minimum_gap_units": 0.56,
+          "kern_units": 0
+        },
+        {
+          "pair": "äx",
+          "minimum_gap_units": 0.56,
+          "kern_units": 0
+        },
+        {
+          "pair": "Yä",
+          "minimum_gap_units": 4.59,
+          "kern_units": -109
+        },
+        {
+          "pair": "fh",
+          "minimum_gap_units": 4.74,
+          "kern_units": -4
+        },
+        {
+          "pair": "fk",
+          "minimum_gap_units": 4.74,
+          "kern_units": -3
+        },
+        {
+          "pair": "fb",
+          "minimum_gap_units": 4.79,
+          "kern_units": -3
+        },
+        {
+          "pair": "Yö",
+          "minimum_gap_units": 5.18,
+          "kern_units": -135
+        },
+        {
+          "pair": "aX",
+          "minimum_gap_units": 5.56,
+          "kern_units": 0
+        },
+        {
+          "pair": "äX",
+          "minimum_gap_units": 5.56,
+          "kern_units": 0
+        },
+        {
+          "pair": "rw",
+          "minimum_gap_units": 7.66,
+          "kern_units": 17
+        },
+        {
+          "pair": "fẞ",
+          "minimum_gap_units": 7.98,
+          "kern_units": 0
+        },
+        {
+          "pair": "rv",
+          "minimum_gap_units": 8.6,
+          "kern_units": 17
+        },
+        {
+          "pair": "ßJ",
+          "minimum_gap_units": 9.14,
+          "kern_units": -24
+        },
+        {
+          "pair": "rx",
+          "minimum_gap_units": 9.66,
+          "kern_units": 3
+        },
+        {
+          "pair": "kx",
+          "minimum_gap_units": 10.0,
+          "kern_units": 7
+        },
+        {
+          "pair": "yw",
+          "minimum_gap_units": 10.02,
+          "kern_units": 15
+        },
+        {
+          "pair": "yv",
+          "minimum_gap_units": 10.07,
+          "kern_units": 15
+        },
+        {
+          "pair": "ry",
+          "minimum_gap_units": 10.21,
+          "kern_units": 16
+        },
+        {
+          "pair": "yß",
+          "minimum_gap_units": 10.56,
+          "kern_units": -7
+        },
+        {
+          "pair": "rß",
+          "minimum_gap_units": 10.61,
+          "kern_units": -3
+        },
+        {
+          "pair": "aA",
+          "minimum_gap_units": 11.56,
+          "kern_units": 10
+        },
+        {
+          "pair": "aÄ",
+          "minimum_gap_units": 11.56,
+          "kern_units": 10
+        },
+        {
+          "pair": "äA",
+          "minimum_gap_units": 11.56,
+          "kern_units": 10
+        },
+        {
+          "pair": "äÄ",
+          "minimum_gap_units": 11.56,
+          "kern_units": 10
+        }
+      ],
+      "words": [
+        {
+          "text": "Weekly Reviews",
+          "advance_units": 7514,
+          "glyphs": 14
+        },
+        {
+          "text": "Welche Dealing Range zählt?",
+          "advance_units": 13577,
+          "glyphs": 27
+        },
+        {
+          "text": "größere Märkte",
+          "advance_units": 7098,
+          "glyphs": 14
+        },
+        {
+          "text": "Straße",
+          "advance_units": 3003,
+          "glyphs": 6
+        },
+        {
+          "text": "heißen",
+          "advance_units": 3291,
+          "glyphs": 6
+        },
+        {
+          "text": "Äußere Liquidität",
+          "advance_units": 8298,
+          "glyphs": 17
+        },
+        {
+          "text": "AVATAR",
+          "advance_units": 4237,
+          "glyphs": 6
+        },
+        {
+          "text": "To Wa We Wo Wi",
+          "advance_units": 8011,
+          "glyphs": 14
+        },
+        {
+          "text": "TÄ TÖ TÜ Tä Tö Tü",
+          "advance_units": 9242,
+          "glyphs": 17
+        },
+        {
+          "text": "Fä Yö Vü",
+          "advance_units": 4100,
+          "glyphs": 8
+        },
+        {
+          "text": "ßa ße ßi ßo ßu",
+          "advance_units": 6828,
+          "glyphs": 14
+        },
+        {
+          "text": "ẞA ẞE ẞI ẞO ẞU",
+          "advance_units": 8665,
+          "glyphs": 14
+        },
+        {
+          "text": "Illiquide Märkte",
+          "advance_units": 7314,
+          "glyphs": 16
+        },
+        {
+          "text": "fff fi fl ffi ffl",
+          "advance_units": 5472,
+          "glyphs": 10
+        }
+      ],
+      "file": "PATSerif-Italic.woff2"
+    },
+    {
+      "family": "PAT Serif",
+      "style": "Medium",
+      "version": "Version 0.500; PAT OFL derivative prototype",
+      "letters": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÄÖÜäöüßẞ",
+      "pairs_checked": 3600,
+      "kerned_pairs": 2456,
+      "ligatures_enabled": true,
+      "shaped_ligatures": [
+        "ff",
+        "fi",
+        "fj",
+        "fl",
+        "ft"
+      ],
+      "contour_collisions": [],
+      "closest_pairs": [
+        {
+          "pair": "ax",
+          "minimum_gap_units": 2.0,
+          "kern_units": 0
+        },
+        {
+          "pair": "äx",
+          "minimum_gap_units": 2.0,
+          "kern_units": 0
+        },
+        {
+          "pair": "fb",
+          "minimum_gap_units": 4.1,
+          "kern_units": -2
+        },
+        {
+          "pair": "fh",
+          "minimum_gap_units": 4.1,
+          "kern_units": -1
+        },
+        {
+          "pair": "fk",
+          "minimum_gap_units": 4.1,
+          "kern_units": 0
+        },
+        {
+          "pair": "Vö",
+          "minimum_gap_units": 4.21,
+          "kern_units": -126
+        },
+        {
+          "pair": "Yö",
+          "minimum_gap_units": 4.21,
+          "kern_units": -128
+        },
+        {
+          "pair": "Yä",
+          "minimum_gap_units": 4.5,
+          "kern_units": -101
+        },
+        {
+          "pair": "rv",
+          "minimum_gap_units": 4.53,
+          "kern_units": 17
+        },
+        {
+          "pair": "rw",
+          "minimum_gap_units": 4.6,
+          "kern_units": 17
+        },
+        {
+          "pair": "aX",
+          "minimum_gap_units": 5.0,
+          "kern_units": 0
+        },
+        {
+          "pair": "äX",
+          "minimum_gap_units": 5.0,
+          "kern_units": 0
+        },
+        {
+          "pair": "ßJ",
+          "minimum_gap_units": 5.06,
+          "kern_units": -25
+        },
+        {
+          "pair": "Vä",
+          "minimum_gap_units": 5.5,
+          "kern_units": -98
+        },
+        {
+          "pair": "yv",
+          "minimum_gap_units": 6.0,
+          "kern_units": 12
+        },
+        {
+          "pair": "yw",
+          "minimum_gap_units": 6.0,
+          "kern_units": 12
+        },
+        {
+          "pair": "rx",
+          "minimum_gap_units": 6.53,
+          "kern_units": 2
+        },
+        {
+          "pair": "yy",
+          "minimum_gap_units": 7.0,
+          "kern_units": 10
+        },
+        {
+          "pair": "ry",
+          "minimum_gap_units": 7.6,
+          "kern_units": 17
+        },
+        {
+          "pair": "fẞ",
+          "minimum_gap_units": 7.73,
+          "kern_units": 0
+        },
+        {
+          "pair": "cJ",
+          "minimum_gap_units": 8.96,
+          "kern_units": -27
+        },
+        {
+          "pair": "rß",
+          "minimum_gap_units": 9.49,
+          "kern_units": -2
+        },
+        {
+          "pair": "sJ",
+          "minimum_gap_units": 10.04,
+          "kern_units": -33
+        },
+        {
+          "pair": "aA",
+          "minimum_gap_units": 11.0,
+          "kern_units": 9
+        }
+      ],
+      "words": [
+        {
+          "text": "Weekly Reviews",
+          "advance_units": 7581,
+          "glyphs": 14
+        },
+        {
+          "text": "Welche Dealing Range zählt?",
+          "advance_units": 13691,
+          "glyphs": 27
+        },
+        {
+          "text": "größere Märkte",
+          "advance_units": 7166,
+          "glyphs": 14
+        },
+        {
+          "text": "Straße",
+          "advance_units": 3046,
+          "glyphs": 6
+        },
+        {
+          "text": "heißen",
+          "advance_units": 3324,
+          "glyphs": 6
+        },
+        {
+          "text": "Äußere Liquidität",
+          "advance_units": 8385,
+          "glyphs": 17
+        },
+        {
+          "text": "AVATAR",
+          "advance_units": 4258,
+          "glyphs": 6
+        },
+        {
+          "text": "To Wa We Wo Wi",
+          "advance_units": 8046,
+          "glyphs": 14
+        },
+        {
+          "text": "TÄ TÖ TÜ Tä Tö Tü",
+          "advance_units": 9280,
+          "glyphs": 17
+        },
+        {
+          "text": "Fä Yö Vü",
+          "advance_units": 4115,
+          "glyphs": 8
+        },
+        {
+          "text": "ßa ße ßi ßo ßu",
+          "advance_units": 6918,
+          "glyphs": 14
+        },
+        {
+          "text": "ẞA ẞE ẞI ẞO ẞU",
+          "advance_units": 8714,
+          "glyphs": 14
+        },
+        {
+          "text": "Illiquide Märkte",
+          "advance_units": 7401,
+          "glyphs": 16
+        },
+        {
+          "text": "fff fi fl ffi ffl",
+          "advance_units": 5520,
+          "glyphs": 10
+        }
+      ],
+      "file": "PATSerif-Medium.woff2"
+    },
+    {
+      "family": "PAT Serif",
+      "style": "Regular",
+      "version": "Version 0.500; PAT OFL derivative prototype",
+      "letters": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÄÖÜäöüßẞ",
+      "pairs_checked": 3600,
+      "kerned_pairs": 2347,
+      "ligatures_enabled": true,
+      "shaped_ligatures": [
+        "ff",
+        "fi",
+        "fj",
+        "fl",
+        "ft"
+      ],
+      "contour_collisions": [],
+      "closest_pairs": [
+        {
+          "pair": "ax",
+          "minimum_gap_units": 1.0,
+          "kern_units": 0
+        },
+        {
+          "pair": "äx",
+          "minimum_gap_units": 1.0,
+          "kern_units": 0
+        },
+        {
+          "pair": "fb",
+          "minimum_gap_units": 4.39,
+          "kern_units": -3
+        },
+        {
+          "pair": "fh",
+          "minimum_gap_units": 4.39,
+          "kern_units": -3
+        },
+        {
+          "pair": "fk",
+          "minimum_gap_units": 4.39,
+          "kern_units": -3
+        },
+        {
+          "pair": "Yä",
+          "minimum_gap_units": 4.84,
+          "kern_units": -110
+        },
+        {
+          "pair": "aX",
+          "minimum_gap_units": 6.0,
+          "kern_units": 0
+        },
+        {
+          "pair": "äX",
+          "minimum_gap_units": 6.0,
+          "kern_units": 0
+        },
+        {
+          "pair": "Yö",
+          "minimum_gap_units": 6.42,
+          "kern_units": -135
+        },
+        {
+          "pair": "fẞ",
+          "minimum_gap_units": 7.57,
+          "kern_units": 0
+        },
+        {
+          "pair": "rv",
+          "minimum_gap_units": 7.81,
+          "kern_units": 17
+        },
+        {
+          "pair": "rw",
+          "minimum_gap_units": 7.81,
+          "kern_units": 17
+        },
+        {
+          "pair": "rx",
+          "minimum_gap_units": 9.81,
+          "kern_units": 3
+        },
+        {
+          "pair": "kx",
+          "minimum_gap_units": 10.0,
+          "kern_units": 7
+        },
+        {
+          "pair": "ßJ",
+          "minimum_gap_units": 10.13,
+          "kern_units": -24
+        },
+        {
+          "pair": "ry",
+          "minimum_gap_units": 10.81,
+          "kern_units": 16
+        },
+        {
+          "pair": "rß",
+          "minimum_gap_units": 10.81,
+          "kern_units": -3
+        },
+        {
+          "pair": "yv",
+          "minimum_gap_units": 11.0,
+          "kern_units": 15
+        },
+        {
+          "pair": "yw",
+          "minimum_gap_units": 11.0,
+          "kern_units": 15
+        },
+        {
+          "pair": "aA",
+          "minimum_gap_units": 12.0,
+          "kern_units": 10
+        },
+        {
+          "pair": "aÄ",
+          "minimum_gap_units": 12.0,
+          "kern_units": 10
+        },
+        {
+          "pair": "yß",
+          "minimum_gap_units": 12.0,
+          "kern_units": -7
+        },
+        {
+          "pair": "äA",
+          "minimum_gap_units": 12.0,
+          "kern_units": 10
+        },
+        {
+          "pair": "äÄ",
+          "minimum_gap_units": 12.0,
+          "kern_units": 10
+        }
+      ],
+      "words": [
+        {
+          "text": "Weekly Reviews",
+          "advance_units": 7514,
+          "glyphs": 14
+        },
+        {
+          "text": "Welche Dealing Range zählt?",
+          "advance_units": 13577,
+          "glyphs": 27
+        },
+        {
+          "text": "größere Märkte",
+          "advance_units": 7098,
+          "glyphs": 14
+        },
+        {
+          "text": "Straße",
+          "advance_units": 3003,
+          "glyphs": 6
+        },
+        {
+          "text": "heißen",
+          "advance_units": 3291,
+          "glyphs": 6
+        },
+        {
+          "text": "Äußere Liquidität",
+          "advance_units": 8298,
+          "glyphs": 17
+        },
+        {
+          "text": "AVATAR",
+          "advance_units": 4237,
+          "glyphs": 6
+        },
+        {
+          "text": "To Wa We Wo Wi",
+          "advance_units": 8011,
+          "glyphs": 14
+        },
+        {
+          "text": "TÄ TÖ TÜ Tä Tö Tü",
+          "advance_units": 9242,
+          "glyphs": 17
+        },
+        {
+          "text": "Fä Yö Vü",
+          "advance_units": 4100,
+          "glyphs": 8
+        },
+        {
+          "text": "ßa ße ßi ßo ßu",
+          "advance_units": 6828,
+          "glyphs": 14
+        },
+        {
+          "text": "ẞA ẞE ẞI ẞO ẞU",
+          "advance_units": 8665,
+          "glyphs": 14
+        },
+        {
+          "text": "Illiquide Märkte",
+          "advance_units": 7314,
+          "glyphs": 16
+        },
+        {
+          "text": "fff fi fl ffi ffl",
+          "advance_units": 5474,
+          "glyphs": 10
+        }
+      ],
+      "file": "PATSerif-Regular.woff2"
+    },
+    {
+      "family": "PAT Serif",
+      "style": "Semibold",
+      "version": "Version 0.500; PAT OFL derivative prototype",
+      "letters": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÄÖÜäöüßẞ",
+      "pairs_checked": 3600,
+      "kerned_pairs": 2468,
+      "ligatures_enabled": true,
+      "shaped_ligatures": [
+        "ff",
+        "fi",
+        "fj",
+        "fl",
+        "ft"
+      ],
+      "contour_collisions": [],
+      "closest_pairs": [
+        {
+          "pair": "ax",
+          "minimum_gap_units": 3.0,
+          "kern_units": 0
+        },
+        {
+          "pair": "yv",
+          "minimum_gap_units": 3.0,
+          "kern_units": 9
+        },
+        {
+          "pair": "yw",
+          "minimum_gap_units": 3.0,
+          "kern_units": 9
+        },
+        {
+          "pair": "yy",
+          "minimum_gap_units": 3.0,
+          "kern_units": 6
+        },
+        {
+          "pair": "äx",
+          "minimum_gap_units": 3.0,
+          "kern_units": 0
+        },
+        {
+          "pair": "cJ",
+          "minimum_gap_units": 3.49,
+          "kern_units": -33
+        },
+        {
+          "pair": "aX",
+          "minimum_gap_units": 4.0,
+          "kern_units": 0
+        },
+        {
+          "pair": "äX",
+          "minimum_gap_units": 4.0,
+          "kern_units": 0
+        },
+        {
+          "pair": "rx",
+          "minimum_gap_units": 4.19,
+          "kern_units": 0
+        },
+        {
+          "pair": "sJ",
+          "minimum_gap_units": 4.19,
+          "kern_units": -33
+        },
+        {
+          "pair": "Vö",
+          "minimum_gap_units": 4.22,
+          "kern_units": -114
+        },
+        {
+          "pair": "Wö",
+          "minimum_gap_units": 4.22,
+          "kern_units": -113
+        },
+        {
+          "pair": "Yö",
+          "minimum_gap_units": 4.22,
+          "kern_units": -114
+        },
+        {
+          "pair": "Vä",
+          "minimum_gap_units": 4.36,
+          "kern_units": -87
+        },
+        {
+          "pair": "Yä",
+          "minimum_gap_units": 4.36,
+          "kern_units": -87
+        },
+        {
+          "pair": "jV",
+          "minimum_gap_units": 4.4,
+          "kern_units": -24
+        },
+        {
+          "pair": "ßJ",
+          "minimum_gap_units": 4.4,
+          "kern_units": -21
+        },
+        {
+          "pair": "fb",
+          "minimum_gap_units": 4.63,
+          "kern_units": 1
+        },
+        {
+          "pair": "fh",
+          "minimum_gap_units": 4.63,
+          "kern_units": 1
+        },
+        {
+          "pair": "fk",
+          "minimum_gap_units": 4.63,
+          "kern_units": 2
+        },
+        {
+          "pair": "rv",
+          "minimum_gap_units": 5.19,
+          "kern_units": 18
+        },
+        {
+          "pair": "rw",
+          "minimum_gap_units": 5.19,
+          "kern_units": 18
+        },
+        {
+          "pair": "ry",
+          "minimum_gap_units": 7.21,
+          "kern_units": 17
+        },
+        {
+          "pair": "vv",
+          "minimum_gap_units": 8.0,
+          "kern_units": 9
+        }
+      ],
+      "words": [
+        {
+          "text": "Weekly Reviews",
+          "advance_units": 7698,
+          "glyphs": 14
+        },
+        {
+          "text": "Welche Dealing Range zählt?",
+          "advance_units": 13869,
+          "glyphs": 27
+        },
+        {
+          "text": "größere Märkte",
+          "advance_units": 7298,
+          "glyphs": 14
+        },
+        {
+          "text": "Straße",
+          "advance_units": 3126,
+          "glyphs": 6
+        },
+        {
+          "text": "heißen",
+          "advance_units": 3380,
+          "glyphs": 6
+        },
+        {
+          "text": "Äußere Liquidität",
+          "advance_units": 8536,
+          "glyphs": 17
+        },
+        {
+          "text": "AVATAR",
+          "advance_units": 4291,
+          "glyphs": 6
+        },
+        {
+          "text": "To Wa We Wo Wi",
+          "advance_units": 8094,
+          "glyphs": 14
+        },
+        {
+          "text": "TÄ TÖ TÜ Tä Tö Tü",
+          "advance_units": 9347,
+          "glyphs": 17
+        },
+        {
+          "text": "Fä Yö Vü",
+          "advance_units": 4138,
+          "glyphs": 8
+        },
+        {
+          "text": "ßa ße ßi ßo ßu",
+          "advance_units": 7072,
+          "glyphs": 14
+        },
+        {
+          "text": "ẞA ẞE ẞI ẞO ẞU",
+          "advance_units": 8800,
+          "glyphs": 14
+        },
+        {
+          "text": "Illiquide Märkte",
+          "advance_units": 7554,
+          "glyphs": 16
+        },
+        {
+          "text": "fff fi fl ffi ffl",
+          "advance_units": 5601,
+          "glyphs": 10
+        }
+      ],
+      "file": "PATSerif-Semibold.woff2"
+    }
+  ]
+}

@@ -1,12 +1,13 @@
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+import { ChartLineUp } from '@/components/mentorship/icons'
+import type { ReactNode } from 'react'
 import { auth } from '@clerk/nextjs/server'
-import { ChartLineUp } from '@phosphor-icons/react/dist/ssr/ChartLineUp'
 import { Sidebar } from '@/components/Sidebar'
-import { MobileCoursesDrawer } from '@/components/mobile-courses-drawer'
 import { IndicatorAdminPanel } from '@/components/indicators/indicator-admin-panel'
 import { IndicatorMemberBoard } from '@/components/indicators/indicator-member-board'
+import { IndicatorUsageGuide } from '@/components/indicators/indicator-usage-guide'
 import { getIsAdmin } from '@/lib/authz'
 import { getSidebarData } from '@/lib/sidebar-data'
 import {
@@ -26,19 +27,27 @@ export default async function MentorshipIndicatorsPage() {
     sidebarDataPromise,
   ])
 
-  const content = isAdmin ? (
-    <IndicatorAdminPanel overview={await getIndicatorAdminOverview()} />
-  ) : (
-    <IndicatorMemberBoard
-      packages={await listVisibleIndicatorPackages()}
-      claims={userId ? await listIndicatorClaimsForUser(userId) : []}
-      tradingViewAccount={userId ? await getTradingViewAccountForUser(userId) : null}
-    />
-  )
+  let content: ReactNode
+  if (isAdmin) {
+    content = <IndicatorAdminPanel overview={await getIndicatorAdminOverview()} />
+  } else {
+    const [packages, claims, tradingViewAccount] = await Promise.all([
+      listVisibleIndicatorPackages(),
+      userId ? listIndicatorClaimsForUser(userId) : [],
+      userId ? getTradingViewAccountForUser(userId) : null,
+    ])
+    // Keep static Markdown on the server; the client only filters and claims indicators.
+    const usageGuides = Object.fromEntries(packages.flatMap(pkg => pkg.indicators
+      .filter(indicator => indicator.usageGuide)
+      .map(indicator => [indicator.id, <IndicatorUsageGuide key={indicator.id} content={indicator.usageGuide} className="mt-3" />])
+    ))
+    content = <IndicatorMemberBoard packages={packages} claims={claims}
+      tradingViewAccount={tradingViewAccount} usageGuides={usageGuides} />
+  }
 
   return (
-    <div className="flex h-full min-h-0 bg-background">
-      <div className="hidden lg:block">
+    <div className={isAdmin ? "flex h-full min-h-0 bg-background" : "m-workspace"}>
+      <div className={isAdmin ? "hidden lg:block" : "m-desktop-sidebar hidden xl:block"}>
         <Sidebar
           kurse={kurseForSidebar}
           pages={pagesForSidebar}
@@ -47,36 +56,29 @@ export default async function MentorshipIndicatorsPage() {
         />
       </div>
 
-      <main className="flex-1 min-h-0 overflow-y-auto p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:p-6 lg:p-10 lg:pb-10">
-        <div className="mx-auto w-full max-w-[1920px]">
-          <div className="mb-6 flex items-start gap-3 sm:mb-8">
-            <MobileCoursesDrawer
-              variant="icon"
-              kurse={kurseForSidebar}
-              pages={pagesForSidebar}
-              savedSidebarOrder={savedSidebarOrder}
-              isAdmin={isAdmin}
-            />
+      <div className="m-page-scroll">
+        <div className="m-page">
+          <div className="m-page-header">
 
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="m-eyebrow flex items-center gap-2">
                 <ChartLineUp className="h-4 w-4" />
                 Mentorship
               </div>
-              <h1 className="mt-1 text-2xl font-bold leading-tight text-balance sm:text-3xl">
+              <h1 className="m-page-title">
                 Indikatoren
               </h1>
-              <p className="mt-1 max-w-3xl text-sm text-muted-foreground text-pretty">
+              <p className="m-page-intro">
                 {isAdmin
                   ? 'TradingView-Indikatoren importieren, Claims verwalten und Preview-Bilder pflegen.'
-                  : 'Claim deine freigegebenen TradingView-Indikatoren direkt für deinen verknüpften Account.'}
+                  : 'Deine Werkzeuge für einen klareren Blick auf den Chart. Direkt mit deinem TradingView-Account verbinden.'}
               </p>
             </div>
           </div>
 
           {content}
         </div>
-      </main>
+      </div>
     </div>
   )
 }

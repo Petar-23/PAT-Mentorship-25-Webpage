@@ -1,12 +1,10 @@
 'use client'
 
+import { CalendarDots as CalendarDays, CaretDown as ChevronDown, CheckCircle as CheckCircle2 } from '@/components/mentorship/icons'
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getOnboardingDismissStorageKey, getOnboardingEmbedUrl } from '@/lib/onboarding-video'
-import { CalendarDots as CalendarDays } from '@phosphor-icons/react/CalendarDots'
-import { CaretDown as ChevronDown } from '@phosphor-icons/react/CaretDown'
-import { CheckCircle as CheckCircle2 } from '@phosphor-icons/react/CheckCircle'
 
 type OnboardingWelcomeCardProps = {
   videoId: string

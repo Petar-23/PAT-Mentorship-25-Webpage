@@ -1,11 +1,10 @@
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+import { Star } from '@/components/mentorship/icons'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
-import { Star } from '@phosphor-icons/react/dist/ssr/Star'
 import { Sidebar } from '@/components/Sidebar'
-import { MobileCoursesDrawer } from '@/components/mobile-courses-drawer'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { getIsAdmin } from '@/lib/authz'
@@ -58,7 +57,7 @@ export default async function MentorshipTestimonialsPage() {
 
   return (
     <div className="flex h-full min-h-0 bg-background">
-      <div className="hidden lg:block">
+      <div className={isAdmin ? "hidden lg:block" : "hidden xl:block"}>
         <Sidebar
           kurse={kurseForSidebar}
           pages={pagesForSidebar}
@@ -70,13 +69,6 @@ export default async function MentorshipTestimonialsPage() {
       <main className="flex-1 min-h-0 overflow-y-auto p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:p-6 lg:p-10 lg:pb-10">
         <div className="mx-auto w-full max-w-[1920px]">
           <div className="mb-6 flex items-start gap-3 sm:mb-8">
-            <MobileCoursesDrawer
-              variant="icon"
-              kurse={kurseForSidebar}
-              pages={pagesForSidebar}
-              savedSidebarOrder={savedSidebarOrder}
-              isAdmin={isAdmin}
-            />
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">

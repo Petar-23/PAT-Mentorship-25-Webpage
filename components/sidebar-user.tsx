@@ -1,20 +1,11 @@
 'use client'
 
-import Link from 'next/link'
-import Image from 'next/image'
-import { BookOpen } from '@phosphor-icons/react/BookOpen'
-import { CaretDown as ChevronDown } from '@phosphor-icons/react/CaretDown'
-import { ChartLineUp } from '@phosphor-icons/react/ChartLineUp'
-import { FileText } from '@phosphor-icons/react/FileText'
-import { Kanban as SquareKanban } from '@phosphor-icons/react/Kanban'
-import { Users } from '@phosphor-icons/react/Users'
-import patBanner from '@/public/images/pat-banner.jpeg'
-import { UserButton, useUser } from '@clerk/nextjs'
-import { cn } from '@/lib/utils'
-import { useMemo, useState, type ReactNode } from 'react'
+import { BookOpen, BookBookmark, CalendarDots, ChartLineUp, FileText, House, Users, Stack, Strategy, SlidersHorizontal, CreditCard, UserCircle } from '@/components/mentorship/icons'
+import { MentorshipLink as Link } from '@/components/mentorship/navigation-link'
 import { usePathname } from 'next/navigation'
 import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'
-import { Button } from '@/components/ui/button'
+import { useMentorshipNavigation } from '@/components/mentorship/shell'
+import { Fragment } from 'react'
 
 type Kurs = {
   id: string
@@ -24,322 +15,66 @@ type Kurs = {
   description?: string | null
   iconUrl?: string | null
 }
-
-type Page = {
-  id: string
-  title: string
-  slug: string
-  description?: string | null
-  iconUrl?: string | null
-}
-
-type SidebarItem = {
-  id: string
-  title: string
-  subtitle: string
-  href: string
-  icon: ReactNode
-  iconBg: string
-}
-
+type Page = { id: string; title: string; slug: string; description?: string | null; iconUrl?: string | null }
 type Props = {
   kurse: Kurs[]
   pages?: Page[]
   savedSidebarOrder?: string[] | null
   activeCourseId?: string | null
+  onNavigate?: () => void
 }
 
-export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourseId }: Props) {
+function courseIcon(slug: string) {
+  switch (slug) {
+    case 'weekly-reviews': return CalendarDots
+    case 'daily-reviews': return ChartLineUp
+    case 'advanced-content': return Stack
+    case '03---model-series': return Strategy
+    default: return BookOpen
+  }
+}
+
+export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourseId, onNavigate }: Props) {
   const pathname = usePathname()
-  const isMentorship = pathname?.startsWith('/mentorship')
-  const { user, isLoaded } = useUser()
-  const [mobileFooterOpen, setMobileFooterOpen] = useState(false)
-
-  const activeItemId = useMemo(() => {
-    if (pathname?.startsWith('/mentorship/discord')) return 'discord'
-    if (pathname?.startsWith('/mentorship/indicators')) return 'indicators'
-    if (activeCourseId) return activeCourseId
-
-    const pageMatch = pathname?.match(/^\/mentorship\/page\/([^/]+)$/)
-    if (pageMatch) {
-      const slug = pageMatch[1]
-      const page = pages.find((p) => p.slug === slug)
-      if (page) return `page:${page.id}`
-    }
-
-    const match = pathname?.match(/^\/mentorship\/([^/]+)$/)
-    return match?.[1] ?? null
-  }, [pathname, activeCourseId, pages])
-
-  const staticItems = useMemo<SidebarItem[]>(
-    () => [
-      {
-        id: 'discord',
-        title: 'Discord Community',
-        subtitle: 'Live Streams & Chat',
-        href: '/mentorship/discord',
-        icon: <Users className="h-6 w-6 text-white" />,
-        iconBg: 'from-indigo-700/80 to-indigo-600/70',
-      },
-      {
-        id: 'indicators',
-        title: 'Indikatoren',
-        subtitle: 'TradingView Claims',
-        href: '/mentorship/indicators',
-        icon: <ChartLineUp className="h-6 w-6 text-white" />,
-        iconBg: 'from-zinc-700/80 to-zinc-600/70',
-      },
-      ...kurse.map((kurs) => ({
-        id: kurs.id,
-        title: kurs.name,
-        subtitle: `${kurs.modulesLength} ${kurs.modulesLength === 1 ? 'Modul' : 'Module'}`,
-        href: `/mentorship/${kurs.id}`,
-        icon: kurs.iconUrl ? (
-          <div className="relative w-full h-full">
-            <Image
-              src={kurs.iconUrl}
-              alt={`${kurs.name} Icon`}
-              fill
-              sizes="40px"
-              className="object-cover"
-              quality={70}
-            />
-          </div>
-        ) : (
-          <BookOpen className="h-6 w-6 text-white" />
-        ),
-        iconBg: 'from-slate-700/80 to-slate-600/70',
-      })),
-      ...pages.map((page) => ({
-        id: `page:${page.id}`,
-        title: page.title,
-        subtitle: page.description ?? 'Seite',
-        href: `/mentorship/page/${page.slug}`,
-        icon: page.iconUrl ? (
-          <div className="relative w-full h-full">
-            <Image
-              src={page.iconUrl}
-              alt={`${page.title} Icon`}
-              fill
-              sizes="40px"
-              className="object-cover"
-              quality={70}
-            />
-          </div>
-        ) : (
-          <FileText className="h-6 w-6 text-white" />
-        ),
-        iconBg: 'from-emerald-700/80 to-emerald-600/70',
-      })),
-    ],
-    [kurse, pages]
-  )
-
-  const items = useMemo<SidebarItem[]>(() => {
-    if (savedSidebarOrder) {
-      const orderMap = new Map(savedSidebarOrder.map((id, index) => [id, index]))
-      return [...staticItems].sort((a, b) => {
-        const posA = orderMap.get(a.id) ?? staticItems.length
-        const posB = orderMap.get(b.id) ?? staticItems.length
-        return posA - posB
-      })
-    }
-    return staticItems
-  }, [savedSidebarOrder, staticItems])
-
-  const displayName =
-    user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Mitglied'
-  const email = user?.primaryEmailAddress?.emailAddress ?? ''
+  const navigationOpen = useMentorshipNavigation()
+  const hidden = !onNavigate && !navigationOpen
+  const items = [
+    { id: 'discord', title: 'Community', href: '/mentorship/discord', Icon: Users, group: 'resources' },
+    { id: 'indicators', title: 'Indikatoren', href: '/mentorship/indicators', Icon: SlidersHorizontal, group: 'tools' },
+    ...kurse.map(kurs => ({ id: kurs.id, title: kurs.name, href: `/mentorship/${kurs.id}`, Icon: courseIcon(kurs.slug), group: 'series' })),
+    ...pages.map(page => ({ id: `page:${page.id}`, title: page.title, href: `/mentorship/page/${page.slug}`, Icon: page.slug === 'glossar' ? BookBookmark : FileText, group: 'resources' })),
+  ]
+  if (savedSidebarOrder) {
+    const order = new Map(savedSidebarOrder.map((id, index) => [id, index]))
+    items.sort((a, b) => (order.get(a.id) ?? savedSidebarOrder.length) - (order.get(b.id) ?? savedSidebarOrder.length))
+  }
 
   return (
-    <div
-      className={cn(
-        'w-full lg:w-80 border-r border-border p-4 pb-0 flex flex-col h-full min-h-0 shadow-lg',
-        isMentorship ? 'bg-gray-100/50' : 'bg-muted/40'
-      )}
-    >
-      <div className="relative mb-1 -mx-4 -mt-4 h-48 overflow-hidden">
-        <Image
-          src={patBanner}
-          alt="PAT Mentorship 2026 Banner"
-          fill
-          className="object-cover"
-          sizes="320px"
-          quality={70}
-          placeholder="blur"
-          priority
-        />
-        <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-white to-transparent opacity-80" />
-        <div className="absolute inset-x-0 bottom-0 pb-2 flex justify-center">
-          <div className="inline-block px-6 py-2 mx-auto rounded-lg border border-white/30 bg-white/60 supports-[backdrop-filter]:bg-white/20 backdrop-blur-md">
-            <h2 className="text-xl font-bold text-white drop-shadow-md">PAT MENTORSHIP</h2>
-          </div>
+    <aside className="m-sidebar" id={onNavigate ? undefined : 'mentorship-desktop-navigation'}
+      aria-label="Mentorship-Navigation" aria-hidden={hidden || undefined}
+      ref={element => { if (element) element.inert = hidden }}>
+      <nav className="m-nav">
+        <Link href="/mentorship" className="m-nav-link m-nav-home" aria-current={pathname === '/mentorship' ? 'page' : undefined} onNavigate={onNavigate}>
+          <House aria-hidden="true" /><span>Übersicht</span>
+        </Link>
+        <p className="m-nav-label">Inhalte</p>
+        <div className="m-nav-items">
+          {items.map(({ id, title, href, Icon, group }, index) => (
+            <Fragment key={id}>
+            {onNavigate && index > 0 && group !== items[index - 1].group ? <hr className="m-nav-divider" aria-hidden="true" /> : null}
+            <Link href={href} prefetch={false} className="m-nav-link" onNavigate={onNavigate}
+              aria-current={pathname === href || (activeCourseId === id && pathname?.startsWith('/mentorship/modul/')) ? 'page' : undefined}>
+              <Icon aria-hidden="true" />
+              <span>{title}</span>
+            </Link>
+            </Fragment>
+          ))}
         </div>
+      </nav>
+      <div className="m-sidebar-footer">
+        <ManageSubscriptionButton variant="ghost" label="Mitgliedschaft" className="m-account-link" icon={<CreditCard aria-hidden="true" />} />
+        <Link href="/dashboard" prefetch={false} className="m-account-link" onNavigate={onNavigate}><UserCircle aria-hidden="true" /><span>Mein Konto</span></Link>
       </div>
-
-      <div className="flex-1 min-h-0 mt-1 overflow-y-auto">
-        <details className="group" open>
-          <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-400 transition-colors hover:text-black [&::-webkit-details-marker]:hidden">
-            <span className="mentorship-ui-heading">PAT Mentorship 2026</span>
-            <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-open:rotate-180" />
-          </summary>
-
-          <div className="space-y-1.5 px-1 pt-3 sm:space-y-2 sm:pt-4">
-            {items.map((item) => (
-              <Link
-                key={item.id}
-                href={item.href}
-                prefetch={false}
-                className="block"
-                aria-current={item.id === activeItemId ? 'page' : undefined}
-              >
-                <div
-                  className={cn(
-                    'flex items-center space-x-3 sm:space-x-4 py-1.5 sm:py-2 px-2 rounded-lg transition-colors cursor-pointer border border-border',
-                    item.id === activeItemId
-                      ? 'bg-gray-200/50 dark:bg-gray-800/40 border-l-4 border-gray-200 dark:border-gray-700 border-l-gray-400 dark:border-l-gray-400'
-                      : 'hover:bg-gray-200/50 dark:hover:bg-gray-800/30'
-                  )}
-                >
-                  <div
-                    className={`w-9 h-9 sm:w-10 sm:h-10 border bg-gradient-to-br ${item.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden`}
-                  >
-                    {item.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="mentorship-ui-heading font-medium text-[13px] sm:text-sm truncate">{item.title}</p>
-                    <p className="text-[11px] sm:text-xs text-muted-foreground">{item.subtitle}</p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </details>
-      </div>
-
-      {isMentorship ? (
-        <div className="mt-0 border-t rounded-t-xl border-gray-300 -mx-4 px-4 pb-4 bg-gray-100">
-          {/* Desktop: Aktionen immer sichtbar */}
-          <div className="hidden lg:block pt-2">
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="w-full px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
-            >
-              <Link href="/mentorship" prefetch={false}>
-                <span className="flex items-center justify-center shrink-0 w-8">
-                  <SquareKanban className="!h-5 !w-5" />
-                </span>
-                <span>Dashboard</span>
-              </Link>
-            </Button>
-
-            <ManageSubscriptionButton
-              variant="ghost"
-              size="sm"
-              label="Mitgliedschaft verwalten"
-              iconWrapperClassName="w-8"
-              iconClassName="!h-5 !w-5"
-              className="px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
-            />
-
-            <div className="mt-3 flex items-center gap-3">
-              <UserButton
-                afterSignOutUrl="/"
-                appearance={{
-                  elements: {
-                    avatarBox: 'w-8 h-8',
-                  },
-                }}
-              />
-
-              <div className="min-w-0">
-                <p className="text-sm font-medium leading-tight truncate">
-                  {isLoaded ? displayName : '...'}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">{isLoaded ? email : ''}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile: User immer sichtbar, Aktionen einklappbar */}
-          <div className="lg:hidden pt-2">
-            <div
-              className={cn(
-                'grid transition-[grid-template-rows,opacity] duration-200 ease-out',
-                mobileFooterOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-              )}
-              aria-hidden={!mobileFooterOpen}
-            >
-              <div
-                className={cn(
-                  'overflow-hidden space-y-1',
-                  !mobileFooterOpen ? 'pointer-events-none' : ''
-                )}
-              >
-                <Button
-                  asChild
-                  variant="ghost"
-                  size="sm"
-                  className="w-full px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
-                >
-                  <Link href="/mentorship" prefetch={false}>
-                    <span className="flex items-center justify-center shrink-0 w-8">
-                      <SquareKanban className="!h-5 !w-5" />
-                    </span>
-                    <span>Dashboard</span>
-                  </Link>
-                </Button>
-
-                <ManageSubscriptionButton
-                  variant="ghost"
-                  size="sm"
-                  label="Mitgliedschaft verwalten"
-                  iconWrapperClassName="w-8"
-                  iconClassName="!h-5 !w-5"
-                  className="px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
-                />
-              </div>
-            </div>
-
-            <div className="mt-3 flex items-center gap-3">
-              <UserButton
-                afterSignOutUrl="/"
-                appearance={{
-                  elements: {
-                    avatarBox: 'w-8 h-8',
-                  },
-                }}
-              />
-
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium leading-tight truncate">
-                  {isLoaded ? displayName : '...'}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">{isLoaded ? email : ''}</p>
-              </div>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
-                aria-label={mobileFooterOpen ? 'Aktionen einklappen' : 'Aktionen anzeigen'}
-                aria-expanded={mobileFooterOpen}
-                onClick={() => setMobileFooterOpen((v) => !v)}
-              >
-                <ChevronDown
-                  className={cn(
-                    'h-5 w-5 transition-transform duration-200',
-                    mobileFooterOpen ? 'rotate-0' : 'rotate-180'
-                  )}
-                />
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </div>
+    </aside>
   )
 }

@@ -1,3 +1,4 @@
+import { learningPercent } from '@/lib/mentorship-learning'
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
@@ -6,10 +7,7 @@ type RouteParams = {
   params: Promise<{ moduleId: string }>
 }
 
-function percent(completed: number, total: number) {
-  if (!Number.isFinite(total) || total <= 0) return 0
-  return Math.max(0, Math.min(100, Math.round((completed / total) * 100)))
-}
+
 
 export async function GET(_req: Request, { params }: RouteParams) {
   const { userId } = await auth()
@@ -55,7 +53,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
     moduleId,
     totalLessons,
     completedLessons,
-    percent: percent(completedLessons, totalLessons),
+    percent: learningPercent(completedLessons, totalLessons),
     watchedVideoIds,
   })
 }
