@@ -84,6 +84,7 @@ export async function GET() {
           bunnyGuid: true,
           pdfUrl: true,
           thumbnailUrl: true,
+          showNotes: true,
           announcedAt: true,
           announcementMessageId: true,
           order: true,

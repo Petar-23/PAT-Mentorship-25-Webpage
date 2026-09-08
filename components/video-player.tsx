@@ -9,6 +9,8 @@ import Script from 'next/script'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 
+const LessonShowNotes = dynamic(() => import('./mentorship/lesson-show-notes').then((mod) => mod.LessonShowNotes))
+
 const UploadZone = dynamic(() => import('./upload-zone').then((mod) => mod.UploadZone), {
   ssr: false,
   loading: () => (
@@ -33,6 +35,7 @@ type Video = {
   bunnyGuid: string | null
   thumbnailUrl: string | null
   pdfUrl: string | null
+  showNotes?: string | null
   duration?: number | null
   order: number
   updatedAt?: string | Date
@@ -42,6 +45,7 @@ type Props = {
   activeVideo: Video | null
   activeChapterName: string | null
   onVideoUpdate: (updatedVideo: Video) => void
+  onShowNotesUpdate: (videoId: string, showNotes: string | null) => void
   onVideoDelete?: (deletedVideoId: string) => void
   activeVideoWatched?: boolean
   onVideoWatchedChange?: (videoId: string, watched: boolean) => void
@@ -82,6 +86,7 @@ export function VideoPlayer({
   activeVideo,
   activeChapterName,
   onVideoUpdate,
+  onShowNotesUpdate,
   onVideoDelete,
   activeVideoWatched = false,
   onVideoWatchedChange,
@@ -1009,6 +1014,15 @@ export function VideoPlayer({
             ) : null}
           </div>
         </div>
+        {activeVideo && (isAdmin || activeVideo.showNotes?.trim()) ? (
+          <LessonShowNotes
+            key={activeVideo.id}
+            videoId={activeVideo.id}
+            showNotes={activeVideo.showNotes ?? null}
+            isAdmin={isAdmin}
+            onSaved={onShowNotesUpdate}
+          />
+        ) : null}
       </div>
     </div>
     </>

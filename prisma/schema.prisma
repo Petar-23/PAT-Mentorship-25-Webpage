@@ -51,6 +51,7 @@ model Chapter {
 model Video {
   id                    String              @id @default(uuid())
   title                 String
+  showNotes             String?             @db.Text
   bunnyGuid             String?
   pdfUrl                String? // die anhängende PDF
   thumbnailUrl          String? // später von Bunny
