@@ -43,6 +43,7 @@ export async function PATCH(request: Request,{ params }: { params: Promise<{ id:
         title: true,
         bunnyGuid: true,
         thumbnailUrl: true,
+        showNotes: true,
         pdfUrl: true,
         duration: true,
         order: true,

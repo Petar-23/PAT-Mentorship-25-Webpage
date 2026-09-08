@@ -28,6 +28,7 @@ type Video = {
   bunnyGuid: string | null
   thumbnailUrl: string | null
   pdfUrl: string | null
+  showNotes?: string | null
   duration?: number | null
   order: number
   updatedAt?: string | Date
@@ -224,6 +225,16 @@ export function ModulDetailClient({
       chapters: prev.chapters.map((ch) => ({
         ...ch,
         videos: ch.videos.map((v) => (v.id === updatedVideo.id ? updatedVideo : v)),
+      })),
+    }))
+  }
+
+  const handleShowNotesUpdate = (videoId: string, showNotes: string | null) => {
+    setLocalModul((prev) => ({
+      ...prev,
+      chapters: prev.chapters.map((chapter) => ({
+        ...chapter,
+        videos: chapter.videos.map((video) => video.id === videoId ? { ...video, showNotes } : video),
       })),
     }))
   }
@@ -723,6 +734,7 @@ export function ModulDetailClient({
             activeVideo={activeVideo || null}
             activeChapterName={activeChapter?.name || null}
             onVideoUpdate={handleVideoUpdate}
+            onShowNotesUpdate={handleShowNotesUpdate}
             onVideoDelete={handleVideoDelete}
             activeVideoWatched={activeVideoId ? watchedVideoIdSet.has(activeVideoId) : false}
             onVideoWatchedChange={handleWatchedChange}

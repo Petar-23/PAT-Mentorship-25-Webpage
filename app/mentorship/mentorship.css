@@ -239,6 +239,36 @@
 .m-video-heading :is(h1,h2) { font-size: clamp(20px,2vw,28px); line-height: 1.4; }
 .m-video-heading p { color: var(--m-muted); font-size: 12px; margin-bottom: 8px; }
 .m-lesson-actions { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--m-border); }
+.m-show-notes { margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--m-border); }
+.m-show-notes-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+.m-show-notes-heading h2 { font-size: 20px; font-weight: 500; line-height: 1.4; }
+.m-show-notes-body { max-width: 70ch; font-family: var(--font-mentorship-serif, Georgia), serif; font-size: 18px; line-height: 1.75; overflow-wrap: anywhere; }
+.m-show-notes-body :is(p,ul,ol,blockquote,pre) { margin: 0 0 1em; }
+.m-show-notes-body :is(h3,h4) { margin: 1.8em 0 .65em; font-size: 1.1em; line-height: 1.5; font-weight: 600; }
+.m-show-notes-body > :first-child { margin-top: 0; }
+.m-show-notes-body > :last-child { margin-bottom: 0; }
+.m-show-notes-body ul { list-style: disc; padding-left: 1.3em; }
+.m-show-notes-body ol { list-style: decimal; padding-left: 1.3em; }
+.m-show-notes-body li { padding-left: .25em; margin: .35em 0; }
+.m-show-notes-body li > :last-child { margin-bottom: 0; }
+.m-show-notes-body :is(ul,ol) :is(ul,ol) { margin: .5em 0; }
+.m-show-notes-body strong { font-weight: 600; }
+.m-show-notes-body a { text-decoration: underline; text-underline-offset: 3px; }
+.m-show-notes-body blockquote { padding-left: 1em; border-left: 2px solid var(--m-border); color: var(--m-muted); }
+.m-show-notes-body pre { white-space: pre-wrap; }
+.m-show-notes-body hr { border-color: var(--m-border); margin: 1.5em 0; }
+.m-show-notes-hint { color: var(--m-muted); font-size: 13px; line-height: 1.6; }
+.m-show-notes-hint:empty { display: none; }
+.m-show-notes > [role='status']:not(:empty) { margin-top: 16px; }
+.m-show-notes-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.m-show-notes-toolbar button { white-space: normal; height: auto; min-height: var(--m-control-size); }
+.m-show-notes-editor textarea { display: block; width: 100%; padding: 16px; border: 1px solid var(--m-border); border-radius: var(--m-radius-control); background: var(--m-surface); color: var(--m-text); font-family: var(--m-font-ui); font-size: 16px; line-height: 1.7; resize: vertical; }
+.m-show-notes-preview { min-height: 180px; padding: 20px 0; }
+.m-show-notes-count { margin-top: 8px; text-align: right; font-variant-numeric: tabular-nums; }
+.m-show-notes-error { margin: 16px 0; color: var(--m-danger); }
+.m-show-notes-conflict { padding: 16px 0; border-block: 1px solid var(--m-border); }
+.m-show-notes-conflict summary { cursor: pointer; padding: 8px 0; }
+.m-show-notes-conflict .m-show-notes-body { margin-top: 16px; }
 .m-attachment-label { color: var(--m-muted); font-size: 12px; margin-bottom: 12px; }
 .m-attachment { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; background: var(--m-panel); border-radius: var(--m-radius-surface); max-width: 100%; }
 .m-attachment a { overflow-wrap: anywhere; font-size: 12px; }
