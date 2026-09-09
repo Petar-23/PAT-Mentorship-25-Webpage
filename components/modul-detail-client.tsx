@@ -541,14 +541,6 @@ export function ModulDetailClient({
     const neuerName = tempChapterName.trim()
     const controller = trackAdminMutation()
 
-    // Sofort lokal anzeigen
-    setLocalModul((prev) => ({
-      ...prev,
-      chapters: prev.chapters.map((ch) =>
-        ch.id === editingChapterId ? { ...ch, name: neuerName } : ch
-      ),
-    }))
-
     // In DB speichern
     try {
       const res = await fetch(`/api/chapters/${editingChapterId}`, {
@@ -561,6 +553,12 @@ export function ModulDetailClient({
       if (controller.signal.aborted) return
 
       if (res.ok) {
+        setLocalModul(prev => ({
+          ...prev,
+          chapters: prev.chapters.map(chapter => chapter.id === editingChapterId ? { ...chapter, name: neuerName } : chapter),
+        }))
+        setEditingChapterId(null)
+        setTempChapterName('')
         toast({
           title: 'Kapitel umbenannt',
           description: `„${neuerName}“ gespeichert.`,
@@ -581,8 +579,6 @@ export function ModulDetailClient({
       releaseAdminMutation(controller)
     }
 
-    setEditingChapterId(null)
-    setTempChapterName('')
   }
 
   const handleChapterDelete = async (chapterId: string) => {
@@ -636,7 +632,7 @@ export function ModulDetailClient({
   // Wichtig: Dieser Block muss NACH den Handler-Definitionen stehen (sonst ReferenceError/TDZ).
   if (!isDesktop && mobileView === 'content') {
     return (
-      <div className={isAdmin ? "flex h-full min-h-0 flex-1" : "m-lesson-workspace"}>
+      <div className="m-lesson-workspace">
         <MiddleSidebar
           modul={localModul}
           courseTitle={localModul.playlist?.name ?? null}

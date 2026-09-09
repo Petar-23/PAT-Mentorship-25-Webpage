@@ -1,7 +1,6 @@
 'use client'
 import dynamic from 'next/dynamic'
 import { SidebarUser } from './sidebar-user'
-import { useMediaQuery } from '@/hooks/use-media-query'
 
 const SidebarAdmin = dynamic(() => import('./sidebar-admin').then((m) => m.SidebarAdmin), {
   ssr: false,
@@ -35,10 +34,7 @@ type Props = {
 }
 
 export function Sidebar({ kurse, pages = [], savedSidebarOrder, activeCourseId, isAdmin, openCreateCourseModal }: Props) {
-  const isDesktop = useMediaQuery('(min-width: 1024px)')
-  const showAdminUi = isAdmin && isDesktop
-
-  if (showAdminUi) {
+  if (isAdmin) {
     return (
       <SidebarAdmin
         kurse={kurse}

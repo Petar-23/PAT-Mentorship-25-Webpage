@@ -504,3 +504,65 @@
   .mentorship-portal.m-drawer[data-state='open'], .m-drawer-overlay[data-state='open'] { animation: m-fade-in 180ms ease-out both !important; }
   .mentorship-portal.m-drawer[data-state='closed'], .m-drawer-overlay[data-state='closed'] { animation: m-fade-out 180ms ease-in-out both !important; }
 }
+
+/* Admin tools share the member workspace and its light/dark design tokens. */
+.m-admin-sidebar { padding: 12px 8px; }
+.m-admin-nav-heading { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+.m-admin-nav-heading .m-nav-label { margin: 0 10px; }
+.m-admin-nav-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 0; }
+.m-admin-nav-row { display: flex; align-items: center; min-width: 0; border-radius: var(--m-radius-surface); margin: 3px 0; color: var(--m-muted); }
+.m-admin-nav-row:hover, .m-admin-lesson-row:hover { background: var(--m-hover); }
+.m-admin-nav-row.is-active { color: var(--m-accent); background: var(--m-selected); }
+.m-admin-nav-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 6px 0; }
+.m-admin-nav-icon { width: 20px; height: 20px; overflow: hidden; flex: none; border-radius: 4px; }
+.m-admin-nav-title { font-size: 13px; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+.m-admin-nav-detail { font-size: 11px; line-height: 1.5; color: var(--m-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-admin-drag { display: grid; place-items: center; width: 24px; min-height: 44px; flex: none; color: var(--m-muted); border-radius: var(--m-radius-control); cursor: grab; touch-action: none; }
+.m-admin-drag:active { cursor: grabbing; }
+.m-admin-menu[data-slot='button'] { width: 36px; min-height: 44px; height: 44px; padding: 8px; flex: none; border-radius: var(--m-radius-control); color: var(--m-muted); }
+.m-admin-menu:hover, .m-admin-drag:hover { color: var(--m-text); background: var(--m-hover); }
+.m-admin-sidebar .m-sidebar-footer { margin-top: 12px; padding-top: 10px; }
+.m-admin-outline-meta { font-size: 12px; line-height: 1.5; color: var(--m-muted); }
+.m-admin-chapter-heading { display: flex; align-items: center; min-width: 0; }
+.m-admin-chapter-heading .m-chapter-toggle { flex: 1; min-width: 0; width: auto; }
+.m-admin-chapter-edit { display: flex; align-items: center; min-width: 0; width: 100%; gap: 4px; padding: 6px 0; }
+.m-admin-chapter-edit input { min-width: 0; width: 100%; min-height: 44px; padding: 8px; border: 1px solid var(--m-border); border-radius: var(--m-radius-control); background: var(--m-panel); font-size: 16px; }
+.m-admin-lesson-row { display: flex; align-items: center; border-radius: var(--m-radius-surface); margin-block: 4px; }
+.m-admin-lesson-row.is-active { background: var(--m-selected); color: var(--m-accent); }
+.m-admin-lesson-select { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; min-height: 72px; padding: 10px 8px 10px 0; text-align: left; border-radius: var(--m-radius-control); }
+.m-admin-lesson-thumbnail { flex: none; }
+.m-admin-lesson-thumbnail > div { width: 56px; height: 34px; border-radius: 5px; background: var(--m-track); }
+.m-admin-lesson-copy { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.m-admin-lesson-title { font-size: 13px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+.m-admin-lesson-duration { font-size: 11px; line-height: 1.4; font-variant-numeric: tabular-nums; color: var(--m-muted); }
+.m-admin-add[data-slot='button'] { justify-content: flex-start; min-height: 44px; font-size: 12px; font-weight: 400; color: var(--m-muted); width: 100%; padding-inline: 10px; border-radius: var(--m-radius-control); }
+.m-admin-add-chapter { margin-block: 20px 12px; }
+.m-admin-empty { padding: 12px 8px; font-size: 13px; line-height: 1.5; color: var(--m-muted); }
+.m-pdf-upload { min-width: 0; max-width: 100%; }
+.m-pdf-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.m-pdf-controls button, .m-lesson-manage[data-slot='button'] { min-height: 44px; }
+.m-pdf-filename, .m-pdf-hint, .m-pdf-error { font-size: 12px; line-height: 1.6; margin-top: 8px; overflow-wrap: anywhere; }
+.m-pdf-filename span, .m-pdf-hint { color: var(--m-muted); }
+.m-pdf-error { color: var(--m-danger); max-width: 48ch; }
+.m-pdf-progress { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--m-muted); }
+.m-pdf-progress progress { width: 100%; height: 5px; accent-color: var(--m-accent); }
+.m-lesson-actions > div { align-items: flex-start; }
+.m-lesson-actions > div > div { min-width: 0; max-width: 100%; }
+.m-admin-outline :is(button, input):focus-visible, .m-admin-sidebar :is(button, a):focus-visible { outline: 2px solid var(--m-accent); outline-offset: 2px; }
+@media (max-width: 1023px) {
+  .m-admin-outline { width: 100%; border-right: 0; padding: 20px; }
+  .m-admin-lesson-select { min-height: 80px; }
+  .m-admin-menu[data-slot='button'], .m-admin-drag { width: 44px; }
+  .m-admin-lesson-title { font-size: 14px; }
+}
+
+.m-admin-dialog { width: min(512px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); overflow-y: auto; border-radius: 16px; background: var(--m-bg); border-color: var(--m-border); }
+.m-admin-dialog :is(input, textarea, select) { color: var(--m-text); background: var(--m-surface); border-color: var(--m-border); font-size: 16px; }
+.m-admin-dialog [data-slot='dialog-title'] { padding-right: 28px; letter-spacing: 0; line-height: 1.4; }
+.m-admin-dialog > button:last-child { width: 44px; height: 44px; top: 8px; right: 8px; display: grid; place-items: center; border-radius: 10px; }
+.m-admin-dialog [role='alertdialog'] button, .m-admin-dialog button { min-height: 44px; }
+.m-admin-popover { min-width: 200px; border-radius: 12px; padding: 6px; border-color: var(--m-border); background: var(--m-bg); color: var(--m-text); font-family: var(--m-font-ui); }
+.m-admin-popover [role='menuitem'] { min-height: 44px; padding: 8px 10px; border-radius: 8px; font-size: 14px; }
+.m-admin-popover [role='menuitem']:focus { color: var(--m-text); background: var(--m-hover); }
+.m-admin-popover .text-destructive { color: var(--m-danger); }
+.m-admin-popover .text-destructive:focus { color: var(--m-danger); }

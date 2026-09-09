@@ -3,6 +3,11 @@
 'use client'
 
 import { ArrowLeft, ArrowRight, Check, FastForward, FileText, Pause, Play, Rewind, Trash as Trash2 } from '@/components/mentorship/icons'
+import { useMentorshipMobileNavigation, useMentorshipTheme } from '@/components/mentorship/shell'
+import { Pencil } from '@phosphor-icons/react/Pencil'
+import { DotsThree } from '@phosphor-icons/react/DotsThree'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Script from 'next/script'
@@ -96,11 +101,18 @@ export function VideoPlayer({
   nextVideoDisabled = false,
   autoPlay = false,
 }: Props) {
+  const { container: portalContainer } = useMentorshipMobileNavigation()
+  const theme = useMentorshipTheme()
   const { toast } = useToast()
   const VideoHeading = onBack ? 'h1' : 'h2'
   const isDocumentLesson = !isAdmin && !activeVideo?.bunnyGuid?.trim() && Boolean(activeVideo?.pdfUrl?.trim())
 
   const [isEditing, setIsEditing] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<{ kind: 'video' | 'pdf'; video: Video } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const deleteInFlight = useRef(false)
+  const deleteTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const lessonMenuRef = useRef<HTMLButtonElement | null>(null)
   const [presentPlayer, setPresentPlayer] = useState(true)
   const [tempTitle, setTempTitle] = useState('')
   const [isPlayerLoaded, setIsPlayerLoaded] = useState(false)
@@ -556,74 +568,25 @@ export function VideoPlayer({
     setTempTitle('')
   }
 
-  // Video löschen
-  const handleVideoDelete = async () => {
-    if (!isAdmin) return
-    if (!activeVideo) return
-
-    const sicher = window.confirm(
-      `Willst du das Video "${activeVideo.title}" wirklich für immer löschen?\n\nEs wird aus deiner Liste und von Bunny.net entfernt.`
-    )
-    if (!sicher) return
-
+  const confirmDelete = async () => {
+    if (!isAdmin || !deleteTarget || deleteInFlight.current) return
+    const { kind, video } = deleteTarget
+    deleteInFlight.current = true
+    setIsDeleting(true)
     try {
-      onVideoDelete?.(activeVideo.id)
-
-      toast({
-        title: 'Lösche Video...',
-        description: 'Einen Moment bitte.',
+      const response = await fetch(`/api/videos/${video.id}`, kind === 'video' ? { method: 'DELETE' } : {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pdfUrl: null }),
       })
-
-      const res = await fetch(`/api/videos/${activeVideo.id}`, {
-        method: 'DELETE',
-      })
-
-      if (res.ok) {
-        toast({
-          title: 'Video gelöscht',
-          description: `"${activeVideo.title}" wurde erfolgreich entfernt.`,
-        })
-      } else {
-        throw new Error('Fehler beim Löschen')
-      }
+      if (!response.ok) throw new Error('Die Änderung konnte nicht gespeichert werden.')
+      if (kind === 'video') onVideoDelete?.(video.id)
+      else onVideoUpdate(await response.json())
+      setDeleteTarget(null)
+      toast({ title: kind === 'video' ? 'Lektion gelöscht' : 'PDF entfernt', description: `„${video.title}“ wurde aktualisiert.` })
     } catch {
-      toast({
-        variant: 'destructive',
-        title: 'Fehler',
-        description: 'Das Video konnte nicht gelöscht werden.',
-      })
-    }
-  }
-
-  // PDF löschen
-  const handlePdfDelete = async () => {
-    if (!isAdmin) return
-    if (!activeVideo || !activeVideo.pdfUrl) return
-
-    const confirmDelete = window.confirm('PDF wirklich entfernen?')
-    if (!confirmDelete) return
-
-    try {
-      const res = await fetch(`/api/videos/${activeVideo.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pdfUrl: null }),
-      })
-
-      if (res.ok) {
-        const updated = await res.json()
-        onVideoUpdate(updated)
-        toast({
-          title: 'PDF entfernt',
-          description: 'Die PDF wurde erfolgreich entfernt.',
-        })
-      }
-    } catch {
-      toast({
-        variant: 'destructive',
-        title: 'Fehler',
-        description: 'PDF konnte nicht entfernt werden.',
-      })
+      toast({ variant: 'destructive', title: 'Änderung nicht gespeichert', description: 'Bitte erneut versuchen.' })
+    } finally {
+      deleteInFlight.current = false
+      setIsDeleting(false)
     }
   }
 
@@ -631,10 +594,9 @@ export function VideoPlayer({
   const getPdfFilename = (url: string | null) => {
     if (!url) return 'PDF-Datei.pdf'
     try {
-      const path = new URL(url).pathname
+      const path = new URL(url, 'https://www.price-action-trader.de').pathname
       const filename = decodeURIComponent(path.split('/').pop() || 'PDF-Datei.pdf')
-      // Entferne videoId-Präfix (z. B. "abc123-10 - Einstiege.pdf" → "10 - Einstiege.pdf")
-      return filename.replace(/^[a-z0-9-]+\-/, '')
+      return filename
     } catch {
       return 'PDF-Datei.pdf'
     }
@@ -676,6 +638,7 @@ export function VideoPlayer({
               <div className="flex items-center space-x-4 w-full">
               <input
                 type="text"
+                aria-label="Lektionstitel"
                 value={tempTitle}
                 onChange={(e) => setTempTitle(e.target.value)}
                 className="text-2xl sm:text-3xl font-bold bg-transparent border-b-2 border-primary focus:outline-none w-full"
@@ -684,9 +647,8 @@ export function VideoPlayer({
                   if (e.key === 'Enter') saveEdit()
                   if (e.key === 'Escape') cancelEdit()
                 }}
-                onBlur={saveEdit}
               />
-              <Button size="icon" variant="outline" onClick={saveEdit}>
+              <Button size="icon" variant="outline" aria-label="Lektionstitel speichern" onClick={saveEdit}>
                 <Check className="h-5 w-5 text-green-500" />
               </Button>
               </div>
@@ -934,7 +896,9 @@ export function VideoPlayer({
               {/* Upload Button */}
               {isAdmin && activeVideo && (
                 <PdfUploadZone
+                  key={activeVideo.id}
                   videoId={activeVideo.id}
+                  currentPdfUrl={activeVideo.pdfUrl}
                   onUploadSuccess={(pdfUrl) => onVideoUpdate({ ...activeVideo, pdfUrl })}
                 />
               )}
@@ -955,8 +919,12 @@ export function VideoPlayer({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 rounded-full"
-                      onClick={handlePdfDelete}
+                      className="m-admin-menu"
+                      aria-label="PDF entfernen"
+                      onClick={event => {
+                        deleteTriggerRef.current = event.currentTarget
+                        setDeleteTarget({ kind: 'pdf', video: activeVideo })
+                      }}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -967,10 +935,20 @@ export function VideoPlayer({
 
             {/* Rechts: Admin = Delete Video, User = "Als angesehen markieren" */}
             {isAdmin && activeVideo ? (
-              <Button variant="destructive" onClick={handleVideoDelete} className="w-full sm:w-auto">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete video
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button ref={lessonMenuRef} variant="ghost" className="m-lesson-manage"><DotsThree className="mr-2 h-4 w-4" />Lektion verwalten</Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent container={portalContainer} data-theme={theme} className="mentorship-portal m-admin-popover" align="end">
+                  <DropdownMenuItem onSelect={startEdit}><Pencil className="mr-2 h-4 w-4" />Umbenennen</DropdownMenuItem>
+                  <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => {
+                    deleteTriggerRef.current = lessonMenuRef.current
+                    setDeleteTarget({ kind: 'video', video: activeVideo })
+                  }}>
+                    <Trash2 className="mr-2 h-4 w-4" />Lektion löschen
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : !isAdmin && activeVideo ? (
               <div className="m-lesson-buttons">
                 <Button
@@ -1025,6 +1003,28 @@ export function VideoPlayer({
         ) : null}
       </div>
     </div>
+    {isAdmin && deleteTarget ? (
+      <AlertDialog open onOpenChange={open => { if (!open && !deleteInFlight.current) setDeleteTarget(null) }}>
+        <AlertDialogContent container={portalContainer} data-theme={theme} className="mentorship-typography m-admin-dialog"
+          onCloseAutoFocus={event => { event.preventDefault(); deleteTriggerRef.current?.focus() }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{deleteTarget.kind === 'video' ? 'Lektion löschen?' : 'PDF entfernen?'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget.kind === 'video'
+                ? `„${deleteTarget.video.title}“ und die zugehörige Videodatei werden dauerhaft gelöscht.`
+                : `„${getPdfFilename(deleteTarget.video.pdfUrl)}“ wird von „${deleteTarget.video.title}“ entfernt. Die Lektion bleibt erhalten.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={event => { event.preventDefault(); void confirmDelete() }}>
+              {isDeleting ? 'Wird gespeichert …' : deleteTarget.kind === 'video' ? 'Lektion löschen' : 'PDF entfernen'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    ) : null}
     </>
   )
 }

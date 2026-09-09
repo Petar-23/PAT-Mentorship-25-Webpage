@@ -96,8 +96,8 @@ export default async function MentorshipModulPage({
   const initialWatchedVideoIds = watchedProgressRows.map((r) => r.videoId)
 
   return (
-    <div className={isAdmin ? "flex h-full min-h-0 bg-background" : "m-workspace"}>
-      <div className={isAdmin ? "hidden lg:block" : "m-desktop-sidebar hidden xl:block"}>
+    <div className="m-workspace">
+      <div className="m-desktop-sidebar hidden xl:block">
         <Sidebar
           kurse={kurseForSidebar}
           pages={pagesForSidebar}

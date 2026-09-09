@@ -1,113 +1,90 @@
-// components/pdf-upload-zone.tsx
-
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Upload } from '@phosphor-icons/react/Upload'
 import { useToast } from '@/hooks/use-toast'
+import { uploadLessonPdf } from '@/lib/pdf-upload-client'
 
 type Props = {
   videoId: string
+  currentPdfUrl?: string | null
   onUploadSuccess: (pdfUrl: string) => void
 }
 
-export function PdfUploadZone({ videoId, onUploadSuccess }: Props) {
+export function PdfUploadZone({ videoId, currentPdfUrl = null, onUploadSuccess }: Props) {
   const { toast } = useToast()
-  const [isUploading, setIsUploading] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
   const uploadAbortRef = useRef<AbortController | null>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [stage, setStage] = useState<'idle' | 'preparing' | 'uploading' | 'saving'>('idle')
+  const [progress, setProgress] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+  const busy = stage !== 'idle'
 
-  useEffect(() => {
-    return () => {
-      uploadAbortRef.current?.abort()
-    }
-  }, [])
+  useEffect(() => () => { uploadAbortRef.current?.abort() }, [videoId])
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.currentTarget
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    // Nur PDFs erlauben
-    if (file.type !== 'application/pdf') {
-      toast({
-        variant: 'destructive',
-        title: 'Falsches Format',
-        description: 'Bitte nur PDF-Dateien hochladen.',
-      })
-      return
-    }
-
-    // Optional: Größenlimit 25 MB
-    if (file.size > 25 * 1024 * 1024) {
-      toast({
-        variant: 'destructive',
-        title: 'Datei zu groß',
-        description: 'Maximale Größe: 25 MB',
-      })
-      return
-    }
-
-    setIsUploading(true)
-    uploadAbortRef.current?.abort()
+  async function startUpload(selectedFile: File) {
+    if (uploadAbortRef.current) return
     const controller = new AbortController()
     uploadAbortRef.current = controller
-
-    const formData = new FormData()
-    formData.append('pdf', file)
-    formData.append('videoId', videoId)
-
+    setFile(selectedFile)
+    setError(null)
+    setProgress(0)
+    setStage('preparing')
     try {
-      const res = await fetch('/api/upload/pdf', {
-        method: 'POST',
-        body: formData,
-        signal: controller.signal,
+      const pdfUrl = await uploadLessonPdf(selectedFile, {
+        videoId, expectedPdfUrl: currentPdfUrl, signal: controller.signal,
+        onProgress: setProgress, onStage: setStage,
       })
-
-      const data = await res.json()
       if (controller.signal.aborted) return
-
-      if (res.ok) {
-        onUploadSuccess(data.pdfUrl)
-        toast({
-          title: 'PDF hochgeladen ✓',
-          description: `${file.name} ist jetzt verfügbar.`,
-        })
-      } else {
-        throw new Error(data.error || 'Upload fehlgeschlagen')
-      }
-    } catch  {
+      onUploadSuccess(pdfUrl)
+      setFile(null)
+      toast({ title: 'PDF gespeichert', description: `${selectedFile.name} ist der Lektion zugeordnet.` })
+    } catch (cause) {
       if (controller.signal.aborted) return
-      toast({
-        variant: 'destructive',
-        title: 'Upload fehlgeschlagen',
-        description: 'Bitte versuche es später erneut.',
-      })
+      setError(cause instanceof Error ? cause.message : 'Der Upload ist fehlgeschlagen. Bitte erneut versuchen.')
     } finally {
-      if (uploadAbortRef.current === controller) {
-        uploadAbortRef.current = null
-      }
-      if (!controller.signal.aborted) {
-        setIsUploading(false)
-        // Input zurücksetzen, damit derselbe Dateiname erneut hochgeladen werden kann
-        input.value = ''
-      }
+      if (uploadAbortRef.current === controller) uploadAbortRef.current = null
+      if (!controller.signal.aborted) setStage('idle')
     }
   }
 
+  function cancelUpload() {
+    uploadAbortRef.current?.abort()
+    uploadAbortRef.current = null
+    setStage('idle')
+    setError('Upload abgebrochen. Die bisherigen Unterlagen bleiben erhalten.')
+  }
+
   return (
-    <Button variant="secondary" disabled={isUploading} asChild>
-      <label className="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-8">
-        <Upload className="mr-2 h-4 w-4" />
-        {isUploading ? 'Lade hoch...' : 'PDF hochladen'}
-        <input
-          type="file"
-          accept="application/pdf"
-          onChange={handleUpload}
-          className="hidden"
-          disabled={isUploading}
-        />
-      </label>
-    </Button>
+    <div className="m-pdf-upload" aria-busy={busy}>
+      <input ref={inputRef} type="file" accept=".pdf,application/pdf" className="hidden" tabIndex={-1}
+        disabled={busy} aria-label="PDF-Datei auswählen"
+        onChange={event => {
+          const selectedFile = event.currentTarget.files?.[0]
+          event.currentTarget.value = ''
+          if (selectedFile) void startUpload(selectedFile)
+        }} />
+      <div className="m-pdf-controls">
+        <Button type="button" variant="outline" disabled={busy} onClick={() => inputRef.current?.click()}>
+          <Upload aria-hidden="true" className="mr-2 h-4 w-4" />
+          {currentPdfUrl ? 'PDF ersetzen' : 'PDF hinzufügen'}
+        </Button>
+        {busy && stage !== 'saving' ? (
+          <Button type="button" variant="ghost" onClick={cancelUpload}>Abbrechen</Button>
+        ) : error && file ? (
+          <Button type="button" variant="ghost" onClick={() => void startUpload(file)}>Erneut versuchen</Button>
+        ) : null}
+      </div>
+      {file ? <p className="m-pdf-filename">{file.name} <span>· {(file.size / (1024 * 1024)).toLocaleString('de-DE', { maximumFractionDigits: 1 })} MB</span></p> : null}
+      {busy ? (
+        <div className="m-pdf-progress" role="status" aria-live="polite">
+          <span>{stage === 'preparing' ? 'Datei wird geprüft …' : stage === 'saving' ? 'Wird der Lektion zugeordnet …' : `Wird hochgeladen · ${progress} %`}</span>
+          <progress max={100} value={stage === 'preparing' ? undefined : progress} aria-label="PDF-Upload" />
+        </div>
+      ) : null}
+      {error ? <p className="m-pdf-error" role="alert">{error}</p> : <p className="m-pdf-hint">PDF bis 25 MB · für berechtigte Mitglieder</p>}
+    </div>
   )
 }
