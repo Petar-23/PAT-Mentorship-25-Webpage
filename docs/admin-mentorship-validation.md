@@ -35,12 +35,12 @@ In der lokalen Vorschau wurde genau diese Datei über den Dateiauswahldialog hoc
 
 Geprüft wurden die helle Desktopansicht bei 1.280 und 1.440 Pixeln, die helle Mobilansicht bei 320 und 390 Pixeln sowie die dunkle Darstellung bei 390 und 1.440 Pixeln. Die dokumentierten Ansichten haben keinen horizontalen Überlauf. Mobile Navigation, Kursdialog, Rückkehr des Tastaturfokus, Sortieren der Kurse per Tastatur, Kapitelsortierung, Kapitelumbenennung einschließlich fehlgeschlagenem Speichern und erneutem Versuch sowie Anlegen und Umbenennen einer synthetischen Testlektion wurden lokal geprüft. Die synthetischen Datensätze wurden danach wieder entfernt.
 
-Die abschließende Löschdialog-/Klickprüfung wurde durch eine blockierende native Bestätigung im Browser unterbrochen; deren Abschluss ist noch offen. Die dunklen Screenshots wurden deshalb mit einer vorübergehend dunklen Startdarstellung in der lokalen Vorschau aufgenommen. Diese Vorschau-Einstellung wurde anschließend zurückgesetzt. Daraus wird kein erfolgreicher abschließender Test des Theme-Schalters oder der Löschung abgeleitet.
+Die zunächst blockierende native Browser-Bestätigung wurde durch einen Dialog im PAT-Design ersetzt. Lektions- und PDF-Dialog zeigen den konkreten Inhalt, können mit Abbrechen beziehungsweise Escape geschlossen werden und geben den Fokus an die zugehörige Schaltfläche zurück. Die PDF-Zuordnung bleibt dabei unverändert. Bei 320 Pixeln ist der Dialog 288 Pixel breit und verursacht keinen horizontalen Überlauf. Der Theme-Schalter wurde anschließend erfolgreich geprüft. Die destruktive Löschung echter Inhalte ist kein Teil dieser Prüfung.
 
 Der Player zeigt in dieser Vorschau ein gekennzeichnetes Standbild aus der echten Aufnahme. Die lokale Herkunft wird vom Bunny-Embed nicht zugelassen. Die Vorschau beweist daher weder Live-Wiedergabe noch einen erfolgreichen Upload zum echten Blob-Dienst. Die neue Oberfläche und die PDF-Zuordnung wurden noch nicht produktiv veröffentlicht.
 
-## Ausstehende Freigabe
+## Veröffentlichung
 
-Vor Veröffentlichung verbleiben die abschließende Dialogprüfung und die konkrete Freigabe für die neue Admin-Oberfläche samt Upload-Reparatur. Das tatsächliche Anhängen von `NYPM - Protokoll.pdf` an `PM-Tape-Reading 08.09.2026` wurde von der automatischen Freigabeprüfung abgelehnt, weil Datei und Ziellektion dafür noch nicht ausdrücklich freigegeben wurden. Nach Freigabe sind der echte private Upload, die genaue Zuordnung und der geschützte Download mit Bytevergleich erneut zu prüfen.
+Die neue Admin-Oberfläche samt Upload-Reparatur und das tatsächliche Anhängen von `NYPM - Protokoll.pdf` an `PM-Tape-Reading 08.09.2026` wurden am 09.09.2026 ausdrücklich freigegeben. Die lokale Dialogprüfung ist abgeschlossen. Nach der Veröffentlichung sind die bereitgestellte Git-Version, der echte private Upload, die genaue Zuordnung und der geschützte Download mit Bytevergleich zu prüfen. Der Abschluss wird im Veröffentlichungsprotokoll dokumentiert.
 
 Quellen: [Vercel Function Payload Limit](https://vercel.com/docs/errors/function_payload_too_large), [Vercel Blob SDK](https://vercel.com/docs/vercel-blob/using-blob-sdk).

@@ -24,7 +24,7 @@ Der PDF-Upload akzeptiert laut Oberfläche 25 MB, sendet die Datei aber vollstä
 
 ## Freigabestatus
 
-Die Umsetzung und Prüfung erfolgen in einer isolierten lokalen Arbeitskopie. Veröffentlichung und tatsächliches Anhängen von „NYPM - Protokoll.pdf“ an „PM-Tape-Reading 08.09.2026“ benötigen noch die konkrete Freigabe. Die automatische Freigabeprüfung hat den produktiven Wiederholungsupload abgelehnt, weil Datei und Ziellektion dafür noch nicht ausdrücklich freigegeben wurden. Die Originaldatei bleibt unverändert.
+Die Umsetzung und Prüfung erfolgen in einer isolierten lokalen Arbeitskopie. Veröffentlichung und tatsächliches Anhängen von „NYPM - Protokoll.pdf“ an „PM-Tape-Reading 08.09.2026“ wurden am 09.09.2026 ausdrücklich freigegeben. Die Originaldatei bleibt unverändert. Nach der Veröffentlichung sind die richtige Live-Version, der echte private Upload und der geschützte Download zu prüfen.
 
 ## Quellen
 
