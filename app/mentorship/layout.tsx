@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { getIsAdmin } from '@/lib/authz'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { getMentorshipAccessState } from '@/lib/mentorship-access'
@@ -28,14 +29,14 @@ export default async function CoursesLayout({ children }: { children: ReactNode 
     }
   }
 
-  const [preferences, navigation] = await Promise.all([cookies(), getSidebarData()])
+  const [preferences, navigation, isAdmin] = await Promise.all([cookies(), getSidebarData(), getIsAdmin(userId, sessionClaims)])
   const theme = preferences.get('pat-mentorship-theme')?.value === 'dark' ? 'dark' : 'light'
 
   return (
     <>
       <div hidden data-hide-root-footer="true" />
       <MentorshipShell className={`m-pat-fonts ${mentorshipSans.variable} ${mentorshipSerif.variable}`} initialTheme={theme} headerNavigation={<MobileCoursesDrawer
-        kurse={navigation.kurseForSidebar} pages={navigation.pagesForSidebar} savedSidebarOrder={navigation.savedSidebarOrder}
+        isAdmin={isAdmin} kurse={navigation.kurseForSidebar} pages={navigation.pagesForSidebar} savedSidebarOrder={navigation.savedSidebarOrder}
       />}>{children}</MentorshipShell>
     </>
   )

@@ -2,16 +2,16 @@
 
 'use client'
 
-import { useUser } from '@clerk/nextjs'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Progress } from '@/components/ui/progress'
 import { ArrowLeft } from '@phosphor-icons/react/ArrowLeft'
-import { CaretDown as ChevronDown } from '@phosphor-icons/react/CaretDown'
 import { CaretRight as ChevronRight } from '@phosphor-icons/react/CaretRight'
 import { CaretUp as ChevronUp } from '@phosphor-icons/react/CaretUp'
 import { Check } from '@phosphor-icons/react/Check'
+import { X } from '@phosphor-icons/react/X'
+import { Pencil } from '@phosphor-icons/react/Pencil'
+import { DotsThree } from '@phosphor-icons/react/DotsThree'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { DotsSixVertical as GripVertical } from '@phosphor-icons/react/DotsSixVertical'
 import { Plus } from '@phosphor-icons/react/Plus'
 import { Trash as Trash2 } from '@phosphor-icons/react/Trash'
@@ -42,6 +42,7 @@ import {
 } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
 import { useState, useMemo, useEffect, useRef } from 'react'
+import { useMentorshipMobileNavigation, useMentorshipTheme } from '@/components/mentorship/shell'
 import { useRouter } from 'next/navigation'
 
 import { CSS } from '@dnd-kit/utilities'
@@ -182,86 +183,21 @@ function SortableVideo({
   }
 
   return (
-    <div ref={setNodeRef} style={style} className={isDragging ? 'z-50' : ''}>
-      <div
-        className={[
-          'p-2 flex items-center space-x-2 cursor-pointer transition-colors rounded-md border border-l-4',
-          isActive
-            ? 'bg-gray-100 dark:bg-gray-800/60 border-gray-200 dark:border-gray-400 border-l-gray-400 dark:border-l-gray-400'
-            : 'border-transparent border-l-transparent hover:bg-gray-100 dark:hover:bg-gray-800/40',
-        ].join(' ')}
-        onClick={onClick}
-        aria-current={isActive ? 'true' : undefined}
-      >
-        <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing touch-none select-none p-1 rounded hover:bg-accent/30 flex items-center justify-center min-w-[20px]"
-        >
-          <GripVertical className="h-4 w-5 text-muted-foreground" />
-        </div>
-
-        <VideoThumbnail
-          bunnyGuid={video.bunnyGuid}
-          thumbnailUrl={video.thumbnailUrl}
-          title={video.title}
-          isProcessing={isProcessing}
-          isWatched={isWatched}
-          updatedAt={video.updatedAt ?? null}
-        />
-
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium leading-snug overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
-            {video.title}
-          </p>
-          <p className="text-xs text-muted-foreground">{durationText}</p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function VideoRow({
-  video,
-  isActive,
-  onClick,
-  durationText,
-  isProcessing,
-  isWatched,
-}: {
-  video: Video
-  isActive: boolean
-  onClick: () => void
-  durationText: string
-  isProcessing: boolean
-  isWatched: boolean
-}) {
-  return (
-    <div
-      className={[
-        'p-2 flex items-center space-x-2 cursor-pointer transition-colors rounded-md border border-l-4',
-        isActive
-          ? 'bg-gray-100 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 border-l-gray-400 dark:border-l-gray-400'
-          : 'border-transparent border-l-transparent hover:bg-gray-100 dark:hover:bg-gray-800/40',
-      ].join(' ')}
-      onClick={onClick}
-      aria-current={isActive ? 'true' : undefined}
-    >
-      <VideoThumbnail
-        bunnyGuid={video.bunnyGuid}
-        thumbnailUrl={video.thumbnailUrl}
-        title={video.title}
-        isProcessing={isProcessing}
-        isWatched={isWatched}
-        updatedAt={video.updatedAt ?? null}
-      />
-
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium leading-snug overflow-hidden text-ellipsis [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
-          {video.title}
-        </p>
-        <p className="text-xs text-muted-foreground">{durationText}</p>
-      </div>
+    <div ref={setNodeRef} style={style} className={`m-admin-lesson-row ${isActive ? 'is-active' : ''}`}>
+      <button type="button" {...attributes} {...listeners} className="m-admin-drag"
+        aria-label={`${video.title} verschieben`}>
+        <GripVertical aria-hidden="true" className="h-4 w-4" />
+      </button>
+      <button type="button" className="m-admin-lesson-select" onClick={onClick}
+        aria-current={isActive ? 'true' : undefined}>
+        <span className="m-admin-lesson-thumbnail" aria-hidden="true">
+          <VideoThumbnail bunnyGuid={video.bunnyGuid} thumbnailUrl={video.thumbnailUrl} title={video.title}
+            isProcessing={isProcessing} isWatched={isWatched} updatedAt={video.updatedAt ?? null} />
+        </span>
+        <span className="m-admin-lesson-copy"><span className="m-admin-lesson-title">{video.title}</span>
+          <span className="m-admin-lesson-duration">{durationText}</span>
+        </span>
+      </button>
     </div>
   )
 }
@@ -272,8 +208,6 @@ export function MiddleSidebar({
   courseId,
   activeVideoId,
   onVideoClick,
-  userProgress,
-  watchedVideoIds,
   editingChapterId,
   tempChapterName,
   onChapterEditStart,
@@ -287,10 +221,17 @@ export function MiddleSidebar({
   onMoveChapterDown,
   onDeleteChapter,
 }: Props) {
+  const { container: portalContainer } = useMentorshipMobileNavigation()
+  const theme = useMentorshipTheme()
   const router = useRouter()
-  const { user, isLoaded } = useUser()
-  const isAdmin =
-    isLoaded && user?.organizationMemberships?.some((m) => m.role === 'org:admin')
+  const pendingRef = useRef(false)
+  const [pendingAction, setPendingAction] = useState<string | null>(null)
+  async function runAction(name: string, action: () => void | Promise<void>) {
+    if (pendingRef.current) return
+    pendingRef.current = true
+    setPendingAction(name)
+    try { await action() } finally { pendingRef.current = false; setPendingAction(null) }
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -521,7 +462,6 @@ export function MiddleSidebar({
   }, [durationCandidateGuids, initialVideoDurations, videoDurations, videoStateKey, videoStatuses])
 
   useEffect(() => {
-    if (!isAdmin) return
 
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | null = null
@@ -637,10 +577,10 @@ export function MiddleSidebar({
       document.removeEventListener('visibilitychange', onVisibilityChange)
       if (timer) clearTimeout(timer)
     }
-  }, [isAdmin, bunnyGuids, videoStateKey, videoStatuses])
+  }, [bunnyGuids, videoStateKey, videoStatuses])
 
   const getProcessingInfo = (video: Video) => {
-    if (!isAdmin || !video.bunnyGuid) {
+    if (!video.bunnyGuid) {
       return { isProcessing: false, progress: null as number | null }
     }
 
@@ -671,8 +611,8 @@ export function MiddleSidebar({
     const processing = getProcessingInfo(video)
     if (processing.isProcessing) {
       return typeof processing.progress === 'number'
-        ? `Processing: ${processing.progress}%`
-        : 'Processing...'
+        ? `Verarbeitung · ${processing.progress} %`
+        : 'Wird verarbeitet …'
     }
 
     if (!video.bunnyGuid) return '—'
@@ -716,309 +656,100 @@ export function MiddleSidebar({
     if (oldIndex === -1 || newIndex === -1) return
 
     const newVideos = arrayMove(sortedVideos, oldIndex, newIndex)
-    onVideosReorder(chapterId, newVideos)
+    void runAction('sort', () => onVideosReorder(chapterId, newVideos))
   }
 
 
   return (
-    <div className="w-full lg:w-96 border-r border-border bg-background p-4 sm:p-6 lg:p-8 flex flex-col h-full min-h-0">
-      <div className="mb-6 sm:mb-8 flex items-start gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 p-0 hover:bg-gray-300"
-          onClick={() => {
-            if (courseId) {
-              router.push(`/mentorship/${courseId}`)
-              return
-            }
-            router.back()
-          }}
-          aria-label="Zurück zur Modulübersicht"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-
-        <div className="min-w-0 flex-1">
-          {courseTitle ? (
-            <p className="text-xs text-muted-foreground truncate">{courseTitle}</p>
-          ) : null}
-          <h1 className="text-2xl sm:text-3xl font-bold leading-tight truncate">{modul.name}</h1>
-        </div>
+    <aside className="m-lesson-outline m-admin-outline" aria-label="Kapitel und Lektionen">
+      <div className="m-outline-header">
+        <button type="button" className="m-outline-back" onClick={() => courseId ? router.push(`/mentorship/${courseId}`) : router.back()}
+          aria-label="Zurück zur Modulübersicht">
+          <ArrowLeft aria-hidden="true" /><span>{courseTitle || 'Modulübersicht'}</span>
+        </button>
+        <h1>{modul.name}</h1>
+        <p className="m-admin-outline-meta">{sortedChapters.reduce((sum, chapter) => sum + chapter.videos.length, 0)} Lektionen</p>
       </div>
-
-      {!isAdmin && userProgress ? (
-        <Card className="mb-6 border border-border shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between gap-4 mb-3">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">Fortschritt</p>
-                <p className="text-xs text-muted-foreground">
-                  {userProgress.completedLessons} von {userProgress.totalLessons} Lektionen
-                  abgeschlossen
-                </p>
-              </div>
-              <div className="text-sm font-semibold tabular-nums text-foreground">
-                {userProgress.percent}%
-              </div>
-            </div>
-            <Progress value={userProgress.percent} className="h-2.5" />
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <ScrollArea className="flex-1 min-h-0 pb-2 sm:pb-4">
-      <div className="space-y-2 pr-2">
-        {sortedChapters.map((chapter) => {
+      <ScrollArea className="m-outline-scroll flex-1 min-h-0">
+        {sortedChapters.map((chapter, index) => {
           const isOpen = openChapters.has(chapter.id) || editingChapterId === chapter.id
           const sortedVideos = [...chapter.videos].sort((a, b) => (a.order || 0) - (b.order || 0))
-
           return (
-            <Card className="border border-border shadow-sm" key={chapter.id}>
-              <CardContent className="p-2">
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 select-none min-w-0">
-                  <div className="flex items-center space-x-3 min-w-0">
-
-                    {/* Chevron zum Auf-/Zuklappen */}
-                    <span
-                      className="cursor-pointer p-1 hover:bg-accent/50 rounded flex-shrink-0"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        toggleChapter(chapter.id)
-                      }}
-                    >
-                      {isOpen ? (
-                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </span>
-
-                    {/* Kapitel-Titel oder Edit-Modus */}
-                    {isAdmin && editingChapterId === chapter.id ? (
-                      <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <input
-                          type="text"
-                          value={tempChapterName}
-                          onChange={(e) => onTempChapterNameChange(e.target.value)}
-                          className="text-md font-bold bg-transparent border-b-2 border-primary focus:outline-none flex-1 min-w-0"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              onChapterEditSave()
-                              e.stopPropagation()
-                            }
-                            if (e.key === 'Escape') onChapterEditCancel()
-                          }}
-                          onBlur={onChapterEditSave}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <Button size="sm" variant="outline" onClick={(e) => {
-                          e.stopPropagation()
-                          onChapterEditSave()
-                        }}>
-                          <Check className="h-5 w-5 text-green-500" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <h3
-                        className={`text-md font-bold truncate flex-1 min-w-0 px-2 py-1 rounded select-text ${
-                          isAdmin ? 'cursor-pointer hover:bg-accent/50' : ''
-                        }`}
-                        onClick={() => {
-                          if (!isAdmin) return
-                          onChapterEditStart(chapter.id, chapter.name)
-                        }}
-                      >
-                        {chapter.name}
-                      </h3>
-                    )}
+            <section className="m-chapter" key={chapter.id}>
+              <div className="m-admin-chapter-heading">
+                {editingChapterId === chapter.id ? (
+                  <div className="m-admin-chapter-edit">
+                    <input type="text" aria-label="Kapitelname" value={tempChapterName} autoFocus disabled={pendingAction !== null}
+                      onChange={event => onTempChapterNameChange(event.target.value)}
+                      onKeyDown={event => {
+                        if (event.key === 'Enter') { event.preventDefault(); void runAction('rename', onChapterEditSave) }
+                        if (event.key === 'Escape' && !pendingAction) { event.preventDefault(); onChapterEditCancel() }
+                      }} />
+                    <Button variant="ghost" size="icon" className="m-admin-menu" aria-label={pendingAction === 'rename' ? 'Kapitelname wird gespeichert' : 'Kapitelname speichern'} disabled={pendingAction !== null} onClick={() => void runAction('rename', onChapterEditSave)}><Check /></Button>
+                    <Button variant="ghost" size="icon" className="m-admin-menu" aria-label="Umbenennen abbrechen" disabled={pendingAction !== null} onClick={onChapterEditCancel}><X /></Button>
                   </div>
-
-                  {/* RECHTS: Up/Down + Plus + Trash */}
-                  {isAdmin && editingChapterId !== chapter.id && (
-                    <div className="flex items-center space-x-1 shrink-0">
-                      {/* Up/Down Buttons – jetzt rechts, kleiner und outline */}
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-6 w-6 p-0 rounded-md text-muted-foreground hover:text-foreground"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onAddVideo(chapter.id)
-                        }}
-                      >
-                        <Plus className="h-2.5 w-2.5" />
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-6 w-6 p-0 rounded-md text-muted-foreground hover:text-destructive hover:border-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setDeleteDialogChapterId(chapter.id)
-                        }}
-                      >
-                        <Trash2 className="h-2.5 w-2.5" />
-                      </Button>
-
-                      <div className="flex flex-col space-y-px">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-5 w-5 rounded-t-md rounded-b-none p-0 bg-gray-200 hover:bg-gray-300 border-border/50"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onMoveChapterUp(chapter.id)
-                          }}
-                          disabled={sortedChapters.findIndex((ch) => ch.id === chapter.id) === 0}
-                        >
-                          <ChevronUp className="h-2.5 w-2.5" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-5 w-5 rounded-t-none rounded-b-md p-0 bg-gray-200 hover:bg-gray-300 border-t-0"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onMoveChapterDown(chapter.id)
-                          }}
-                          disabled={sortedChapters.findIndex((ch) => ch.id === chapter.id) === sortedChapters.length - 1}
-                        >
-                          <ChevronDown className="h-2.5 w-2.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Video-Liste mit Drag-and-Drop – bleibt komplett unverändert! */}
-                <div
-                  className={`grid transition-all duration-300 ease-in-out ${
-                    isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-                  }`}
-                >
-                  <div className="overflow-hidden">
-                    <div className="mt-3 border-t border-border pt-2">
-                    {isAdmin ? (
-                      <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={(e) => handleVideoDragEnd(e, chapter.id)}
-                      >
-                        <SortableContext
-                          items={sortedVideos.map((v) => `video-${v.id}`)}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          {sortedVideos.length === 0 ? (
-                            <div className="p-8 text-center text-muted-foreground">
-                              Noch keine Videos
-                            </div>
-                          ) : (
-                            sortedVideos.map((video) => (
-                              (() => {
-                                const processing = getProcessingInfo(video)
-                                return (
-                                  <SortableVideo
-                                    key={video.id}
-                                    video={video}
-                                    isActive={video.id === activeVideoId}
-                                    onClick={() => onVideoClick(video.id)}
-                                    durationText={getDurationText(video)}
-                                    isProcessing={processing.isProcessing}
-                                    isWatched={false}
-                                  />
-                                )
-                              })()
-                            ))
-                          )}
-                        </SortableContext>
-                      </DndContext>
-                    ) : sortedVideos.length === 0 ? (
-                      <div className="p-8 text-center text-muted-foreground">
-                        Noch keine Videos
-                      </div>
-                    ) : (
-                      sortedVideos.map((video) => (
-                        (() => {
-                          const processing = getProcessingInfo(video)
-                          const isWatched = Boolean(watchedVideoIds?.includes(video.id))
-                          return (
-                            <VideoRow
-                              key={video.id}
-                              video={video}
-                              isActive={video.id === activeVideoId}
-                              onClick={() => onVideoClick(video.id)}
-                              durationText={getDurationText(video)}
-                              isProcessing={processing.isProcessing}
-                              isWatched={isWatched}
-                            />
-                          )
-                        })()
-                      ))
-                    )}
-                  </div>
-                </div>
-                </div>
-              </CardContent>
-            </Card>
+                ) : (
+                  <>
+                    <button type="button" className="m-chapter-toggle" aria-expanded={isOpen}
+                      aria-controls={`admin-chapter-${chapter.id}`} onClick={() => toggleChapter(chapter.id)}>
+                      <ChevronRight aria-hidden="true" /><span className="m-chapter-name">{chapter.name}</span>
+                      <small>{sortedVideos.length}</small>
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="m-admin-menu" disabled={pendingAction !== null} aria-label={`Aktionen für Kapitel ${chapter.name}`}><DotsThree /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent container={portalContainer} data-theme={theme} className="mentorship-portal m-admin-popover" align="end">
+                        <DropdownMenuItem onSelect={() => void runAction('add-lesson', () => onAddVideo(chapter.id))}><Plus className="mr-2 h-4 w-4" />Lektion hinzufügen</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => onChapterEditStart(chapter.id, chapter.name)}><Pencil className="mr-2 h-4 w-4" />Umbenennen</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem disabled={index === 0} onSelect={() => void runAction('sort', () => onMoveChapterUp(chapter.id))}><ChevronUp className="mr-2 h-4 w-4" />Nach oben</DropdownMenuItem>
+                        <DropdownMenuItem disabled={index === sortedChapters.length - 1} onSelect={() => void runAction('sort', () => onMoveChapterDown(chapter.id))}><ChevronRight className="mr-2 h-4 w-4 rotate-90" />Nach unten</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setDeleteDialogChapterId(chapter.id)}>
+                          <Trash2 className="mr-2 h-4 w-4" />Kapitel löschen
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
+                )}
+              </div>
+              <div id={`admin-chapter-${chapter.id}`} hidden={!isOpen} className="m-chapter-lessons">
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={event => handleVideoDragEnd(event, chapter.id)}>
+                  <SortableContext items={sortedVideos.map(video => `video-${video.id}`)} strategy={verticalListSortingStrategy}>
+                    {sortedVideos.map(video => (
+                      <SortableVideo key={video.id} video={video} isActive={video.id === activeVideoId}
+                        onClick={() => onVideoClick(video.id)} durationText={getDurationText(video)}
+                        isProcessing={getProcessingInfo(video).isProcessing} isWatched={false} />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+                {sortedVideos.length === 0 ? <p className="m-admin-empty">Hier gibt es noch keine Lektionen.</p> : null}
+                <Button variant="ghost" className="m-admin-add" disabled={pendingAction !== null} onClick={() => void runAction('add-lesson', () => onAddVideo(chapter.id))}>
+                  <Plus className="mr-2 h-4 w-4" />{pendingAction === 'add-lesson' ? 'Lektion wird angelegt …' : 'Lektion hinzufügen'}
+                </Button>
+              </div>
+            </section>
           )
         })}
-      </div>
-
-        {/* Delete Confirm Dialog (nur Admin) */}
-        {isAdmin && (
-          <AlertDialog
-            open={deleteDialogChapterId !== null}
-            onOpenChange={() => setDeleteDialogChapterId(null)}
-          >
-            <AlertDialogContent className="mentorship-typography">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Kapitel löschen?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Das gesamte Kapitel &quot;
-                  {
-                    sortedChapters.find((ch) => ch.id === deleteDialogChapterId)
-                      ?.name
-                  }
-                  &quot; und alle Videos (inkl. Bunny) werden{' '}
-                  {deleteDialogChapterId ? 'permanent ' : ''}gelöscht.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => {
-                    onDeleteChapter?.(deleteDialogChapterId!)
-                    setDeleteDialogChapterId(null)
-                  }}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Löschen
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
-
-        {/* Neues Kapitel anlegen (nur Admin) */}
-        {isAdmin && (
-          <Card
-            className="border-2 border-dashed border-muted-foreground/50 bg-gray-100/50 cursor-pointer hover:bg-accent/30 transition-colors mt-8"
-            onClick={onAddChapter}
-          >
-            <CardContent className="p-4 flex items-center justify-center space-x-4">
-              <div className="w-7 h-7 rounded-md border border-muted-foreground/50 flex items-center justify-center bg-muted/20">
-                <Plus className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <p className="text-sm font-semibold text-foreground">
-                Neues Kapitel anlegen
-              </p>
-            </CardContent>
-          </Card>
-        )}
+        <Button variant="outline" className="m-admin-add m-admin-add-chapter" disabled={pendingAction !== null} onClick={() => void runAction('add-chapter', onAddChapter)}>
+          <Plus className="mr-2 h-4 w-4" />{pendingAction === 'add-chapter' ? 'Kapitel wird angelegt …' : 'Kapitel hinzufügen'}
+        </Button>
       </ScrollArea>
-    </div>
+      <AlertDialog open={deleteDialogChapterId !== null} onOpenChange={open => { if (!open) setDeleteDialogChapterId(null) }}>
+        <AlertDialogContent container={portalContainer} data-theme={theme} className="mentorship-typography m-admin-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Kapitel löschen?</AlertDialogTitle>
+            <AlertDialogDescription>Das Kapitel „{sortedChapters.find(chapter => chapter.id === deleteDialogChapterId)?.name}“
+              und alle zugehörigen Videos werden dauerhaft gelöscht.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (deleteDialogChapterId) onDeleteChapter?.(deleteDialogChapterId); setDeleteDialogChapterId(null) }}>Kapitel löschen</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </aside>
   )
 }

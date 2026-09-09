@@ -4,24 +4,18 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { BookOpen } from '@phosphor-icons/react/BookOpen'
-import { CaretDown as ChevronDown } from '@phosphor-icons/react/CaretDown'
 import { ChartLineUp } from '@phosphor-icons/react/ChartLineUp'
 import { DotsSixVertical as GripVertical } from '@phosphor-icons/react/DotsSixVertical'
 import { DotsThreeVertical as MoreVertical } from '@phosphor-icons/react/DotsThreeVertical'
 import { FileText } from '@phosphor-icons/react/FileText'
-import { Kanban as SquareKanban } from '@phosphor-icons/react/Kanban'
+import { House } from '@phosphor-icons/react/House'
+import { Gear } from '@phosphor-icons/react/Gear'
+import { useMentorshipNavigation, useMentorshipMobileNavigation, useMentorshipTheme } from '@/components/mentorship/shell'
 import { Pencil } from '@phosphor-icons/react/Pencil'
 import { Plus } from '@phosphor-icons/react/Plus'
 import { Trash as Trash2 } from '@phosphor-icons/react/Trash'
 import { Users } from '@phosphor-icons/react/Users'
-import patBanner from '@/public/images/pat-banner.jpeg'
-import { UserButton, useUser } from '@clerk/nextjs'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
+
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useToast } from '@/hooks/use-toast'
@@ -99,7 +93,6 @@ type SidebarItem = {
   subtitle: string
   href: string
   icon: ReactNode
-  iconBg: string
 }
 
 type Props = {
@@ -109,25 +102,150 @@ type Props = {
   activeCourseId?: string | null
   isAdmin: boolean
   openCreateCourseModal?: boolean
+  onNavigate?: () => void
 }
 
+const EMPTY_PAGES: Page[] = []
 const STATIC_SIDEBAR_ITEM_IDS = new Set(['discord', 'indicators'])
+
+  function SortableItem({ item, activeItemId, isAdmin, onNavigate, onEditPage, onEditCourse, onDeletePage, onDeleteCourse }: {
+  item: SidebarItem
+  activeItemId: string | null
+  isAdmin: boolean
+  onNavigate?: () => void
+  onEditPage: (id: string) => void
+  onEditCourse: (id: string) => void
+  onDeletePage: (id: string) => void
+  onDeleteCourse: (id: string) => void
+}) {
+    const { container: portalContainer } = useMentorshipMobileNavigation()
+    const theme = useMentorshipTheme()
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+      id: item.id,
+    })
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    }
+
+    return (
+      <div ref={setNodeRef} style={style} className="relative">
+        <div
+          className={cn(
+            'm-admin-nav-row',
+            item.id === activeItemId && 'is-active'
+          )}
+        >
+          {/* Drag-Handle – nur für Admin */}
+          {isAdmin && (
+            <button type="button"
+              {...attributes} {...listeners}
+              className="m-admin-drag" aria-label={`${item.title} verschieben`}
+            >
+              <GripVertical className="h-4 w-4" aria-hidden="true" />
+            </button>
+          )}
+
+          {/* Klickbarer Bereich */}
+          <Link
+            href={item.href}
+            prefetch={false}
+            className="m-admin-nav-link" onClick={onNavigate}
+            aria-current={item.id === activeItemId ? 'page' : undefined}
+          >
+            <div
+              className="m-admin-nav-icon"
+            >
+              {item.icon}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <p className="m-admin-nav-title">{item.title}</p>
+              <p className="m-admin-nav-detail">{item.subtitle}</p>
+            </div>
+          </Link>
+
+          {/* 3-Dots Menü – nur Admin */}
+          {isAdmin && !STATIC_SIDEBAR_ITEM_IDS.has(item.id) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="m-admin-menu"
+                  aria-label={`Aktionen für ${item.title}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+
+              {item.id.startsWith('page:') ? (
+                <DropdownMenuContent container={portalContainer} data-theme={theme} align="end" className="mentorship-portal m-admin-popover w-44">
+                  <DropdownMenuItem className="gap-2" onSelect={() => onEditPage(item.id.replace('page:', ''))}>
+                    <Pencil className="h-4 w-4" />
+                    Bearbeiten
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="gap-2 text-destructive focus:text-destructive"
+                    onSelect={() => onDeletePage(item.id.replace('page:', ''))}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Seite löschen
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              ) : (
+                <DropdownMenuContent container={portalContainer} data-theme={theme} align="end" className="mentorship-portal m-admin-popover w-44">
+                  <DropdownMenuItem className="gap-2" onSelect={() => onEditCourse(item.id)}>
+                    <Pencil className="h-4 w-4" />
+                    Bearbeiten
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="gap-2 text-destructive focus:text-destructive"
+                    onSelect={() => onDeleteCourse(item.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Kurs löschen
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              )}
+            </DropdownMenu>
+          )}
+        </div>
+      </div>
+    )
+  }
+
 
 export function SidebarAdmin({
   kurse,
-  pages = [],
+  pages = EMPTY_PAGES,
   savedSidebarOrder,
   activeCourseId,
   isAdmin,
   openCreateCourseModal,
+  onNavigate,
 }: Props) {
   const { toast } = useToast()
   const router = useRouter()
   const pathname = usePathname()
   const isMentorship = pathname?.startsWith('/mentorship')
-  const { user, isLoaded } = useUser()
+  const { container: portalContainer } = useMentorshipMobileNavigation()
+  const theme = useMentorshipTheme()
+  const lastAdminControl = useRef<HTMLButtonElement | null>(null)
+  const captureAdminControl = (event: React.SyntheticEvent<HTMLElement>) => {
+    const trigger = (event.target as HTMLElement).closest('button.m-admin-menu')
+    if (trigger instanceof HTMLButtonElement) lastAdminControl.current = trigger
+  }
+  const restoreAdminFocus = (event: Event) => {
+    event.preventDefault()
+    if (lastAdminControl.current?.isConnected) lastAdminControl.current.focus()
+  }
+  const navigationOpen = useMentorshipNavigation()
+  const hidden = isMentorship && !onNavigate && !navigationOpen
   const [isDeletingCourse, setIsDeletingCourse] = useState(false)
-  const [mobileFooterOpen, setMobileFooterOpen] = useState(false)
 
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false)
   const [courseModalMode, setCourseModalMode] = useState<'create' | 'edit'>('create')
@@ -536,10 +654,6 @@ export function SidebarAdmin({
     }
   }
 
-  const displayName =
-    user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Mitglied'
-  const email = user?.primaryEmailAddress?.emailAddress ?? ''
-
   // Alle Nav-Items: Discord fest + Kurse
   const staticItems = useMemo<SidebarItem[]>(
     () => [
@@ -548,16 +662,14 @@ export function SidebarAdmin({
         title: 'Discord Community',
         subtitle: 'Live Streams & Chat',
         href: '/mentorship/discord',
-        icon: <Users className="h-6 w-6 text-white" />,
-        iconBg: 'from-indigo-700/80 to-indigo-600/70',
+        icon: <Users className="h-5 w-5" />,
       },
       {
         id: 'indicators',
         title: 'Indikatoren',
         subtitle: 'TradingView Claims',
         href: '/mentorship/indicators',
-        icon: <ChartLineUp className="h-6 w-6 text-white" />,
-        iconBg: 'from-zinc-700/80 to-zinc-600/70',
+        icon: <ChartLineUp className="h-5 w-5" />,
       },
       ...kurse.map((kurs) => ({
         id: kurs.id,
@@ -576,9 +688,8 @@ export function SidebarAdmin({
             />
           </div>
         ) : (
-          <BookOpen className="h-6 w-6 text-white" />
+          <BookOpen className="h-5 w-5" />
         ),
-        iconBg: 'from-slate-700/80 to-slate-600/70',
       })),
       ...localPages.map((page) => ({
         id: `page:${page.id}`,
@@ -597,9 +708,8 @@ export function SidebarAdmin({
             />
           </div>
         ) : (
-          <FileText className="h-6 w-6 text-white" />
+          <FileText className="h-5 w-5" />
         ),
-        iconBg: 'from-emerald-700/80 to-emerald-600/70',
       })),
     ],
     [kurse, localPages]
@@ -635,193 +745,43 @@ export function SidebarAdmin({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
-    if (!over || active.id === over.id) return
-
-    setItems((items) => {
-      const oldIndex = items.findIndex((i) => i.id === active.id)
-      const newIndex = items.findIndex((i) => i.id === over.id)
-      const newOrder = arrayMove(items, oldIndex, newIndex)
-
-      // Speichere neue Reihenfolge in DB (nur für Admin)
-      if (isAdmin) {
-        const orderIds = newOrder.map((item) => item.id)
-        sidebarOrderAbortRef.current?.abort()
-        const controller = new AbortController()
-        sidebarOrderAbortRef.current = controller
-
-        fetch('/api/admin-settings/sidebar-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          body: JSON.stringify({ order: orderIds }),
-        })
-          .then((res) => {
-            if (controller.signal.aborted) return
-
-            if (res.ok) {
-              toast({
-                title: 'Reihenfolge gespeichert!',
-                description: 'Deine Navigation ist jetzt so sortiert.',
-                duration: 3000,
-              })
-            } else {
-              toast({
-                title: 'Fehler beim Speichern',
-                description: 'Versuche es nochmal.',
-                variant: 'destructive',
-                duration: 5000,
-              })
-            }
-          })
-          .catch(() => {
-            if (controller.signal.aborted) return
-
-            toast({
-              title: 'Fehler beim Speichern',
-              description: 'Versuche es nochmal.',
-              variant: 'destructive',
-              duration: 5000,
-            })
-          })
-          .finally(() => {
-            if (sidebarOrderAbortRef.current === controller) sidebarOrderAbortRef.current = null
-          })
-      }
-
-      return newOrder
-    })
-  }
-
-  // Sortierbare Item-Komponente (nur für Admin)
-  function SortableItem({ item }: { item: SidebarItem }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-      id: item.id,
-    })
-
-    const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      opacity: isDragging ? 0.5 : 1,
+    if (!isAdmin || !over || active.id === over.id || sidebarOrderAbortRef.current) return
+    const oldIndex = items.findIndex(item => item.id === active.id)
+    const newIndex = items.findIndex(item => item.id === over.id)
+    if (oldIndex < 0 || newIndex < 0) return
+    const previous = items
+    const next = arrayMove(items, oldIndex, newIndex)
+    const controller = new AbortController()
+    sidebarOrderAbortRef.current = controller
+    setItems(next)
+    try {
+      const response = await fetch('/api/admin-settings/sidebar-order', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal, body: JSON.stringify({ order: next.map(item => item.id) }),
+      })
+      if (controller.signal.aborted) return
+      if (!response.ok) throw new Error('Sortierung konnte nicht gespeichert werden.')
+      toast({ title: 'Reihenfolge gespeichert', duration: 3000 })
+    } catch {
+      if (controller.signal.aborted) return
+      setItems(previous)
+      toast({ title: 'Reihenfolge nicht gespeichert', description: 'Die bisherige Sortierung wurde wiederhergestellt. Bitte erneut versuchen.', variant: 'destructive' })
+    } finally {
+      if (sidebarOrderAbortRef.current === controller) sidebarOrderAbortRef.current = null
     }
-
-    return (
-      <div ref={setNodeRef} style={style} className="relative">
-        <div
-          className={cn(
-            'flex items-center gap-2 py-1.5 px-2 rounded-lg transition-colors border border-border group cursor-pointer',
-            item.id === activeItemId
-              ? 'bg-gray-200/50 dark:bg-gray-800/40 border-l-4 border-gray-200 dark:border-gray-400 border-l-gray-400 dark:border-l-gray-400'
-              : 'hover:bg-gray-200/50 dark:hover:bg-gray-800/30'
-          )}
-        >
-          {/* Drag-Handle – nur für Admin */}
-          {isAdmin && (
-            <div
-              {...attributes}
-              {...listeners}
-              className="w-5 h-5 flex items-center justify-center cursor-grab active:cursor-grabbing flex-shrink-0"
-            >
-              <GripVertical className="h-4 w-4 text-base" />
-            </div>
-          )}
-
-          {/* Klickbarer Bereich */}
-          <Link
-            href={item.href}
-            prefetch={false}
-            className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
-            aria-current={item.id === activeItemId ? 'page' : undefined}
-          >
-            <div
-              className={`w-9 h-9 border bg-gradient-to-br ${item.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden`}
-            >
-              {item.icon}
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate">{item.title}</p>
-              <p className="text-xs text-muted-foreground">{item.subtitle}</p>
-            </div>
-          </Link>
-
-          {/* 3-Dots Menü – nur Admin */}
-          {isAdmin && !STATIC_SIDEBAR_ITEM_IDS.has(item.id) && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                  aria-label="Aktionen"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-
-              {item.id.startsWith('page:') ? (
-                <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem className="gap-2" onSelect={() => openEditPageDialog(item.id.replace('page:', ''))}>
-                    <Pencil className="h-4 w-4" />
-                    Bearbeiten
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="gap-2 text-destructive focus:text-destructive"
-                    onSelect={() => setDeletingPageId(item.id.replace('page:', ''))}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Seite löschen
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              ) : (
-                <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem className="gap-2" onSelect={() => openEditCourseDialog(item.id)}>
-                    <Pencil className="h-4 w-4" />
-                    Bearbeiten
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="gap-2 text-destructive focus:text-destructive"
-                    onSelect={() => setDeleteCourseId(item.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Kurs löschen
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              )}
-            </DropdownMenu>
-          )}
-        </div>
-      </div>
-    )
   }
 
   return (
-    <div
-      className={cn(
-        'w-full lg:w-80 border-r border-border p-4 flex flex-col h-full min-h-0 shadow-lg',
-        isMentorship ? 'bg-gray-100/50' : 'bg-muted/40'
-      )}
-    >
-      <div className="relative mb-1 -mx-4 -mt-4 h-48 overflow-hidden">
-        <Image
-          src={patBanner}
-          alt="PAT Mentorship 2026 Banner"
-          fill
-          className="object-cover"
-          sizes="320px"
-          quality={70}
-          placeholder="blur"
-          priority
-        />
-        <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-white to-transparent opacity-80" />
-        <div className="absolute inset-x-0 bottom-0 pb-2 flex justify-center">
-          <div className="inline-block px-6 py-2 mx-auto rounded-lg border border-white/30 bg-white/60 supports-[backdrop-filter]:bg-white/20 backdrop-blur-md">
-            <h2 className="text-xl font-bold text-white drop-shadow-md">PAT MENTORSHIP</h2>
-          </div>
-        </div>
-      </div>
+    <aside className="m-sidebar m-admin-sidebar" onPointerDownCapture={captureAdminControl} onKeyDownCapture={captureAdminControl}
+      id={onNavigate ? undefined : 'mentorship-desktop-navigation'}
+      aria-label="Mentorship-Verwaltung" aria-hidden={hidden || undefined}
+      ref={element => { if (element) element.inert = hidden }}>
+      <Link href="/mentorship" prefetch={false} className="m-nav-link m-nav-home" onClick={onNavigate}
+        aria-current={pathname === '/mentorship' ? 'page' : undefined}>
+        <House aria-hidden="true" /><span>Übersicht</span>
+      </Link>
 
       <Dialog
         open={isCourseModalOpen}
@@ -833,7 +793,7 @@ export function SidebarAdmin({
           setIsCourseModalOpen(true)
         }}
       >
-        <DialogContent className="mentorship-typography sm:max-w-lg">
+        <DialogContent closeLabel="Schließen" container={portalContainer} data-theme={theme} onCloseAutoFocus={restoreAdminFocus} className="mentorship-typography m-admin-dialog sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {courseModalMode === 'create' ? 'Neuen Kurs anlegen' : 'Kurs bearbeiten'}
@@ -990,212 +950,37 @@ export function SidebarAdmin({
         </DialogContent>
       </Dialog>
 
-      <div className="flex-1 min-h-0 mt-1 overflow-y-auto">
-        <Accordion type="single" collapsible defaultValue="mentorship">
-          <AccordionItem value="mentorship">
-            <AccordionTrigger className="text-gray-400 font-medium py-3 px-4 hover:text-black rounded-lg transition-colors [&&]:hover:no-underline justify-between">
-              <span className="mentorship-ui-heading">PAT Mentorship 2026</span>
-
-              {/* Plus-Button – nur für Admin */}
-              {isAdmin && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <div
-                      className="h-5 w-5 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-200 cursor-pointer transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                      title="Neues Element anlegen"
-                    >
-                      <Plus className="h-4 w-4 text-gray-500 hover:text-foreground" />
-                    </div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenuItem onSelect={() => openCreateCourseDialog()}>
-                      📚 Kurs erstellen
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => openCreatePageDialog()}>
-                      📄 Seite erstellen
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </AccordionTrigger>
-
-            <AccordionContent className="px-1">
-              <div className="space-y-1.5 pt-3">
-                {isAdmin ? (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <SortableContext
-                      items={items.map((i) => i.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {items.map((item) => (
-                        <SortableItem key={item.id} item={item} />
-                      ))}
-                    </SortableContext>
-                  </DndContext>
-                ) : (
-                  items.map((item) => (
-                    <Link
-                      key={item.id}
-                      href={item.href}
-                      prefetch={false}
-                      className="block"
-                      aria-current={item.id === activeItemId ? 'page' : undefined}
-                    >
-                      <div
-                        className={cn(
-                          'flex items-center space-x-3 py-1.5 px-2 rounded-lg transition-colors cursor-pointer border border-border',
-                          item.id === activeItemId
-                            ? 'bg-gray-200/50 dark:bg-gray-800/40 border-l-4 border-gray-200 dark:border-gray-700 border-l-gray-400 dark:border-l-gray-400'
-                            : 'hover:bg-gray-200/50 dark:hover:bg-gray-800/30'
-                        )}
-                      >
-                        <div
-                          className={`w-9 h-9 border bg-gradient-to-br ${item.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden`}
-                        >
-                          {item.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="mentorship-ui-heading font-medium text-sm truncate">{item.title}</p>
-                          <p className="text-xs text-muted-foreground">{item.subtitle}</p>
-                        </div>
-                      </div>
-                    </Link>
-                  ))
-                )}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </div>
-
-      {isMentorship ? (
-        <div className="mt-0 border-t rounded-t-xl bg-gray-100 border-gray-300 -mx-4 px-4 pb-2">
-          {/* Desktop: Aktionen immer sichtbar */}
-          <div className="hidden lg:block pt-2">
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="w-full px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
-            >
-              <Link href="/mentorship" prefetch={false}>
-                <span className="flex items-center justify-center shrink-0 w-8">
-                  <SquareKanban className="!h-5 !w-5" />
-                </span>
-                <span>Dashboard</span>
-              </Link>
+      <div className="m-admin-nav-heading">
+        <p className="m-nav-label">Inhalte verwalten</p>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="m-admin-menu" aria-label="Inhalt anlegen">
+              <Plus aria-hidden="true" className="h-4 w-4" />
             </Button>
-
-            <ManageSubscriptionButton
-              variant="ghost"
-              size="sm"
-              label="Mitgliedschaft verwalten"
-              iconWrapperClassName="w-8"
-              iconClassName="!h-5 !w-5"
-              className="px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
-            />
-
-            <div className="mt-3 flex items-center gap-3">
-              <UserButton
-                afterSignOutUrl="/"
-                appearance={{
-                  elements: {
-                    avatarBox: 'w-8 h-8',
-                  },
-                }}
-              />
-
-              <div className="min-w-0">
-                <p className="text-sm font-medium leading-tight truncate">
-                  {isLoaded ? displayName : '...'}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">{isLoaded ? email : ''}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile: User immer sichtbar, Aktionen einklappbar */}
-          <div className="lg:hidden pt-2">
-            <div
-              className={cn(
-                'grid transition-[grid-template-rows,opacity] duration-200 ease-out',
-                mobileFooterOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-              )}
-              aria-hidden={!mobileFooterOpen}
-            >
-              <div
-                className={cn(
-                  'overflow-hidden space-y-1',
-                  !mobileFooterOpen ? 'pointer-events-none' : ''
-                )}
-              >
-                <Button
-                  asChild
-                  variant="ghost"
-                  size="sm"
-                  className="w-full px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
-                >
-                  <Link href="/mentorship" prefetch={false}>
-                    <span className="flex items-center justify-center shrink-0 w-8">
-                      <SquareKanban className="!h-5 !w-5" />
-                    </span>
-                    <span>Dashboard</span>
-                  </Link>
-                </Button>
-
-                <ManageSubscriptionButton
-                  variant="ghost"
-                  size="sm"
-                  label="Mitgliedschaft verwalten"
-                  iconWrapperClassName="w-8"
-                  iconClassName="!h-5 !w-5"
-                  className="px-0 justify-start gap-3 text-xs text-gray-900 hover:bg-gray-200"
-                />
-              </div>
-            </div>
-
-            <div className="mt-3 flex items-center gap-3">
-              <UserButton
-                afterSignOutUrl="/"
-                appearance={{
-                  elements: {
-                    avatarBox: 'w-8 h-8',
-                  },
-                }}
-              />
-
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium leading-tight truncate">
-                  {isLoaded ? displayName : '...'}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">{isLoaded ? email : ''}</p>
-              </div>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
-                aria-label={mobileFooterOpen ? 'Aktionen einklappen' : 'Aktionen anzeigen'}
-                aria-expanded={mobileFooterOpen}
-                onClick={() => setMobileFooterOpen((v) => !v)}
-              >
-                <ChevronDown
-                  className={cn(
-                    'h-5 w-5 transition-transform duration-200',
-                    mobileFooterOpen ? 'rotate-0' : 'rotate-180'
-                  )}
-                />
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent container={portalContainer} data-theme={theme} align="end" className="mentorship-portal m-admin-popover">
+            <DropdownMenuItem onSelect={openCreateCourseDialog}><BookOpen className="mr-2 h-4 w-4" />Kurs erstellen</DropdownMenuItem>
+            <DropdownMenuItem onSelect={openCreatePageDialog}><FileText className="mr-2 h-4 w-4" />Seite erstellen</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <nav className="m-admin-nav-scroll" aria-label="Kurse und Seiten">
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={items.map(item => item.id)} strategy={verticalListSortingStrategy}>
+            {items.map(item => (
+              <SortableItem key={item.id} item={item} activeItemId={activeItemId} isAdmin={isAdmin}
+                onNavigate={onNavigate} onEditPage={openEditPageDialog} onEditCourse={openEditCourseDialog}
+                onDeletePage={setDeletingPageId} onDeleteCourse={setDeleteCourseId} />
+            ))}
+          </SortableContext>
+        </DndContext>
+      </nav>
+      <div className="m-sidebar-footer">
+        <Link href="/owner" prefetch={false} className="m-account-link" onClick={onNavigate}>
+          <Gear aria-hidden="true" /><span>Verwaltung</span>
+        </Link>
+        <ManageSubscriptionButton variant="ghost" label="Mitgliedschaft" className="m-account-link" />
+      </div>
 
       <AlertDialog
         open={deleteCourseId !== null}
@@ -1203,7 +988,7 @@ export function SidebarAdmin({
           if (!open) setDeleteCourseId(null)
         }}
       >
-        <AlertDialogContent className="mentorship-typography">
+        <AlertDialogContent container={portalContainer} data-theme={theme} onCloseAutoFocus={restoreAdminFocus} className="mentorship-typography m-admin-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle>Kurs löschen?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1234,7 +1019,7 @@ export function SidebarAdmin({
         open={deletingPageId !== null}
         onOpenChange={(open) => { if (!open) setDeletingPageId(null) }}
       >
-        <AlertDialogContent className="mentorship-typography">
+        <AlertDialogContent container={portalContainer} data-theme={theme} onCloseAutoFocus={restoreAdminFocus} className="mentorship-typography m-admin-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle>Seite löschen?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1407,6 +1192,6 @@ export function SidebarAdmin({
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </aside>
   )
 }

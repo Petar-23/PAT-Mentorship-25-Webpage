@@ -1,6 +1,7 @@
 "use client"
 
 import { List, X } from '@/components/mentorship/icons'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { useRef, type PointerEvent } from 'react'
 import { useMentorshipMobileNavigation, useMentorshipTheme } from "@/components/mentorship/shell"
@@ -8,6 +9,8 @@ import { SidebarUser } from "@/components/sidebar-user"
 
 import { Button } from "@/components/ui/button"
 import { SlideOver, SlideOverContent, SlideOverTrigger } from "@/components/ui/slide-over"
+
+const SidebarAdmin = dynamic(() => import('./sidebar-admin').then(module => module.SidebarAdmin), { ssr: false })
 
 type Kurs = {
   id: string
@@ -32,6 +35,7 @@ type Props = {
   pages?: Page[]
   savedSidebarOrder?: string[] | null
   activeCourseId?: string | null
+  isAdmin?: boolean
 }
 
 export function MobileCoursesDrawer({
@@ -39,6 +43,7 @@ export function MobileCoursesDrawer({
   pages = [],
   savedSidebarOrder,
   activeCourseId,
+  isAdmin = false,
 }: Props) {
   const { open, setOpen, container } = useMentorshipMobileNavigation()
   const theme = useMentorshipTheme()
@@ -46,6 +51,7 @@ export function MobileCoursesDrawer({
   const suppressSwipeClick = useRef(false)
 
   function startSwipe(event: PointerEvent<HTMLDivElement>) {
+    if ((event.target as HTMLElement).closest('.m-admin-drag')) return
     suppressSwipeClick.current = false
     swipe.current = event.isPrimary && event.button === 0
       ? { pointerId: event.pointerId, x: event.clientX, y: event.clientY, horizontal: false }
@@ -99,13 +105,11 @@ export function MobileCoursesDrawer({
         }}
         className={`mentorship-portal m-drawer ${theme === 'dark' ? 'dark' : ''}`}>
           <div className="m-drawer-header"><span><Image src="/images/hero/PAT-logo.png" alt="" width={32} height={32} />Mentorship</span><button type="button" className="m-icon-button" aria-label="Menü schließen" title="Menü schließen" onClick={() => setOpen(false)}><X aria-hidden="true" /></button></div>
-          <SidebarUser
-            kurse={kurse}
-            pages={pages.filter((page) => page.published)}
-            savedSidebarOrder={savedSidebarOrder}
-            activeCourseId={activeCourseId}
-            onNavigate={() => setOpen(false)}
-          />
+          {isAdmin ? <SidebarAdmin kurse={kurse} pages={pages} savedSidebarOrder={savedSidebarOrder}
+            activeCourseId={activeCourseId} isAdmin onNavigate={() => setOpen(false)} /> : (
+            <SidebarUser kurse={kurse} pages={pages.filter(page => page.published)}
+              savedSidebarOrder={savedSidebarOrder} activeCourseId={activeCourseId} onNavigate={() => setOpen(false)} />
+          )}
       </SlideOverContent>
     </SlideOver>
   )

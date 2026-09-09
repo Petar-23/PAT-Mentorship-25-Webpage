@@ -3,6 +3,10 @@
 'use client'
 
 import { ArrowLeft, ArrowRight, Check, FastForward, FileText, Pause, Play, Rewind, Trash as Trash2 } from '@/components/mentorship/icons'
+import { useMentorshipMobileNavigation, useMentorshipTheme } from '@/components/mentorship/shell'
+import { Pencil } from '@phosphor-icons/react/Pencil'
+import { DotsThree } from '@phosphor-icons/react/DotsThree'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Script from 'next/script'
@@ -96,6 +100,8 @@ export function VideoPlayer({
   nextVideoDisabled = false,
   autoPlay = false,
 }: Props) {
+  const { container: portalContainer } = useMentorshipMobileNavigation()
+  const theme = useMentorshipTheme()
   const { toast } = useToast()
   const VideoHeading = onBack ? 'h1' : 'h2'
   const isDocumentLesson = !isAdmin && !activeVideo?.bunnyGuid?.trim() && Boolean(activeVideo?.pdfUrl?.trim())
@@ -567,8 +573,6 @@ export function VideoPlayer({
     if (!sicher) return
 
     try {
-      onVideoDelete?.(activeVideo.id)
-
       toast({
         title: 'Lösche Video...',
         description: 'Einen Moment bitte.',
@@ -579,6 +583,7 @@ export function VideoPlayer({
       })
 
       if (res.ok) {
+        onVideoDelete?.(activeVideo.id)
         toast({
           title: 'Video gelöscht',
           description: `"${activeVideo.title}" wurde erfolgreich entfernt.`,
@@ -617,7 +622,7 @@ export function VideoPlayer({
           title: 'PDF entfernt',
           description: 'Die PDF wurde erfolgreich entfernt.',
         })
-      }
+      } else { throw new Error('PDF konnte nicht entfernt werden.') }
     } catch {
       toast({
         variant: 'destructive',
@@ -631,10 +636,9 @@ export function VideoPlayer({
   const getPdfFilename = (url: string | null) => {
     if (!url) return 'PDF-Datei.pdf'
     try {
-      const path = new URL(url).pathname
+      const path = new URL(url, 'https://www.price-action-trader.de').pathname
       const filename = decodeURIComponent(path.split('/').pop() || 'PDF-Datei.pdf')
-      // Entferne videoId-Präfix (z. B. "abc123-10 - Einstiege.pdf" → "10 - Einstiege.pdf")
-      return filename.replace(/^[a-z0-9-]+\-/, '')
+      return filename
     } catch {
       return 'PDF-Datei.pdf'
     }
@@ -676,6 +680,7 @@ export function VideoPlayer({
               <div className="flex items-center space-x-4 w-full">
               <input
                 type="text"
+                aria-label="Lektionstitel"
                 value={tempTitle}
                 onChange={(e) => setTempTitle(e.target.value)}
                 className="text-2xl sm:text-3xl font-bold bg-transparent border-b-2 border-primary focus:outline-none w-full"
@@ -684,9 +689,8 @@ export function VideoPlayer({
                   if (e.key === 'Enter') saveEdit()
                   if (e.key === 'Escape') cancelEdit()
                 }}
-                onBlur={saveEdit}
               />
-              <Button size="icon" variant="outline" onClick={saveEdit}>
+              <Button size="icon" variant="outline" aria-label="Lektionstitel speichern" onClick={saveEdit}>
                 <Check className="h-5 w-5 text-green-500" />
               </Button>
               </div>
@@ -934,7 +938,9 @@ export function VideoPlayer({
               {/* Upload Button */}
               {isAdmin && activeVideo && (
                 <PdfUploadZone
+                  key={activeVideo.id}
                   videoId={activeVideo.id}
+                  currentPdfUrl={activeVideo.pdfUrl}
                   onUploadSuccess={(pdfUrl) => onVideoUpdate({ ...activeVideo, pdfUrl })}
                 />
               )}
@@ -955,7 +961,8 @@ export function VideoPlayer({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 rounded-full"
+                      className="m-admin-menu"
+                      aria-label="PDF entfernen"
                       onClick={handlePdfDelete}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -967,10 +974,17 @@ export function VideoPlayer({
 
             {/* Rechts: Admin = Delete Video, User = "Als angesehen markieren" */}
             {isAdmin && activeVideo ? (
-              <Button variant="destructive" onClick={handleVideoDelete} className="w-full sm:w-auto">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete video
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="m-lesson-manage"><DotsThree className="mr-2 h-4 w-4" />Lektion verwalten</Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent container={portalContainer} data-theme={theme} className="mentorship-portal m-admin-popover" align="end">
+                  <DropdownMenuItem onSelect={startEdit}><Pencil className="mr-2 h-4 w-4" />Umbenennen</DropdownMenuItem>
+                  <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={handleVideoDelete}>
+                    <Trash2 className="mr-2 h-4 w-4" />Lektion löschen
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : !isAdmin && activeVideo ? (
               <div className="m-lesson-buttons">
                 <Button

@@ -54,51 +54,50 @@ test('validatePdfFile accepts PDFs and rejects files without a PDF signature', (
   }
 })
 
-test('uploadPdf sends authenticated multipart data and returns the lesson PDF URL', async () => {
+test('uploadPdf sends authenticated JSON metadata, uploads the full PDF directly, and attaches it only after completion', async () => {
   const dir = makeTempDir()
-  const pdfPath = writePdf(dir, 'NDOG & NWOG Slides.pdf')
-  let requestData = null
+  const pdfPath = writePdf(dir, 'NYPM - Protokoll.pdf')
+  fs.truncateSync(pdfPath, 5_739_687)
+  const requests = []
+  const pathname = 'pdfs/video_123/test.pdf'
+  let uploadedBytes = null
 
   const server = http.createServer(async (req, res) => {
     const chunks = []
     for await (const chunk of req) chunks.push(chunk)
-    requestData = {
-      method: req.method,
-      url: req.url,
-      authorization: req.headers.authorization,
-      contentType: req.headers['content-type'],
-      body: Buffer.concat(chunks),
-    }
+    const body = Buffer.concat(chunks)
+    requests.push({ method: req.method, url: req.url, authorization: req.headers.authorization, contentType: req.headers['content-type'], body: JSON.parse(body), bytes: body.length })
     res.writeHead(200, { 'content-type': 'application/json' })
-    res.end(JSON.stringify({ pdfUrl: 'https://example.test/pdfs/video_123/slides.pdf' }))
+    res.end(JSON.stringify(requests.length === 1
+      ? { pathname, token: 'scoped-client-token', filename: 'NYPM - Protokoll.pdf', expectedPdfUrl: '/previous.pdf' }
+      : { pdfUrl: '/api/download/pdf/video_123/NYPM.pdf' }))
   })
-
   server.listen(0, '127.0.0.1')
   await once(server, 'listening')
-
   try {
-    const address = server.address()
-    assert.ok(address && typeof address === 'object')
-    const result = await uploadPdf(
-      `http://127.0.0.1:${address.port}`,
-      'agent-test-token',
-      pdfPath,
-      'video_123'
-    )
-
-    assert.equal(result.videoId, 'video_123')
-    assert.equal(result.filename, 'NDOG & NWOG Slides.pdf')
-    assert.equal(result.pdfUrl, 'https://example.test/pdfs/video_123/slides.pdf')
-    assert.equal(requestData.method, 'POST')
-    assert.equal(requestData.url, '/api/upload/pdf')
-    assert.equal(requestData.authorization, 'Bearer agent-test-token')
-    assert.match(requestData.contentType, /^multipart\/form-data; boundary=/)
-
-    const body = requestData.body.toString('utf8')
-    assert.match(body, /name="videoId"/)
-    assert.match(body, /video_123/)
-    assert.match(body, /filename="NDOG & NWOG Slides\.pdf"/)
-    assert.match(body, /%PDF-1\.4/)
+    const result = await uploadPdf(`http://127.0.0.1:${server.address().port}`, 'agent-test-token', pdfPath, 'video_123', async (path, file, options) => {
+      assert.equal(path, pathname)
+      assert.equal(options.access, 'private')
+      assert.equal(options.multipart, true)
+      assert.equal(options.token, 'scoped-client-token')
+      assert.equal(requests.length, 1)
+      uploadedBytes = Buffer.from(await file.arrayBuffer())
+    })
+    assert.equal(result.filename, 'NYPM - Protokoll.pdf')
+    assert.equal(result.pdfUrl, '/api/download/pdf/video_123/NYPM.pdf')
+    assert.equal(requests.length, 2)
+    for (const request of requests) {
+      assert.equal(request.method, 'POST')
+      assert.equal(request.url, '/api/upload/pdf')
+      assert.equal(request.authorization, 'Bearer agent-test-token')
+      assert.equal(request.contentType, 'application/json')
+      assert.ok(request.bytes < 1024)
+    }
+    assert.equal(requests[0].body.action, 'prepare')
+    assert.equal(requests[0].body.size, 5_739_687)
+    assert.equal(requests[1].body.action, 'complete')
+    assert.equal(requests[1].body.expectedPdfUrl, '/previous.pdf')
+    assert.deepEqual(uploadedBytes, fs.readFileSync(pdfPath))
   } finally {
     server.close()
     await once(server, 'close')

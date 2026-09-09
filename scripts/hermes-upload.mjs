@@ -7,6 +7,7 @@ import path from 'path'
 import process from 'process'
 import { pathToFileURL } from 'url'
 import * as tus from 'tus-js-client'
+import { put } from '@vercel/blob/client'
 
 const DEFAULT_BASE_URL = 'https://www.price-action-trader.de'
 const MAX_PDF_BYTES = 25 * 1024 * 1024
@@ -163,36 +164,36 @@ export function validatePdfFile(filePath) {
   return { filePath: resolvedPath, stats }
 }
 
-export async function uploadPdf(baseUrl, token, pdfPath, videoId) {
-  const { filePath } = validatePdfFile(pdfPath)
-  const formData = new FormData()
-  formData.append('videoId', String(videoId))
-  formData.append(
-    'pdf',
-    new Blob([fs.readFileSync(filePath)], { type: 'application/pdf' }),
-    path.basename(filePath)
-  )
+export async function uploadPdf(baseUrl, token, pdfPath, videoId, putBlob = put) {
+  const { filePath, stats } = validatePdfFile(pdfPath)
+  const filename = path.basename(filePath)
+  const endpoint = `${baseUrl.replace(/\/$/, '')}/api/upload/pdf`
 
-  const res = await fetch(`${baseUrl.replace(/\/$/, '')}/api/upload/pdf`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-    body: formData,
+  async function metadata(payload) {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    const data = await response.json().catch(() => null)
+    if (!response.ok) throw new Error(`PDF upload failed (${response.status}): ${data?.error || 'Unexpected server response'}`)
+    return data
+  }
+
+  const prepared = await metadata({ action: 'prepare', videoId: String(videoId), filename, size: stats.size })
+  if (!prepared?.pathname || !prepared?.token || !prepared?.filename ||
+    (prepared.expectedPdfUrl !== null && typeof prepared.expectedPdfUrl !== 'string')) {
+    throw new Error('PDF upload preparation returned incomplete metadata')
+  }
+  await putBlob(prepared.pathname, new Blob([fs.readFileSync(filePath)], { type: 'application/pdf' }), {
+    access: 'private', token: prepared.token, contentType: 'application/pdf', multipart: true,
   })
-  const text = await res.text()
-  let data = null
-  try {
-    data = text ? JSON.parse(text) : null
-  } catch {
-    data = null
-  }
-  if (!res.ok) {
-    throw new Error(`PDF upload failed (${res.status}): ${text}`)
-  }
-  if (!data?.pdfUrl) {
-    throw new Error(`PDF upload returned no pdfUrl: ${text}`)
-  }
-
-  return { videoId, filename: path.basename(filePath), pdfUrl: data.pdfUrl }
+  const saved = await metadata({
+    action: 'complete', videoId: String(videoId), pathname: prepared.pathname,
+    filename: prepared.filename, expectedPdfUrl: prepared.expectedPdfUrl,
+  })
+  if (!saved?.pdfUrl) throw new Error('PDF upload returned no pdfUrl')
+  return { videoId, filename, pdfUrl: saved.pdfUrl }
 }
 
 async function postJson(baseUrl, token, payload) {

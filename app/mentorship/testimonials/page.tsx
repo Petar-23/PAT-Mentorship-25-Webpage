@@ -56,8 +56,8 @@ export default async function MentorshipTestimonialsPage() {
   ]
 
   return (
-    <div className="flex h-full min-h-0 bg-background">
-      <div className={isAdmin ? "hidden lg:block" : "hidden xl:block"}>
+    <div className="m-workspace">
+      <div className="m-desktop-sidebar hidden xl:block">
         <Sidebar
           kurse={kurseForSidebar}
           pages={pagesForSidebar}

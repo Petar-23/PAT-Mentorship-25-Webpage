@@ -62,11 +62,11 @@ export function MentorshipShell({ children, headerNavigation, headerStatus, init
         <div className="m-app-frame">
         <header className="m-topbar">
           <div className="m-topbar-leading">
-            {!isAdmin ? <button type="button" className="m-icon-button m-sidebar-toggle"
+            <button type="button" className="m-icon-button m-sidebar-toggle"
               aria-label={navigationOpen ? 'Navigation ausblenden' : 'Navigation einblenden'}
               title={navigationOpen ? 'Navigation ausblenden' : 'Navigation einblenden'}
               aria-expanded={navigationOpen} aria-controls="mentorship-desktop-navigation"
-              onClick={() => setNavigationOpen(open => !open)}><SidebarSimple /></button> : null}
+              onClick={() => setNavigationOpen(open => !open)}><SidebarSimple /></button>
             <div className="m-header-menu">{headerNavigation}</div>
             <Link href="/mentorship" className="m-brand" aria-label="PAT Mentorship – Übersicht">
               <Image src="/images/hero/PAT-logo.png" alt="" width={32} height={32} className="m-brand-logo" sizes="32px" />
