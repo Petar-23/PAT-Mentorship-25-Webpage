@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Upload } from '@phosphor-icons/react/Upload'
-import { useToast } from '@/hooks/use-toast'
+import { ActionFeedbackIcon } from '@/components/mentorship/action-feedback-icon'
 import { uploadLessonPdf } from '@/lib/pdf-upload-client'
 
 type Props = {
@@ -13,13 +13,14 @@ type Props = {
 }
 
 export function PdfUploadZone({ videoId, currentPdfUrl = null, onUploadSuccess }: Props) {
-  const { toast } = useToast()
   const inputRef = useRef<HTMLInputElement>(null)
   const uploadAbortRef = useRef<AbortController | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [stage, setStage] = useState<'idle' | 'preparing' | 'uploading' | 'saving'>('idle')
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState<{ videoId: string; pdfUrl: string; filename: string } | null>(null)
+  const confirmed = saved?.videoId === videoId && saved.pdfUrl === currentPdfUrl ? saved : null
   const busy = stage !== 'idle'
 
   useEffect(() => () => { uploadAbortRef.current?.abort() }, [videoId])
@@ -29,6 +30,7 @@ export function PdfUploadZone({ videoId, currentPdfUrl = null, onUploadSuccess }
     const controller = new AbortController()
     uploadAbortRef.current = controller
     setFile(selectedFile)
+    setSaved(null)
     setError(null)
     setProgress(0)
     setStage('preparing')
@@ -40,7 +42,7 @@ export function PdfUploadZone({ videoId, currentPdfUrl = null, onUploadSuccess }
       if (controller.signal.aborted) return
       onUploadSuccess(pdfUrl)
       setFile(null)
-      toast({ title: 'PDF gespeichert', description: `${selectedFile.name} ist der Lektion zugeordnet.` })
+      setSaved({ videoId, pdfUrl, filename: selectedFile.name })
     } catch (cause) {
       if (controller.signal.aborted) return
       setError(cause instanceof Error ? cause.message : 'Der Upload ist fehlgeschlagen. Bitte erneut versuchen.')
@@ -68,7 +70,7 @@ export function PdfUploadZone({ videoId, currentPdfUrl = null, onUploadSuccess }
         }} />
       <div className="m-pdf-controls">
         <Button type="button" variant="outline" disabled={busy} onClick={() => inputRef.current?.click()}>
-          <Upload aria-hidden="true" className="mr-2 h-4 w-4" />
+          {busy ? <ActionFeedbackIcon state="pending" /> : <Upload aria-hidden="true" className="h-4 w-4" />}
           {currentPdfUrl ? 'PDF ersetzen' : 'PDF hinzufügen'}
         </Button>
         {busy && stage !== 'saving' ? (
@@ -77,6 +79,9 @@ export function PdfUploadZone({ videoId, currentPdfUrl = null, onUploadSuccess }
           <Button type="button" variant="ghost" onClick={() => void startUpload(file)}>Erneut versuchen</Button>
         ) : null}
       </div>
+      <p className="m-action-feedback" role="status">
+        {confirmed ? <><ActionFeedbackIcon state="success" /><span>{confirmed.filename} gespeichert.</span></> : null}
+      </p>
       {file ? <p className="m-pdf-filename">{file.name} <span>· {(file.size / (1024 * 1024)).toLocaleString('de-DE', { maximumFractionDigits: 1 })} MB</span></p> : null}
       {busy ? (
         <div className="m-pdf-progress" role="status" aria-live="polite">

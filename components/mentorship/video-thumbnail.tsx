@@ -79,7 +79,7 @@ export function VideoThumbnail({
   const showRetryHint = status === 'fallback' && attempt < THUMBNAIL_RETRY_DELAYS_MS.length
 
   return (
-    <div className="relative w-24 h-14 flex-shrink-0 cursor-pointer overflow-hidden rounded-md bg-gray-200">
+    <div className="m-loading-thumbnail relative w-24 h-14 flex-shrink-0 cursor-pointer overflow-hidden rounded-md bg-gray-200" data-image-state={showImage ? status : 'idle'}>
       {isProcessing ? (
         <div className="w-full h-full flex items-center justify-center">
           <div className="relative w-6 h-6">
