@@ -2,6 +2,7 @@
 
 'use client'
 
+import * as Accordion from '@radix-ui/react-accordion'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { ArrowLeft } from '@phosphor-icons/react/ArrowLeft'
@@ -628,16 +629,6 @@ export function MiddleSidebar({
     return formatDuration(seconds)
   }
   
-  const toggleChapter = (chapterId: string) => {
-    setOpenChaptersState((prev) => {
-      const base = prev.key === openChaptersKey ? prev.chapters : defaultOpenChapters
-      const newSet = new Set(base)
-      if (newSet.has(chapterId)) newSet.delete(chapterId)
-      else newSet.add(chapterId)
-      return { key: openChaptersKey, chapters: newSet }
-    })
-  }
-
   const handleVideoDragEnd = (event: DragEndEvent, chapterId: string) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
@@ -671,11 +662,14 @@ export function MiddleSidebar({
         <p className="m-admin-outline-meta">{sortedChapters.reduce((sum, chapter) => sum + chapter.videos.length, 0)} Lektionen</p>
       </div>
       <ScrollArea className="m-outline-scroll flex-1 min-h-0">
+        <Accordion.Root type="multiple"
+          value={sortedChapters.filter(chapter => openChapters.has(chapter.id) || editingChapterId === chapter.id).map(chapter => chapter.id)}
+          onValueChange={chapters => setOpenChaptersState({ key: openChaptersKey, chapters: new Set(chapters) })}>
         {sortedChapters.map((chapter, index) => {
           const isOpen = openChapters.has(chapter.id) || editingChapterId === chapter.id
           const sortedVideos = [...chapter.videos].sort((a, b) => (a.order || 0) - (b.order || 0))
           return (
-            <section className="m-chapter" key={chapter.id}>
+            <Accordion.Item asChild value={chapter.id} key={chapter.id}><section className="m-chapter">
               <div className="m-admin-chapter-heading">
                 {editingChapterId === chapter.id ? (
                   <div className="m-admin-chapter-edit">
@@ -690,11 +684,13 @@ export function MiddleSidebar({
                   </div>
                 ) : (
                   <>
+                    <Accordion.Header className="m-admin-chapter-trigger"><Accordion.Trigger asChild>
                     <button type="button" className="m-chapter-toggle" aria-expanded={isOpen}
-                      aria-controls={`admin-chapter-${chapter.id}`} onClick={() => toggleChapter(chapter.id)}>
+                      aria-controls={`admin-chapter-${chapter.id}`}>
                       <ChevronRight aria-hidden="true" /><span className="m-chapter-name">{chapter.name}</span>
                       <small>{sortedVideos.length}</small>
                     </button>
+                    </Accordion.Trigger></Accordion.Header>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="m-admin-menu" disabled={pendingAction !== null} aria-label={`Aktionen für Kapitel ${chapter.name}`}><DotsThree /></Button>
@@ -714,7 +710,8 @@ export function MiddleSidebar({
                   </>
                 )}
               </div>
-              <div id={`admin-chapter-${chapter.id}`} hidden={!isOpen} className="m-chapter-lessons">
+              <Accordion.Content id={`admin-chapter-${chapter.id}`} className="m-chapter-reveal">
+              <div className="m-chapter-lessons">
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={event => handleVideoDragEnd(event, chapter.id)}>
                   <SortableContext items={sortedVideos.map(video => `video-${video.id}`)} strategy={verticalListSortingStrategy}>
                     {sortedVideos.map(video => (
@@ -729,9 +726,11 @@ export function MiddleSidebar({
                   <Plus className="mr-2 h-4 w-4" />{pendingAction === 'add-lesson' ? 'Lektion wird angelegt …' : 'Lektion hinzufügen'}
                 </Button>
               </div>
-            </section>
+              </Accordion.Content>
+            </section></Accordion.Item>
           )
         })}
+        </Accordion.Root>
         <Button variant="outline" className="m-admin-add m-admin-add-chapter" disabled={pendingAction !== null} onClick={() => void runAction('add-chapter', onAddChapter)}>
           <Plus className="mr-2 h-4 w-4" />{pendingAction === 'add-chapter' ? 'Kapitel wird angelegt …' : 'Kapitel hinzufügen'}
         </Button>

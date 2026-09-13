@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { Button } from '@/components/ui/button'
+import { ActionFeedbackIcon } from '@/components/mentorship/action-feedback-icon'
 import { MAX_SHOW_NOTES_LENGTH, normalizeShowNotes } from '@/lib/video-show-notes'
 
 type Props = {
@@ -140,7 +141,7 @@ export function LessonShowNotes({ videoId, showNotes, isAdmin, onSaved }: Props)
       {isAdmin && editing ? (
         <div className="m-show-notes-editor" aria-busy={saving}>
           <p id={`${id}-hint`} className="m-show-notes-hint">Füge deine Zusammenfassung ein. Überschriften mit ##, Listen mit - und **fette Stellen** werden formatiert. Nach dem Speichern sind die Shownotes für Mitglieder sichtbar.</p>
-          <div className="m-show-notes-toolbar" role="group" aria-label="Ansicht der Shownotes">
+          <div className="m-show-notes-toolbar m-notes-tabs" data-preview={preview} role="group" aria-label="Ansicht der Shownotes">
             <Button type="button" variant={preview ? 'ghost' : 'secondary'} aria-pressed={!preview} onClick={() => setPreview(false)}>Text bearbeiten</Button>
             <Button type="button" variant={preview ? 'secondary' : 'ghost'} aria-pressed={preview} onClick={() => setPreview(true)}>Vorschau</Button>
           </div>
@@ -186,12 +187,12 @@ export function LessonShowNotes({ videoId, showNotes, isAdmin, onSaved }: Props)
             </div>
           ) : null}
           <div className="m-show-notes-toolbar">
-            {!conflict ? <Button type="button" disabled={saving} onClick={() => void save()}>{saving ? 'Wird gespeichert…' : 'Shownotes speichern'}</Button> : null}
+            {!conflict ? <Button type="button" disabled={saving} onClick={() => void save()}>{saving ? <><ActionFeedbackIcon state="pending" />Wird gespeichert…</> : 'Shownotes speichern'}</Button> : null}
             <Button type="button" variant="outline" disabled={saving} onClick={() => { closeEditor(); setStatus('Bearbeitung verworfen.') }}>Abbrechen</Button>
           </div>
         </div>
       ) : showNotes ? <NotesBody text={showNotes} /> : null}
-      <p className="m-show-notes-hint" role="status">{status}</p>
+      <p className="m-show-notes-hint m-action-feedback" role="status">{status === 'Shownotes gespeichert.' ? <ActionFeedbackIcon state="success" /> : null}{status}</p>
     </section>
   )
 }

@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Progress } from '@/components/ui/progress'
 import { formatLearningDuration } from '@/lib/mentorship-learning'
 import { mentorshipModuleArtwork } from '@/lib/mentorship-module-artwork'
-import type { CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 
 type Props = {
   modul: {
@@ -29,6 +29,8 @@ type Props = {
 export function ModuleCardUser({ modul, progress = null, artwork = 'structure', entranceOrder = 0 }: Props) {
   const href = `/mentorship/modul/${modul.id}`
   const imageUrl = mentorshipModuleArtwork[modul.id] || modul.imageUrl || `/images/mentorship/market-${artwork}.webp`
+  const [imageState, setImageState] = useState<{ src: string; status: 'loaded' | 'error' } | null>(null)
+  const imageStatus = imageState?.src === imageUrl ? imageState.status : 'loading'
   const completed = Boolean(progress && progress.totalLessons > 0 && progress.completedLessons === progress.totalLessons)
 
   return (
@@ -38,8 +40,10 @@ export function ModuleCardUser({ modul, progress = null, artwork = 'structure', 
       className="m-module-card"
       style={{ '--m-card-delay': `${Math.min(entranceOrder, 5) * 40}ms` } as CSSProperties}
     >
-      <div className="m-module-cover">
-        <Image src={imageUrl} alt="" fill sizes="(max-width: 639px) 100vw, (max-width: 1279px) 50vw, 33vw" />
+      <div className="m-module-cover" data-image-state={imageStatus}>
+        <Image src={imageUrl} alt="" fill sizes="(max-width: 639px) 100vw, (max-width: 1279px) 50vw, 33vw"
+          onLoad={() => setImageState({ src: imageUrl, status: 'loaded' })}
+          onError={() => setImageState({ src: imageUrl, status: 'error' })} />
       </div>
       <div className="m-module-content">
         <div className="m-module-meta"><span>{modul.chaptersCount} Kapitel</span>{formatLearningDuration(modul.totalDurationSeconds) ? <span>{formatLearningDuration(modul.totalDurationSeconds)}</span> : null}</div>
