@@ -42,14 +42,13 @@ export async function getMentorshipDashboardData(
   courses: SidebarKurs[],
   savedOrder: string[] | null,
 ): Promise<{ courses: CourseLearningProgress[]; continueLearning: LearningTarget | null; newContent: NewLearningContent[] }> {
+  if (!courses.length) return { courses: [], continueLearning: null, newContent: [] }
+
   const courseIds = courses.map(course => course.id)
-  const [chapters, totals, watched, lastOpened, recent] = await withPrismaRetry(() => Promise.all([
+  const [chapters, watched, lastOpened, recent] = await withPrismaRetry(() => Promise.all([
     prisma.chapter.findMany({
       where: { module: { playlistId: { in: courseIds } } },
-      select: { id: true, module: { select: { playlistId: true } } },
-    }),
-    prisma.video.groupBy({
-      by: ['chapterId'], where: { chapter: { module: { playlistId: { in: courseIds } } } }, _count: { _all: true },
+      select: { module: { select: { playlistId: true } }, _count: { select: { videos: true } } },
     }),
     userId ? prisma.videoProgress.findMany({
       where: { userId, watched: true, video: { chapter: { module: { playlistId: { in: courseIds } } } } },
@@ -73,11 +72,10 @@ export async function getMentorshipDashboardData(
     }),
   ]), { label: 'Load mentorship learning overview' })
 
-  const courseByChapter = new Map(chapters.map(chapter => [chapter.id, chapter.module.playlistId]))
   const totalByCourse = new Map<string, number>()
-  for (const row of totals) {
-    const courseId = courseByChapter.get(row.chapterId)
-    if (courseId) totalByCourse.set(courseId, (totalByCourse.get(courseId) ?? 0) + row._count._all)
+  for (const chapter of chapters) {
+    const courseId = chapter.module.playlistId
+    totalByCourse.set(courseId, (totalByCourse.get(courseId) ?? 0) + chapter._count.videos)
   }
   const completedByCourse = new Map<string, number>()
   for (const row of watched) {

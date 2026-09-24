@@ -21,7 +21,7 @@ npm run measure:mentorship
 - `typecheck` führt TypeScript ohne Ausgabe aus.
 - `test` bündelt die Node-Tests für Lernfortsetzung und Fortschritt, Veröffentlichungsbereitschaft, Discord-Zielprüfung, Idempotenz und Uploads. Der Upload-Test benötigt einen temporären lokalen HTTP-Port.
 - `build` prüft den Produktions-Build einschließlich TypeScript. Ein frischer Build lädt die bestehende Sora-Schrift von Google Fonts. Mit Platzhalterzugängen kann er abschließen, obwohl datenabhängige Vorschauen fehlen; das belegt keine funktionsfähige Dienstanbindung.
-- `measure:mentorship` liest den letzten Produktions-Build und gibt die pro Mentorship-Route referenzierten JavaScript-Dateien als Byte- und gzip-Summen aus. Für einen Vergleich müssen beide Stände mit denselben Abhängigkeiten gebaut sein. Das misst Dateigrößen, keine Ladezeiten.
+- `measure:mentorship` liest den letzten Produktions-Build und gibt die für Startseite und Mentorship-Routen referenzierten JavaScript-Dateien als Byte- und gzip-Summen aus, zusätzlich die auf der Startseite vorgeladenen Schriftdateien. Für einen Vergleich müssen beide Stände mit denselben Abhängigkeiten gebaut sein. Das misst Dateigrößen, keine Ladezeiten.
 
 Für UI-Änderungen zusätzlich die tatsächlichen Abläufe in beiden Darstellungen prüfen: Navigation, Suche und Rücksetzen, Abschluss und Fehler beim Speichern, Unterlagen, nächste Lektion sowie Tastaturfokus. Aktueller Prüfstand: [PR-Verifikation vom 6. September 2026](docs/MENTORSHIP_PR_VERIFICATION_2026-09-06.md).
 
