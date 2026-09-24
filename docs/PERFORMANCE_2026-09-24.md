@@ -85,7 +85,8 @@ Drei reine HTTP-GETs pro Route vom lokalen Rechner; dies misst TTFB, nicht LCP, 
 - `npm run build`: erfolgreich mit Platzhalterzugängen; erwartete Meldungen über die absichtlich unerreichbare Platzhalterdatenbank und fehlenden Stripe-Schlüssel. Keine Migrationen ausgeführt. Der Build ist kein Nachweis funktionierender Anbieteranbindungen.
 - `git diff --check`: bestanden; keine Änderungen an Abhängigkeiten oder Lockfile.
 - Live-Browser: öffentliche Startseite und Weiterleitung von `/mentorship` zur Anmeldung bestätigt. Keine angemeldete Testsitzung vorhanden.
-- Lokaler Browser: der Produktionsserver startet, aber der Browser blockiert dessen URL mit `ERR_BLOCKED_BY_CLIENT`. Daher kein bestandener visueller oder responsiver Nachher-Test. Desktop-/Mobil-Layout, echter Anmeldeabschluss und Tastaturbedienung bleiben offen.
+- Lokaler App-Browser: Der erste Aufruf scheiterte mit `ERR_BLOCKED_BY_CLIENT`; das Serverlog meldete den fehlenden Clerk-Testschlüssel. Mit einem bewusst ungültigen Testschlüssel kam ebenfalls keine nutzbare App-Verbindung zustande (Timeout). Das ist keine funktionierende Auth-Testumgebung.
+- Als getrennte Darstellungsprüfung wurde ausschließlich das öffentliche, gebaute Startseiten-HTML mit seinen Assets statisch bereitgestellt, ohne private Routen oder API. Desktop bei 1.265 Pixel Inhaltsbreite und mobile Vorschau bei 390 Pixel Viewport / 375 Pixel Inhaltsbreite visuell geprüft: kein horizontaler Überlauf, Einstiegslink sichtbar und mobil 343 × 40 Pixel groß. Der Link ließ sich per Tastatur fokussieren; das Ziel blieb `/sign-in?redirect_url=%2Fdashboard`. Die statische Vorschau prüft weder den Anmeldeabschluss noch den privaten Mitgliederbereich und liefert keine realistischen Ladezeitmessungen. Beide lokalen Prüfserver wurden anschließend beendet.
 
 ## Vor einem Release
 
