@@ -28,6 +28,8 @@ const geistMono = localFont({
   src: './fonts/GeistMonoVF.woff',
   variable: '--font-geist-mono',
   display: 'swap',
+  // Only fetch this face when a page actually renders monospaced text.
+  preload: false,
 })
 
 const sora = Sora({ 

@@ -5,6 +5,7 @@ import { SignInButton, useUser } from '@clerk/nextjs'
 import { ArrowRight } from '@phosphor-icons/react/ArrowRight'
 import { SpinnerGap } from '@phosphor-icons/react/SpinnerGap'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { trackConversion } from '@/components/analytics/tracking'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -68,9 +69,12 @@ export function MentorshipEntryCta({
 
   if (!isLoaded) {
     return (
-      <Button disabled size={size} variant={variant} className={buttonClassName}>
-        <span>{label}</span>
-        <ArrowRight aria-hidden="true" className="h-4 w-4" />
+      <Button asChild size={size} variant={variant} className={buttonClassName}>
+        {/* A real link works before hydration/Clerk finishes; the modal enhances it later. */}
+        <Link href="/sign-in?redirect_url=%2Fdashboard" prefetch={false}>
+          <span>{label}</span>
+          <ArrowRight aria-hidden="true" className="h-4 w-4" />
+        </Link>
       </Button>
     )
   }
