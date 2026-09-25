@@ -85,6 +85,8 @@ type DashboardMemberClientProps = {
   notice?: DashboardNotice
   viewFlags: {
     showCheckoutSuccess: boolean
+    /** Gast-Checkout über /willkommen: Erfolgsansicht ohne erneutes purchase-Event. */
+    showWelcome?: boolean
     showCoursesPaywall: boolean
   }
 }
@@ -95,7 +97,7 @@ export default function DashboardMemberClient({
   viewFlags,
 }: DashboardMemberClientProps) {
   const router = useRouter()
-  const { showCheckoutSuccess, showCoursesPaywall } = viewFlags
+  const { showCheckoutSuccess, showWelcome = false, showCoursesPaywall } = viewFlags
   const hasPaymentDue = notice === 'payment-due'
   const mentorshipStatus = initialData.mentorshipStatus
   const mentorshipStartDate = formatMentorshipDate(initialData.mentorshipStatus.startDate)
@@ -110,7 +112,7 @@ export default function DashboardMemberClient({
   const hasMentorshipAccess =
     initialData.hasSubscription && mentorshipStatus?.accessible
   const [showSuccessModal, setShowSuccessModal] = useState(
-    () => showCheckoutSuccess && initialData.hasSubscription
+    () => (showCheckoutSuccess || showWelcome) && initialData.hasSubscription
   )
   const hasTrackedPurchase = useRef(false)
 

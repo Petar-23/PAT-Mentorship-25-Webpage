@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowClockwise } from '@phosphor-icons/react/ArrowClockwise'
 import { BookOpen } from '@phosphor-icons/react/BookOpen'
@@ -11,6 +12,7 @@ import { LockIcon } from '@phosphor-icons/react/Lock'
 import { SpinnerGap } from '@phosphor-icons/react/SpinnerGap'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { checkoutEntryHref, useGuestCheckout } from '@/components/checkout/checkout-mode'
 import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
 
 const CheckoutButton = dynamic(
@@ -62,6 +64,7 @@ export default function DashboardConversionClient({
     showMentorshipNotStarted,
   } = viewFlags
   const router = useRouter()
+  const guestCheckout = useGuestCheckout()
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [confirmationChecks, setConfirmationChecks] = useState(0)
   const [showCanceledNotice, setShowCanceledNotice] = useState(showCheckoutCanceled)
@@ -278,36 +281,47 @@ export default function DashboardConversionClient({
             </div>
 
             <div id="checkout-cta" className="space-y-5 scroll-mt-6">
-              <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <input
-                  type="checkbox"
-                  id="terms"
-                  checked={termsAccepted}
-                  onChange={(event) => setTermsAccepted(event.target.checked)}
-                  className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded border-gray-300 text-blue-600 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-                />
-                <div className="text-sm leading-relaxed text-gray-700">
-                  <label htmlFor="terms" className="cursor-pointer">
-                    Ich akzeptiere die folgenden Bedingungen:
-                  </label>{' '}
-                  <a href="/AGB" target="_blank" rel="noopener noreferrer" className="text-blue-700 underline underline-offset-2 hover:text-blue-900">
-                    AGB
-                  </a>
-                  ,{' '}
-                  <a href="/Widerruf" target="_blank" rel="noopener noreferrer" className="text-blue-700 underline underline-offset-2 hover:text-blue-900">
-                    Widerrufsbelehrung
-                  </a>{' '}und{' '}
-                  <a href="/datenschutz" target="_blank" rel="noopener noreferrer" className="text-blue-700 underline underline-offset-2 hover:text-blue-900">
-                    Datenschutzerklärung
-                  </a>.
-                </div>
-              </div>
+              {guestCheckout ? (
+                // Gast-Checkout: Konditionen und Sofortstart-Zustimmung stehen auf /checkout.
+                <Button asChild size="lg" className="w-full touch-manipulation py-6 text-base sm:text-lg">
+                  <Link href={checkoutEntryHref('dashboard')} prefetch={false}>
+                    Weiter zur Buchung
+                  </Link>
+                </Button>
+              ) : (
+                <>
+                  <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <input
+                      type="checkbox"
+                      id="terms"
+                      checked={termsAccepted}
+                      onChange={(event) => setTermsAccepted(event.target.checked)}
+                      className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded border-gray-300 text-blue-600 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                    />
+                    <div className="text-sm leading-relaxed text-gray-700">
+                      <label htmlFor="terms" className="cursor-pointer">
+                        Ich akzeptiere die folgenden Bedingungen:
+                      </label>{' '}
+                      <a href="/AGB" target="_blank" rel="noopener noreferrer" className="text-blue-700 underline underline-offset-2 hover:text-blue-900">
+                        AGB
+                      </a>
+                      ,{' '}
+                      <a href="/Widerruf" target="_blank" rel="noopener noreferrer" className="text-blue-700 underline underline-offset-2 hover:text-blue-900">
+                        Widerrufsbelehrung
+                      </a>{' '}und{' '}
+                      <a href="/datenschutz" target="_blank" rel="noopener noreferrer" className="text-blue-700 underline underline-offset-2 hover:text-blue-900">
+                        Datenschutzerklärung
+                      </a>.
+                    </div>
+                  </div>
 
-              <CheckoutButton
-                disabled={!termsAccepted}
-                disabledReason="Bitte akzeptiere zuerst AGB, Widerruf und Datenschutz."
-                label={`Weiter zu Stripe – ${MENTORSHIP_CONFIG.priceFormatted}/Monat`}
-              />
+                  <CheckoutButton
+                    disabled={!termsAccepted}
+                    disabledReason="Bitte akzeptiere zuerst AGB, Widerruf und Datenschutz."
+                    label={`Weiter zu Stripe – ${MENTORSHIP_CONFIG.priceFormatted}/Monat`}
+                  />
+                </>
+              )}
 
               <div className="text-center text-sm text-gray-500">
                 <p className="flex items-center justify-center gap-2">

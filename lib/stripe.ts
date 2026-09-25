@@ -611,6 +611,50 @@ export async function createCustomerPortalSession(userId: string, userEmail?: st
   }
 }
 
+/**
+ * Mentorship-Customer eines Kontos (metadata.userId, bei mehreren der neueste) oder ein neuer Customer.
+ * Setzt außerdem die Rechnungseinstellungen am Customer leer (siehe Kommentar unten).
+ * Genutzt vom alten Kontoweg (createCheckoutSession) und vom angemeldeten Kauf über /api/checkout/start.
+ */
+export async function getOrCreateMentorshipCustomer(
+  userId: string,
+  userEmail: string,
+  context = 'createCheckoutSession'
+): Promise<Stripe.Customer> {
+  let customer: Stripe.Customer
+
+  const existingCustomers = await stripe.customers.search({
+    query: `metadata['userId']:'${userId}'`,
+  })
+  warnOnProductScopedUserIdMatch(existingCustomers.data, context)
+
+  if (existingCustomers.data.length > 0) {
+    // Falls es (durch Tests) mehrere Customers gibt, nehmen wir den neuesten.
+    customer = [...existingCustomers.data].sort((a, b) => b.created - a.created)[0]
+  } else {
+    customer = await stripe.customers.create({
+      email: userEmail,
+      metadata: {
+        userId: userId,
+      },
+    })
+  }
+
+  // Safety (wichtig für ordnungsgemäße Rechnungen):
+  // Wir setzen die Customer-Invoice-Settings explizit leer, damit keine alten/globalen Stripe-Defaults
+  // (z.B. §19 UStG / Platzhalter-USt-ID) in neu erzeugten Rechnungen landen.
+  // Das ist besonders wichtig, weil Stripe bei Subscription-Erstellung sofort eine Invoice erzeugen kann
+  // (auch bei Trial/0€), und dann ist es zu spät.
+  await stripe.customers.update(customer.id, {
+    invoice_settings: {
+      footer: '',
+      custom_fields: [],
+    },
+  })
+
+  return customer
+}
+
 export async function createCheckoutSession(userId: string, userEmail: string) {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL
@@ -620,36 +664,7 @@ export async function createCheckoutSession(userId: string, userEmail: string) {
     }
 
     // Create or get customer
-    let customer: Stripe.Customer
-    
-    const existingCustomers = await stripe.customers.search({
-      query: `metadata['userId']:'${userId}'`,
-    })
-    warnOnProductScopedUserIdMatch(existingCustomers.data, 'createCheckoutSession')
-
-    if (existingCustomers.data.length > 0) {
-      // Falls es (durch Tests) mehrere Customers gibt, nehmen wir den neuesten.
-      customer = [...existingCustomers.data].sort((a, b) => b.created - a.created)[0]
-    } else {
-      customer = await stripe.customers.create({
-        email: userEmail,
-        metadata: {
-          userId: userId,
-        },
-      })
-    }
-
-    // Safety (wichtig für ordnungsgemäße Rechnungen):
-    // Wir setzen die Customer-Invoice-Settings explizit leer, damit keine alten/globalen Stripe-Defaults
-    // (z.B. §19 UStG / Platzhalter-USt-ID) in neu erzeugten Rechnungen landen.
-    // Das ist besonders wichtig, weil Stripe bei Subscription-Erstellung sofort eine Invoice erzeugen kann
-    // (auch bei Trial/0€), und dann ist es zu spät.
-    await stripe.customers.update(customer.id, {
-      invoice_settings: {
-        footer: '',
-        custom_fields: [],
-      },
-    })
+    const customer = await getOrCreateMentorshipCustomer(userId, userEmail)
 
     // M26 launch: 01.03.2026. Pre-launch signups get a short free trial until
     // 48h from now (Stripe minimum). After launch, no trial — charge immediately.

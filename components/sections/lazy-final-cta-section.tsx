@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
+import { CheckoutFlowHint } from '@/components/checkout/checkout-mode'
 
 const FinalCTA = dynamic(() => import('@/components/sections/final-cta'), {
   ssr: false,
@@ -71,9 +72,7 @@ function FinalCtaFallback() {
           <div className="inline-flex h-12 items-center justify-center rounded-md bg-white/90 px-6 text-sm font-medium text-slate-900 sm:h-14 sm:px-8 sm:text-lg">
             Jetzt einsteigen
           </div>
-          <p className="mt-4 sm:mt-6 text-xs sm:text-base text-gray-400">
-            Kostenlos anmelden → Konditionen prüfen → sicher über Stripe buchen
-          </p>
+          <CheckoutFlowHint className="mt-4 sm:mt-6 text-xs sm:text-base text-gray-400" />
         </div>
       </div>
     </section>

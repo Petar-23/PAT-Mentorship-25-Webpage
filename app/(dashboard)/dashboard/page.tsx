@@ -32,10 +32,13 @@ export default async function DashboardPage({
   }
 
   const showCheckoutSuccess = resolvedParams?.success === 'true'
+  // Rücksprung aus dem Gast-Checkout über /willkommen: Freischaltung ist schon geschrieben, das
+  // purchase-Event hat /willkommen gesendet. Hier nur Erfolgsansicht, ohne zweites Tracking.
+  const showWelcome = resolvedParams?.willkommen === '1'
   const showCheckoutCanceled = resolvedParams?.canceled === 'true'
   const showCoursesPaywall = resolvedParams?.paywall === 'courses'
   const showMentorshipNotStarted = resolvedParams?.message === 'mentorship-not-started'
-  const checkForRecentCheckout = showCheckoutSuccess
+  const checkForRecentCheckout = showCheckoutSuccess || showWelcome
   const retryCount = checkForRecentCheckout ? 5 : 3
 
   let email = getEmailFromSessionClaims(sessionClaims)
@@ -153,7 +156,7 @@ export default async function DashboardPage({
         firstName={firstName}
         previousSubscription={previousSubscription}
         viewFlags={{
-          showCheckoutSuccess,
+          showCheckoutSuccess: checkForRecentCheckout,
           showCheckoutCanceled,
           showCoursesPaywall,
           showMentorshipNotStarted,
@@ -171,6 +174,7 @@ export default async function DashboardPage({
       notice={decision.notice}
       viewFlags={{
         showCheckoutSuccess: showCheckoutSuccess && initialData.hasSubscription,
+        showWelcome: showWelcome && initialData.hasSubscription,
         showCoursesPaywall,
       }}
     />

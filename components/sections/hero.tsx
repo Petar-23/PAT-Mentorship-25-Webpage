@@ -13,6 +13,7 @@ import { MentorshipEntryCta } from '@/components/sections/mentorship-entry-cta'
 import { HeroPill } from '@/components/ui/hero-pill'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { getWhopReviewStats } from '@/lib/whop-review-stats'
+import { CheckoutFlowHint } from '@/components/checkout/checkout-mode'
 
 const GLSLHills = dynamic(
   () => import('../ui/glsl-hills').then((mod) => mod.GLSLHills),
@@ -261,9 +262,7 @@ export default function Hero() {
                     </Button>
                   </div>
                 </div>
-                <p className="mt-3 text-center text-xs leading-relaxed text-gray-500 sm:text-sm lg:text-left">
-                  Kostenlos anmelden → Konditionen prüfen → sicher über Stripe buchen
-                </p>
+                <CheckoutFlowHint className="mt-3 text-center text-xs leading-relaxed text-gray-500 sm:text-sm lg:text-left" />
               </div>
 
               <div className="grid grid-cols-3 gap-2 pt-2 text-center lg:flex lg:flex-wrap lg:justify-start lg:gap-6 lg:pt-3 lg:text-left">

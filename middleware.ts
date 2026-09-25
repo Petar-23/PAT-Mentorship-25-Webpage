@@ -3,6 +3,9 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { legalPathRedirect } from '@/lib/legal-path-aliases.mjs'
 
+// Nur diese Bereiche verlangen ein Konto. Bewusst öffentlich bleiben u. a. /checkout, /willkommen
+// (auch /willkommen/anmelden) und /api/checkout/start: Beim Gast-Checkout entsteht das Konto erst
+// nach der Zahlung (lib/checkout-guest.mjs).
 const isAuthRequiredRoute = createRouteMatcher([
   '/dashboard(.*)',
   '/courses(.*)',

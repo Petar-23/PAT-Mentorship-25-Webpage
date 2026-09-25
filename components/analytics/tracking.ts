@@ -63,19 +63,33 @@ export const trackConversion = {
     })
   },
 
-  purchase: (value?: number) => {
+  /**
+   * @param options.transactionId Stripe-Checkout-Session-ID (Gast-Checkout), damit GA und Ads doppelte
+   *   Käufe zusammenführen können. Der alte Kontoweg ruft ohne Optionen auf.
+   */
+  purchase: (value?: number, options: { transactionId?: string; currency?: string } = {}) => {
     const conversionLabel = sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL)
+    const amount = value ?? MENTORSHIP_CONFIG.price
+    const currency = options.currency ?? MENTORSHIP_CONFIG.currency
+    const transaction = options.transactionId
+      ? {
+          transaction_id: options.transactionId,
+          items: [{ item_id: 'pat-mentorship-2026', item_name: MENTORSHIP_CONFIG.programName, price: amount, quantity: 1 }],
+        }
+      : {}
 
     trackEvent('purchase', {
       event_category: 'conversion',
       event_label: 'subscription_started',
-      value: value ?? MENTORSHIP_CONFIG.price,
-      currency: MENTORSHIP_CONFIG.currency,
+      value: amount,
+      currency,
+      ...transaction,
     })
 
     sendGoogleAdsConversion(conversionLabel, {
-      value: value ?? MENTORSHIP_CONFIG.price,
-      currency: MENTORSHIP_CONFIG.currency,
+      value: amount,
+      currency,
+      ...(options.transactionId ? { transaction_id: options.transactionId } : {}),
     })
   },
 }

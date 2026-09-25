@@ -60,3 +60,8 @@ export async function POST(req: Request) {
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+// Gast-Checkout: Freischaltung mit Kontoanlage, Stripe-Aufrufen und Vertragsbestätigung (Mail-Timeout
+// 8 s). Hält /willkommen die Mail-Sperre, wartet der Webhook zusätzlich bis zu 10 s auf dessen Ergebnis
+// (lib/checkout-fulfillment-flow.mjs). Lokal gemessen: bis 11,3 s. Ohne Angabe gilt je nach Projekt-
+// einstellung ein Plattform-Standard, der darunter liegen kann.
+export const maxDuration = 60

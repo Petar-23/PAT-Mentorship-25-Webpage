@@ -24,7 +24,7 @@ export function createLimiters(): Limiters {
   }
 }
 
-function getClientIp(request: Request) {
+export function getClientIp(request: Request) {
   const forwardedFor = request.headers.get('x-forwarded-for')
   if (forwardedFor) return forwardedFor.split(',')[0]?.trim() || 'unknown'
   return request.headers.get('x-real-ip') || 'unknown'
@@ -76,6 +76,17 @@ function tooMany(retryAfterSeconds: number) {
   )
 }
 
+/**
+ * Kommt die Anfrage von der eigenen Website (Origin, ersatzweise Referer)? Außerhalb von Produktion
+ * immer true, damit lokale Tests ohne passende Header funktionieren. Auch für /api/checkout/start.
+ */
+export function isSameOriginRequest(request: Request): boolean {
+  if (process.env.NODE_ENV !== 'production') return true
+  const hosts = trustedHosts(request)
+  const source = hostOf(request.headers.get('origin')) ?? hostOf(request.headers.get('referer'))
+  return Boolean(source && hosts.has(source))
+}
+
 /** Prüft Inhaltstyp und Herkunft. Liefert eine Fehlerantwort oder null. */
 export function guardRequest(request: Request): NextResponse | null {
   const contentType = request.headers.get('content-type') || ''
@@ -83,12 +94,8 @@ export function guardRequest(request: Request): NextResponse | null {
     return NextResponse.json({ error: FALLBACK_ERROR }, { status: 415 })
   }
 
-  if (process.env.NODE_ENV === 'production') {
-    const hosts = trustedHosts(request)
-    const source = hostOf(request.headers.get('origin')) ?? hostOf(request.headers.get('referer'))
-    if (!source || !hosts.has(source)) {
-      return NextResponse.json({ error: FALLBACK_ERROR }, { status: 403 })
-    }
+  if (!isSameOriginRequest(request)) {
+    return NextResponse.json({ error: FALLBACK_ERROR }, { status: 403 })
   }
 
   return null

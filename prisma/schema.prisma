@@ -306,6 +306,35 @@ model ContractDeclaration {
 
 // PayPal-Subscriber (M24-Sonderfall): vom Admin importierte PayPal-Abos.
 // User koennen ihren PayPal-Account ueber die Claim-Seite verknuepfen.
+// Freischaltung nach dem Gast-Checkout (/api/checkout/start → Stripe → /willkommen bzw. Webhook).
+// Eine Zeile je Stripe-Checkout-Session. Die *At-Felder sind Einmal-Marken: Sie werden per bedingtem
+// Update gesetzt, damit Webhook und /willkommen parallel laufen können, ohne doppelt Konten
+// anzulegen, Mails zu senden oder Tickets auszugeben (lib/checkout-fulfillment-flow.mjs).
+model CheckoutFulfillment {
+  id                      String    @id @default(uuid())
+  stripeSessionId         String    @unique
+  flow                    String // guest | account
+  email                   String // aus Stripe, klein geschrieben
+  userId                  String? // Clerk-Nutzer, dem das Abo zugeordnet ist
+  createdNewUser          Boolean   @default(false) // Konto wurde bei dieser Freischaltung neu angelegt
+  stripeCustomerId        String?
+  stripeSubscriptionId    String?
+  nonceHash               String? // Hash der Nonce aus dem Cookie pat_co (nie die Nonce selbst)
+  accountClaimedAt        DateTime? // Sperre für die Kontoanlage (läuft nach 60 s ab)
+  ticketIssuedAt          DateTime? // Einmal-Ticket für die automatische Anmeldung ausgegeben
+  welcomeEmailAttemptAt   DateTime? // letzter Versuch der Vertragsbestätigung (Sperre)
+  welcomeEmailSentAt      DateTime? // Vertragsbestätigung nach § 312f BGB versendet
+  duplicateCheckedAt      DateTime? // Doppel-Abo-Prüfung erledigt
+  paymentFailedNotifiedAt DateTime? // verspätet fehlgeschlagene Zahlung (SEPA) gemeldet
+  purchaseTrackedAt       DateTime? // purchase-Event an den Browser übergeben
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([email])
+  @@index([createdAt])
+}
+
 model PayPalSubscriber {
   id                   String    @id @default(uuid())
   paypalSubscriptionId String    @unique
