@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server'
 import { Sidebar } from '@/components/Sidebar'
 import { prisma } from '@/lib/prisma'
 import { stripe } from '@/lib/stripe'
+import { warnOnProductScopedUserIdMatch } from '@/lib/stripe-customer-scope.mjs'
 import { fetchDiscordGuildMember } from '@/lib/discord'
 import { getIsAdmin } from '@/lib/authz'
 
@@ -34,6 +35,7 @@ async function getConnectedDiscordAccount(userId: string | null): Promise<{
       const customers = await stripe.customers.search({
         query: `metadata['userId']:'${userId}'`,
       })
+      warnOnProductScopedUserIdMatch(customers.data, 'discord page')
       stripeCustomerId = customers.data[0]?.id ?? null
     }
 

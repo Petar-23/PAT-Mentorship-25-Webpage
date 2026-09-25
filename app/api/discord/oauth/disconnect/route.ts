@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
+import { warnOnProductScopedUserIdMatch } from '@/lib/stripe-customer-scope.mjs'
 import { prisma } from '@/lib/prisma'
 import { removeRoleFromGuildMember } from '@/lib/discord'
 
@@ -46,6 +47,7 @@ export async function POST(req: Request) {
       const customers = await stripe.customers.search({
         query: `metadata['userId']:'${userId}'`,
       })
+      warnOnProductScopedUserIdMatch(customers.data, 'discord disconnect')
       stripeCustomerId = customers.data[0]?.id ?? null
     }
 
