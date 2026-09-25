@@ -5,6 +5,10 @@ import Stripe from 'stripe'
 import { prisma, withPrismaRetry } from './prisma'
 import { mentorshipSourceCustomFields } from './pat-source'
 import { RAIDMAP_CONFIG, type RaidMapLang } from './raidmap-config'
+import {
+  selectEmailFallbackCustomer,
+  warnOnProductScopedUserIdMatch,
+} from './stripe-customer-scope.mjs'
 
 declare global {
   var stripeClient: Stripe | undefined
@@ -302,20 +306,19 @@ export async function getSubscriptionSnapshot(
       let customers = await stripe.customers.search({
         query: `metadata['userId']:'${userId}'`,
       })
+      warnOnProductScopedUserIdMatch(customers.data, 'getSubscriptionSnapshot')
 
       // Email-Fallback (M25-Migration): Falls kein Customer per metadata.userId gefunden,
       // versuchen wir es per Email (gleicher Pattern wie in createCustomerPortalSession).
+      // Produktbezogene Customers (Raid Map / Research, USD) werden dabei nie gewählt/verknüpft.
       if (!customers.data.length && email) {
         const emailCustomers = await stripe.customers.search({
           query: `email:'${email}'`,
         })
 
-        const liveEmailCustomers = emailCustomers.data
-          .filter((c) => !('deleted' in c && c.deleted))
-          .sort((a, b) => b.created - a.created)
+        const picked = selectEmailFallbackCustomer(emailCustomers.data)
 
-        if (liveEmailCustomers.length > 0) {
-          const picked = liveEmailCustomers[0]
+        if (picked) {
           // Best-effort: Link the Stripe customer to the app user for future lookups.
           try {
             if (picked.metadata?.userId !== userId) {
@@ -326,7 +329,7 @@ export async function getSubscriptionSnapshot(
           } catch (linkError) {
             console.error('Failed to auto-link Stripe customer via email fallback:', linkError)
           }
-          customers = { ...emailCustomers, data: liveEmailCustomers }
+          customers = { ...emailCustomers, data: [picked] }
         }
       }
 
@@ -493,6 +496,7 @@ export async function createCustomerPortalSession(userId: string, userEmail?: st
       const customers = await stripe.customers.search({
         query: `metadata['userId']:'${userId}'`,
       })
+      warnOnProductScopedUserIdMatch(customers.data, 'createCustomerPortalSession')
 
       const liveCustomers = customers.data.filter((c) => !('deleted' in c && c.deleted))
       if (liveCustomers.length > 0) {
@@ -500,18 +504,16 @@ export async function createCustomerPortalSession(userId: string, userEmail?: st
       }
     }
 
-    // 3) Fallback: search by email (older purchases without metadata.userId)
+    // 3) Fallback: search by email (older purchases without metadata.userId).
+    //    Produktbezogene Customers (Raid Map / Research, USD) werden nie gewählt/verknüpft.
     if (!stripeCustomerId && userEmail) {
       const customers = await stripe.customers.search({
         query: `email:'${userEmail}'`,
       })
 
-      const liveCustomers = customers.data
-        .filter((c) => !('deleted' in c && c.deleted))
-        .sort((a, b) => b.created - a.created)
+      const picked = selectEmailFallbackCustomer(customers.data)
 
-      if (liveCustomers.length > 0) {
-        const picked = liveCustomers[0]
+      if (picked) {
         stripeCustomerId = picked.id
 
         // Best-effort: link the Stripe customer to the app user for future webhook & lookup stability.
@@ -564,6 +566,7 @@ export async function createCheckoutSession(userId: string, userEmail: string) {
     const existingCustomers = await stripe.customers.search({
       query: `metadata['userId']:'${userId}'`,
     })
+    warnOnProductScopedUserIdMatch(existingCustomers.data, 'createCheckoutSession')
 
     if (existingCustomers.data.length > 0) {
       // Falls es (durch Tests) mehrere Customers gibt, nehmen wir den neuesten.

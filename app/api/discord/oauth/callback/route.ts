@@ -5,6 +5,10 @@ import { stripe } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
 import { getEmailFromSessionClaims } from '@/lib/clerk-claims'
 import {
+  selectEmailFallbackCustomer,
+  warnOnProductScopedUserIdMatch,
+} from '@/lib/stripe-customer-scope.mjs'
+import {
   exchangeDiscordCodeForToken,
   fetchDiscordUser,
   addDiscordMemberToGuild,
@@ -61,6 +65,7 @@ async function findStripeCustomer(userId: string, userEmail?: string | null) {
   if (db?.stripeCustomerId) {
     const customer = await stripe.customers.retrieve(db.stripeCustomerId).catch(() => null)
     if (customer && !('deleted' in customer && customer.deleted)) {
+      warnOnProductScopedUserIdMatch([customer], 'discord callback (db mapping)')
       return customer
     }
   }
@@ -69,25 +74,23 @@ async function findStripeCustomer(userId: string, userEmail?: string | null) {
   const byMetadata = await stripe.customers.search({
     query: `metadata['userId']:'${userId}'`,
   })
+  warnOnProductScopedUserIdMatch(byMetadata.data, 'discord callback')
 
   const liveByMetadata = byMetadata.data.filter((c) => !('deleted' in c && c.deleted))
   if (liveByMetadata.length > 0) {
     return [...liveByMetadata].sort((a, b) => b.created - a.created)[0]
   }
 
-  // 3) Fallback: Suche per E-Mail (für ältere Käufe ohne metadata.userId)
+  // 3) Fallback: Suche per E-Mail (für ältere Käufe ohne metadata.userId).
+  //    Produktbezogene Customers (Raid Map / Research, USD) werden nie gewählt/verknüpft.
   if (userEmail) {
     const byEmail = await stripe.customers.search({
       query: `email:'${userEmail}'`,
     })
 
-    const liveByEmail = byEmail.data
-      .filter((c) => !('deleted' in c && c.deleted))
-      .sort((a, b) => b.created - a.created)
+    const picked = selectEmailFallbackCustomer(byEmail.data)
 
-    if (liveByEmail.length > 0) {
-      const picked = liveByEmail[0]
-
+    if (picked) {
       // Best-effort: userId in Stripe-Metadata verlinken
       try {
         if (picked.metadata?.userId !== userId) {
