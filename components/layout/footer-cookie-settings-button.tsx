@@ -2,8 +2,19 @@
 
 import { openCookieSettings } from '@/lib/cookie-consent-client'
 
-/** Öffnet die Cookie-Einstellungen erneut, um die Einwilligung zu ändern oder zu widerrufen (Art. 7 Abs. 3 DSGVO). */
-export function FooterCookieSettingsButton() {
+/**
+ * Öffnet die Cookie-Einstellungen erneut, um die Einwilligung zu ändern oder zu widerrufen (Art. 7 Abs. 3 DSGVO).
+ * variant "text": nur die Beschriftung, Gestaltung kommt vom umgebenden Footer (etwa auf der Landingpage /lp-v3).
+ */
+export function FooterCookieSettingsButton({ variant = 'default', className }: { variant?: 'default' | 'text'; className?: string } = {}) {
+  if (variant === 'text') {
+    return (
+      <button type="button" onClick={openCookieSettings} className={className}>
+        Cookie-Einstellungen
+      </button>
+    )
+  }
+
   return (
     <button
       type="button"
