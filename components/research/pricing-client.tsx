@@ -7,16 +7,13 @@ import { ArrowRight, WarningCircle } from '@/components/mentorship/icons'
 import { useResearchHref } from '@/components/research/base-path'
 import { RESEARCH_CONSENT_TEXT, RESEARCH_TIERS, RESEARCH_TIER_DETAILS, type ResearchInterval, type ResearchTier } from '@/lib/research/config.mjs'
 import {
-  isSafeBillingRedirect,
+  requestResearchCheckout,
   researchCheckoutError,
   researchIntervalLabel,
   researchPlanPrice,
   researchSignInHref,
   splitTermsLink,
 } from '@/lib/research/ui.mjs'
-
-// API routes are NOT base-prefixed: they live at /api/research/* on every host.
-const CHECKOUT_ENDPOINT = '/api/research/checkout'
 
 type Props = {
   signedIn: boolean
@@ -64,6 +61,8 @@ export function ResearchPricingClient({ signedIn, initialTier, initialInterval, 
   const selectedPrice = researchPlanPrice(tier, interval)
   const consentsGiven = acceptTerms && waiveWithdrawal
   const signInHref = researchSignInHref(href, `/pricing?tier=${tier}&interval=${interval}`)
+  // Voller Seitenaufruf (kein Client-Routing), damit neue Einwilligungstexte samt Version geladen werden.
+  const reloadHref = href(`/pricing?tier=${tier}&interval=${interval}`)
 
   async function startCheckout(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -76,24 +75,15 @@ export function ResearchPricingClient({ signedIn, initialTier, initialInterval, 
     setError(null)
 
     try {
-      const response = await fetch(CHECKOUT_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier, interval, acceptTerms: true, waiveWithdrawal: true }),
-        signal: controller.signal,
-      })
-      const data = await response.json().catch(() => null) as { url?: unknown; code?: unknown; message?: unknown } | null
+      // Der Body enthält die Versionen der oben gerenderten Einwilligungstexte (RESEARCH_CONSENT_TEXT).
+      const result = await requestResearchCheckout({ tier, interval, signal: controller.signal })
       if (controller.signal.aborted) return
 
-      if (response.ok && isSafeBillingRedirect(data?.url)) {
-        window.location.assign(data.url)
+      if ('url' in result) {
+        window.location.assign(result.url)
         return
       }
-      setError(response.ok ? researchCheckoutError(null) : researchCheckoutError(data?.code, data?.message))
-      setSubmitting(false)
-    } catch {
-      if (controller.signal.aborted) return
-      setError(researchCheckoutError(null))
+      setError(result.error)
       setSubmitting(false)
     } finally {
       if (abortRef.current === controller) abortRef.current = null
@@ -182,6 +172,13 @@ export function ResearchPricingClient({ signedIn, initialTier, initialInterval, 
                   {error.action === 'sign-in' ? <> <Link href={signInHref} prefetch={false}>Sign in</Link></> : null}
                 </span>
               </p>
+            ) : null}
+            {error?.action === 'reload' ? (
+              <div className="r-submit-row">
+                <button type="button" className="r-button" data-variant="secondary" onClick={() => window.location.assign(reloadHref)}>
+                  Reload page
+                </button>
+              </div>
             ) : null}
           </div>
         </form>

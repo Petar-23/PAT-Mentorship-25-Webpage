@@ -9,6 +9,7 @@ Alle Werte trägst du selbst ein. Claude bekommt keine Secrets zu sehen, und die
 ## 1. Eigene Test-Datenbank
 
 1. Lege eine **neue, leere** Postgres-Datenbank an, z. B. „pat-research-test“: Vercel → Storage → Prisma Postgres → Create, oder in der Prisma-Konsole.
+   - Verwende die **direkte** Postgres-URL (`postgres://…@db.prisma.io:5432/…`), keine Accelerate-URL (`prisma+postgres://…`). Nur bei der direkten URL kann das Prüfskript die Datenbank eindeutig von Production unterscheiden, und auch das Bootstrap-Skript braucht sie.
    - Sie nicht mit einer Umgebung des Projekts verbinden. Sonst würde sie die bestehende Preview-DB aller Branches ersetzen.
    - Nur die Connection-URL kopieren.
 2. Vercel → Project → Settings → Environment Variables → **Add**:
@@ -39,7 +40,7 @@ Alle Werte trägst du selbst ein. Claude bekommt keine Secrets zu sehen, und die
 | `TELEGRAM_BOT_TOKEN` | **leer** (dein interner Alarm-Bot) |
 | `BREVO_API_KEY` | **leer** (bis Phase d; dann mit Sandbox-Modus) |
 | `GITHUB_BLOG_TOKEN`, `AGENT_UPLOAD_TOKEN`, `HERMES_UPLOAD_TOKEN`, `WHOP_API_KEY` | **leer** |
-| `STRIPE_RESEARCH_PRODUCT_ID`, `STRIPE_PRICE_ID_RESEARCH_*` (6×), `STRIPE_RESEARCH_PORTAL_CONFIGURATION_ID` | Ausgabe von `scripts/research-stripe-setup.mjs` (Testmodus) |
+| `STRIPE_RESEARCH_PRODUCT_ID_READER/_MEMBER/_SUPPORTER`, `STRIPE_PRICE_ID_RESEARCH_*` (6×), `STRIPE_RESEARCH_PORTAL_CONFIGURATION_ID_MONTHLY/_ANNUAL/_BASIC` | Ausgabe von `scripts/research-stripe-setup.mjs` (Testmodus, 12 Zeilen) |
 
 Ein leerer Wert als Branch-Override überschreibt den allgemeinen Preview-Wert. Falls Vercel keine leeren Werte annimmt, genügt ein Platzhalter wie `disabled`. Die Prüfung in Abschnitt 4 verlangt dann aber „leer“; sag mir Bescheid, dann passe ich sie an.
 
@@ -51,7 +52,14 @@ Ein leerer Wert als Branch-Override überschreibt den allgemeinen Preview-Wert. 
    STRIPE_SECRET_KEY=sk_test_… node scripts/research-stripe-setup.mjs --apply
    ```
    - Das Skript verweigert Live-Keys.
-   - Es gibt nur IDs aus, die du als Branch-Env-Vars einträgst (Abschnitt 2).
+   - Es legt **drei Produkte** an („PAT Research Reader/Member/Supporter“), jedes mit einem Monats- und einem Jahrespreis (USD, inklusive Steuer).
+     - Grund: Stripe erlaubt im Kundenportal pro Produkt nur einen Preis je Intervall, sonst ließe sich die Stufe dort nicht wechseln.
+   - Außerdem legt es **drei Portal-Konfigurationen** an:
+     - monatlich: Stufenwechsel nur unter den Monatspreisen
+     - jährlich: Stufenwechsel nur unter den Jahrespreisen
+     - basic: ohne Planwechsel
+   - Monat ↔ Jahr ist im Portal bewusst nicht möglich: Stripe würde sofort abbuchen, ohne Gutschrift für die Restlaufzeit.
+   - Es gibt nur IDs aus (12 Zeilen), die du als Branch-Env-Vars einträgst (Abschnitt 2).
    - Alternativ lege ich die Objekte über den Stripe-Connector im Testmodus an, sobald du ihn autorisiert hast.
 2. **Test-Webhook:** Stripe (Testmodus) → Developers → Webhooks → Add endpoint.
    - URL: die stabile Branch-URL des Previews, z. B. `https://<projekt>-git-feat-pat-research-platform-<team>.vercel.app/api/webhooks/stripe`
@@ -75,8 +83,15 @@ Erst wenn am Ende „Ergebnis: Research-Testumgebung ist isoliert.“ steht, dar
 ## 5. Nach dem ersten Preview-Deployment
 
 - Research läuft im Preview im **Pfad-Modus**: `https://<preview-url>/research`.
+  - Dafür muss Vercel `VERCEL_ENV` zur Laufzeit bereitstellen (Standard: „Automatically expose System Environment Variables“).
+  - Falls `/research` im Preview 404 liefert, zusätzlich `RESEARCH_ALLOW_PATH_MODE=1` als Branch-Override setzen.
 - `RESEARCH_PUBLIC_HOST` bleibt im Preview **ungesetzt**. In Production bleibt Research ohne diese Variable komplett aus (Kill-Switch).
 - Anmeldung mit einem Test-Konto der Clerk-Testinstanz. Stripe-Testkarten:
   - `4242 4242 4242 4242` (Erfolg)
   - `4000 0027 6000 3184` (3-D Secure)
   - `4000 0000 0000 0341` (Karte wird gespeichert, spätere Abbuchung scheitert → `past_due`)
+
+## 6. Vor dem Go-live (nicht Teil der Testumgebung)
+
+- [PR #161](https://github.com/Petar-23/PAT-Mentorship-25-Webpage/pull/161) muss auf `main` sein. Nur er verhindert, dass die Mentorship-E-Mail-Suche den USD-Research-Customer aufgreift. Der Research-Branch enthält ihn bereits.
+- Production-Migration, Live-Stripe-Objekte, DNS und `RESEARCH_PUBLIC_HOST` sind eine eigene Freigabe.

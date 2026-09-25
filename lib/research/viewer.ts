@@ -134,6 +134,10 @@ async function loadAccessState(userId: string): Promise<{ state: ResearchAccessS
 }
 
 export const getResearchViewer = cache(async (): Promise<ResearchViewer> => {
+  // Layout und Seiten rendern parallel: Jede Seite, die den Viewer lädt, muss
+  // vor Clerk auth() geprüft haben, dass Research hier ausgeliefert wird und die
+  // Middleware lief (sonst wirft auth() → 500 statt 404). Pro Request gecacht.
+  await getResearchRequestContext()
   const { userId, sessionClaims } = await auth()
   if (!userId) return anonymousViewer()
 

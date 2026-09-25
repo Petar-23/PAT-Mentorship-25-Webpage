@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useIsResearchSurface } from '@/components/research/base-path'
+import { useIsResearchSurface } from '@/components/research/surface'
 
 const GoogleTagManager = dynamic(
   () => import('@/components/analytics/google-tag-manager').then((mod) => mod.GoogleTagManager),

@@ -34,7 +34,10 @@ export const metadata: Metadata = {
 }
 
 export default async function ResearchLayout({ children }: { children: ReactNode }) {
-  const [context, viewer, preferences] = await Promise.all([getResearchRequestContext(), getResearchViewer(), cookies()])
+  // Zuerst (nicht parallel): notFound(), wenn Research hier nicht ausgeliefert
+  // wird oder die Middleware übersprungen wurde; sonst würde Clerk auth() werfen.
+  const context = await getResearchRequestContext()
+  const [viewer, preferences] = await Promise.all([getResearchViewer(), cookies()])
   const theme = preferences.get(RESEARCH_THEME_COOKIE)?.value === 'dark' ? 'dark' : 'light'
   const signedIn = viewer.userId !== null
 

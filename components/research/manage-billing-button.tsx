@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { ArrowUpRight } from '@/components/mentorship/icons'
-import { isSafeBillingRedirect, researchPortalError } from '@/lib/research/ui.mjs'
+import { requestResearchPortal } from '@/lib/research/ui.mjs'
 
-// Research uses its own Stripe customer; the portal route is NOT base-prefixed.
-const PORTAL_ENDPOINT = '/api/research/portal'
+// Research uses its own Stripe customer; requestResearchPortal posts to /api/research/portal (NOT base-prefixed).
 
 export function ManageBillingButton({ label = 'Manage billing', variant = 'primary' }: {
   label?: string
@@ -34,24 +33,14 @@ export function ManageBillingButton({ label = 'Manage billing', variant = 'prima
     setError(null)
 
     try {
-      const response = await fetch(PORTAL_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}',
-        signal: controller.signal,
-      })
-      const data = await response.json().catch(() => null) as { url?: unknown; code?: unknown } | null
+      const result = await requestResearchPortal({ signal: controller.signal })
       if (controller.signal.aborted) return
 
-      if (response.ok && isSafeBillingRedirect(data?.url)) {
-        window.location.assign(data.url)
+      if ('url' in result) {
+        window.location.assign(result.url)
         return
       }
-      setError(researchPortalError(response.status, data?.code))
-      setLoading(false)
-    } catch {
-      if (controller.signal.aborted) return
-      setError(researchPortalError(0, null))
+      setError(result.error)
       setLoading(false)
     } finally {
       if (abortRef.current === controller) abortRef.current = null

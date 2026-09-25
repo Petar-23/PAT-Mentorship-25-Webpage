@@ -34,19 +34,42 @@ function isSet(value) {
   return typeof value === 'string' && value.trim().length > 0
 }
 
+// Prisma Postgres: direkter und gepoolter Host zeigen auf dieselben Datenbanken.
+// Die Datenbank (der Tenant) steckt dort im Benutzernamen, nicht im Pfad — alle
+// Tenants heißen z. B. "postgres". Deshalb Identität = Host + Fingerprint des Tenants.
+const PRISMA_POSTGRES_HOSTS = new Map([
+  ['db.prisma.io', 'db.prisma.io'],
+  ['pooled.db.prisma.io', 'db.prisma.io'],
+])
+
 /**
- * Datenbank-Identität ohne Zugangsdaten: Host, Port und Datenbankname.
+ * Datenbank-Identität ohne Zugangsdaten. Allgemein Host, Port und Datenbankname;
+ * bei Prisma Postgres Host + Fingerprint des Tenants (Benutzername). Accelerate-
+ * URLs (prisma+postgres://…?api_key=…) lassen keinen Rückschluss auf die DB zu
+ * und liefern 'unverifiable'.
  * @param {string | undefined} url
  */
 export function databaseIdentity(url) {
   if (!isSet(url)) return null
   try {
     const parsed = new URL(/** @type {string} */ (url))
+    if (parsed.protocol === 'prisma+postgres:') return 'unverifiable'
+    const host = parsed.hostname.toLowerCase()
+    const prismaHost = PRISMA_POSTGRES_HOSTS.get(host)
+    if (prismaHost) {
+      const tenant = decodeURIComponent(parsed.username)
+      return tenant ? `${prismaHost}/tenant:${fingerprint(tenant)}` : 'unverifiable'
+    }
     const database = parsed.pathname.replace(/^\//, '') || '(default)'
-    return `${parsed.hostname}:${parsed.port || '5432'}/${database}`
+    return `${host}:${parsed.port || '5432'}/${database}`
   } catch {
     return 'unparseable'
   }
+}
+
+/** @param {string | null} identity */
+function isComparableIdentity(identity) {
+  return Boolean(identity) && identity !== 'unparseable' && identity !== 'unverifiable'
 }
 
 // Seiteneffekt-Zugänge, die im Research-Preview leer sein müssen (Branch-
@@ -87,16 +110,24 @@ export function evaluateResearchTestIsolation({ preview, production }) {
   const add = (name, ok, detail) => checks.push({ name, ok, detail })
 
   add('DATABASE_URL gesetzt', isSet(preview.DATABASE_URL), isSet(preview.DATABASE_URL) ? `Ziel ${databaseIdentity(preview.DATABASE_URL)}` : 'fehlt')
+  const previewDirect = preview.DIRECT_URL ?? preview.MIGRATION_DATABASE_URL
+  if (isSet(previewDirect) && isSet(preview.DATABASE_URL)) {
+    const sameTarget = databaseIdentity(previewDirect) === databaseIdentity(preview.DATABASE_URL)
+    add('DIRECT_URL zeigt auf dieselbe Test-DB', sameTarget, sameTarget ? 'ja' : `Abweichung: ${databaseIdentity(previewDirect)}`)
+  }
 
   if (!production) {
     add('Production-Vergleich', false, 'Production-Env-Datei fehlt (--production-env-file); ohne Vergleich ist die Isolation nicht nachgewiesen')
   } else {
     const previewDb = databaseIdentity(preview.DATABASE_URL)
     const productionDb = databaseIdentity(production.DATABASE_URL)
+    const comparable = isComparableIdentity(previewDb) && isComparableIdentity(productionDb)
     add(
       'Datenbank ≠ Production',
-      Boolean(previewDb) && Boolean(productionDb) && previewDb !== productionDb,
-      productionDb ? `Preview ${previewDb ?? '—'} · Production ${productionDb}` : 'Production-DATABASE_URL nicht lesbar',
+      comparable && previewDb !== productionDb,
+      comparable
+        ? `Preview ${previewDb} · Production ${productionDb}`
+        : `nicht vergleichbar (Preview ${previewDb ?? '—'} · Production ${productionDb ?? '—'}); direkte Postgres-URLs verwenden, Accelerate-URLs verraten die Datenbank nicht`,
     )
     for (const name of MUST_DIFFER_FROM_PRODUCTION) {
       if (name === 'DATABASE_URL') continue

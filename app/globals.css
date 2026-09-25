@@ -52,6 +52,11 @@ body {
   body:has([data-hide-root-navbar="true"]) #site-navbar {
     display: none;
   }
+
+  /* ...und statt des deutschen Skip-Links einen eigenen englischen (#research-content). */
+  body:has([data-hide-root-navbar="true"]) a[href="#main-content"] {
+    display: none;
+  }
 }
 
 /* CSS Custom Properties für Glass Button */

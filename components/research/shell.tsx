@@ -72,6 +72,8 @@ export function ResearchShell({ children, sidebar, headerNavigation, initialThem
       <NavigationContext.Provider value={navigationOpen}>
       <MobileNavigationContext.Provider value={{ open: mobileNavigationOpen, setOpen: setMobileNavigationOpen, container: navigationContainer }}>
       <div className={`mentorship-typography m-app research-app ${theme === 'dark' ? 'dark' : ''} ${className}`} data-theme={theme} data-sidebar={navigationOpen ? 'open' : 'closed'} data-mobile-navigation={mobileNavigationOpen ? 'open' : 'closed'}>
+        {/* Replaces the German root skip link, which globals.css hides on research pages. */}
+        <a href="#research-content" className="sr-only focus:not-sr-only r-skip-link">Skip to content</a>
         <div className="m-mobile-navigation-host" ref={setNavigationContainer} />
         <div className="m-app-frame">
         <header className="m-topbar">
@@ -102,7 +104,7 @@ export function ResearchShell({ children, sidebar, headerNavigation, initialThem
         <div className="m-app-content">
           <div className="m-workspace">
             {sidebar ? <div className="m-desktop-sidebar hidden xl:block">{sidebar}</div> : null}
-            <div className="m-page-scroll" id="research-content">{children}</div>
+            <div className="m-page-scroll" id="research-content" tabIndex={-1}>{children}</div>
           </div>
         </div>
         </div>

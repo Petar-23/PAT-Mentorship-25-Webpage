@@ -2,7 +2,11 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { consumeResearchRateLimit } from '@/lib/research/rate-limit'
-import { researchBasePathFromRequest, researchOriginFromRequest } from '@/lib/research/request-context'
+import {
+  isResearchServedForRequest,
+  researchBasePathFromRequest,
+  researchOriginFromRequest,
+} from '@/lib/research/request-context'
 import { isSameOriginRequest, jsonError } from '@/lib/research/request-guards'
 import {
   createResearchPortalSession,
@@ -16,6 +20,12 @@ export const dynamic = 'force-dynamic'
 const PORTAL_RATE_LIMIT = { windowMs: 60 * 60 * 1000, maxAttempts: 20 }
 
 export async function POST(request: Request) {
+  // Zweite Linie hinter der Middleware: Production nur auf dem Research-Host,
+  // Kill-Switch (kein RESEARCH_PUBLIC_HOST) nirgends.
+  if (!isResearchServedForRequest(request)) {
+    return jsonError(404, 'not_found', 'Not found.')
+  }
+
   if (!isSameOriginRequest(request)) {
     return jsonError(403, 'bad_origin', 'This request is not allowed from this origin.')
   }

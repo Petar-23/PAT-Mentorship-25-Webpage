@@ -96,7 +96,9 @@ Suche: Postgres-Volltext (`websearch_to_tsquery('english', …)` über Titel, Su
 
 ## 5. Zahlungen (Raid-Map-Muster)
 
-- **Stripe:** ein Produkt „PAT Research“, drei monatliche USD-Preise (7/10/15). Optional drei Jahrespreise (Frage 2). Price-IDs nur über Env-Vars. Empfehlung: `tax_behavior = inclusive`, damit 7/10/15 für EU-Verbraucher der Endpreis ist (PAngV). Das klärt der Steuerberater (Abschnitt 11).
+- **Stripe:** drei Produkte („PAT Research Reader/Member/Supporter“), je ein Monats- und ein Jahrespreis in USD (7/10/15 bzw. 70/100/150).
+  - Drei statt einem Produkt, weil Stripes Kundenportal pro Produkt nur einen Preis je Intervall erlaubt.
+  - Price- und Produkt-IDs nur über Env-Vars. Empfehlung: `tax_behavior = inclusive`, damit 7/10/15 für EU-Verbraucher der Endpreis ist (PAngV). Das klärt der Steuerberater (Abschnitt 11).
 - **Checkout** `POST /api/research/checkout`:
   1. Clerk-Login ist Pflicht.
   2. Server-seitige Pflichtprüfung von AGB-Annahme und Widerrufsverzicht, die vorher auf unserer Pricing-Seite als Checkboxen abgefragt werden, jeweils protokolliert als `ResearchConsentEvent`.
@@ -106,7 +108,9 @@ Suche: Postgres-Volltext (`websearch_to_tsquery('english', …)` über Titel, Su
 - **Webhook:** im bestehenden Handler je ein `if (metadata.product === 'research')` neben den Raid-Map-Zweigen (subscription created/updated/deleted, checkout completed, invoice paid/failed).
   - Der Zweig holt die Subscription **frisch von Stripe**. Damit spielt die Reihenfolge der Events keine Rolle.
   - Zahlungen meldet er an deinen internen Telegram-Alarm-Bot (`sendCortanaTelegram`). Das ist dessen Zweck; Mitglieder bekommen darüber nie Nachrichten.
-- **Portal** `POST /api/research/portal`: eigene Portal-Konfiguration (`STRIPE_RESEARCH_PORTAL_CONFIGURATION_ID`).
+- **Portal** `POST /api/research/portal`: drei eigene Portal-Konfigurationen, gewählt nach dem Intervall des Abos: monatlich, jährlich oder basic ohne Planwechsel.
+  - Monat ↔ Jahr ist im Portal bewusst gesperrt; Stripe würde sofort ohne Gutschrift abbuchen.
+  - Fehlt die passende Konfiguration, bricht der Aufruf ab. Es gibt nie einen Rückfall auf das Standard-Portal der Mentorship.
   - Wechsel zwischen den drei Preisen mit `proration_behavior: none`: Der neue Preis gilt ab der nächsten Abrechnung. Das ist fair für „pay what you can“, und es entstehen keine Subscription-Schedules, die zusätzliche Sonderfälle bringen würden.
   - Kündigung zum Periodenende, Zahlungsmethode, Rechnungen.
   - Der Webhook bleibt auf der gepinnten API-Version `2024-10-28.acacia` (wie das SDK). Doppelte Events erkennt er an der Event-ID.
@@ -348,9 +352,9 @@ Siehe Routen in Abschnitt 4.
 
 **Env-Vars (nur Namen):**
 - Stripe:
-  - `STRIPE_RESEARCH_PRODUCT_ID`
+  - `STRIPE_RESEARCH_PRODUCT_ID_{READER|MEMBER|SUPPORTER}`
   - `STRIPE_PRICE_ID_RESEARCH_{READER|MEMBER|SUPPORTER}_{MONTHLY|ANNUAL}` (6 Preise)
-  - `STRIPE_RESEARCH_PORTAL_CONFIGURATION_ID`
+  - `STRIPE_RESEARCH_PORTAL_CONFIGURATION_ID_{MONTHLY|ANNUAL|BASIC}`
   - optional `RESEARCH_STRIPE_AUTOMATIC_TAX=0` (nur falls Stripe Tax in einer Testumgebung nicht aktiv ist)
 - Research allgemein:
   - `RESEARCH_PUBLIC_HOST`: Kill-Switch. Ist die Variable in Production nicht gesetzt, ist Research dort komplett aus, auch die APIs.
@@ -401,3 +405,6 @@ Siehe Routen in Abschnitt 4.
 - **Die Migrationshistorie lässt sich nicht auf einer leeren DB abspielen.** Die Tabelle `Page` wurde nie per Migration angelegt; `20260521153000_add_mentorship_performance_indexes` scheitert deshalb auf einer frischen DB.
   - Eine neue Test-DB braucht einen Bootstrap: Schema von `main` einspielen, die bestehenden Migrationen als angewendet markieren, danach laufen die Research-Migrationen normal.
   - Das Skript dafür ist `scripts/research-bootstrap-test-db.mjs`.
+- **Kundenportal:** Stripe erlaubt pro Produkt nur einen Preis je Intervall. Deshalb gibt es drei Produkte (eins je Stufe) und drei Portal-Konfigurationen (monatlich, jährlich, basic). Ein Wechsel Monat ↔ Jahr ist im Portal gesperrt, weil Stripe sonst sofort ohne Gutschrift abbucht.
+- **Einwilligungstexte:** Der Client schickt die Textversion mit, die er angezeigt hat. Ist sie veraltet, antwortet der Server mit 409, und es wird nichts protokolliert. Ein Ledger-Test erzwingt bei jeder Textänderung eine neue Version.
+- **Fund 3:** PR #161 ist in den Research-Branch gemergt. Er muss vor dem Research-Go-live auf `main` sein.

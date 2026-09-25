@@ -1,6 +1,7 @@
 // Checkout für PAT Research (research.price-action-trader.de).
 // Reihenfolge der Prüfungen ist Teil des Vertrags (siehe lib/research/api-routes.test.mjs):
-// Origin → Login → Body/Einwilligungen → Rate-Limit → E-Mail → bestehendes Abo
+// Host (Kill-Switch) → Origin → Login → Body/Einwilligungen inkl. Textversionen
+// → Rate-Limit → E-Mail → bestehendes Abo
 // (Cache) → Einwilligungen protokollieren → Stripe-Checkout (prüft in Stripe
 // erneut auf offene Abos und schließt ältere offene Sessions, siehe
 // createResearchCheckoutSession).
@@ -9,10 +10,14 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getEmailFromSessionClaims } from '@/lib/clerk-claims'
 import { getResearchAccessState } from '@/lib/research/access'
-import { isResearchInterval, isResearchTier } from '@/lib/research/config.mjs'
+import { RESEARCH_CONSENT_VERSIONS, isResearchInterval, isResearchTier } from '@/lib/research/config.mjs'
 import { recordCheckoutConsents, recordResearchConsent } from '@/lib/research/consent'
 import { consumeResearchRateLimit } from '@/lib/research/rate-limit'
-import { researchBasePathFromRequest, researchOriginFromRequest } from '@/lib/research/request-context'
+import {
+  isResearchServedForRequest,
+  researchBasePathFromRequest,
+  researchOriginFromRequest,
+} from '@/lib/research/request-context'
 import { isSameOriginRequest, jsonError } from '@/lib/research/request-guards'
 import {
   createResearchCheckoutSession,
@@ -27,13 +32,21 @@ export const dynamic = 'force-dynamic'
 const MAX_BODY_BYTES = 4096
 const CHECKOUT_RATE_LIMIT = { windowMs: 60 * 60 * 1000, maxAttempts: 10 }
 const CONSENT_FIELDS = new Set<PropertyKey>(['acceptTerms', 'waiveWithdrawal'])
+const CONSENT_VERSION_FIELDS = new Set<PropertyKey>(['termsVersion', 'withdrawalWaiverVersion'])
 
-// Einwilligungen müssen literal `true` sein (nicht "true", nicht 1).
+// Einwilligungen müssen literal `true` sein (nicht "true", nicht 1). Die
+// Textversionen müssen die aktuellen sein: Der Client schickt die Versionen der
+// Texte, die er gerendert hat; eine vor einem Text-Update geladene Seite
+// bekommt 409. Verglichen werden nur Versionen, nicht der Wortlaut: Dass jede
+// Textänderung eine neue Version bekommt, erzwingt der Ledger-Test in
+// lib/research/ui.test.mjs.
 const checkoutBodySchema = z.object({
   tier: z.string().refine(isResearchTier),
   interval: z.string().refine(isResearchInterval),
   acceptTerms: z.literal(true),
   waiveWithdrawal: z.literal(true),
+  termsVersion: z.literal(RESEARCH_CONSENT_VERSIONS.terms),
+  withdrawalWaiverVersion: z.literal(RESEARCH_CONSENT_VERSIONS.withdrawalWaiver),
 })
 
 async function readJsonBody(request: Request): Promise<unknown> {
@@ -56,6 +69,12 @@ async function resolvePrimaryEmail(sessionClaims: unknown): Promise<string | nul
 }
 
 export async function POST(request: Request) {
+  // Zweite Linie hinter der Middleware: Production nur auf dem Research-Host,
+  // Kill-Switch (kein RESEARCH_PUBLIC_HOST) nirgends.
+  if (!isResearchServedForRequest(request)) {
+    return jsonError(404, 'not_found', 'Not found.')
+  }
+
   if (!isSameOriginRequest(request)) {
     return jsonError(403, 'bad_origin', 'This request is not allowed from this origin.')
   }
@@ -75,12 +94,21 @@ export async function POST(request: Request) {
 
     const parsed = checkoutBodySchema.safeParse(body)
     if (!parsed.success) {
-      const onlyConsentMissing = parsed.error.issues.every(
-        (issue) => issue.path.length > 0 && CONSENT_FIELDS.has(issue.path[0])
+      const fields = parsed.error.issues.map((issue) => issue.path[0])
+      const onlyConsentIssues = fields.every(
+        (field) => field !== undefined && (CONSENT_FIELDS.has(field) || CONSENT_VERSION_FIELDS.has(field))
       )
-      return onlyConsentMissing
-        ? jsonError(400, 'consent_required', 'Please accept the Terms of Service and the withdrawal notice to continue.')
-        : jsonError(400, 'invalid_request', 'Invalid request.')
+      if (!onlyConsentIssues) return jsonError(400, 'invalid_request', 'Invalid request.')
+      // Veraltete oder fehlende Version (Seite vor einem Text-Update geladen):
+      // nichts protokollieren, der Client lädt neu und fragt erneut.
+      if (fields.some((field) => CONSENT_VERSION_FIELDS.has(field))) {
+        return jsonError(
+          409,
+          'consent_outdated',
+          'The Terms of Service or the withdrawal notice have been updated. Please reload the page and confirm again.'
+        )
+      }
+      return jsonError(400, 'consent_required', 'Please accept the Terms of Service and the withdrawal notice to continue.')
     }
     const { tier, interval } = parsed.data
 

@@ -1,10 +1,8 @@
 'use client'
 
-import { createContext, useCallback, useContext, useSyncExternalStore, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, type ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import {
-  isResearchBrowserHostname,
-  isResearchPathname,
   logicalResearchPath,
   researchHref,
   type ResearchBasePath,
@@ -49,23 +47,5 @@ export function useResearchLogicalPath(): string {
   return logicalResearchPath(basePath, pathname)
 }
 
-const subscribeToNothing = () => () => {}
-const readIsResearchBrowserHost = () => isResearchBrowserHostname(window.location.hostname)
-const readUnknownOnServer = () => null
-
-/**
- * Für das Root-Chrome außerhalb des Providers (Tracking, Cookie-Banner):
- * true auf Research-Seiten, false auf der Haupt-Seite, null solange unbekannt
- * (Server-Rendering und Hydration auf einem Research-Host ohne /research im Pfad).
- * Wer etwas nur auf der Haupt-Seite rendern will, prüft deshalb `=== false`.
- */
-export function useIsResearchSurface(): boolean | null {
-  const pathname = usePathname()
-  const isResearchBrowserHost = useSyncExternalStore<boolean | null>(
-    subscribeToNothing,
-    readIsResearchBrowserHost,
-    readUnknownOnServer
-  )
-  if (isResearchPathname(pathname)) return true
-  return isResearchBrowserHost
-}
+// Der Root-Chrome-Hook useIsResearchSurface liegt in components/research/surface.tsx
+// (eigenes Mini-Modul, damit das Client-Bundle aller Seiten klein bleibt).

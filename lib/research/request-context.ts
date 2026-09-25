@@ -19,20 +19,27 @@ import {
 
 export type { ResearchBasePath, ResearchRequestContext }
 
+// Setzt clerkMiddleware auf jede Anfrage, die sie verarbeitet hat (auch bei
+// Rewrites auf denselben Origin); Clerk selbst erkennt die Middleware daran
+// (@clerk/backend constants.Headers.AuthStatus). Fehlt er, hat der Matcher die
+// Middleware übersprungen und Clerk `auth()` würde werfen (→ 500).
+const CLERK_AUTH_STATUS_HEADER = 'x-clerk-auth-status'
+
 /**
  * Für Server-Komponenten und Server-Actions (liest `headers()`), pro Request gecacht.
  *
  * Ruft notFound() auf, wenn diese Anfrage kein Research ausliefern darf (Production
- * auf dem Haupt-Host, Kill-Switch). Normalerweise entscheidet das schon die
- * Middleware, ihr Matcher überspringt aber Pfade mit Datei-Endung
- * (/research/x.css, /research/sign-in/a.png), die sonst in den Catch-all-Routen
- * landen. Das Research-Layout sollte diese Funktion deshalb vor allem anderen
- * (insbesondere vor Clerk `auth()`) awaiten.
+ * auf dem Haupt-Host, Kill-Switch) oder nicht durch die Middleware gelaufen ist.
+ * Normalerweise entscheidet das schon die Middleware, ihr Matcher überspringt aber
+ * Pfade mit Datei-Endung (/research/x.css, /research/sign-in/a.png), die sonst in
+ * den Catch-all-Routen landen. Das Research-Layout und getResearchViewer() awaiten
+ * diese Funktion deshalb vor allem anderen (insbesondere vor Clerk `auth()`).
  */
 export const getResearchRequestContext = cache(async (): Promise<ResearchRequestContext> => {
   const headerList = await headers()
   const host = headerList.get('host')
   if (!isResearchServedOnHost(host, process.env)) notFound()
+  if (!headerList.get(CLERK_AUTH_STATUS_HEADER)) notFound()
   return resolveResearchRequestContext({
     host,
     forwardedProto: headerList.get('x-forwarded-proto'),

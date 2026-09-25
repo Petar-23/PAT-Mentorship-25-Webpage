@@ -52,6 +52,9 @@ if (!productionUrl) fail('DATABASE_URL fehlt in der Production-Env-Datei (Vergle
 const targetIdentity = databaseIdentity(targetUrl)
 const productionIdentity = databaseIdentity(productionUrl)
 if (!targetIdentity || targetIdentity === 'unparseable') fail('Ziel-DATABASE_URL ist nicht lesbar.')
+if (targetIdentity === 'unverifiable' || productionIdentity === 'unverifiable' || productionIdentity === 'unparseable') {
+  fail('Datenbank-Identität nicht prüfbar (z. B. Accelerate-URL prisma+postgres://). Bitte die direkten Postgres-URLs verwenden.')
+}
 if (targetIdentity === productionIdentity || targetUrl === productionUrl) {
   fail(`Ziel-DB ist die Production-DB (${targetIdentity}).`)
 }

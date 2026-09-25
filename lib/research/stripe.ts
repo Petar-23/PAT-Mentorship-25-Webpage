@@ -26,8 +26,17 @@ import { stripe } from '@/lib/stripe'
 import { sendCortanaTelegram } from '@/lib/telegram-notify'
 
 // PAT Research — Stripe-Anbindung (Raid-Map-Muster, aber gehärtet):
-// - eigener USD-Customer je User (metadata.researchUserId, NIE metadata.userId,
-//   damit die Mentorship-Suchen ihn nicht aufgreifen und kein Währungsmix entsteht)
+// - eigener USD-Customer je User (metadata.researchUserId, NIE metadata.userId;
+//   Mentorship rechnet in EUR, Stripe verbietet Währungsmix pro Customer).
+//   Das Weglassen von metadata.userId schützt nur vor den metadata['userId']-
+//   Suchen der Mentorship, NICHT vor ihren Email-Fallbacks (gleiche E-Mail!).
+//   Den eigentlichen Schutz liefert lib/stripe-customer-scope.mjs (PR #161):
+//   Customers mit researchUserId werden dort nie ausgewählt (abgesichert durch
+//   lib/research/customer-scope.test.mjs). Research-Go-Live setzt daher voraus,
+//   dass PR #161 auf main ist.
+// - Billing-Portal je Abo-Intervall (monatlich/jährlich/basic), damit im Portal
+//   kein Wechsel Monat <-> Jahr ohne Gutschrift möglich ist; nie Stripes
+//   Default-Konfiguration (die gehört der Mentorship)
 // - Checkout mit Pflicht-Einwilligungen (vorher auf der Pricing-Seite protokolliert)
 // - Cache ResearchSubscription wird immer FRISCH aus Stripe synchronisiert,
 //   damit die Reihenfolge der Webhook-Events keine Rolle spielt
@@ -151,18 +160,27 @@ async function notifyCortana(text: string) {
 // Customer
 // ---------------------------------------------------------------------------
 
-/** Vorhandener Research-Customer des Users (Cache, dann Stripe-Suche) oder null. */
-async function findResearchCustomerId(userId: string): Promise<string | null> {
+/** Gecachter Research-Customer des Users samt Abo-Intervall (oder null). */
+async function readCachedResearchCustomer(userId: string) {
   assertClerkUserId(userId)
-
-  const row = await withPrismaRetry(
+  return withPrismaRetry(
     () =>
       prisma.researchSubscription.findUnique({
         where: { userId },
-        select: { stripeCustomerId: true },
+        select: { stripeCustomerId: true, billingInterval: true },
       }),
     { label: 'Read research customer' }
   )
+}
+
+/** Vorhandener Research-Customer des Users (Cache, dann Stripe-Suche) oder null. */
+async function findResearchCustomerId(
+  userId: string,
+  cached?: { stripeCustomerId: string | null } | null
+): Promise<string | null> {
+  assertClerkUserId(userId)
+
+  const row = cached === undefined ? await readCachedResearchCustomer(userId) : cached
   if (row?.stripeCustomerId) return row.stripeCustomerId
 
   const found = await stripe.customers.search({
@@ -313,6 +331,17 @@ export async function createResearchCheckoutSession(params: {
   return { url: session.url, sessionId: session.id }
 }
 
+/**
+ * Env-Var der Portal-Konfiguration für das gecachte Abo-Intervall: Planwechsel
+ * nur innerhalb desselben Intervalls (Monat <-> Jahr würde ohne Gutschrift
+ * sofort neu abbuchen), unbekanntes Intervall ⇒ 'basic' ohne Planwechsel.
+ */
+function researchPortalConfigurationEnvName(billingInterval: string | null | undefined): string {
+  if (billingInterval === 'month') return RESEARCH_PORTAL_CONFIGURATION_ENV.month
+  if (billingInterval === 'year') return RESEARCH_PORTAL_CONFIGURATION_ENV.year
+  return RESEARCH_PORTAL_CONFIGURATION_ENV.basic
+}
+
 export async function createResearchPortalSession(params: {
   userId: string
   returnUrl: string
@@ -322,15 +351,24 @@ export async function createResearchPortalSession(params: {
   assertAbsoluteHttpUrl(returnUrl, 'return url')
   assertStripeConfigured()
 
-  const customerId = await findResearchCustomerId(userId)
+  const cached = await readCachedResearchCustomer(userId)
+
+  // Fehlt die passende Konfiguration, NIE ohne `configuration` weitermachen:
+  // Stripe nähme dann seine Default-Konfiguration, und das ist die der Mentorship.
+  const configurationEnv = researchPortalConfigurationEnvName(cached?.billingInterval)
+  const configuration = process.env[configurationEnv]?.trim()
+  if (!configuration) {
+    throw new ResearchStripeError('not_configured', `Research portal configuration ${configurationEnv} is not set`)
+  }
+
+  const customerId = await findResearchCustomerId(userId, cached)
   if (!customerId) throw new ResearchStripeError('no_customer', 'No research customer for this user')
 
-  const configuration = process.env[RESEARCH_PORTAL_CONFIGURATION_ENV]?.trim()
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
     return_url: returnUrl,
     locale: 'en',
-    ...(configuration ? { configuration } : {}),
+    configuration,
   })
 
   if (!session.url) throw new Error('Stripe returned a research portal session without url')

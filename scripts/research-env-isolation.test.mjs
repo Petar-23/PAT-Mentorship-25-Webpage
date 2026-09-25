@@ -2,8 +2,10 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { databaseIdentity, evaluateResearchTestIsolation, fingerprint, parseEnvFile, MUST_BE_EMPTY } from './research-env-isolation.mjs'
 
+// Realistische Prisma-Postgres-URLs: der Tenant steckt im Benutzernamen, der
+// Datenbankname ist bei allen gleich ("postgres").
 const production = {
-  DATABASE_URL: 'postgres://user:prodsecret@db.prisma.io:5432/prod_db?sslmode=require',
+  DATABASE_URL: 'postgres://prodtenant01:prodsecret@db.prisma.io:5432/postgres?sslmode=require',
   STRIPE_SECRET_KEY: 'sk_live_prod',
   STRIPE_WEBHOOK_SECRET: 'whsec_prod',
   CLERK_SECRET_KEY: 'sk_live_clerk',
@@ -13,7 +15,7 @@ const production = {
 
 function isolatedPreview(overrides = {}) {
   return {
-    DATABASE_URL: 'postgres://user:testsecret@db.prisma.io:5432/research_test?sslmode=require',
+    DATABASE_URL: 'postgres://testtenant02:testsecret@db.prisma.io:5432/postgres?sslmode=require',
     STRIPE_SECRET_KEY: 'sk_test_abc',
     STRIPE_WEBHOOK_SECRET: 'whsec_test',
     CLERK_SECRET_KEY: 'sk_test_clerk',
@@ -28,10 +30,17 @@ test('parseEnvFile reads vercel env pull output including quotes and comments', 
   assert.deepEqual(env, { A: '1', B: 'two', C: '3', EMPTY: '' })
 })
 
-test('databaseIdentity never contains credentials', () => {
+test('databaseIdentity never contains credentials and identifies Prisma Postgres tenants', () => {
   const identity = databaseIdentity(production.DATABASE_URL)
-  assert.equal(identity, 'db.prisma.io:5432/prod_db')
-  assert.ok(!identity.includes('prodsecret'))
+  assert.match(identity, /^db\.prisma\.io\/tenant:[0-9a-f]{12}$/)
+  assert.ok(!identity.includes('prodsecret') && !identity.includes('prodtenant01'))
+  // gepoolter Host = derselbe Tenant
+  assert.equal(databaseIdentity('postgres://prodtenant01:other@pooled.db.prisma.io:5432/postgres?sslmode=require'), identity)
+  // anderer Tenant = andere Datenbank, obwohl Host und DB-Name gleich sind
+  assert.notEqual(databaseIdentity('postgres://testtenant02:x@db.prisma.io:5432/postgres'), identity)
+  // klassisches Postgres: Host, Port und Datenbankname
+  assert.equal(databaseIdentity('postgresql://u:p@ep-x.eu-central-1.aws.neon.tech/research_test?sslmode=require'), 'ep-x.eu-central-1.aws.neon.tech:5432/research_test')
+  assert.equal(databaseIdentity('prisma+postgres://accelerate.prisma-data.net/?api_key=secret'), 'unverifiable')
   assert.equal(databaseIdentity('not a url'), 'unparseable')
   assert.equal(databaseIdentity(undefined), null)
 })
@@ -46,11 +55,26 @@ test('a fully isolated preview passes and its report contains no secret values',
   }
 })
 
-test('same database as production fails even with different credentials', () => {
-  const preview = isolatedPreview({ DATABASE_URL: 'postgres://other:pw@db.prisma.io:5432/prod_db' })
-  const result = evaluateResearchTestIsolation({ preview, production })
-  assert.equal(result.ok, false)
+test('same database as production fails: same Prisma tenant via the pooled host, or same classic host/db with other credentials', () => {
+  for (const [previewUrl, productionUrl] of [
+    ['postgres://prodtenant01:pw2@pooled.db.prisma.io:5432/postgres?sslmode=require', production.DATABASE_URL],
+    ['postgres://other:pw@db.example.com:5432/prod_db', 'postgres://owner:pw@db.example.com:5432/prod_db'],
+  ]) {
+    const result = evaluateResearchTestIsolation({ preview: isolatedPreview({ DATABASE_URL: previewUrl }), production: { ...production, DATABASE_URL: productionUrl } })
+    assert.equal(result.ok, false, previewUrl)
+    assert.equal(result.checks.find(c => c.name === 'Datenbank ≠ Production').ok, false)
+  }
+})
+
+test('Accelerate URLs cannot prove isolation', () => {
+  const result = evaluateResearchTestIsolation({ preview: isolatedPreview({ DATABASE_URL: 'prisma+postgres://accelerate.prisma-data.net/?api_key=abc' }), production })
   assert.equal(result.checks.find(c => c.name === 'Datenbank ≠ Production').ok, false)
+})
+
+test('a DIRECT_URL pointing elsewhere than DATABASE_URL fails', () => {
+  const result = evaluateResearchTestIsolation({ preview: isolatedPreview({ DIRECT_URL: production.DATABASE_URL }), production })
+  assert.equal(result.ok, false)
+  assert.equal(result.checks.find(c => c.name === 'DIRECT_URL zeigt auf dieselbe Test-DB').ok, false)
 })
 
 test('live Stripe key, production Clerk and shared blob token fail', () => {
