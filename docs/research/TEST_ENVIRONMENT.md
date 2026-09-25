@@ -17,7 +17,12 @@ Alle Werte trägst du selbst ein. Claude bekommt keine Secrets zu sehen, und die
   - `DISCORD_BOT_TOKEN`, `DISCORD_MOD_CHANNEL_ID`, `BREVO_API_KEY`, `GITHUB_BLOG_TOKEN`, `BLOB_READ_WRITE_TOKEN` und `BUNNY_API_KEY` stehen auf `disabled`.
 - **Bootstrap der Test-DB:** ausgeführt (Baseline `origin/main` plus Research-Migration).
 - **Isolationsnachweis** (`scripts/research-verify-test-env.mjs`): „Research-Testumgebung ist isoliert.“ Die Production-DB wurde über `PROD_DATABASE_URL` verglichen; Production-`DATABASE_URL` ist in Vercel „Sensitive“ und nicht lesbar.
-- **Noch offen, nur für Kauftests:** Stripe-Test-Objekte und Test-Webhook, erledigt mit **einem Befehl** (Abschnitt 3).
+- **Stripe-Testmodus eingerichtet (26.09.):** mit Petars OK und seinem Preview-Testkey. Das Setup-Skript hat 3 Produkte, 6 Preise, 3 Portal-Konfigurationen und den Test-Webhook angelegt und die 12 IDs plus das Webhook-Secret als Branch-Variablen eingetragen. Live-Modus und Production wurden nicht berührt.
+- **End-to-End-Test** (`scripts/research-e2e-stripe-test.mjs`, Stripe Test Clock): 10/10 bestanden. Geprüft wurden:
+  - neues Abo, Stufenwechsel, Kündigung zum Periodenende und Rücknahme;
+  - gescheiterte Verlängerung → `past_due` mit Kulanz; Beendigung → kein Zugang;
+  - echter Checkout mit `automatic_tax` und Kundenportal.
+- **Offen:** ein Klick-Test im Browser mit einem Clerk-Testkonto (Preise → Checkout mit Testkarte 4242 → Willkommen → Konto → Portal). Das macht Petar; Claude legt keine Konten an.
 - **Vercel-Einstellungen:** Previews sind ohne Vercel-Login erreichbar (keine Deployment Protection), und `VERCEL_ENV` wird bereitgestellt.
 - **Prisma-Tarif:** Beim Anlegen der Test-DB hat `--plan free` die Umstellung der **ganzen** Installation auf Free (ab 1. Oktober) vorgemerkt. Der Tarif gilt pro Installation, nicht pro DB. Auf Petars Wunsch per `vercel integration update prisma --plan starter` zurückgenommen; alle drei DBs laufen weiter im Starter-Tarif. Merke: bei `vercel integration add prisma/prisma-postgres` **nie** `--plan` angeben.
 
@@ -118,3 +123,14 @@ Erst wenn am Ende „Ergebnis: Research-Testumgebung ist isoliert.“ steht, dar
 
 - [PR #161](https://github.com/Petar-23/PAT-Mentorship-25-Webpage/pull/161) muss auf `main` sein. Nur er verhindert, dass die Mentorship-E-Mail-Suche den USD-Research-Customer aufgreift. Der Research-Branch enthält ihn bereits.
 - Production-Migration, Live-Stripe-Objekte, DNS und `RESEARCH_PUBLIC_HOST` sind eine eigene Freigabe.
+
+## 7. End-to-End-Test wiederholen
+
+```bash
+vercel env pull .env.research-preview --environment=preview --git-branch=feat/pat-research-platform
+STRIPE_SECRET_KEY=sk_test_… node scripts/research-e2e-stripe-test.mjs --env-file .env.research-preview
+rm .env.research-preview
+```
+
+- Das Skript läuft nur im Testmodus und nur gegen die Research-Test-DB (`DATABASE_URL` muss `RESEARCH_TEST_DATABASE_URL` entsprechen).
+- Hinterher räumt es alles auf.
