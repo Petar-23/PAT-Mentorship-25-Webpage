@@ -6,7 +6,22 @@ Der Push startet automatisch einen Preview-Build. `vercel-build` führt dabei `p
 
 Alle Werte trägst du selbst ein. Claude bekommt keine Secrets zu sehen, und die Skripte geben nur Präfixe und Fingerprints aus.
 
-## 1. Eigene Test-Datenbank
+## Status 25.09.2026 (von Claude per Vercel-CLI erledigt, auf Petars Wunsch)
+
+- **Test-DB angelegt:** `pat-research-test-db` (Prisma Postgres, Region fra1).
+  - Über die bestehende Prisma-Installation, daher Tarif Starter für die ganze Installation, bis zu 1.000 DBs inklusive; keine Zusatzkosten bis zum Nutzungskontingent.
+  - Nur mit Preview verbunden, Variablen mit Präfix `RESEARCH_TEST_`. Bestehende Variablen wurden nicht überschrieben.
+- **Befund:** Die Previews nutzten schon vorher eine eigene DB (`pat-videos-db`, nur Preview/Development), getrennt von `PAT-MentorshipProduction-DB` (nur Production).
+- **Branch-Overrides für `feat/pat-research-platform`:**
+  - `DATABASE_URL` zeigt auf die neue Test-DB.
+  - `DISCORD_BOT_TOKEN`, `DISCORD_MOD_CHANNEL_ID`, `BREVO_API_KEY`, `GITHUB_BLOG_TOKEN`, `BLOB_READ_WRITE_TOKEN` und `BUNNY_API_KEY` stehen auf `disabled`.
+- **Bootstrap der Test-DB:** ausgeführt (Baseline `origin/main` plus Research-Migration).
+- **Isolationsnachweis** (`scripts/research-verify-test-env.mjs`): „Research-Testumgebung ist isoliert.“ Die Production-DB wurde über `PROD_DATABASE_URL` verglichen; Production-`DATABASE_URL` ist in Vercel „Sensitive“ und nicht lesbar.
+- **Noch offen, nur für Kauftests:** Stripe-Test-Objekte und Test-Webhook, erledigt mit **einem Befehl** (Abschnitt 3).
+- **Vercel-Einstellungen:** Previews sind ohne Vercel-Login erreichbar (keine Deployment Protection), und `VERCEL_ENV` wird bereitgestellt.
+- **Offen zur Entscheidung:** Die Prisma-Installation zeigt „Scheduled to change to Free on Oct 1, 2026“. Free wären 100.000 Operationen/Monat und 500 MB für **alle** DBs inklusive Production.
+
+## 1. Eigene Test-Datenbank (✓ erledigt, Referenz)
 
 1. Lege eine **neue, leere** Postgres-Datenbank an, z. B. „pat-research-test“: Vercel → Storage → Prisma Postgres → Create, oder in der Prisma-Konsole.
    - Verwende die **direkte** Postgres-URL (`postgres://…@db.prisma.io:5432/…`), keine Accelerate-URL (`prisma+postgres://…`). Nur bei der direkten URL kann das Prüfskript die Datenbank eindeutig von Production unterscheiden, und auch das Bootstrap-Skript braucht sie.
@@ -39,39 +54,43 @@ Alle Werte trägst du selbst ein. Claude bekommt keine Secrets zu sehen, und die
 
 | Variable | Wert | Wer |
 |----------|------|-----|
-| `DATABASE_URL` | direkte URL der neuen Test-DB (Abschnitt 1) | du (Secret) |
-| `STRIPE_WEBHOOK_SECRET` | Secret des neuen Test-Webhooks (Abschnitt 3) | du (Secret) |
-| `DISCORD_BOT_TOKEN`, `DISCORD_MOD_CHANNEL_ID`, `BREVO_API_KEY`, `GITHUB_BLOG_TOKEN`, `BLOB_READ_WRITE_TOKEN`, `BUNNY_API_KEY` | `disabled` | Claude per Vercel-CLI, nach deinem OK (kein Secret) |
-| `STRIPE_RESEARCH_PRODUCT_ID_READER/_MEMBER/_SUPPORTER`, `STRIPE_PRICE_ID_RESEARCH_*` (6×), `STRIPE_RESEARCH_PORTAL_CONFIGURATION_ID_MONTHLY/_ANNUAL/_BASIC` | Ausgabe von `scripts/research-stripe-setup.mjs` (Testmodus, 12 Zeilen; nur IDs) | Claude nach deinem OK, oder du |
+| `DATABASE_URL` | direkte URL der neuen Test-DB (Abschnitt 1) | ✓ erledigt (Claude) |
+| `STRIPE_WEBHOOK_SECRET` | Secret des neuen Test-Webhooks (Abschnitt 3) | Setup-Skript mit deinem Testkey; wird nie angezeigt |
+| `DISCORD_BOT_TOKEN`, `DISCORD_MOD_CHANNEL_ID`, `BREVO_API_KEY`, `GITHUB_BLOG_TOKEN`, `BLOB_READ_WRITE_TOKEN`, `BUNNY_API_KEY` | `disabled` | ✓ erledigt (Claude) |
+| `STRIPE_RESEARCH_PRODUCT_ID_READER/_MEMBER/_SUPPORTER`, `STRIPE_PRICE_ID_RESEARCH_*` (6×), `STRIPE_RESEARCH_PORTAL_CONFIGURATION_ID_MONTHLY/_ANNUAL/_BASIC` | schreibt `scripts/research-stripe-setup.mjs` (Abschnitt 3) | Setup-Skript mit deinem Testkey |
 
 `STRIPE_SECRET_KEY` und die Clerk-Keys bleiben wie im Preview: Testkey und Testinstanz.
 
 Vercel nimmt keine leeren Werte an. Ein Override mit `disabled` gilt für das Prüfskript als „leer“: Die Dienste lehnen den Wert ab, es entstehen keine Nachrichten, Uploads oder Commits. Blob-Uploads schlagen im Research-Preview dann fehl; ein eigener Test-Blob-Store folgt in Phase b.
 
-## 3. Stripe-Testmodus
+## 3. Stripe-Testmodus (ein Befehl)
 
-1. **Produkt, Preise und Portal:**
-   ```bash
-   STRIPE_SECRET_KEY=sk_test_… node scripts/research-stripe-setup.mjs
-   STRIPE_SECRET_KEY=sk_test_… node scripts/research-stripe-setup.mjs --apply
-   ```
-   - Das Skript verweigert Live-Keys.
-   - Es legt **drei Produkte** an („PAT Research Reader/Member/Supporter“), jedes mit einem Monats- und einem Jahrespreis (USD, inklusive Steuer).
-     - Grund: Stripe erlaubt im Kundenportal pro Produkt nur einen Preis je Intervall, sonst ließe sich die Stufe dort nicht wechseln.
-   - Außerdem legt es **drei Portal-Konfigurationen** an:
-     - monatlich: Stufenwechsel nur unter den Monatspreisen
-     - jährlich: Stufenwechsel nur unter den Jahrespreisen
-     - basic: ohne Planwechsel
-   - Monat ↔ Jahr ist im Portal bewusst nicht möglich: Stripe würde sofort abbuchen, ohne Gutschrift für die Restlaufzeit.
-   - Es gibt nur IDs aus (12 Zeilen), die du als Branch-Env-Vars einträgst (Abschnitt 2).
-   - Alternativ lege ich die Objekte über den Stripe-Connector im Testmodus an, sobald du ihn autorisiert hast.
-2. **Test-Webhook:** Stripe (Testmodus) → Developers → Webhooks → Add endpoint.
-   - URL: die stabile Branch-URL des Previews, z. B. `https://<projekt>-git-feat-pat-research-platform-<team>.vercel.app/api/webhooks/stripe`
-   - Ist Deployment Protection aktiv: den Bypass-Parameter für Automationen an die URL hängen.
-   - Events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`
-   - API-Version des Endpoints: `2024-10-28.acacia`, wie das SDK
-   - Secret als `STRIPE_WEBHOOK_SECRET` (Branch-Override) eintragen.
-   - Hinweis: Dieser Endpoint erhält alle Testmodus-Events des Stripe-Kontos, auch Mentorship-Tests aus anderen Previews. Deshalb sind Discord und Telegram oben geleert, und die DB ist getrennt.
+Voraussetzung: Die Vercel-CLI ist angemeldet (`npx vercel@latest login`; auf deinem Mac bereits `petar-23`).
+
+Zuerst ohne `--apply` als Trockenlauf, danach mit `--apply`:
+
+```bash
+STRIPE_SECRET_KEY=sk_test_… node scripts/research-stripe-setup.mjs --apply \
+  --webhook-url https://pat-mentorship-25-webpage-git-feat-pat-7e635c-petar23s-projects.vercel.app/api/webhooks/stripe \
+  --vercel-branch feat/pat-research-platform \
+  --terms-url https://pat-mentorship-25-webpage-git-feat-pat-7e635c-petar23s-projects.vercel.app/research/terms \
+  --privacy-url https://www.price-action-trader.de/datenschutz
+```
+
+Was der Befehl tut:
+- **Schutz:** Er verweigert Live-Keys und schreibt nie in `main`, `dev` oder den Production-Branch.
+- **Produkte und Portal:** drei Produkte „PAT Research Reader/Member/Supporter“ mit je Monats- und Jahrespreis (USD, inklusive Steuer) sowie drei Portal-Konfigurationen (monatlich, jährlich, basic).
+  - Drei Produkte statt einem, weil Stripe im Kundenportal pro Produkt nur einen Preis je Intervall erlaubt.
+  - Monat ↔ Jahr ist im Portal bewusst gesperrt, weil Stripe sonst sofort ohne Gutschrift abbucht.
+- **Test-Webhook:** ein eigener Endpoint für die stabile Branch-URL.
+  - Events: `checkout.session.completed`, `customer.subscription.*`, `invoice.paid`, `invoice.payment_failed`
+  - API-Version: `2024-10-28.acacia`
+  - Das Signing-Secret wird **nie angezeigt**, sondern direkt als `STRIPE_WEBHOOK_SECRET` (Sensitive) nur für diesen Branch in Vercel eingetragen.
+  - Hinweis: Der Endpoint erhält alle Testmodus-Events des Kontos, auch Mentorship-Tests. Deshalb sind Discord und Co. im Branch auf `disabled`, und die DB ist getrennt.
+- **IDs:** Die 12 IDs (Produkte, Preise, Portal) landen als Branch-Variablen in Vercel.
+- **Wiederholen ist sicher:** Vorhandenes wird erkannt. Ein neues Webhook-Secret gibt es nur mit `--rotate-webhook`.
+
+Danach einmal neu deployen, damit das Preview die neuen Variablen lädt; das übernimmt Claude.
 
 ## 4. Isolation nachweisen
 

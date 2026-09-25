@@ -171,7 +171,15 @@ export function evaluateResearchTestIsolation({ preview, production }) {
         continue
       }
       if (isSensitivePlaceholder(preview[name])) {
-        add(`${name} ≠ Production`, false, 'im Preview als Sensitive gespeichert – nicht prüfbar')
+        // Das Webhook-Secret legt scripts/research-stripe-setup.mjs als Sensitive an.
+        // Es gehört zu einem Testmodus-Endpoint (Stripe-Testkey im Preview) und kann
+        // deshalb nie das Secret des Live-Endpoints von Production sein.
+        const testEndpoint = name === 'STRIPE_WEBHOOK_SECRET' && /^(sk|rk)_test_/.test(preview.STRIPE_SECRET_KEY ?? '')
+        add(
+          `${name} ≠ Production`,
+          testEndpoint,
+          testEndpoint ? 'Sensitive; Secret eines Testmodus-Endpoints (Preview nutzt einen Stripe-Testkey)' : 'im Preview als Sensitive gespeichert – nicht prüfbar'
+        )
         continue
       }
       if (isSensitivePlaceholder(production[name])) {

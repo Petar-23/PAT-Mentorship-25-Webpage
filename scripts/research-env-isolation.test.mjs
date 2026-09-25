@@ -140,3 +140,11 @@ test('a missing Stripe webhook secret is a readiness gap, not an isolation failu
   assert.equal(result.readiness.find(r => r.name === 'STRIPE_WEBHOOK_SECRET gesetzt').ok, false)
   assert.equal(result.readiness.find(r => r.name === 'Research-Stripe-IDs gesetzt').ok, false)
 })
+
+test('a sensitive webhook secret on a test-mode preview is isolated; with a live key it is not provable', () => {
+  const ok = evaluateResearchTestIsolation({ preview: isolatedPreview({ STRIPE_WEBHOOK_SECRET: '[SENSITIVE]' }), production })
+  assert.equal(ok.ok, true, JSON.stringify(ok.checks.filter(c => !c.ok)))
+  assert.equal(ok.readiness.find(r => r.name === 'STRIPE_WEBHOOK_SECRET gesetzt').ok, true)
+  const live = evaluateResearchTestIsolation({ preview: isolatedPreview({ STRIPE_WEBHOOK_SECRET: '[SENSITIVE]', STRIPE_SECRET_KEY: 'sk_live_x' }), production })
+  assert.equal(live.ok, false)
+})
