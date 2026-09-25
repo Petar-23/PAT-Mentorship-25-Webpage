@@ -23,7 +23,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { execFileSync, spawnSync } from 'node:child_process'
 import pg from 'pg'
-import { databaseIdentity, parseEnvFile } from './research-env-isolation.mjs'
+import { databaseIdentity, isSensitivePlaceholder, parseEnvFile, productionDatabaseUrl } from './research-env-isolation.mjs'
 
 function argValue(name) {
   const index = process.argv.indexOf(name)
@@ -45,9 +45,11 @@ if (!targetFile || !productionFile) {
 }
 
 const targetUrl = parseEnvFile(fs.readFileSync(targetFile, 'utf8')).DATABASE_URL
-const productionUrl = parseEnvFile(fs.readFileSync(productionFile, 'utf8')).DATABASE_URL
+const productionRef = productionDatabaseUrl(parseEnvFile(fs.readFileSync(productionFile, 'utf8')))
+const productionUrl = productionRef.url
 if (!targetUrl) fail('DATABASE_URL fehlt in der Ziel-Env-Datei.')
-if (!productionUrl) fail('DATABASE_URL fehlt in der Production-Env-Datei (Vergleich nötig).')
+if (isSensitivePlaceholder(targetUrl)) fail('Ziel-DATABASE_URL ist in Vercel als Sensitive gespeichert und nicht lesbar.')
+if (!productionUrl) fail('Keine lesbare Production-DB-URL (DATABASE_URL oder PROD_DATABASE_URL) in der Production-Env-Datei (Vergleich nötig).')
 
 const targetIdentity = databaseIdentity(targetUrl)
 const productionIdentity = databaseIdentity(productionUrl)
@@ -68,7 +70,7 @@ const baselineMigrations = execFileSync('git', ['ls-tree', '--name-only', `${mer
   .filter(name => /^\d{8,}/.test(name))
 
 console.log(`Ziel-DB:          ${targetIdentity}`)
-console.log(`Production-DB:    ${productionIdentity}`)
+console.log(`Production-DB:    ${productionIdentity} (aus ${productionRef.source})`)
 console.log(`Baseline:         ${baseRef} @ ${mergeBase.slice(0, 10)} (${baselineMigrations.length} Migrationen)`)
 
 const client = new pg.Client({ connectionString: targetUrl })

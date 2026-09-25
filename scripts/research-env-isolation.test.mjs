@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { databaseIdentity, evaluateResearchTestIsolation, fingerprint, parseEnvFile, MUST_BE_EMPTY } from './research-env-isolation.mjs'
+import { databaseIdentity, evaluateResearchTestIsolation, fingerprint, parseEnvFile, productionDatabaseUrl, MUST_BE_EMPTY } from './research-env-isolation.mjs'
 
 // Realistische Prisma-Postgres-URLs: der Tenant steckt im Benutzernamen, der
 // Datenbankname ist bei allen gleich ("postgres").
@@ -111,4 +111,32 @@ test('"disabled" branch overrides count as empty side-effect credentials and as 
   assert.equal(result.ok, true, JSON.stringify(result.checks.filter(c => !c.ok)))
   // ein echter Wert bleibt ein Fehler
   assert.equal(evaluateResearchTestIsolation({ preview: isolatedPreview({ ...overrides, BREVO_API_KEY: 'xkeysib-real' }), production }).ok, false)
+})
+
+test('Vercel "Sensitive" placeholders: production DB falls back to PROD_DATABASE_URL, test keys prove Stripe/Clerk isolation', () => {
+  const sensitiveProduction = {
+    DATABASE_URL: '[SENSITIVE]',
+    PROD_DATABASE_URL: production.DATABASE_URL,
+    STRIPE_SECRET_KEY: '[SENSITIVE]',
+    CLERK_SECRET_KEY: '[SENSITIVE]',
+    BLOB_READ_WRITE_TOKEN: production.BLOB_READ_WRITE_TOKEN,
+  }
+  assert.deepEqual(productionDatabaseUrl(sensitiveProduction), { url: production.DATABASE_URL, source: 'PROD_DATABASE_URL' })
+  const ok = evaluateResearchTestIsolation({ preview: isolatedPreview(), production: sensitiveProduction })
+  assert.equal(ok.ok, true, JSON.stringify(ok.checks.filter(c => !c.ok)))
+  // Preview-DB = Production-Store (über PROD_DATABASE_URL erkannt)
+  const same = evaluateResearchTestIsolation({ preview: isolatedPreview({ DATABASE_URL: production.DATABASE_URL }), production: sensitiveProduction })
+  assert.equal(same.checks.find(c => c.name === 'Datenbank ≠ Production').ok, false)
+  // Live-Key im Preview bei unlesbarem Production-Key fällt durch
+  assert.equal(evaluateResearchTestIsolation({ preview: isolatedPreview({ STRIPE_SECRET_KEY: 'sk_live_x' }), production: sensitiveProduction }).ok, false)
+  // Unlesbare Preview-DB ist nicht prüfbar
+  assert.equal(evaluateResearchTestIsolation({ preview: isolatedPreview({ DATABASE_URL: '[SENSITIVE]' }), production: sensitiveProduction }).ok, false)
+})
+
+test('a missing Stripe webhook secret is a readiness gap, not an isolation failure', () => {
+  const preview = isolatedPreview({ STRIPE_WEBHOOK_SECRET: undefined })
+  const result = evaluateResearchTestIsolation({ preview, production })
+  assert.equal(result.ok, true, JSON.stringify(result.checks.filter(c => !c.ok)))
+  assert.equal(result.readiness.find(r => r.name === 'STRIPE_WEBHOOK_SECRET gesetzt').ok, false)
+  assert.equal(result.readiness.find(r => r.name === 'Research-Stripe-IDs gesetzt').ok, false)
 })

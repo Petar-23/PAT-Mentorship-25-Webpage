@@ -30,8 +30,13 @@ const preview = parseEnvFile(fs.readFileSync(previewFile, 'utf8'))
 const production = productionFile ? parseEnvFile(fs.readFileSync(productionFile, 'utf8')) : null
 const result = evaluateResearchTestIsolation({ preview, production })
 
+console.log('Isolation von Production:')
 for (const check of result.checks) {
   console.log(`${check.ok ? 'PASS' : 'FAIL'}  ${check.name} — ${check.detail}`)
 }
-console.log(result.ok ? '\nErgebnis: Research-Testumgebung ist isoliert.' : '\nErgebnis: NICHT isoliert — bitte die FAIL-Punkte beheben, vorher nicht pushen.')
+console.log('\nBereit für Kauf-/Webhook-Tests (keine Isolationsfrage):')
+for (const item of result.readiness) {
+  console.log(`${item.ok ? 'OK  ' : 'OFFEN'}  ${item.name} — ${item.detail}`)
+}
+console.log(result.ok ? '\nErgebnis: Research-Testumgebung ist isoliert.' : '\nErgebnis: NICHT isoliert — bitte die FAIL-Punkte beheben, vorher nicht deployen.')
 process.exit(result.ok ? 0 : 1)
