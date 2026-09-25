@@ -29,20 +29,24 @@ Alle Werte trägst du selbst ein. Claude bekommt keine Secrets zu sehen, und die
 
 ## 2. Branch-Overrides (Environment: Preview, Branch: `feat/pat-research-platform`)
 
-| Variable | Wert |
-|----------|------|
-| `DATABASE_URL` | neue Test-DB (siehe oben) |
-| `STRIPE_SECRET_KEY` | Stripe-**Test**key (`sk_test_…`); der bestehende Preview-Testkey passt |
-| `STRIPE_WEBHOOK_SECRET` | Secret des **neuen** Test-Webhooks (Abschnitt 3) |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | Clerk-Testinstanz; die bestehenden Preview-Werte passen |
-| `BLOB_READ_WRITE_TOKEN`, `BLOB_PRIVATE_READ_WRITE_TOKEN` | Token eines **eigenen Test-Blob-Stores**; nur relevant, sobald Research Bilder hochlädt (Phase b) |
-| `DISCORD_BOT_TOKEN`, `DISCORD_MOD_CHANNEL_ID`, `DISCORD_MENTORSHIP_GUILD_ID`, `DISCORD_MENTORSHIP_CHANNEL_ID` | **leer**: Test-Webhooks würden sonst echte Mod-Nachrichten posten |
-| `TELEGRAM_BOT_TOKEN` | **leer** (dein interner Alarm-Bot) |
-| `BREVO_API_KEY` | **leer** (bis Phase d; dann mit Sandbox-Modus) |
-| `GITHUB_BLOG_TOKEN`, `AGENT_UPLOAD_TOKEN`, `HERMES_UPLOAD_TOKEN`, `WHOP_API_KEY` | **leer** |
-| `STRIPE_RESEARCH_PRODUCT_ID_READER/_MEMBER/_SUPPORTER`, `STRIPE_PRICE_ID_RESEARCH_*` (6×), `STRIPE_RESEARCH_PORTAL_CONFIGURATION_ID_MONTHLY/_ANNUAL/_BASIC` | Ausgabe von `scripts/research-stripe-setup.mjs` (Testmodus, 12 Zeilen) |
+**Stand laut `vercel env ls preview` (25.09.2026, nur Namen gelesen):**
+- **Teilen sich Preview und Production** (ein Eintrag für beide, also derselbe Wert): `BLOB_READ_WRITE_TOKEN`, `BREVO_API_KEY`, `BREVO_LIST_ID`, `DISCORD_BOT_TOKEN`, `DISCORD_CLIENT_ID`/`_SECRET`, `DISCORD_GUILD_ID`, `GITHUB_BLOG_TOKEN`, `WHOP_*`, `PAYPAL_WEBHOOK_ID`.
+- **Nur Preview:** `DATABASE_URL` (plus `POSTGRES_URL`, `PRISMA_DATABASE_URL`; die nutzt der Code nicht), `STRIPE_SECRET_KEY`, Clerk-Keys, `BUNNY_*`, `DISCORD_MOD_CHANNEL_ID`.
+- **`STRIPE_WEBHOOK_SECRET`** gibt es nur für den Branch `dev`.
+- **Im Preview gar nicht gesetzt:** `TELEGRAM_BOT_TOKEN`, `DISCORD_MENTORSHIP_*`, `AGENT_UPLOAD_TOKEN`, `HERMES_UPLOAD_TOKEN`, `BLOB_PRIVATE_READ_WRITE_TOKEN`.
 
-Ein leerer Wert als Branch-Override überschreibt den allgemeinen Preview-Wert. Falls Vercel keine leeren Werte annimmt, genügt ein Platzhalter wie `disabled`. Die Prüfung in Abschnitt 4 verlangt dann aber „leer“; sag mir Bescheid, dann passe ich sie an.
+**Overrides für den Research-Branch:**
+
+| Variable | Wert | Wer |
+|----------|------|-----|
+| `DATABASE_URL` | direkte URL der neuen Test-DB (Abschnitt 1) | du (Secret) |
+| `STRIPE_WEBHOOK_SECRET` | Secret des neuen Test-Webhooks (Abschnitt 3) | du (Secret) |
+| `DISCORD_BOT_TOKEN`, `DISCORD_MOD_CHANNEL_ID`, `BREVO_API_KEY`, `GITHUB_BLOG_TOKEN`, `BLOB_READ_WRITE_TOKEN`, `BUNNY_API_KEY` | `disabled` | Claude per Vercel-CLI, nach deinem OK (kein Secret) |
+| `STRIPE_RESEARCH_PRODUCT_ID_READER/_MEMBER/_SUPPORTER`, `STRIPE_PRICE_ID_RESEARCH_*` (6×), `STRIPE_RESEARCH_PORTAL_CONFIGURATION_ID_MONTHLY/_ANNUAL/_BASIC` | Ausgabe von `scripts/research-stripe-setup.mjs` (Testmodus, 12 Zeilen; nur IDs) | Claude nach deinem OK, oder du |
+
+`STRIPE_SECRET_KEY` und die Clerk-Keys bleiben wie im Preview: Testkey und Testinstanz.
+
+Vercel nimmt keine leeren Werte an. Ein Override mit `disabled` gilt für das Prüfskript als „leer“: Die Dienste lehnen den Wert ab, es entstehen keine Nachrichten, Uploads oder Commits. Blob-Uploads schlagen im Research-Preview dann fehl; ein eigener Test-Blob-Store folgt in Phase b.
 
 ## 3. Stripe-Testmodus
 

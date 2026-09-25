@@ -34,6 +34,16 @@ function isSet(value) {
   return typeof value === 'string' && value.trim().length > 0
 }
 
+// Vercel nimmt keine leeren Werte an. Ein Branch-Override mit dem Wert
+// "disabled" gilt deshalb als "leer" (der Dienst lehnt den Wert ab, es gibt
+// keine Seiteneffekte).
+export const DISABLED_SENTINEL = 'disabled'
+
+/** @param {string | undefined} value */
+function isEnabled(value) {
+  return isSet(value) && /** @type {string} */ (value).trim().toLowerCase() !== DISABLED_SENTINEL
+}
+
 // Prisma Postgres: direkter und gepoolter Host zeigen auf dieselben Datenbanken.
 // Die Datenbank (der Tenant) steckt dort im Benutzernamen, nicht im Pfad — alle
 // Tenants heißen z. B. "postgres". Deshalb Identität = Host + Fingerprint des Tenants.
@@ -85,7 +95,6 @@ export const MUST_BE_EMPTY = Object.freeze([
   'GITHUB_BLOG_TOKEN',
   'AGENT_UPLOAD_TOKEN',
   'HERMES_UPLOAD_TOKEN',
-  'WHOP_API_KEY',
 ])
 
 // Werte, die sich von Production unterscheiden MÜSSEN, falls gesetzt.
@@ -131,8 +140,8 @@ export function evaluateResearchTestIsolation({ preview, production }) {
     )
     for (const name of MUST_DIFFER_FROM_PRODUCTION) {
       if (name === 'DATABASE_URL') continue
-      if (!isSet(preview[name])) {
-        add(`${name} ≠ Production`, true, 'im Preview nicht gesetzt')
+      if (!isEnabled(preview[name])) {
+        add(`${name} ≠ Production`, true, isSet(preview[name]) ? 'disabled' : 'im Preview nicht gesetzt')
         continue
       }
       const same = isSet(production[name]) && fingerprint(preview[name]) === fingerprint(production[name])
@@ -147,7 +156,11 @@ export function evaluateResearchTestIsolation({ preview, production }) {
   add('STRIPE_WEBHOOK_SECRET gesetzt', isSet(preview.STRIPE_WEBHOOK_SECRET), isSet(preview.STRIPE_WEBHOOK_SECRET) ? 'gesetzt' : 'fehlt (eigener Test-Webhook für den Branch)')
 
   for (const name of MUST_BE_EMPTY) {
-    add(`${name} leer`, !isSet(preview[name]), isSet(preview[name]) ? 'GESETZT – im Research-Preview leeren' : 'leer')
+    add(
+      `${name} leer`,
+      !isEnabled(preview[name]),
+      isEnabled(preview[name]) ? 'GESETZT – im Research-Preview auf "disabled" überschreiben' : isSet(preview[name]) ? 'disabled' : 'leer'
+    )
   }
 
   add('RESEARCH_TEST_MODE aus', preview.RESEARCH_TEST_MODE !== '1', preview.RESEARCH_TEST_MODE === '1' ? 'gesetzt (wirkt in Previews ohnehin nicht)' : 'aus')

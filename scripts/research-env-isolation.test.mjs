@@ -103,3 +103,12 @@ test('fingerprint is stable and short', () => {
   assert.equal(fingerprint('abc').length, 12)
   assert.equal(fingerprint(''), null)
 })
+
+test('"disabled" branch overrides count as empty side-effect credentials and as isolated shared tokens', () => {
+  const overrides = Object.fromEntries(MUST_BE_EMPTY.map(name => [name, 'disabled']))
+  const preview = isolatedPreview({ ...overrides, BLOB_READ_WRITE_TOKEN: 'disabled', BUNNY_API_KEY: 'Disabled' })
+  const result = evaluateResearchTestIsolation({ preview, production: { ...production, BUNNY_API_KEY: 'bunny-prod' } })
+  assert.equal(result.ok, true, JSON.stringify(result.checks.filter(c => !c.ok)))
+  // ein echter Wert bleibt ein Fehler
+  assert.equal(evaluateResearchTestIsolation({ preview: isolatedPreview({ ...overrides, BREVO_API_KEY: 'xkeysib-real' }), production }).ok, false)
+})
