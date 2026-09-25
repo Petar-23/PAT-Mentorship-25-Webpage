@@ -35,7 +35,6 @@ async function getConnectedDiscordAccount(userId: string | null): Promise<{
       const customers = await stripe.customers.search({
         query: `metadata['userId']:'${userId}'`,
       })
-      warnOnProductScopedUserIdMatch(customers.data, 'discord page')
       stripeCustomerId = customers.data[0]?.id ?? null
     }
 
@@ -44,6 +43,8 @@ async function getConnectedDiscordAccount(userId: string | null): Promise<{
     if (stripeCustomerId) {
       const customer = await stripe.customers.retrieve(stripeCustomerId)
       if (!('deleted' in customer && customer.deleted)) {
+        // Nur Log (DB-Mapping oder metadata.userId): Ergebnis bleibt unverändert.
+        warnOnProductScopedUserIdMatch([customer], 'discord page')
         const raw = customer.metadata?.discordUserId
         connectedDiscordUserId = typeof raw === 'string' && raw.length > 0 ? raw : null
       }

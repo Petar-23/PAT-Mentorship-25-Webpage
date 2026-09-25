@@ -47,7 +47,6 @@ export async function POST(req: Request) {
       const customers = await stripe.customers.search({
         query: `metadata['userId']:'${userId}'`,
       })
-      warnOnProductScopedUserIdMatch(customers.data, 'discord disconnect')
       stripeCustomerId = customers.data[0]?.id ?? null
     }
 
@@ -70,6 +69,9 @@ export async function POST(req: Request) {
         { status: 404 }
       )
     }
+
+    // Nur Log (DB-Mapping oder metadata.userId): Ergebnis bleibt unverändert.
+    warnOnProductScopedUserIdMatch([customer], 'discord disconnect')
 
     const rawDiscordUserId = customer.metadata?.discordUserId
     const discordUserId =

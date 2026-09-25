@@ -65,6 +65,7 @@ async function findStripeCustomer(userId: string, userEmail?: string | null) {
   if (db?.stripeCustomerId) {
     const customer = await stripe.customers.retrieve(db.stripeCustomerId).catch(() => null)
     if (customer && !('deleted' in customer && customer.deleted)) {
+      warnOnProductScopedUserIdMatch([customer], 'discord callback (db mapping)')
       return customer
     }
   }
