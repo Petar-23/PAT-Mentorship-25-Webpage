@@ -1,5 +1,10 @@
 import { persistPatSourceFromMentorshipCheckout } from '@/lib/pat-source'
 import { handleRaidMapCheckoutCompleted } from '@/lib/raidmap-fulfillment'
+import {
+  handleResearchCheckoutCompleted,
+  handleResearchSubscriptionEvent,
+  notifyResearchInvoicePaid,
+} from '@/lib/research/stripe'
 import { sendCortanaTelegram } from '@/lib/telegram-notify'
 import type Stripe from 'stripe'
 import { stripe } from './stripe'
@@ -264,6 +269,11 @@ export async function handleStripeEvent(event: Stripe.Event) {
           await upsertRaidMapSubscription(subscription)
           break
         }
+        if (subscription.metadata?.product === 'research') {
+          // PAT Research: eigener Cache, frisch aus Stripe synchronisiert
+          await handleResearchSubscriptionEvent(subscription)
+          break
+        }
         const customerId = getCustomerIdFromSubscription(subscription)
 
         if (customerId) {
@@ -312,6 +322,11 @@ export async function handleStripeEvent(event: Stripe.Event) {
         if (subscription.metadata?.product === 'raidmap') {
           // Raid Map: eigener Cache, kein Mentorship-Discord/-Rollen-Pfad
           await upsertRaidMapSubscription(subscription)
+          break
+        }
+        if (subscription.metadata?.product === 'research') {
+          // PAT Research: eigener Cache, frisch aus Stripe synchronisiert
+          await handleResearchSubscriptionEvent(subscription)
           break
         }
         const customerId = getCustomerIdFromSubscription(subscription)
@@ -431,6 +446,11 @@ export async function handleStripeEvent(event: Stripe.Event) {
           await upsertRaidMapSubscription(subscription)
           break
         }
+        if (subscription.metadata?.product === 'research') {
+          // PAT Research: eigener Cache, frisch aus Stripe synchronisiert
+          await handleResearchSubscriptionEvent(subscription)
+          break
+        }
         const customerId = getCustomerIdFromSubscription(subscription)
 
         if (customerId) {
@@ -514,6 +534,8 @@ export async function handleStripeEvent(event: Stripe.Event) {
               await sendCortanaTelegram(
                 `💰 Raid Map Zahlung eingegangen\n${amount} ${currency} · ${subscription.metadata?.tier ?? '?'} · ${invoice.customer_email ?? '?'}`
               )
+            } else if (subscription.metadata?.product === 'research') {
+              await notifyResearchInvoicePaid(invoice, subscription)
             }
           }
         } catch (error) {
@@ -527,6 +549,9 @@ export async function handleStripeEvent(event: Stripe.Event) {
         if (session.metadata?.product === 'raidmap') {
           // Raid-Map-Kauf: TradingView-Claim in die bestehende Grant-Queue legen
           await handleRaidMapCheckoutCompleted(session)
+        } else if (session.metadata?.product === 'research') {
+          // PAT Research: Abo sofort synchronisieren und Abschluss protokollieren
+          await handleResearchCheckoutCompleted(session)
         } else {
           console.log('Checkout completed, customer and subscription events will follow')
           await persistPatSourceFromMentorshipCheckout(session, stripe)

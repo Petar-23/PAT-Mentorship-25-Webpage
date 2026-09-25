@@ -319,3 +319,66 @@ model Page {
 
   @@index([order, createdAt])
 }
+
+// ---------------------------------------------------------------------------
+// PAT Research (research.price-action-trader.de) — englisches Research-Abo.
+// Eigener USD-Stripe-Customer (metadata.researchUserId, bewusst OHNE userId)
+// und eigener Cache, komplett getrennt von Mentorship (UserSubscription) und
+// Raid Map (RaidMapSubscription). Siehe docs/research/PAT_RESEARCH_BUILD_PLAN.md
+// ---------------------------------------------------------------------------
+
+// Eine Zeile pro User: die für den Zugang maßgebliche Research-Subscription.
+// Der Webhook synchronisiert sie immer frisch aus Stripe (Reihenfolge egal).
+model ResearchSubscription {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  stripeCustomerId     String
+  stripeSubscriptionId String @unique
+
+  status            String
+  tier              String? // reader | member | supporter
+  billingInterval   String? // month | year
+  priceId           String?
+  cancelAtPeriodEnd Boolean   @default(false)
+  cancelAt          DateTime?
+  currentPeriodEnd  DateTime?
+  // Erster Zeitpunkt, an dem die Subscription past_due wurde (72-h-Kulanz).
+  pastDueSince      DateTime?
+  stripeCreatedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([stripeCustomerId])
+}
+
+// Nachweis-Log für Einwilligungen und Erklärungen (AGB, Widerrufsverzicht,
+// E-Mail-Opt-in, Kündigung/Widerruf). Nur anhängen, nie überschreiben.
+model ResearchConsentEvent {
+  id          String   @id @default(uuid())
+  userId      String?
+  kind        String
+  textVersion String
+  // Verknüpft zusammengehörige Einträge, z. B. eine Checkout-Einwilligung
+  // mit der späteren Stripe-Checkout-Session.
+  reference   String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, kind, createdAt])
+  @@index([reference])
+}
+
+// Serverless-taugliches Fixed-Window-Rate-Limit (gleicher Algorithmus wie
+// RateLimitBucket auf dem Security-Branch, aber eigene Tabelle, damit dessen
+// Migration beim späteren Merge nicht kollidiert). Nur Hash des Schlüssels.
+model ResearchRateLimit {
+  keyHash   String   @id
+  count     Int      @default(0)
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
+}

@@ -113,7 +113,9 @@ export function Navbar() {
 
   // Lade Mentorship-Status beim ersten Laden
   useEffect(() => {
-    if (!isSignedIn || !userId || isMentorship || isAdmin) {
+    // PAT Research blendet die Navbar per Marker aus und braucht keinen Mentorship-Status.
+    const isNavbarHidden = document.querySelector('[data-hide-root-navbar="true"]') !== null
+    if (!isSignedIn || !userId || isMentorship || isAdmin || isNavbarHidden) {
       setMentorshipStatus(null)
       postCheckoutRef.current = false
       return
@@ -240,7 +242,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 bg-white z-50">
+      <header id="site-navbar" className="sticky top-0 bg-white z-50">
         <div className={isMentorship ? 'w-full px-4' : 'container mx-auto px-4'}>
           <nav className="h-16 flex items-center justify-between">
             {/* Logo */}

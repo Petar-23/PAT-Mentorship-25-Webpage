@@ -47,6 +47,11 @@ body {
   main:has([data-hide-root-footer="true"]) + #site-footer {
     display: none;
   }
+
+  /* PAT Research rendert eine eigene Shell und blendet die Haupt-Navbar aus. */
+  body:has([data-hide-root-navbar="true"]) #site-navbar {
+    display: none;
+  }
 }
 
 /* CSS Custom Properties für Glass Button */

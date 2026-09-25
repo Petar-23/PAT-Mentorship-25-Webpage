@@ -1,6 +1,6 @@
 # PAT Research – Bauplan (Entwurf zur Freigabe)
 
-Stand: 25.09.2026 · Branch `feat/pat-research-platform` (frisch von `origin/main`, eigener Worktree) · noch kein Produktcode geschrieben.
+Stand: 25.09.2026 · Branch `feat/pat-research-platform` (frisch von `origin/main`, eigener Worktree) · Phase a in Arbeit (lokal).
 
 ## 0. Kurzfassung
 
@@ -41,9 +41,9 @@ Stripe-Webhook bleibt:   www…/api/webhooks/stripe  (bestehender Endpoint, neue
   - `usePathname()` liefert im Browser den sichtbaren Pfad (ohne `/research`). Aktive Navigation vergleicht daher immer über denselben Helper.
 - **Clerk:** gleiche Production-Instanz und damit geteilte Konten.
   - Laut Clerk-Doku funktionieren Subdomains derselben Root-Domain ohne Satellite-Setup. Beim ersten Aufruf gibt es einen kurzen Handshake-Redirect über `clerk.price-action-trader.de`.
-  - Ich setze `authorizedParties` auf beide Origins.
+  - `authorizedParties` setze ich vorerst **nicht**. Es gilt für alle Hosts, auch für Preview-URLs und localhost, und eine unvollständige Liste würde Logins brechen. Es wird zum Go-live mit der finalen Hostliste nachgeholt.
   - Sign-in und Sign-up laufen auf der Subdomain (englisch, `/sign-in`), mit Rücksprung zur aufgerufenen Seite.
-- **Test-Domain (Empfehlung):** `research-staging.price-action-trader.de`, in Vercel dem Branch `feat/pat-research-platform` als Preview-Domain zugewiesen. Dort funktionieren echte Clerk-Production-Logins, auf `*.vercel.app` nicht.
+- **Testumgebung:** Previews nutzen die Clerk-**Test**instanz, die auch auf `*.vercel.app` funktioniert, also keine echten Kundenkonten. Research läuft dort im Pfad-Modus unter `/research`. Eine Staging-Subdomain (`RESEARCH_EXTRA_HOSTS`) ist optional, um das Host-Routing vor dem Go-live zu testen.
 - **Code-Ablage:**
   - Seiten und Routen in `app/research/**` und `app/api/research/**`
   - Logik in `lib/research/**`, UI in `components/research/**`
@@ -348,10 +348,13 @@ Siehe Routen in Abschnitt 4.
 
 **Env-Vars (nur Namen):**
 - Stripe:
-  - `STRIPE_PRICE_ID_RESEARCH_MONTHLY_7`, `STRIPE_PRICE_ID_RESEARCH_MONTHLY_10`, `STRIPE_PRICE_ID_RESEARCH_MONTHLY_15` (optional `…_ANNUAL_…`)
+  - `STRIPE_RESEARCH_PRODUCT_ID`
+  - `STRIPE_PRICE_ID_RESEARCH_{READER|MEMBER|SUPPORTER}_{MONTHLY|ANNUAL}` (6 Preise)
   - `STRIPE_RESEARCH_PORTAL_CONFIGURATION_ID`
+  - optional `RESEARCH_STRIPE_AUTOMATIC_TAX=0` (nur falls Stripe Tax in einer Testumgebung nicht aktiv ist)
 - Research allgemein:
-  - `NEXT_PUBLIC_RESEARCH_URL`
+  - `RESEARCH_PUBLIC_HOST`: Kill-Switch. Ist die Variable in Production nicht gesetzt, ist Research dort komplett aus, auch die APIs.
+  - `RESEARCH_EXTRA_HOSTS`: z. B. eine Staging-Domain
   - `RESEARCH_SIGNING_SECRET`
   - `RESEARCH_EMAIL_FROM`
 - Telegram:
@@ -363,21 +366,38 @@ Siehe Routen in Abschnitt 4.
   - `BUNNY_RESEARCH_API_KEY`
   - `BUNNY_RESEARCH_TOKEN_KEY`
 - Bestehende werden mitgenutzt: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `BREVO_API_KEY`, `CRON_SECRET`, `BLOB_READ_WRITE_TOKEN`, Clerk.
+- Testumgebung: siehe `docs/research/TEST_ENVIRONMENT.md`.
 
 ## 16. Neue Abhängigkeiten (minimal)
 
 - `mcp-handler@2.2.0`, `@modelcontextprotocol/server@2.1.0` und `zod4` (npm-Alias auf zod 4, nur für MCP).
 - Keine SDKs für Brevo und Telegram und keine RSS-Bibliothek: schlanke `fetch`-Clients und selbst erzeugtes XML, alles getestet.
 
-## 17. Offene Fragen an dich
+## 17. Entscheidungen (25.09.2026, Antworten über Codex/Astra)
 
-1. **Previews:** Welche Datenbank und welche Stripe- und Clerk-Keys nutzen Vercel-Previews heute?
-   - Bis das geklärt ist, arbeite ich nur lokal (Wegwerf-DB) und pushe nicht.
-   - Wie lege ich die Test-Umgebung an: Branch-Env-Vars plus `research-staging.price-action-trader.de`?
-2. **Jahresabo:** ja oder nein? Vorschlag: 70 / 100 / 150 USD pro Jahr (zwei Monate geschenkt), gleicher Zugang.
-3. **Trial:** Ich empfehle keins, weil der Free-Tier der Teaser ist. Einverstanden?
-4. **Tier-Namen:** Reader 7 $ / Member 10 $ (empfohlen) / Supporter 15 $. Supporter-Credit in Videos nur für 15 $ und nur per Opt-in?
-5. **Bunny:** Eigene Research-Library mit signierten Videos (du legst sie an)? Oder erstmal die bestehende Library mit ungeschützten Embeds wie in der Mentorship?
-6. **MCP-OAuth über Clerk** (für claude.ai, Claude Desktop, ChatGPT): gleich in Phase e einplanen, mit dem oben beschriebenen Restrisiko? Oder zuerst nur persönliche Tokens?
-7. **Fund 3** (Mentorship-E-Mail-Fallback greift fremde USD-Customers): darf ich das als separaten kleinen PR mit Test beheben?
-8. **Go für Phase a?**
+1. **Previews:**
+   - Ausgangslage heute: Previews nutzen eine eigene Prisma-Postgres-DB, Stripe-Testkeys und die Clerk-Testinstanz. Branch-Overrides für Research gibt es noch keine. Ob Production wirklich eine andere DB nutzt, ist noch nicht bestätigt.
+   - **Vor dem ersten Push** muss die Research-Testumgebung nachweislich isoliert sein: eigene Test-DB, Branch-Env-Vars, Stripe-Testkeys mit eigenem Test-Webhook, sowie E-Mail, Discord und Blob isoliert oder deaktiviert.
+   - Bis dahin wird nur lokal gearbeitet. Anleitung: `docs/research/TEST_ENVIRONMENT.md`.
+2. **Jahresabo:** ja, optional neben dem Monatsabo. 70 / 100 / 150 USD pro Jahr, der Jahres-Gesamtpreis wird deutlich angezeigt.
+3. **Kein Trial.**
+4. **Stufen:** Reader 7 $, Member 10 $ (empfohlen), Supporter 15 $.
+   - Deutlich sichtbarer Hinweis: gleicher Zugang in allen Stufen.
+   - Nennung im Abspann nur für Supporter: separates Opt-in, selbst gewählter Name, standardmäßig aus.
+5. **Bunny:** eigene Research-Library mit signierten, ablaufenden Zugriffen. Auch direkte Wiedergabewege werden abgesichert, die Mentorship-Library bleibt unverändert.
+6. **KI-Zugang:**
+   - Zuerst persönliche, widerrufbare Tokens.
+   - OAuth (claude.ai-Connector) folgt im zweiten Schritt. Freigabe erst, wenn nachweislich geprüft ist, dass ein Token für den Research-Server ausgestellt wurde (Audience). Der Clerk-Fix vom 22.09.2026 muss dafür in der eingesetzten SDK-Version geprüft werden.
+7. **Fund 3:** eigener kleiner PR mit Regressionstests. Bestehende Fehlzuordnungen werden nicht automatisch verändert.
+8. **Phase a freigegeben unter Bedingungen:**
+   - lokal beginnen
+   - Preview-Push erst mit isolierter Testumgebung
+   - Kauf, Webhooks, Kündigung und Zugang im Testmodus nachweisen
+   - Regressionstests für Mentorship und Raid Map
+   - Produktionsmigrationen und Livegang sind eine separate Freigabe
+
+## 18. Neue Funde während Phase a
+
+- **Die Migrationshistorie lässt sich nicht auf einer leeren DB abspielen.** Die Tabelle `Page` wurde nie per Migration angelegt; `20260521153000_add_mentorship_performance_indexes` scheitert deshalb auf einer frischen DB.
+  - Eine neue Test-DB braucht einen Bootstrap: Schema von `main` einspielen, die bestehenden Migrationen als angewendet markieren, danach laufen die Research-Migrationen normal.
+  - Das Skript dafür ist `scripts/research-bootstrap-test-db.mjs`.
