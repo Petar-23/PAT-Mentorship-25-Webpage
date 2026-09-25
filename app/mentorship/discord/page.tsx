@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server'
 import { Sidebar } from '@/components/Sidebar'
 import { prisma } from '@/lib/prisma'
 import { stripe } from '@/lib/stripe'
+import { warnOnProductScopedUserIdMatch } from '@/lib/stripe-customer-scope.mjs'
 import { fetchDiscordGuildMember } from '@/lib/discord'
 import { getIsAdmin } from '@/lib/authz'
 
@@ -42,6 +43,8 @@ async function getConnectedDiscordAccount(userId: string | null): Promise<{
     if (stripeCustomerId) {
       const customer = await stripe.customers.retrieve(stripeCustomerId)
       if (!('deleted' in customer && customer.deleted)) {
+        // Nur Log (DB-Mapping oder metadata.userId): Ergebnis bleibt unverändert.
+        warnOnProductScopedUserIdMatch([customer], 'discord page')
         const raw = customer.metadata?.discordUserId
         connectedDiscordUserId = typeof raw === 'string' && raw.length > 0 ? raw : null
       }
