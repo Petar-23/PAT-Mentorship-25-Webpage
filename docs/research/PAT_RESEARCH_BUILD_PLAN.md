@@ -1,6 +1,6 @@
 # PAT Research – Bauplan (Entwurf zur Freigabe)
 
-Stand: 25.09.2026 · Branch `feat/pat-research-platform` (frisch von `origin/main`, eigener Worktree) · Phase a in Arbeit (lokal).
+Stand: 26.09.2026 · Branch `feat/pat-research-platform` · Phase a fertig (Draft-PR #163, isoliertes Preview, Stripe-Test-E2E 10/10); offen ist nur Petars Klick-Test im Browser.
 
 ## 0. Kurzfassung
 
@@ -408,3 +408,19 @@ Siehe Routen in Abschnitt 4.
 - **Kundenportal:** Stripe erlaubt pro Produkt nur einen Preis je Intervall. Deshalb gibt es drei Produkte (eins je Stufe) und drei Portal-Konfigurationen (monatlich, jährlich, basic). Ein Wechsel Monat ↔ Jahr ist im Portal gesperrt, weil Stripe sonst sofort ohne Gutschrift abbucht.
 - **Einwilligungstexte:** Der Client schickt die Textversion mit, die er angezeigt hat. Ist sie veraltet, antwortet der Server mit 409, und es wird nichts protokolliert. Ein Ledger-Test erzwingt bei jeder Textänderung eine neue Version.
 - **Fund 3:** PR #161 ist in den Research-Branch gemergt. Er muss vor dem Research-Go-live auf `main` sein.
+
+## 19. Stand Phase a (26.09.2026)
+
+Die Bedingungen für Phase a sind erfüllt:
+- **Testumgebung isoliert und nachgewiesen:** eigene Prisma-Postgres-Test-DB, Branch-Overrides, Isolationsnachweis „isoliert“.
+- **Kauf, Webhooks, Kündigung und Zugang im Stripe-Testmodus nachgewiesen:** Test-Clock-E2E 10/10 gegen das Preview.
+- **Regressionstests** für Mentorship und Raid Map (Webhook-Routing und gesamte Suite) sind grün.
+- Production-Migration und Go-live sind weiterhin eine eigene Freigabe.
+
+Noch offen:
+- Petars Klick-Test im Browser mit einem Clerk-Testkonto.
+
+Nebenbei erledigt:
+- PR #161 (Fund 3) ist gemergt.
+- PR #162 (Node 24) ist gemergt.
+- Der Prisma-Tarif steht wieder auf Starter (die versehentliche Umstellung auf Free ist zurückgenommen).
