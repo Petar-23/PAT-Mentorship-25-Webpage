@@ -1,14 +1,14 @@
+import { sendGoogleAdsConversion, sendGoogleEvent } from '@/components/analytics/google-tag'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { sanitizePublicEnv } from '@/lib/public-env'
 
 /**
  * Hilfsfunktion um Events an gtag zu senden.
  * Schlankes Utility, damit CTA-Komponenten nicht die GTM-React-Komponente importieren.
+ * Ohne Einwilligung (Analyse oder Marketing) ein No-op: es wird nichts gesendet und nichts gepuffert.
  */
 export function trackEvent(eventName: string, eventParams?: Record<string, unknown>) {
-  if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
-    window.gtag('event', eventName, eventParams)
-  }
+  sendGoogleEvent(eventName, eventParams)
 }
 
 /**
@@ -46,7 +46,6 @@ export const trackConversion = {
   },
 
   leadMagnetSignup: () => {
-    const googleAdsId = sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID)
     const conversionLabel =
       sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_LEAD_CONVERSION_LABEL) ??
       sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL)
@@ -58,17 +57,13 @@ export const trackConversion = {
       currency: 'EUR',
     })
 
-    if (googleAdsId && conversionLabel && typeof window !== 'undefined' && typeof window.gtag === 'function') {
-      window.gtag('event', 'conversion', {
-        send_to: `${googleAdsId}/${conversionLabel}`,
-        value: 0,
-        currency: 'EUR',
-      })
-    }
+    sendGoogleAdsConversion(conversionLabel, {
+      value: 0,
+      currency: 'EUR',
+    })
   },
 
   purchase: (value?: number) => {
-    const googleAdsId = sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID)
     const conversionLabel = sanitizePublicEnv(process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL)
 
     trackEvent('purchase', {
@@ -78,19 +73,9 @@ export const trackConversion = {
       currency: MENTORSHIP_CONFIG.currency,
     })
 
-    if (googleAdsId && conversionLabel && typeof window !== 'undefined' && typeof window.gtag === 'function') {
-      window.gtag('event', 'conversion', {
-        send_to: `${googleAdsId}/${conversionLabel}`,
-        value: value ?? MENTORSHIP_CONFIG.price,
-        currency: MENTORSHIP_CONFIG.currency,
-      })
-    }
+    sendGoogleAdsConversion(conversionLabel, {
+      value: value ?? MENTORSHIP_CONFIG.price,
+      currency: MENTORSHIP_CONFIG.currency,
+    })
   },
-}
-
-declare global {
-  interface Window {
-    dataLayer?: unknown[]
-    gtag?: (...args: unknown[]) => void
-  }
 }

@@ -1,56 +1,30 @@
 'use client'
 
-import { sanitizePublicEnv } from '@/lib/public-env'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import Script from 'next/script'
+import { clarityConsentState } from '@/lib/cookie-consent'
+import { markTrackingActive, useCookieConsent } from '@/lib/cookie-consent-client'
+import { sanitizePublicEnv } from '@/lib/public-env'
 
-interface CookieConsent {
-  necessary: boolean
-  analytics: boolean
-  marketing: boolean
-}
-
+/**
+ * Microsoft Clarity lädt nur mit Einwilligung in "Analyse".
+ * Direkt nach dem Stub geht die Einwilligung per consentv2 an Clarity (ad_Storage bleibt denied).
+ * Widerruf: lib/cookie-consent-client.ts ruft consentv2 mit denied und consent(false) auf, danach lädt das Banner die Seite neu.
+ */
 export function MicrosoftClarity() {
-  const [isAnalyticsGranted, setIsAnalyticsGranted] = useState(false)
+  const consent = useCookieConsent()
   const clarityId = sanitizePublicEnv(process.env.NEXT_PUBLIC_CLARITY_ID)
+  const isAnalyticsGranted = consent?.analytics === true
 
   useEffect(() => {
-    const checkConsent = () => {
-      const storedConsent = localStorage.getItem('cookieConsent')
-      if (!storedConsent) {
-        setIsAnalyticsGranted(false)
-        return
-      }
-      try {
-        const consent = JSON.parse(storedConsent) as CookieConsent
-        setIsAnalyticsGranted(consent.analytics === true)
-      } catch {
-        setIsAnalyticsGranted(false)
-      }
-    }
-
-    checkConsent()
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'cookieConsent') {
-        checkConsent()
-      }
-    }
-
-    const handleConsentChange = () => checkConsent()
-
-    window.addEventListener('storage', handleStorageChange)
-    window.addEventListener('cookieConsentChanged', handleConsentChange)
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('cookieConsentChanged', handleConsentChange)
-    }
-  }, [])
+    if (clarityId && isAnalyticsGranted) markTrackingActive('analytics')
+  }, [clarityId, isAnalyticsGranted])
 
   if (!clarityId || !isAnalyticsGranted) {
     return null
   }
+
+  const consentState = JSON.stringify(clarityConsentState(consent))
 
   return (
     <Script
@@ -62,7 +36,8 @@ export function MicrosoftClarity() {
             c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
             t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
             y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-          })(window, document, "clarity", "script", "${clarityId}");
+          })(window, document, "clarity", "script", ${JSON.stringify(clarityId)});
+          window.clarity("consentv2", ${consentState});
         `,
       }}
     />

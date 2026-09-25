@@ -5,9 +5,7 @@ import { Card } from "@/components/ui/card"
 import Image from "next/image"
 import InfiniteScroll from "@/components/ui/infinite-scroll"
 import { ChartLineUp as ChartCandlestick } from "@phosphor-icons/react/ChartLineUp"
-import { Receipt } from "@phosphor-icons/react/Receipt"
 import { Star } from "@phosphor-icons/react/Star"
-import { TrendUp as TrendingUp } from "@phosphor-icons/react/TrendUp"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { TestimonialModal } from "../ui/testimonial-modal"
 import { TestimonialCard } from "../ui/testimonial-card"
@@ -31,59 +29,13 @@ type Testimonial = {
 
 const staticTestimonials: Testimonial[] = [
   {
-    quote: "Ich danke @Petar und der ganzen Community. Wir formen  uns gemeinsam zu ICT Tradern und die Ergebnisse lassen sich sehen und es folgen bald viele andere.",
-    author: "Sergej M.",
-    role: "Future Trader",
-    results: {
-      label: "Payouts",
-      value: "+3.000 $",
-      description: "Payouts (2025)"
-    },
-    gradientColor: "rgba(59, 130, 246, 0)"
-  },
-  // 
-  {
-    quote: "Ich habe in fünf Tagen knappe 10K Dollar ertradet mit diesen drei Fundet Konten. Ein ganz besonderer Dank geht natürlich raus an @Petar. Danke Bro für die Zeit welche Du investierst für uns.",
-    author: "Michael G.",
-    role: "Future Trader",
-    results: {
-      label: "Payouts",
-      value: "+9.000 USD",
-      description: "Nach 6 Monaten"
-    },
-    gradientColor: "rgba(59, 130, 246, 0)"
-  },
-  // 
-  {
-    quote: "Was für eine Woche!! 7 Tage in Folge jeden Tag +1000$ in copy auf 4 PA-Konten. Ich denke ich habe es endlich geschafft.",
-    author: "Nikolaus K.",
-    role: "Future Trader",
-    results: {
-      label: "Payout",
-      value: "+20.000 USD",
-      description: "Nach 6 Monaten"
-    },
-    gradientColor: "rgba(59, 130, 246, 0)"
-  },
-  {
     quote: "Seit mich ein Freund (danke S.!) zu @Petar gebracht hat, habe ich unheimlich viel über die Price Action gelernt und mich auch persönlich weiterentwickelt: kein Gezocke und kein Hin- und Her mit x-tausend unterschiedlichen Setups und Indikatoren, sondern geduldiges Warten auf wirklich gute Setups mit Hand und Fuß. Und das zahlt sich aus, seitdem hat es sich ins Positive entwickelt und meine Screentime angenehm entschleunigt. Ich habe mich seit vielen Jahren erfolglos mit dem Thema Daytrading beschäftigt und bin nie wirklich weitergekommen - mal gut, mal schlecht, aber im Gesamten negativ mit viel Unsicherheit, ob das alles überhaupt dauerhaft funktionieren kann. Aber nun bin ich absolut sicher, dass es dauerhaft funktionieren wird - auch wenn es Zeit braucht - humble beginnings. @Petar vermittelt die Inhalte mit einer Engelsgeduld auf eine sehr angenehme Weise und auch die Community hinter @Petar ist ein absoluter Mehrwert. Ich bin sehr dankbar, dass ich hier dabei sein darf!",
     author: "Bernhard K.",
     role: "Future Trader Beginner",
     results: {
-      label: "Funded Account",
-      value: "+30%",
-      description: "Challenge Passes"
-    },
-    gradientColor: "rgba(59, 130, 246, 0)"
-  },
-  {
-    quote: "Ich kenne niemanden der ICT so deutlich erklären und nahebringen kann wie es Petar tut viele beanspruchen diesen Titel für sich aber er gehört eindeutig Petar! seit ich in der Mentorship bin hat sich alles sehr ins Positive entwickelt auch die Community ist sehr hilfsbereit und immer für eine Antwort da. durch diesen Kurs habe ich es geschafft Nicht nur meine Challange für mein Funded Konto zu bestehen sondern dieses ziel auch nach 5 Monaten beim ersten anlauf zu erreichen! keine Burning Accounts, Petar bringt einem erstmal alle Grundlagen Step by Step bei denn nichts ist wichtiger als ein Sicheres und Stabiles Fundament. ",
-    author: "ChikoDredd",
-    role: "Future Trader",
-    results: {
-      label: "Funded Account",
-      value: "+1",
-      description: "Nach 5 Monaten Funded"
+      label: "Marktverständnis",
+      value: "Verbessert",
+      description: ""
     },
     gradientColor: "rgba(59, 130, 246, 0)"
   },
@@ -95,17 +47,6 @@ const staticTestimonials: Testimonial[] = [
       label: "Marktverständnis",
       value: "Verbessert",
       description: "(nach 6 Monaten)"
-    },
-    gradientColor: "rgba(59, 130, 246, 0)"
-  },
-  {
-    quote: "Ich bin einer der ersten Schüler von Petar. Ich war von Anfang an fest überzeugt, dass er uns durch ICT Konzepten in Deutsch beibringen kann. Ich habe jahrelang nach Handelmodellen gesucht, die wirklich Sinn machen und ich habe ein Modell dank Petar gefunden, womit ich arbeiten und langfristig profitabel bleiben kann. 3 Funded Konten innerhalb dieses Mentorship. Payouts folgen bald. Danke Petar, dass du mir und die anderen beibringst, wie man mental/psychisch an den Märkten geht. ",
-    author: "Egon A.",
-    role: "Future Trader",
-    results: {
-      label: "Funded Account",
-      value: "+3",
-      description: "Nach 6 Monaten"
     },
     gradientColor: "rgba(59, 130, 246, 0)"
   },
@@ -132,33 +73,11 @@ const staticTestimonials: Testimonial[] = [
     gradientColor: "rgba(59, 130, 246, 0)"
   },
   {
-    quote: "Mein Fazit: Der beste ICT Mentor im deutschsprachigen Raum! Ich habe im Juni 2022 mit dem Trading angefangen. Anfangs habe ich mich nach dem Volumen orientiert und sogar zwei Fremdkapital Konten gefundet. Diese allerdings auch recht schnell wieder geschrottet, da ich nie so wirklich begriffen habe, warum der Mark tut was er tut. Über Umwege bin ich dann Ende 2023 auf Petar gestoßen und war von der ersten Minute an begeistert. Petar erklärt die ICT Strategien wie kein anderer. Er übersetzt nicht nur ICTs Lehren aus dem Englischen ins Deutsche, sondern er erklärt sie uns so lange, bis jeder es verstanden hat. Mit einer Ruhe und Geduld für die ich Ihn bewundere! Ich habe in diesem Jahr ein Fremdkapital Konto gefundet und stehe nun kurz vor meiner ersten Auszahlung. Ein weiteres Konto ist gerade in der Quali. Nicht ein einziges Konto habe ich geschrottet, seitdem ich Petar zuhöre. In den 1 ½ Jahren vorher waren es 29! Endlich geht der Plan auf!",
-    author: "Tino S.",
-    role: "Future Trader",
-    results: {
-      label: "Funded Account",
-      value: "+1",
-      description: "Nach 6 Monaten"
-    },
-    gradientColor: "rgba(59, 130, 246, 0)"
-  },
-  {
-    quote: "Ich habe mich schon vor dieser Mentorship mit ICT beschäftigt. Wer sich die Mentorship von ICT reingezogen hat, weiß das die Mentorship sehr unstrukturiert aufgebaut ist. Dank Petars Mentorship habe ich Struktur in mein Trading bekommen. Nach 6 Monaten konnte ich meine erste Auszahlung beantragen, bis jetzt ist es meine dritte Auszahlung. Dazu ist der Preis unschlagbar.",
-    author: "Tommy H.",
-    role: "Future Trader",
-    results: {
-      label: "Payout",
-      value: "+3",
-      description: "Nach 6 Monaten"
-    },
-    gradientColor: "rgba(59, 130, 246, 0)"
-  },
-  {
     quote: "Fazit: Absolute Empfehlung! Seitdem ich im Mentorship bin, habe ich endlich begonnen, den Markt wirklich zu verstehen. Darüber hinaus habe ich erkannt, dass man keine Indikatoren wie Volumen oder andere technische Tools braucht, um erfolgreich zu traden. Petar erklärt die Konzepte auf eine sehr verständliche Weise, sodass wirklich jeder nachvollziehen kann, wie der Markt funktioniert und wie man ihn richtig liest. Zuvor habe ich bereits andere Ausbildungen bei verschiedenen Tradern gemacht, aber das war alles nicht wirklich zielführend, bis ich durch einen Bekannten auf Petar gestoßen bin. Der Preis für das Mentorship ist wirklich unschlagbar, wenn man bedenkt, wie viel wertvolles Wissen und praktische Anwendung man hier vermittelt bekommt.",
     author: "Andreas W.",
     role: "Future Trader",
     results: {
-      label: "Martverständnis",
+      label: "Marktverständnis",
       value: "Verbessert",
       description: "(nach 6 Monaten)"
     },
@@ -169,14 +88,12 @@ const staticTestimonials: Testimonial[] = [
     author: "Claudia P.",
     role: "Future Trader",
     results: {
-      label: "Martverständnis",
+      label: "Marktverständnis",
       value: "Verbessert",
       description: "(nach 6 Monaten)"
     },
     gradientColor: "rgba(59, 130, 246, 0)"
   },
-  // 
-  // ... other testimonials
 ]
 
 export default function Testimonials() {
@@ -373,14 +290,14 @@ export default function Testimonials() {
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-blue-50 ring-1 ring-blue-200 mb-4">
-            <div className="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs sm:text-sm">🏆</div>
-            <span className="text-xs sm:text-sm font-medium text-blue-700">Erfolgsgeschichten</span>
+            <div className="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs sm:text-sm">💬</div>
+            <span className="text-xs sm:text-sm font-medium text-blue-700">Erfahrungen</span>
           </div>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-            PAT Trader Erfolgsgeschichten
+            Erfahrungen aus der PAT Mentorship
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-            Höre die Meinung von erfolgreichen Mentorship Absolventen
+            Was Mentees über die Mentorship sagen
           </p>
         </div>
 
@@ -393,23 +310,11 @@ export default function Testimonials() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-12">
-            <StatCard
-              icon={<TrendingUp className="h-6 w-6" />}
-              value="50+"
-              label="Gefundete FK-Konten"
-              color="blue"
-            />
-            <StatCard
-              icon={<Receipt className="h-6 w-6" />}
-              value="$60K+"
-              label="Kombinierte Payouts"
-              color="purple"
-            />
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-12 max-w-xl mx-auto">
             <StatCard
               icon={<ChartCandlestick className="h-6 w-6" />}
               value="130+"
-              label="Erfolgreiche Mentees"
+              label="Mentees seit 2024"
               color="green"
             />
             <WhopRatingCard
@@ -525,9 +430,9 @@ export default function Testimonials() {
         )}
 
         <p className="text-sm text-gray-500 text-center mt-8">
-          *Ergebnisse können variieren. Trading ist mit Risiken verbunden. Vergangene Leistungen garantieren keine zukünftigen Ergebnisse.
+          Einzelne Erfahrungen, keine Aussage über typische Ergebnisse. Trading ist mit Risiken verbunden und kann zu Verlusten führen. Vergangene Leistungen garantieren keine zukünftigen Ergebnisse.
           <br/>
-          Statistiken basieren auf M24+M25 sowie geteilten Feedbacks (u. a. Reviews auf Whop).
+          Angaben basieren auf M24 und M25 sowie geteilten Feedbacks (u. a. Reviews auf Whop).
         </p>
       </div>
     </section>

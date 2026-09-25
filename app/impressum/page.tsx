@@ -9,14 +9,15 @@ export default function ImpressumPage() {
           <h1 className="text-3xl font-bold mb-8">Impressum</h1>
           
           <section className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Angaben gemäß § 5 TMG</h2>
+            <h2 className="text-xl font-semibold mb-4">Angaben gemäß § 5 DDG</h2>
             <div className="space-y-2 text-gray-600">
               <p>Maric Capital GmbH</p>
               <p>Karolinenstraße 13</p>
               <p>64342 Seeheim-Jugenheim</p>
               <p>Geschäftsführer: Petar Maric und Andre Maric</p>
               <p>E-Mail: kontakt@price-action-trader.de</p>
-              <p>Handelsregister: Amtsgericht Darmstadt</p>
+              {/* USt-IdNr. ergänzen, falls vorhanden (§ 5 Abs. 1 Nr. 6 DDG). */}
+              <p>Handelsregister: Amtsgericht Darmstadt, HRB 107996</p>
             </div>
           </section>
 
@@ -30,7 +31,7 @@ export default function ImpressumPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Haftung für Inhalte</h2>
             <p className="text-gray-600">
-              Als Diensteanbieter sind wir gemäß § 7 Abs. 1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen.
+              Als Diensteanbieter sind wir für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach Art. 8 der Verordnung (EU) 2022/2065 (Digital Services Act) sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen.
             </p>
           </section>
 
@@ -42,19 +43,8 @@ export default function ImpressumPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Streitbeilegung</h2>
+            <h2 className="text-xl font-semibold mb-4">Verbraucherstreitbeilegung</h2>
             <p className="text-gray-600">
-              Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:{' '}
-              <a 
-                href="https://ec.europa.eu/consumers/odr/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-700"
-              >
-                https://ec.europa.eu/consumers/odr/
-              </a>
-            </p>
-            <p className="text-gray-600 mt-4">
               Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.
             </p>
           </section>

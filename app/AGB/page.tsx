@@ -5,7 +5,7 @@ export default function AGBPage() {
     <div className="container mx-auto py-12 px-4">
       <Card className="max-w-3xl mx-auto bg-white">
         <div className="p-6 md:p-8">
-          <h1 className="text-3xl font-bold mb-8">Allgemeine Geschäftsbedingungen (AGB)</h1>
+          <h1 className="text-3xl font-bold mb-8 break-words hyphens-auto">Allgemeine Geschäftsbedingungen (AGB)</h1>
           <p className="text-gray-600 mb-8">der Maric Capital GmbH <br /> Stand: Januar 2026</p>
 
           <section className="mb-8">
@@ -58,7 +58,7 @@ export default function AGBPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">§ 7 Widerrufsrecht und vorzeitiges Erlöschen</h2>
             <ol className="list-decimal pl-6 space-y-2 text-gray-600">
-              <li>Verbraucher haben ein 14-tägiges Widerrufsrecht (§§ 355 ff. BGB). Die detaillierte Widerrufsbelehrung ist vor Vertragsschluss auf <a href="https://price-action-trader.de/widerruf" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-700">price-action-trader.de/widerruf</a> abrufbar und wird per E-Mail nach Kauf zugesandt.</li>
+              <li>Verbraucher haben ein 14-tägiges Widerrufsrecht (§§ 355 ff. BGB). Die detaillierte Widerrufsbelehrung ist vor Vertragsschluss auf <a href="https://price-action-trader.de/Widerruf" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-700">price-action-trader.de/Widerruf</a> abrufbar und wird per E-Mail nach Kauf zugesandt.</li>
               <li>Vorzeitiges Erlöschen des Widerrufsrechts: Durch Akzeptanz dieser AGB und Abschluss des Checkouts erklären Sie sich ausdrücklich damit einverstanden, dass vor Ablauf der Widerrufsfrist mit der Erbringung der Dienstleistung begonnen wird (sofortiger Zugang zu allen Inhalten, Live-Calls, der Community und dem Mitgliederbereich). Ihnen ist bekannt und Sie bestätigen, dass Sie durch diese ausdrückliche Forderung Ihr Widerrufsrecht bereits mit Beginn der Leistungserbringung vollständig und unwiderruflich verlieren (§ 356 Abs. 5 BGB). Der Anbieter gewährt den vollständigen Zugang unmittelbar nach Zahlungseingang, womit das Widerrufsrecht erlischt. Bei Event-Tickets erlischt es spätestens mit Beginn der Veranstaltung.</li>
             </ol>
           </section>
@@ -96,7 +96,7 @@ export default function AGBPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">§ 12 Schlussbestimmungen</h2>
             <p className="text-gray-600 mb-4">
-              Deutsches Recht | Gerichtsstand für Kaufleute: Sitz des Anbieters | OS-Plattform: <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-700">https://ec.europa.eu/consumers/odr/</a> | Salvatorische Klausel.
+              Deutsches Recht | Gerichtsstand für Kaufleute: Sitz des Anbieters | Verbraucherstreitbeilegung: Der Anbieter ist nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen. | Salvatorische Klausel.
             </p>
           </section>
 

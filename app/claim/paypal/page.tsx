@@ -17,7 +17,8 @@ export default async function PayPalClaimPage() {
               verknuepfen.
             </p>
             <Button className="mt-4" asChild>
-              <Link href="/sign-in">Anmelden</Link>
+              {/* Ohne Rücksprung landet der Login seit dem Sign-in-Fallback im Dashboard-Checkout. */}
+              <Link href="/sign-in?redirect_url=%2Fclaim%2Fpaypal">Anmelden</Link>
             </Button>
           </CardContent>
         </Card>

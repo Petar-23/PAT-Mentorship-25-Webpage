@@ -13,7 +13,7 @@ export default function HormoziLanding() {
           </p>
           <h1 className="text-balance text-4xl font-bold leading-tight text-slate-900 sm:text-5xl md:text-6xl">
             Theorie macht dich schlau. <span className="text-blue-700">Praxis macht dich</span>{" "}
-            <span className="rounded-sm bg-yellow-200 px-1 text-blue-700">profitabel.</span>
+            <span className="rounded-sm bg-yellow-200 px-1 text-blue-700">sattelfest.</span>
           </h1>
           <p className="text-pretty text-base font-medium leading-relaxed text-slate-700 sm:text-lg">
             Die meisten Kurse enden bei Theorie. Ich fange dort an – wir gehen {MENTORSHIP_CONFIG.sessionsPerWeek}× pro Woche live in den Markt. So
@@ -56,36 +56,14 @@ export default function HormoziLanding() {
               {[
               {
                   title: 'Funktioniert das wirklich?',
-                  copy: (
-                    <>
-                      Ja. Tausende ICT‑Trader sind damit profitabel. Kyle hat den größten APEX‑Payout mit über 2,5
-                      Mio. USD. Er tradet genau diese Konzepte.{' '}
-                      <a
-                        href="https://x.com/jadecap_/status/1746146552815493564?s=20"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-slate-600 underline underline-offset-2 hover:text-slate-700"
-                      >
-                        Sein Tweet
-                      </a>
-                      .
-                    </>
-                  ),
+                  copy:
+                    'Ehrlich: Eine Garantie gibt es nicht, Trading kann zu Verlusten führen. Du lernst die ICT Konzepte Schritt für Schritt und siehst live am Chart, wie ich sie anwende. Ob sie für dich funktionieren, prüfst du selbst.',
                 },
               {
-                  title: 'Bist du profitabel oder nur ein Guru?',
+                  title: 'Wer steht dahinter?',
                   copy: (
                     <>
-                      Ja. Ich habe verifizierte Payouts von FK‑Anbietern.{' '}
-                      <a
-                        href="https://x.com/Topstep/status/1960336160917479927?s=20"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-slate-600 underline underline-offset-2 hover:text-slate-700"
-                      >
-                        Topstep‑Payout
-                      </a>
-                      . Ich lehre das seit 2 Jahren. 53 von 53 geben 5 Sterne (
+                      Ich lehre das seit 2 Jahren. Meine Trades streame ich live auf YouTube. Was Mentees sagen, liest du in den{' '}
                       <a
                         href="https://whop.com/price-action-trader-mentorship-24-d9/pat-mentorship-2025/"
                         target="_blank"
@@ -94,7 +72,7 @@ export default function HormoziLanding() {
                       >
                         Whop‑Bewertungen
                       </a>
-                      ). Meine Trades streame ich live auf YouTube.
+                      .
                     </>
                   ),
                 },

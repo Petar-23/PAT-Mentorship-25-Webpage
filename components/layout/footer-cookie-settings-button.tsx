@@ -1,13 +1,13 @@
 'use client'
 
-export function FooterCookieSettingsButton() {
-  const openSettings = () => {
-    window.dispatchEvent(new CustomEvent('openCookieSettings'))
-  }
+import { openCookieSettings } from '@/lib/cookie-consent-client'
 
+/** Öffnet die Cookie-Einstellungen erneut, um die Einwilligung zu ändern oder zu widerrufen (Art. 7 Abs. 3 DSGVO). */
+export function FooterCookieSettingsButton() {
   return (
     <button
-      onClick={openSettings}
+      type="button"
+      onClick={openCookieSettings}
       className="flex items-center gap-3 text-gray-400 hover:text-gray-300 transition-colors group"
     >
       <svg

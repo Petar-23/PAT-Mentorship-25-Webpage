@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation'
 import { ManageSubscriptionButton } from '@/components/ui/manage-subscription'
 import { useMentorshipNavigation } from '@/components/mentorship/shell'
 import { Fragment } from 'react'
+import NextLink from 'next/link'
+import { LABELS } from '@/lib/vertrag-erklaerung.mjs'
 
 type Kurs = {
   id: string
@@ -74,6 +76,11 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
       <div className="m-sidebar-footer">
         <ManageSubscriptionButton variant="ghost" label="Mitgliedschaft" className="m-account-link" icon={<CreditCard aria-hidden="true" />} />
         <Link href="/dashboard" prefetch={false} className="m-account-link" onNavigate={onNavigate}><UserCircle aria-hidden="true" /><span>Mein Konto</span></Link>
+        {/* § 312k und § 356a BGB: Der Root-Footer ist in der Mentorship ausgeblendet, deshalb hier. */}
+        <p className="m-legal-links">
+          <NextLink href="/kuendigen" prefetch={false}>{LABELS.cancelEntry}</NextLink>
+          <NextLink href="/widerrufen" prefetch={false}>{LABELS.withdrawEntry}</NextLink>
+        </p>
       </div>
     </aside>
   )

@@ -5,6 +5,7 @@ import Stripe from 'stripe'
 import { prisma, withPrismaRetry } from './prisma'
 import { mentorshipSourceCustomFields } from './pat-source'
 import { RAIDMAP_CONFIG, type RaidMapLang } from './raidmap-config'
+import { findCheckoutBlockingSubscription } from './checkout-eligibility.mjs'
 
 declare global {
   var stripeClient: Stripe | undefined
@@ -68,7 +69,7 @@ function parseCommaSeparatedIds(value: string | undefined): string[] {
     .filter((x) => x.length > 0)
 }
 
-function getAccessPriceIdsFromEnv(): string[] {
+export function getAccessPriceIdsFromEnv(): string[] {
   // New (recommended): allow multiple mentorship prices (e.g. M25 + M26)
   const access = parseCommaSeparatedIds(process.env.STRIPE_ACCESS_PRICE_IDS)
   if (access.length > 0) return access
@@ -472,6 +473,64 @@ export async function getSubscriptionSnapshot(
 export async function hasActiveSubscription(userId: string, email?: string): Promise<boolean> {
   const snapshot = await getSubscriptionSnapshot(userId, { retryCount: 1, email })
   return snapshot.hasActiveSubscription
+}
+
+/**
+ * Doppelkauf-Schutz für den Mentorship-Checkout. Die Dashboard-Weiche arbeitet mit dem DB-Cache,
+ * hier fragen wir frisch bei Stripe nach: Läuft für den User noch ein Mentorship-Abo oder ist eines offen
+ * (active, trialing, past_due, unpaid, incomplete)? Es zählt nur der Stripe-Status, nicht das Periodenende:
+ * Was Stripe als aktiv führt, wird weiter berechnet. Regel siehe lib/checkout-eligibility.mjs.
+ * Raid-Map-Abos zählen nicht (eigener Customer, zusätzlich per metadata.product ausgeschlossen).
+ */
+export async function findBlockingMentorshipSubscription(
+  userId: string
+): Promise<{ id: string; status: string } | null> {
+  const customerIds = new Set<string>()
+
+  try {
+    const row = await withPrismaRetry(
+      () =>
+        prisma.userSubscription.findUnique({
+          where: { userId },
+          select: { stripeCustomerId: true },
+        }),
+      { label: 'Read Stripe customer for checkout guard' }
+    )
+    if (row?.stripeCustomerId) customerIds.add(row.stripeCustomerId)
+  } catch (error) {
+    console.error('Error reading Stripe customer for checkout guard:', error)
+  }
+
+  const customers = await stripe.customers.search({
+    query: `metadata['userId']:'${userId}'`,
+  })
+  for (const customer of customers.data) {
+    if (!('deleted' in customer && customer.deleted)) customerIds.add(customer.id)
+  }
+
+  const mentorshipPriceIds = Array.from(
+    new Set([...getAccessPriceIdsFromEnv(), ...parseCommaSeparatedIds(process.env.STRIPE_PRICE_ID)])
+  )
+
+  for (const customerId of Array.from(customerIds)) {
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      status: 'all',
+      limit: 20,
+    })
+
+    const mentorshipSubscriptions = subscriptions.data
+      .filter((subscription) => subscription.metadata?.product !== 'raidmap')
+      .filter((subscription) =>
+        hasAnyRequiredPrice(getPriceIdsFromSubscription(subscription), mentorshipPriceIds)
+      )
+      .map((subscription) => ({ id: subscription.id, status: subscription.status }))
+
+    const blocking = findCheckoutBlockingSubscription(mentorshipSubscriptions)
+    if (blocking) return { id: blocking.id, status: blocking.status }
+  }
+
+  return null
 }
 
 export async function createCustomerPortalSession(userId: string, userEmail?: string | null) {

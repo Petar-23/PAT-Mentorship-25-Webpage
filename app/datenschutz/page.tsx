@@ -5,7 +5,7 @@ export default function DatenschutzPage() {
     <div className="container mx-auto py-12 px-4">
       <Card className="max-w-3xl mx-auto bg-white">
         <div className="p-6 md:p-8">
-          <h1 className="text-3xl font-bold mb-8">Datenschutzerklärung</h1>
+          <h1 className="text-3xl font-bold mb-8 break-words hyphens-auto">Datenschutzerklärung</h1>
           <p className="text-gray-600 mb-8">der Maric Capital GmbH <br /> Stand: Januar 2026</p>
 
           <section className="mb-8">
