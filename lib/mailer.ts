@@ -17,12 +17,18 @@ import 'server-only'
 import {
   MailError,
   createGmailSender,
+  isEmailAddress,
   readMailerEnv,
   type GmailSender,
   type OutgoingMail,
 } from '@/lib/mailer-gmail.mjs'
 
 export type { OutgoingMail }
+
+/** Einzelne Adresse, die der Versand akzeptiert (reines ASCII, ohne Anzeigename, ohne Liste). */
+export function isMailAddress(value: unknown): value is string {
+  return isEmailAddress(value)
+}
 
 export type MailResult =
   | { ok: true; id: string | null }
@@ -90,10 +96,9 @@ function getSender(): { sender: GmailSender } | { reason: 'not_configured' | 'in
  */
 export async function sendMail(mail: OutgoingMail, options: { tag?: string; timeoutMs?: number } = {}): Promise<MailResult> {
   const tag = options.tag ?? 'mail'
-  const resolved = getSender()
-  if (!('sender' in resolved)) return { ok: false, reason: resolved.reason }
-
   try {
+    const resolved = getSender()
+    if (!('sender' in resolved)) return { ok: false, reason: resolved.reason }
     const { id } = await resolved.sender.send(mail, { timeoutMs: options.timeoutMs })
     return { ok: true, id }
   } catch (error) {

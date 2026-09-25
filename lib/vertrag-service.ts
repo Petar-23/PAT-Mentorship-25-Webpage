@@ -22,7 +22,7 @@ import type Stripe from 'stripe'
 import { clerkClient } from '@clerk/nextjs/server'
 import { prisma, withPrismaRetry } from '@/lib/prisma'
 import { stripe, getAccessPriceIdsFromEnv, getRaidMapPriceId } from '@/lib/stripe'
-import { sendMail } from '@/lib/mailer'
+import { isMailAddress, sendMail } from '@/lib/mailer'
 import { sendCortanaTelegram } from '@/lib/telegram-notify'
 import {
   CONTACT_EMAIL,
@@ -225,10 +225,16 @@ function copyEmail(): string | null {
 
 async function sendContractMail(to: string, mail: Mail, options: { tag: string; bcc: boolean }): Promise<boolean> {
   const copy = options.bcc ? copyEmail() : null
+  let bcc = copy && copy.toLowerCase() !== to.toLowerCase() ? copy : null
+  // Eine falsch gesetzte Kopie-Adresse darf die Bestätigung an den Kunden nicht verhindern.
+  if (bcc && !isMailAddress(bcc)) {
+    console.warn('[vertrag] CONTRACT_NOTICE_COPY_EMAIL is not a single valid address, Bcc skipped')
+    bcc = null
+  }
   const result = await sendMail(
     {
       to,
-      bcc: copy && copy.toLowerCase() !== to.toLowerCase() ? copy : null,
+      bcc,
       replyTo: CONTACT_EMAIL,
       subject: mail.subject,
       text: mail.text,

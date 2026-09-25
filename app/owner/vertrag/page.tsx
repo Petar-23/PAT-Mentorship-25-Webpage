@@ -49,7 +49,7 @@ export default async function OwnerVertragPage() {
       ) : (
         <p className="mt-2 max-w-3xl text-sm text-red-700">
           {mail.status === 'missing'
-            ? `E-Mail-Versand nicht eingerichtet: ${mail.missing.join(' und ')} fehlt. Bis dahin geht keine Bestätigung raus.`
+            ? `E-Mail-Versand nicht eingerichtet: ${mail.missing.join(' und ')} ${mail.missing.length > 1 ? 'fehlen' : 'fehlt'}. Bis dahin geht keine Bestätigung raus.`
             : `E-Mail-Versand falsch eingerichtet: ${mail.error}. Bis dahin geht keine Bestätigung raus.`}{' '}
           Nötig sind ein Google-Dienstkonto mit domänenweiter Delegation für den Bereich gmail.send
           (GOOGLE_MAIL_SERVICE_ACCOUNT) und das Workspace-Postfach als Absender (MAIL_SENDER_EMAIL).
