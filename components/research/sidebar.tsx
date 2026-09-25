@@ -1,7 +1,7 @@
 'use client'
 
 import { FileText, House, Tag, UserCircle } from '@/components/research/icons'
-import { MentorshipLink as Link } from '@/components/mentorship/navigation-link'
+import { ResearchLink as Link } from '@/components/research/navigation-link'
 import { useResearchHref, useResearchLogicalPath } from '@/components/research/base-path'
 import { useResearchNavigation } from '@/components/research/shell'
 import type { ComponentPropsWithoutRef, ComponentType } from 'react'
