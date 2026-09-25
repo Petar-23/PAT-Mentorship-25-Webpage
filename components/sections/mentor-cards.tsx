@@ -1,9 +1,7 @@
 'use client'
 
-import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
-import { ChartLine as LineChart } from "@phosphor-icons/react/ChartLine"
 import { Medal as Award } from "@phosphor-icons/react/Medal"
 import { Play } from "@phosphor-icons/react/Play"
 import { Star } from "@phosphor-icons/react/Star"
@@ -12,85 +10,13 @@ import { Button } from "@/components/ui/button"
 import { CardWithMatrix } from "@/components/ui/card-with-matrix"
 import { getWhopReviewStats } from '@/lib/whop-review-stats'
 
-const TradingPerformanceCard = dynamic(
-  () => import('@/components/sections/trading-performance-card').then((mod) => mod.TradingPerformanceCard),
-  { ssr: false, loading: () => <TradingPerformanceSkeleton /> }
-)
-
-function TradingPerformanceSkeleton() {
-  return (
-    <CardWithMatrix
-      icon={<LineChart className="h-full w-full" />}
-      title="Live Trading Performance"
-      iconColor="text-emerald-400"
-      rainColor="#10B981"
-      gradientColor="rgba(16, 185, 129, 0.2)"
-    >
-      <div className="p-3 sm:p-6">
-        <div className="flex justify-between items-start mb-4 sm:mb-6">
-          <div>
-            <p className="text-gray-400 text-xs sm:text-sm">Meine aktuelle Statistik</p>
-            <p className="text-gray-500 text-[10px] sm:text-xs mt-0.5 sm:mt-1">
-              FK-Konto mit 2000 USD Max Drawdown
-            </p>
-          </div>
-          <div className="flex flex-col items-end">
-            <span className="text-green-400 text-xl sm:text-2xl font-semibold">+36,8%</span>
-            <span className="text-gray-400 text-[10px] sm:text-xs">Ø ROI / Monat</span>
-          </div>
-        </div>
-        <div className="h-[180px] sm:h-[200px] rounded-lg border border-emerald-400/10 bg-emerald-400/5" />
-        <div className="mt-3 sm:mt-4 text-xs sm:text-sm text-gray-400">
-          Performance-Chart wird geladen, sobald dieser Bereich sichtbar wird.
-        </div>
-      </div>
-    </CardWithMatrix>
-  )
-}
-
-export function LazyTradingPerformance() {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [shouldLoad, setShouldLoad] = useState(false)
-
-  useEffect(() => {
-    if (shouldLoad) return
-
-    const node = containerRef.current
-    if (!node || typeof window === 'undefined') return
-
-    if (typeof IntersectionObserver === 'undefined') {
-      const raf = requestAnimationFrame(() => setShouldLoad(true))
-      return () => cancelAnimationFrame(raf)
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setShouldLoad(true)
-          observer.disconnect()
-        }
-      },
-      { rootMargin: '600px 0px' }
-    )
-
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [shouldLoad])
-
-  return (
-    <div ref={containerRef}>
-      {shouldLoad ? <TradingPerformanceCard /> : <TradingPerformanceSkeleton />}
-    </div>
-  )
-}
-
 export function MentorStatsCards({ compact = false }: { compact?: boolean }) {
   return (
     <>
       <CardWithMatrix
         icon={<Users className="h-full w-full" />}
         value="130+"
-        subtitle="Erfolgreiche Mentees"
+        subtitle="Mentees seit 2024"
         iconColor="text-blue-400"
         rainColor="#60A5FA"
         gradientColor="rgba(96, 165, 250, 0.2)"
@@ -232,50 +158,6 @@ export function MentorWhopReviewCard({ compact = false }: { compact?: boolean })
         </div>
       </CardWithMatrix>
     </div>
-  )
-}
-
-export function MentorPayoutCard({ compact = false }: { compact?: boolean }) {
-  return (
-    <CardWithMatrix
-      icon={<LineChart className="h-full w-full" />}
-      title="Topstep Payout"
-      iconColor="text-green-400"
-      rainColor="#34D399"
-      gradientColor="rgba(52, 211, 153, 0.2)"
-      className="overflow-hidden"
-    >
-      <a
-        href="https://x.com/Topstep/status/1960336160917479927?s=20"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block"
-      >
-        <div className="relative">
-          <div className={compact ? "flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 sm:py-4" : "flex items-center gap-3 px-5 py-4"}>
-            <div className={compact ? "h-7 w-7 sm:h-9 sm:w-9 text-green-400" : "h-9 w-9 text-green-400"}>
-              <LineChart className="h-full w-full" />
-            </div>
-            <div>
-              <p className={compact ? "text-xs sm:text-sm font-semibold text-white" : "text-sm font-semibold text-white"}>Payout Nachweis</p>
-              <p className={compact ? "text-[10px] sm:text-xs text-gray-400" : "text-xs text-gray-400"}>Offizieller Topstep X Account</p>
-            </div>
-          </div>
-
-          <div className={compact ? "relative w-full overflow-hidden px-3 sm:px-5 pb-3 sm:pb-4" : "relative w-full overflow-hidden px-5 pb-4"}>
-            <div className={compact ? "relative w-full h-[100px] sm:h-[150px] md:h-[160px] overflow-hidden rounded-md sm:rounded-lg" : "relative w-full h-[130px] sm:h-[150px] md:h-[160px] overflow-hidden rounded-lg"}>
-              <Image
-                src="/images/ts_payout.png"
-                alt="Topstep Payout Screenshot"
-                fill
-                className="object-contain object-left"
-                sizes="(max-width: 768px) 90vw, 520px"
-              />
-            </div>
-          </div>
-        </div>
-      </a>
-    </CardWithMatrix>
   )
 }
 

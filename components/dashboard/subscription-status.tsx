@@ -22,7 +22,7 @@ interface SubscriptionStatusProps {
   cancelAt?: string | null
 }
 
-type StatusVariant = 'success' | 'canceled' | 'processing' | 'unknown'
+type StatusVariant = 'success' | 'canceled' | 'processing' | 'payment-due' | 'unknown'
 
 interface StatusDisplay {
   icon: React.ReactNode
@@ -95,6 +95,18 @@ export function SubscriptionStatus({
   })
 
   const getStatusDisplay = (): StatusDisplay => {
+    // Offene Rechnung zuerst: Stripe zieht weiter ein, auch wenn eine Kündigung geplant ist.
+    if (status === 'past_due' || status === 'unpaid') {
+      return {
+        icon: <AlertTriangle className="h-5 w-5 text-red-600" />,
+        text: 'Zahlung offen',
+        description: 'Bitte begleiche die offene Rechnung im Kundenportal.',
+        showAlert: false,
+        showCountdown: false,
+        variant: 'payment-due'
+      }
+    }
+
     // Check for cancellation
     if (isCanceled || status === 'canceled' || cancelAt) {
       return {
@@ -128,8 +140,8 @@ export function SubscriptionStatus({
     if (isPending || status === 'incomplete') {
       return {
         icon: <Clock className="h-5 w-5 text-yellow-500" />,
-        text: 'Abo wird verarbeitet',
-        description: 'Deine Mitgliedschaft wird bearbeitet',
+        text: 'Zahlung wird verarbeitet',
+        description: 'Dein Zugang wird freigeschaltet, sobald die Zahlung bestätigt ist.',
         showAlert: false,
         showCountdown: false,
         variant: 'processing'
@@ -157,6 +169,8 @@ export function SubscriptionStatus({
         return 'bg-red-50 border-red-100'
       case 'processing':
         return 'bg-yellow-50 border-yellow-100'
+      case 'payment-due':
+        return 'bg-red-50 border-red-100'
       default:
         return 'bg-gray-50'
     }

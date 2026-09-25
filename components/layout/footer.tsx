@@ -8,6 +8,7 @@ import {
 import { BookOpen } from "@phosphor-icons/react/dist/ssr/BookOpen"
 import { ChartLine as LineChart } from "@phosphor-icons/react/dist/ssr/ChartLine"
 import { FooterCookieSettingsButton } from "@/components/layout/footer-cookie-settings-button"
+import { LABELS } from "@/lib/vertrag-erklaerung.mjs"
 
 export function Footer() {
   const toolLinks = [
@@ -182,6 +183,25 @@ export function Footer() {
                   </p>
                 </div>
               ))}
+            </div>
+
+            {/* Kündigungsbutton (§ 312k BGB) und Widerrufsfunktion (§ 356a BGB): Beschriftung gesetzlich
+                vorgegeben, ohne Zusatztext im Link, auf jeder Seite sichtbar. ANWALTLICH PRÜFEN. */}
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/kuendigen"
+                prefetch={false}
+                className="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-slate-300 hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+              >
+                {LABELS.cancelEntry}
+              </Link>
+              <Link
+                href="/widerrufen"
+                prefetch={false}
+                className="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-slate-300 hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+              >
+                {LABELS.withdrawEntry}
+              </Link>
             </div>
           </div>
 

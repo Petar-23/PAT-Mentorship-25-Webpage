@@ -5,6 +5,17 @@ import { SpinnerGap as Loader2 } from '@phosphor-icons/react/SpinnerGap'
 import { Button } from '@/components/ui/button'
 import { trackConversion } from '@/components/analytics/tracking'
 
+const SUBSCRIPTION_EXISTS_MESSAGE =
+  'Für dein Konto läuft bereits ein Mentorship-Abo. Lade die Seite neu, um deinen aktuellen Stand zu sehen.'
+
+/** 409 von /api/create-checkout: Es läuft schon ein Abo (Doppelkauf-Schutz). */
+class CheckoutConflictError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'CheckoutConflictError'
+  }
+}
+
 interface CheckoutButtonProps {
   disabled?: boolean
   disabledReason?: string
@@ -53,6 +64,15 @@ export function CheckoutButton({
         signal: controller.signal,
       })
 
+      if (response.status === 409) {
+        const data: unknown = await response.json().catch(() => null)
+        const message =
+          data && typeof data === 'object' && typeof (data as { message?: unknown }).message === 'string'
+            ? (data as { message: string }).message
+            : SUBSCRIPTION_EXISTS_MESSAGE
+        throw new CheckoutConflictError(message)
+      }
+
       if (!response.ok) {
         throw new Error('Checkout fehlgeschlagen')
       }
@@ -70,9 +90,11 @@ export function CheckoutButton({
       if (controller.signal.aborted && !didTimeout) return
       console.error('Error starting checkout:', error)
       setErrorMessage(
-        didTimeout
-          ? 'Der Checkout antwortet gerade nicht. Bitte prüfe deine Verbindung und versuche es erneut.'
-          : 'Der Checkout konnte nicht geöffnet werden. Bitte versuche es erneut oder lade die Seite neu.'
+        error instanceof CheckoutConflictError
+          ? error.message
+          : didTimeout
+            ? 'Der Checkout antwortet gerade nicht. Bitte prüfe deine Verbindung und versuche es erneut.'
+            : 'Der Checkout konnte nicht geöffnet werden. Bitte versuche es erneut oder lade die Seite neu.'
       )
     } finally {
       window.clearTimeout(timeoutId)

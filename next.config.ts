@@ -36,6 +36,9 @@ const nextConfig = {
     },
   },
   async redirects() {
+    // /agb und /widerruf leitet middleware.ts weiter (lib/legal-path-aliases.mjs).
+    // Hier ginge es nicht: Next vergleicht source ohne Groß-/Kleinschreibung,
+    // eine Regel /agb -> /AGB würde auch /AGB treffen und endlos weiterleiten.
     return [
       { source: '/courses', destination: '/mentorship', permanent: true },
       { source: '/courses/:path*', destination: '/mentorship/:path*', permanent: true },

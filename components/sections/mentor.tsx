@@ -1,9 +1,7 @@
 import Image from 'next/image'
 import { Users } from "@phosphor-icons/react/dist/ssr/Users"
 import {
-  LazyTradingPerformance,
   MentorLessonCard,
-  MentorPayoutCard,
   MentorStatsCards,
   MentorWhopReviewCard,
 } from "@/components/sections/mentor-cards"
@@ -15,7 +13,7 @@ export default function MentorSection() {
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950 to-slate-950/20" />
       
       <div className="container mx-auto px-4 max-w-6xl relative z-10">
-        {/* Section Header (global, damit Chart & Mentor-Bild oben bündig starten) */}
+        {/* Section Header (global, damit Text und Mentor-Bild oben bündig starten) */}
         <div className="mb-5 sm:mb-8 text-center">
           <div className="inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-white/10 ring-1 ring-white/20 mb-3 sm:mb-4">
             <div className="bg-blue-500/20 text-blue-400 rounded-full p-1.5 sm:p-2 flex items-center justify-center">
@@ -61,24 +59,14 @@ export default function MentorSection() {
               ICT&apos;s Private Mentorship, die ICT 2025 Lecture Series sowie die Mentorships der Jahre 2022, 2023, 2024 - und vieles mehr.
             </p>
             <p className="text-sm sm:text-lg text-gray-300 leading-relaxed mb-3">
-              Seit Anfang 2024, lehre ich diese Konzepte in meiner eigenen privaten Mentorship. 
-              Mittlerweile konnten 130+ Mentees messbare Erfolge erzielen.
+              Seit Anfang 2024 lehre ich diese Konzepte in meiner eigenen privaten Mentorship. 
+              Mittlerweile waren 130+ Mentees dabei.
             </p>
             <p className="text-sm sm:text-lg text-gray-300 leading-relaxed">
               Ich werbe nicht mit Lifestyle und Luxus, sondern mit echten Trades 
               - schaue dir gerne meinen YouTube Kanal an. Mein Ziel ist es, dir 
-              eine nachhaltige Fähigkeit zu vermitteln, mit der du ein stabiles monatliches Einkommen erzielen kannst.
+              ein solides Marktverständnis und eine klare Struktur für dein Trading zu vermitteln.
             </p>
-          </div>
-
-          <div className="space-y-4 sm:space-y-8">
-            <div data-mentor-target="performance" data-mentor-viewport="mobile">
-              <LazyTradingPerformance />
-            </div>
-
-            <div data-mentor-target="payout" data-mentor-viewport="mobile">
-              <MentorPayoutCard compact />
-            </div>
           </div>
 
           <MentorLessonCard compact />
@@ -86,14 +74,26 @@ export default function MentorSection() {
 
         {/* Desktop Layout */}
         <div className="hidden lg:grid lg:grid-cols-2 gap-8 sm:gap-12 items-start">
-          {/* Left Column - Text and Trading Performance */}
+          {/* Left Column - Text and Lesson */}
           <div className="space-y-6 sm:space-y-8">
-            <div data-mentor-target="performance" data-mentor-viewport="desktop">
-              <LazyTradingPerformance />
-            </div>
-
-            <div data-mentor-target="payout" data-mentor-viewport="desktop">
-              <MentorPayoutCard />
+            <div>
+              <span data-mentor-target="experience" data-mentor-viewport="desktop" />
+              <span data-mentor-target="mentees" data-mentor-viewport="desktop" />
+              <p className="text-base sm:text-lg text-gray-300 leading-relaxed mb-4">
+                Ich habe mich intensiv mit dem Trading nach 
+                ICT&apos;s Smart Money Konzepten beschäftigt und über 1000 
+                Stunden Videomaterial durchgearbeitet. Dazu gehören 
+                ICT&apos;s Private Mentorship, die ICT 2025 Lecture Series sowie die Mentorships der Jahre 2022, 2023, 2024 - und vieles mehr.
+              </p>
+              <p className="text-base sm:text-lg text-gray-300 leading-relaxed mb-4">
+                Seit Anfang 2024 lehre ich diese Konzepte in meiner eigenen privaten Mentorship. 
+                Mittlerweile waren 130+ Mentees dabei.
+              </p>
+              <p className="text-base sm:text-lg text-gray-300 leading-relaxed">
+                Ich werbe nicht mit Lifestyle und Luxus, sondern mit echten Trades 
+                - schaue dir gerne meinen YouTube Kanal an. Mein Ziel ist es, dir 
+                ein solides Marktverständnis und eine klare Struktur für dein Trading zu vermitteln.
+              </p>
             </div>
 
             <MentorLessonCard />
@@ -118,27 +118,7 @@ export default function MentorSection() {
               </div>
 
               <div className="mt-6">
-                <span data-mentor-target="experience" data-mentor-viewport="desktop" />
-                <span data-mentor-target="mentees" data-mentor-viewport="desktop" />
-                <p className="text-base sm:text-lg text-gray-300 leading-relaxed mb-4">
-                  Ich habe mich intensiv mit dem Trading nach 
-                  ICT&apos;s Smart Money Konzepten beschäftigt und über 1000 
-                  Stunden Videomaterial durchgearbeitet. Dazu gehören 
-                  ICT&apos;s Private Mentorship, die ICT 2025 Lecture Series sowie die Mentorships der Jahre 2022, 2023, 2024 - und vieles mehr.
-                </p>
-                <p className="text-base sm:text-lg text-gray-300 leading-relaxed mb-4">
-                  Seit Anfang 2024, lehre ich diese Konzepte in meiner eigenen privaten Mentorship. 
-                  Mittlerweile konnten 130+ Mentees messbare Erfolge erzielen.
-                </p>
-                <p className="text-base sm:text-lg text-gray-300 leading-relaxed">
-                  Ich werbe nicht mit Lifestyle und Luxus, sondern mit echten Trades 
-                  - schaue dir gerne meinen YouTube Kanal an. Mein Ziel ist es, dir 
-                  eine nachhaltige Fähigkeit zu vermitteln, mit der du ein stabiles monatliches Einkommen erzielen kannst.
-                </p>
-
-                <div className="mt-6">
-                  <MentorWhopReviewCard />
-                </div>
+                <MentorWhopReviewCard />
               </div>
             </div>
           </div>

@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     default: 'PAT Mentorship 2026 | Trading nach ICT Konzepten lernen — Live & auf Deutsch',
     template: '%s | PAT Mentorship',
   },
-  description: `Lerne Trading nach ICT Smart Money Konzepten im Live-Mentoring. ${MENTORSHIP_CONFIG.sessionsPerWeek} Sessions pro Woche, auf Deutsch. 130+ erfolgreiche Absolventen. Monatlich kündbar.`,
+  description: `Lerne Trading nach ICT Smart Money Konzepten im Live-Mentoring. ${MENTORSHIP_CONFIG.sessionsPerWeek} Sessions pro Woche, auf Deutsch. 130+ Mentees seit 2024. Monatlich kündbar.`,
   keywords: ['ICT Trading', 'Smart Money Concept', 'Price Action Trading', 'Trading Mentoring Deutsch', 'Live Trading lernen', 'ICT auf Deutsch', 'Trading Ausbildung'],
   authors: [{ name: 'Petar', url: 'https://www.price-action-trader.de' }],
   creator: 'Price Action Trader',
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'PAT Mentorship 2026 | ICT Trading Live & auf Deutsch',
-    description: 'Live-Mentoring für Trading nach ICT Smart Money Konzepten. 130+ erfolgreiche Absolventen.',
+    description: 'Live-Mentoring für Trading nach ICT Smart Money Konzepten. 130+ Mentees seit 2024.',
     images: ['/images/pat-banner.jpeg'],
   },
   verification: {

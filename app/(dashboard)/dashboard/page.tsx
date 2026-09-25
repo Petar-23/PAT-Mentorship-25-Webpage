@@ -2,7 +2,8 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { getSubscriptionSnapshot } from '@/lib/stripe'
-import { isMentorshipAccessible } from '@/lib/authz'
+import { getIsAdmin, isMentorshipAccessible } from '@/lib/authz'
+import { decideDashboardView } from '@/lib/checkout-eligibility.mjs'
 import {
   getEmailFromSessionClaims,
   getFirstNameFromSessionClaims,
@@ -73,6 +74,25 @@ export default async function DashboardPage({
   }
 
   let snapshot = await snapshotPromise
+
+  // DB-Cache sagt active/trialing, aber das Periodenende ist vorbei: Meist fehlt nur der Webhook der
+  // Verlängerung. Bevor ein zahlendes Mitglied „Abo beendet“ und den Checkout sieht, einmal frisch bei
+  // Stripe nachfragen (aktualisiert auch den Cache). Selten, deshalb kein Dauerkostenfaktor.
+  if (
+    !checkForRecentCheckout &&
+    !isMentorshipAccessOverrideEmail(email) &&
+    decideDashboardView({
+      hasActiveSubscription: snapshot.hasActiveSubscription,
+      subscriptionDetails: snapshot.subscriptionDetails,
+    }).reason === 'period-ended'
+  ) {
+    snapshot = await getSubscriptionSnapshot(userId, {
+      retryCount: 1,
+      checkForRecentCheckout: true,
+      email: email ?? undefined,
+    })
+  }
+
   if (isMentorshipAccessOverrideEmail(email)) {
     snapshot = {
       hasActiveSubscription: true,
@@ -99,10 +119,39 @@ export default async function DashboardPage({
     }
   }
 
-  if (!initialData.subscriptionDetails) {
+  // Weiche nach Abo-Status (lib/checkout-eligibility.mjs): Ex-Mitglieder (canceled, incomplete_expired,
+  // abgelaufene Periode) dürfen neu buchen; past_due/unpaid/incomplete bleiben ohne zweiten Checkout.
+  let decision = decideDashboardView({
+    hasActiveSubscription: initialData.hasSubscription,
+    subscriptionDetails: initialData.subscriptionDetails,
+  })
+
+  // Nur wenn sich die Ansicht gegenüber früher ändern würde (Abo-Daten vorhanden, aber Checkout),
+  // fragen wir den Admin-Status ab. Admins behalten die Mitgliederansicht; im Fehlerfall ebenso.
+  if (decision.view === 'checkout' && initialData.subscriptionDetails) {
+    const isAdmin = await getIsAdmin(userId, sessionClaims).catch((error) => {
+      console.error('Error checking admin status for dashboard view:', error)
+      return true
+    })
+    decision = decideDashboardView({
+      hasActiveSubscription: initialData.hasSubscription,
+      subscriptionDetails: initialData.subscriptionDetails,
+      isAdmin,
+    })
+  }
+
+  if (decision.view === 'checkout' || !initialData.subscriptionDetails) {
+    const previousSubscription =
+      decision.reason === 'payment-expired'
+        ? 'payment-expired'
+        : decision.reason === 'subscription-ended' || decision.reason === 'period-ended'
+          ? 'ended'
+          : null
+
     return (
       <DashboardConversionClient
         firstName={firstName}
+        previousSubscription={previousSubscription}
         viewFlags={{
           showCheckoutSuccess,
           showCheckoutCanceled,
@@ -119,6 +168,7 @@ export default async function DashboardPage({
         ...initialData,
         subscriptionDetails: initialData.subscriptionDetails,
       }}
+      notice={decision.notice}
       viewFlags={{
         showCheckoutSuccess: showCheckoutSuccess && initialData.hasSubscription,
         showCoursesPaywall,

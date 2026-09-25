@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { Button } from "@/components/ui/button"
-import { ChartLine as LineChart } from "@phosphor-icons/react/ChartLine"
 import { Medal as Award } from "@phosphor-icons/react/Medal"
 import { SealCheck as BadgeCheck } from "@phosphor-icons/react/SealCheck"
 import { Star } from "@phosphor-icons/react/Star"
@@ -316,27 +315,7 @@ export default function Hero() {
                       <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-md bg-blue-500/15 text-blue-700 flex items-center justify-center shrink-0">
                         <Users aria-hidden="true" className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                       </div>
-                      130+ Absolventen
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleScrollToMentorTarget('performance')}
-                      className="flex min-h-11 touch-manipulation items-center gap-2 rounded-md bg-white px-2 py-2 text-left text-xs font-semibold text-gray-900 shadow-md transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 sm:px-3 sm:py-2.5"
-                    >
-                      <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-md bg-emerald-500/15 text-emerald-700 flex items-center justify-center shrink-0">
-                        <LineChart aria-hidden="true" className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                      </div>
-                      Performance sichtbar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleScrollToMentorTarget('payout')}
-                      className="flex min-h-11 touch-manipulation items-center gap-2 rounded-md bg-white px-2 py-2 text-left text-xs font-semibold text-gray-900 shadow-md transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 sm:px-3 sm:py-2.5"
-                    >
-                      <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-md bg-amber-500/15 text-amber-700 flex items-center justify-center shrink-0">
-                        <BadgeCheck aria-hidden="true" className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                      </div>
-                      Payout‑Nachweis
+                      130+ Mentees
                     </button>
                   </div>
                 </div>

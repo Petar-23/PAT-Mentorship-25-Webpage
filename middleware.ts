@@ -1,6 +1,7 @@
 // src/middleware.ts
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
+import { legalPathRedirect } from '@/lib/legal-path-aliases.mjs'
 import { resolveResearchRoute } from '@/lib/research/routing.mjs'
 
 const isAuthRequiredRoute = createRouteMatcher([
@@ -36,6 +37,15 @@ export default clerkMiddleware(async (auth, req) => {
     const url = req.nextUrl.clone()
     url.pathname = researchRoute.pathname
     return NextResponse.rewrite(url)
+  }
+
+  // /agb, /widerruf und andere Schreibweisen dauerhaft auf /AGB bzw. /Widerruf.
+  // Nicht in next.config.ts, weil Next dort ohne Groß-/Kleinschreibung vergleicht (Schleife).
+  const legalTarget = legalPathRedirect(req.nextUrl.pathname)
+  if (legalTarget) {
+    const legalUrl = req.nextUrl.clone()
+    legalUrl.pathname = legalTarget
+    return NextResponse.redirect(legalUrl, 308)
   }
 
   const { userId } = await auth()

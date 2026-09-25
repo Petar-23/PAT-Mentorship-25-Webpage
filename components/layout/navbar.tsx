@@ -352,7 +352,11 @@ export function Navbar() {
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <SignInButton mode="modal" forceRedirectUrl={signInRedirectUrl}>
+                  <SignInButton
+                    mode="modal"
+                    forceRedirectUrl={signInRedirectUrl}
+                    signUpForceRedirectUrl={signInRedirectUrl}
+                  >
                     <Button>
                       {signInLabel}
                     </Button>
@@ -398,7 +402,11 @@ export function Navbar() {
                 </>
               ) : (
                 <>
-                  <SignInButton mode="modal" forceRedirectUrl={signInRedirectUrl}>
+                  <SignInButton
+                    mode="modal"
+                    forceRedirectUrl={signInRedirectUrl}
+                    signUpForceRedirectUrl={signInRedirectUrl}
+                  >
                     <Button size="sm" className="min-h-11 px-4">
                       {signInLabel}
                     </Button>

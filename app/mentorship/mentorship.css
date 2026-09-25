@@ -124,6 +124,9 @@
 .m-account-link { display: flex; align-items: center; justify-content: flex-start; gap: 10px; min-height: 44px; border-radius: var(--m-radius-surface); padding: 8px 12px; width: 100%; color: var(--m-muted); font-size: 14px; font-weight: 400; text-align: left; }
 .m-account-link:hover { color: var(--m-text); background: var(--m-hover); }
 .m-account-link svg { width: 20px; height: 20px; flex: none; }
+.m-legal-links { display: flex; flex-wrap: wrap; gap: 0 12px; margin: 8px 0 0; padding: 0 12px; font-size: 12px; line-height: 1.4; }
+.m-legal-links a { display: inline-flex; align-items: center; min-height: 32px; color: var(--m-muted); text-decoration: underline; text-underline-offset: 2px; }
+.m-legal-links a:hover { color: var(--m-text); }
 .m-page-scroll { position: relative; min-width: 0; flex: 1; overflow-y: auto; scrollbar-gutter: stable; overscroll-behavior-y: contain; padding: 28px clamp(24px, 3vw, 48px) 48px; }
 .m-page { width: 100%; max-width: 1100px; margin: 0 auto; }
 .m-page-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 24px; }

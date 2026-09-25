@@ -273,6 +273,37 @@ model LeadMagnetSubscriber {
   updatedAt   DateTime @updatedAt
 }
 
+// Eingänge aus /kuendigen (§ 312k BGB) und /widerrufen (§ 356a BGB).
+// id ist die Eingangs-ID aus der Bestätigung, z. B. K-260925-7F3KQ9.
+model ContractDeclaration {
+  id                   String    @id
+  type                 String // kuendigung | widerruf
+  name                 String
+  email                String // E-Mail zur Identifizierung (Konto bzw. Bestellung)
+  confirmationEmail    String
+  contract             String // mentorship_stripe | mentorship_paypal | raidmap
+  kind                 String? // ordentlich | ausserordentlich (nur Kündigung)
+  reason               String? // Grund der außerordentlichen Kündigung
+  timing               String? // naechstmoeglich | datum (nur Kündigung)
+  requestedDate        DateTime? @db.Date
+  details              String? // freie Zusatzangaben zum Vertrag (Widerruf)
+  receivedAt           DateTime  @default(now())
+  status               String // received | scheduled | already_scheduled | manual
+  statusNote           String?
+  stripeSubscriptionId String?
+  endsAt               DateTime?
+  confirmationSentAt   DateTime? // vollständige Bestätigung an eine hinterlegte Adresse versendet
+  mailNote             String? // welche E-Mails versendet wurden (ohne Adressen)
+  ipHash               String? // HMAC der IP, nur für das Missbrauchslimit, nach 48 Stunden gelöscht
+  updatedAt            DateTime  @updatedAt
+
+  @@index([type, receivedAt])
+  @@index([receivedAt])
+  @@index([email, receivedAt])
+  @@index([confirmationEmail, receivedAt])
+  @@index([ipHash, receivedAt])
+}
+
 // PayPal-Subscriber (M24-Sonderfall): vom Admin importierte PayPal-Abos.
 // User koennen ihren PayPal-Account ueber die Claim-Seite verknuepfen.
 model PayPalSubscriber {
