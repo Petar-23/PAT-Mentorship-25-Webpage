@@ -7,6 +7,14 @@ export default function DatenschutzPage() {
         <div className="p-6 md:p-8">
           <h1 className="text-3xl font-bold mb-8 break-words hyphens-auto">Datenschutzerklärung</h1>
           <p className="text-gray-600 mb-8">der Maric Capital GmbH <br /> Stand: Januar 2026</p>
+          {/*
+            DATENSCHUTZ TODO (ANWALTLICH PRÜFEN): Kündigungs- und Widerrufsbestätigungen (/kuendigen,
+            /widerrufen) gehen per Gmail-API über Google Workspace (Google als Auftragsverarbeiter,
+            Vertragspartner laut Workspace-Vertrag, siehe lib/mailer.ts). Das fehlt hier noch: Abschnitt
+            zum E-Mail-Versand ergänzen und das Cloud Data Processing Addendum in der Google
+            Admin-Konsole akzeptieren.
+            Der Lead-Magnet synchronisiert Kontakte weiter mit Brevo, auch das steht hier noch nicht.
+          */}
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">1. Verantwortlicher und Kontaktdaten</h2>

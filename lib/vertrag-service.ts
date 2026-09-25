@@ -2,7 +2,8 @@ import 'server-only'
 
 // Verarbeitung von Kündigungen (/kuendigen, § 312k BGB) und Widerrufen (/widerrufen, § 356a BGB).
 // Der Ablauf selbst (Empfänger der E-Mails, Limits, Reihenfolge) steht in lib/vertrag-ablauf.mjs,
-// hier werden nur DB (inkl. PayPal-Liste), Stripe, Clerk, Brevo und Telegram angeschlossen.
+// hier werden nur DB (inkl. PayPal-Liste), Stripe, Clerk, E-Mail (Google Workspace über lib/mailer.ts)
+// und Telegram angeschlossen.
 //
 // ANWALTLICH PRÜFEN: Ablauf und Wortlaut sind ein Entwurf. Vor dem Livegang soll ein Anwalt
 // für IT- und Wettbewerbsrecht freigeben, was automatisch passiert und was manuell bleibt.
@@ -21,6 +22,7 @@ import type Stripe from 'stripe'
 import { clerkClient } from '@clerk/nextjs/server'
 import { prisma, withPrismaRetry } from '@/lib/prisma'
 import { stripe, getAccessPriceIdsFromEnv, getRaidMapPriceId } from '@/lib/stripe'
+import { sendMail } from '@/lib/mailer'
 import { sendCortanaTelegram } from '@/lib/telegram-notify'
 import {
   CONTACT_EMAIL,
@@ -44,15 +46,15 @@ import {
 } from '@/lib/vertrag-ablauf.mjs'
 import type { KuendigungData, WiderrufData } from '@/lib/vertrag-validierung.mjs'
 
-// Zeitgrenzen: Die Eingangsbestätigung muss auch dann erscheinen, wenn DB, Stripe oder Brevo hängen.
+// Zeitgrenzen: Die Eingangsbestätigung muss auch dann erscheinen, wenn DB, Stripe oder Gmail hängen.
 // Vor der Antwort: nur Speichern (6 s). Danach (after): Limit zählen 6 s, Stripe bzw. PayPal-Liste
-// 15 s (die neutrale E-Mail an eine abweichende Adresse läuft parallel dazu), Mails parallel 8 s,
-// Update und Telegram parallel 6 s. Schlimmster Fall 6 s + 35 s = 41 s, unter maxDuration = 60 in den
-// API-Routen.
+// 15 s (die neutrale E-Mail an eine abweichende Adresse läuft parallel dazu), Mails parallel 8 s
+// (je Mail Gmail-Token und Versand zusammen), Update und Telegram parallel 6 s. Schlimmster Fall
+// 6 s + 35 s = 41 s, unter maxDuration = 60 in den API-Routen.
 const DB_TIMEOUT_MS = 6_000
 const STRIPE_BUDGET_MS = 15_000
 const STRIPE_UPDATE_TIMEOUT_MS = 10_000
-const BREVO_TIMEOUT_MS = 8_000
+const MAIL_TIMEOUT_MS = 8_000
 const MAX_CUSTOMERS = 5
 
 type Contract = KuendigungData['contract']
@@ -214,48 +216,27 @@ async function scheduleCancellation(subscriptionId: string, declarationId: strin
 }
 
 // ---------------------------------------------------------------------------
-// Brevo und Telegram
+// E-Mail (Google Workspace, lib/mailer.ts) und Telegram
 // ---------------------------------------------------------------------------
 
 function copyEmail(): string | null {
   return process.env.CONTRACT_NOTICE_COPY_EMAIL?.trim() || null
 }
 
-async function sendBrevoEmail(to: string, mail: Mail, options: { tag: string; bcc: boolean }): Promise<boolean> {
-  const apiKey = process.env.BREVO_API_KEY
-  const senderEmail = process.env.BREVO_SENDER_EMAIL
-  if (!apiKey || !senderEmail) {
-    console.warn('[vertrag] BREVO_API_KEY/BREVO_SENDER_EMAIL not set, email skipped')
-    return false
-  }
-
+async function sendContractMail(to: string, mail: Mail, options: { tag: string; bcc: boolean }): Promise<boolean> {
   const copy = options.bcc ? copyEmail() : null
-
-  try {
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: { 'api-key': apiKey, 'content-type': 'application/json', accept: 'application/json' },
-      body: JSON.stringify({
-        sender: { email: senderEmail, name: process.env.BREVO_SENDER_NAME?.trim() || 'PRICE ACTION TRADER' },
-        to: [{ email: to }],
-        ...(copy && copy.toLowerCase() !== to.toLowerCase() ? { bcc: [{ email: copy }] } : {}),
-        replyTo: { email: CONTACT_EMAIL },
-        subject: mail.subject,
-        textContent: mail.text,
-        htmlContent: mail.html,
-        tags: [options.tag],
-      }),
-      signal: AbortSignal.timeout(BREVO_TIMEOUT_MS),
-    })
-    if (!res.ok) {
-      console.error('[vertrag] Brevo send failed:', res.status, await res.text().catch(() => ''))
-      return false
-    }
-    return true
-  } catch (error) {
-    console.error('[vertrag] Brevo send error:', error)
-    return false
-  }
+  const result = await sendMail(
+    {
+      to,
+      bcc: copy && copy.toLowerCase() !== to.toLowerCase() ? copy : null,
+      replyTo: CONTACT_EMAIL,
+      subject: mail.subject,
+      text: mail.text,
+      html: mail.html,
+    },
+    { tag: options.tag, timeoutMs: MAIL_TIMEOUT_MS }
+  )
+  return result.ok
 }
 
 async function notifyPetar(lines: string[]) {
@@ -356,7 +337,7 @@ function deps(): DeclarationDeps {
     findSubscriptions,
     findPayPalContacts,
     scheduleCancellation,
-    sendMail: sendBrevoEmail,
+    sendMail: sendContractMail,
     notify: notifyPetar,
     stripeBudgetMs: STRIPE_BUDGET_MS,
   }

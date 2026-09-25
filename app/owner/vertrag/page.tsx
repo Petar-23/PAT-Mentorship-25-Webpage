@@ -1,3 +1,4 @@
+import { mailerStatus } from '@/lib/mailer'
 import { prisma } from '@/lib/prisma'
 import { LIMITS } from '@/lib/vertrag-ablauf.mjs'
 import { contractLabel, formatBerlinDate, formatBerlinDateTime, formatDateKey, kindLabel } from '@/lib/vertrag-erklaerung.mjs'
@@ -25,6 +26,8 @@ export default async function OwnerVertragPage() {
       'Die Eingänge konnten nicht geladen werden. Sind die Migrationen 20260925120000_add_contract_declaration und 20260925180000_contract_declaration_abuse_guard eingespielt?'
   }
 
+  const mail = mailerStatus()
+
   return (
     <div className="container mx-auto px-4 py-10">
       <h1 className="text-2xl font-bold text-neutral-900">Kündigungen und Widerrufe</h1>
@@ -37,6 +40,21 @@ export default async function OwnerVertragPage() {
         Stunden) geht keine Mail raus. Über {LIMITS.maxPerDay} Erklärungen insgesamt in 24 Stunden gehen keine Mails mehr an nicht hinterlegte Adressen, und
         Telegram meldet nur noch Eingänge mit gefundenem Vertrag.
       </p>
+
+      {mail.status === 'ok' ? (
+        <p className="mt-2 max-w-3xl text-sm text-neutral-600">
+          Bestätigungen gehen über Google Workspace (Gmail-API) von {mail.senderEmail} als „{mail.senderName}“. Kopien liegen
+          im Ordner „Gesendet“ dieses Postfachs.
+        </p>
+      ) : (
+        <p className="mt-2 max-w-3xl text-sm text-red-700">
+          {mail.status === 'missing'
+            ? `E-Mail-Versand nicht eingerichtet: ${mail.missing.join(' und ')} fehlt. Bis dahin geht keine Bestätigung raus.`
+            : `E-Mail-Versand falsch eingerichtet: ${mail.error}. Bis dahin geht keine Bestätigung raus.`}{' '}
+          Nötig sind ein Google-Dienstkonto mit domänenweiter Delegation für den Bereich gmail.send
+          (GOOGLE_MAIL_SERVICE_ACCOUNT) und das Workspace-Postfach als Absender (MAIL_SENDER_EMAIL).
+        </p>
+      )}
 
       {loadError ? <p className="mt-6 text-sm text-red-700">{loadError}</p> : null}
       {!loadError && rows.length === 0 ? <p className="mt-6 text-sm text-neutral-600">Noch keine Eingänge.</p> : null}
