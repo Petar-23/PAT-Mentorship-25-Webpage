@@ -36,6 +36,11 @@ const benefits = [
 
 type DashboardConversionClientProps = {
   firstName: string | null
+  /**
+   * Früheres Abo: `ended` = gekündigt oder bezahlte Periode abgelaufen,
+   * `payment-expired` = Erstzahlung nie abgeschlossen (incomplete_expired).
+   */
+  previousSubscription?: 'ended' | 'payment-expired' | null
   viewFlags: {
     showCheckoutSuccess: boolean
     showCheckoutCanceled: boolean
@@ -46,8 +51,10 @@ type DashboardConversionClientProps = {
 
 export default function DashboardConversionClient({
   firstName,
+  previousSubscription = null,
   viewFlags,
 }: DashboardConversionClientProps) {
+  const isReturningMember = previousSubscription === 'ended'
   const {
     showCheckoutSuccess,
     showCheckoutCanceled,
@@ -199,13 +206,25 @@ export default function DashboardConversionClient({
         ) : null}
 
         <header className="mb-8 text-center sm:mb-10">
-          <p className="text-sm font-medium text-blue-700">Willkommen{firstName ? `, ${firstName}` : ''}</p>
+          <p className="text-sm font-medium text-blue-700">
+            {isReturningMember ? 'Willkommen zurück' : 'Willkommen'}
+            {firstName ? `, ${firstName}` : ''}
+          </p>
           <h1 className="mt-2 text-balance text-3xl font-bold text-gray-900 sm:text-4xl">
             Dein Einstieg in die {MENTORSHIP_CONFIG.programName}
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-pretty text-gray-600 sm:text-lg">
             Prüfe die Konditionen und buche im nächsten Schritt sicher über Stripe.
           </p>
+          {isReturningMember ? (
+            <p className="mx-auto mt-3 max-w-2xl text-pretty text-sm text-gray-600">
+              Dein bisheriges Abo ist beendet. Du kannst die Mentorship hier jederzeit neu buchen.
+            </p>
+          ) : previousSubscription === 'payment-expired' ? (
+            <p className="mx-auto mt-3 max-w-2xl text-pretty text-sm text-gray-600">
+              Deine letzte Zahlung wurde nicht abgeschlossen. Du kannst die Buchung hier neu starten.
+            </p>
+          ) : null}
         </header>
 
         <Card className="mb-8 border-2 shadow-sm">

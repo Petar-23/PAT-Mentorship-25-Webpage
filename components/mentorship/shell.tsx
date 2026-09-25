@@ -5,6 +5,8 @@ import { createContext, useContext, useEffect, useState, type Dispatch, type Rea
 import Link from 'next/link'
 import Image from 'next/image'
 import { UserButton, useUser } from '@clerk/nextjs'
+import { Cookie } from '@phosphor-icons/react/dist/ssr/Cookie'
+import { openCookieSettings } from '@/lib/cookie-consent-client'
 
 export type MentorshipTheme = 'light' | 'dark'
 const ThemeContext = createContext<MentorshipTheme>('light')
@@ -84,7 +86,12 @@ export function MentorshipShell({ children, headerNavigation, headerStatus, init
             <UserButton afterSignOutUrl="/" appearance={{
               elements: { avatarBox: 'h-8 w-8', userButtonTrigger: 'h-11 w-11 justify-center' },
               variables: { colorBackground: theme === 'dark' ? '#3d3d3a' : '#ffffff', colorText: theme === 'dark' ? '#faf9f5' : '#141413', colorPrimary: theme === 'dark' ? '#faf9f5' : '#141413' },
-            }} />
+            }}>
+              {/* Art. 7 Abs. 3 DSGVO: Der Root-Footer mit "Cookie-Einstellungen" ist hier ausgeblendet, also Widerruf über das Profilmenü. */}
+              <UserButton.MenuItems>
+                <UserButton.Action label="Cookie-Einstellungen" labelIcon={<Cookie size={16} weight="bold" aria-hidden="true" />} onClick={openCookieSettings} />
+              </UserButton.MenuItems>
+            </UserButton>
           </div>
         </header>
         <div className="m-app-content">{children}</div>

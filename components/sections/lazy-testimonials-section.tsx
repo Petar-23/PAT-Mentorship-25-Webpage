@@ -49,26 +49,24 @@ export default function LazyTestimonialsSection() {
 
 function TestimonialsFallback() {
   return (
-    <section className="py-24 bg-white" aria-label="Erfolgsgeschichten werden geladen">
+    <section className="py-24 bg-white" aria-label="Erfahrungen werden geladen">
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-blue-50 ring-1 ring-blue-200 mb-4">
-            <div className="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs sm:text-sm">🏆</div>
-            <span className="text-xs sm:text-sm font-medium text-blue-700">Erfolgsgeschichten</span>
+            <div className="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs sm:text-sm">💬</div>
+            <span className="text-xs sm:text-sm font-medium text-blue-700">Erfahrungen</span>
           </div>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-            PAT Trader Erfolgsgeschichten
+            Erfahrungen aus der PAT Mentorship
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto text-lg">
-            Höre die Meinung von erfolgreichen Mentorship Absolventen
+            Was Mentees über die Mentorship sagen
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-12">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-12 max-w-xl mx-auto">
           {[
-            ['50+', 'Gefundete FK-Konten'],
-            ['$60K+', 'Kombinierte Payouts'],
-            ['130+', 'Erfolgreiche Mentees'],
+            ['130+', 'Mentees seit 2024'],
             ['5,0★', 'Whop-Reviews'],
           ].map(([value, label]) => (
             <div

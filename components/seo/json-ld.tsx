@@ -30,7 +30,7 @@ export function JsonLd() {
       name: 'Petar',
       jobTitle: 'ICT Trading Mentor',
       description:
-        'Spezialisiert auf ICT Smart Money Konzepte. Über 1000 Stunden ICT-Videomaterial studiert. 130+ erfolgreiche Mentees seit 2024.',
+        'Spezialisiert auf ICT Smart Money Konzepte. Über 1000 Stunden ICT-Videomaterial studiert. 130+ Mentees seit 2024.',
       url: 'https://price-action-trader.de',
     },
     inLanguage: 'de',

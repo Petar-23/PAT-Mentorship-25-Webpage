@@ -2,12 +2,16 @@
 
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ArrowClockwise } from '@phosphor-icons/react/ArrowClockwise'
 import { BookOpen } from '@phosphor-icons/react/BookOpen'
+import { Clock } from '@phosphor-icons/react/Clock'
 import { CreditCard } from '@phosphor-icons/react/CreditCard'
 import { LockIcon } from '@phosphor-icons/react/Lock'
+import { Warning } from '@phosphor-icons/react/Warning'
 import { trackConversion } from '@/components/analytics/tracking'
 import { MENTORSHIP_CONFIG, MENTORSHIP_IS_UPCOMING } from '@/lib/config'
 
@@ -63,6 +67,9 @@ type SubscriptionDetails = {
   currentPeriodEnd: string | null
 }
 
+/** Hinweis aus lib/checkout-eligibility.mjs (decideDashboardView). */
+type DashboardNotice = 'payment-due' | 'payment-processing' | null
+
 type DashboardMemberClientProps = {
   initialData: {
     hasSubscription: boolean
@@ -75,6 +82,7 @@ type DashboardMemberClientProps = {
       firstName: string | null
     }
   }
+  notice?: DashboardNotice
   viewFlags: {
     showCheckoutSuccess: boolean
     showCoursesPaywall: boolean
@@ -83,9 +91,12 @@ type DashboardMemberClientProps = {
 
 export default function DashboardMemberClient({
   initialData,
+  notice = null,
   viewFlags,
 }: DashboardMemberClientProps) {
+  const router = useRouter()
   const { showCheckoutSuccess, showCoursesPaywall } = viewFlags
+  const hasPaymentDue = notice === 'payment-due'
   const mentorshipStatus = initialData.mentorshipStatus
   const mentorshipStartDate = formatMentorshipDate(initialData.mentorshipStatus.startDate)
   const subscriptionStartDate = formatMentorshipDate(initialData.subscriptionDetails.startDate)
@@ -93,6 +104,7 @@ export default function DashboardMemberClient({
     ? formatMentorshipDate(initialData.subscriptionDetails.currentPeriodEnd)
     : null
   const subscriptionIsPending =
+    notice === 'payment-processing' ||
     initialData.subscriptionDetails.isPending ||
     initialData.subscriptionDetails.status === 'incomplete'
   const hasMentorshipAccess =
@@ -141,7 +153,67 @@ export default function DashboardMemberClient({
           Willkommen, {initialData.user.firstName || 'Mitglied'}!
         </h1>
 
-        {showCoursesPaywall && !initialData.hasSubscription && (
+        {hasPaymentDue ? (
+          <div className="mb-8">
+            <Card className="border-red-200 bg-red-50 shadow-sm" role="status">
+              <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-700">
+                    <Warning aria-hidden="true" className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-red-900">Zahlung offen</p>
+                    <p className="mt-1 text-sm text-red-900/80">
+                      Deine letzte Zahlung ist nicht durchgegangen, deshalb ist dein Mentorship-Zugang gerade gesperrt.
+                      Bezahle die offene Rechnung im Kundenportal oder hinterlege dort eine neue Zahlungsmethode.
+                      Danach wird dein Zugang automatisch wieder freigeschaltet. Bitte buche kein zweites Abo.
+                    </p>
+                  </div>
+                </div>
+                <div className="w-full shrink-0 md:w-[260px]">
+                  <ManageSubscriptionButton
+                    variant="default"
+                    label="Offene Rechnung bezahlen"
+                    className="bg-red-700 text-white hover:bg-red-800 touch-manipulation"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
+
+        {notice === 'payment-processing' ? (
+          <div className="mb-8">
+            <Card className="border-amber-200 bg-amber-50 shadow-sm" role="status">
+              <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                    <Clock aria-hidden="true" className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-amber-900">Zahlung wird verarbeitet</p>
+                    <p className="mt-1 text-sm text-amber-900/80">
+                      Deine Zahlung ist noch nicht abgeschlossen, zum Beispiel weil deine Bank eine Bestätigung verlangt.
+                      Sobald Stripe die Zahlung bestätigt, wird dein Zugang automatisch freigeschaltet.
+                      Bitte starte keinen zweiten Checkout.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="touch-manipulation"
+                  onClick={() => router.refresh()}
+                >
+                  <ArrowClockwise aria-hidden="true" className="h-4 w-4" />
+                  Status erneut prüfen
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
+
+        {showCoursesPaywall && !initialData.hasSubscription && !notice && (
           <div className="mb-8">
             <Card className="border-amber-200 bg-amber-50 shadow-sm">
               <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -225,7 +297,11 @@ export default function DashboardMemberClient({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="text-sm text-gray-600">
-                {initialData.subscriptionDetails.isCanceled ? (
+                {hasPaymentDue ? (
+                  <p className="text-red-700">
+                    Für dein Abonnement ist eine Zahlung offen. Im Kundenportal kannst du die offene Rechnung bezahlen oder deine Zahlungsmethode ändern.
+                  </p>
+                ) : initialData.subscriptionDetails.isCanceled ? (
                   <p className="text-red-600">
                     {initialData.hasSubscription
                       ? `Dein Abonnement ist gekündigt. Dein Zugang bleibt ${subscriptionEndDate ? `bis zum ${subscriptionEndDate}` : 'bis zum Ende der bezahlten Periode'} aktiv.`

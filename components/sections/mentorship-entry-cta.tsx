@@ -10,6 +10,8 @@ import { trackConversion } from '@/components/analytics/tracking'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
+const ENTRY_REDIRECT_URL = '/dashboard'
+
 type MentorshipEntryCtaProps = Pick<ButtonProps, 'size' | 'variant'> & {
   className?: string
   label?: string
@@ -41,7 +43,7 @@ export function MentorshipEntryCta({
 
     trackConversion.ctaClick(source)
     setIsNavigating(true)
-    router.push('/dashboard')
+    router.push(ENTRY_REDIRECT_URL)
 
     navigationTimeoutRef.current = window.setTimeout(() => {
       setIsNavigating(false)
@@ -97,7 +99,13 @@ export function MentorshipEntryCta({
   }
 
   return (
-    <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+    // Registrierungen aus dem Modal laufen über den Sign-up-Flow; ohne eigenes Ziel landen sie
+    // auf der Startseite (after_sign_up_url im Clerk-Dashboard) statt im Checkout.
+    <SignInButton
+      mode="modal"
+      forceRedirectUrl={ENTRY_REDIRECT_URL}
+      signUpForceRedirectUrl={ENTRY_REDIRECT_URL}
+    >
       <Button
         type="button"
         size={size}

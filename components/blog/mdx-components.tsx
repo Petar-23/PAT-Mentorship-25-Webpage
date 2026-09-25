@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { MDXComponents } from 'mdx/types'
 import type { ReactNode } from 'react'
+import { LazyYouTubeEmbed } from '@/components/ui/lazy-youtube-embed'
 
 function Callout({ type = 'info', children }: { type?: 'info' | 'warning' | 'tip'; children: ReactNode }) {
   const styles = {
@@ -21,19 +22,10 @@ function Callout({ type = 'info', children }: { type?: 'info' | 'warning' | 'tip
   )
 }
 
-function YouTubeEmbed({ videoId }: { videoId: string }) {
-  return (
-    <div className="relative my-8 aspect-video w-full overflow-hidden rounded-xl">
-      <iframe
-        src={`https://www.youtube.com/embed/${videoId}`}
-        title="YouTube Video"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        loading="lazy"
-        className="absolute inset-0 h-full w-full"
-      />
-    </div>
-  )
+// TDDDG § 25: Ein direkt eingebettetes youtube.com-Iframe setzt beim Laden Cookies ohne Einwilligung.
+// Deshalb erst auf Klick laden, über youtube-nocookie.com, wie bei den Testimonials.
+function YouTubeEmbed({ videoId, title = 'YouTube Video' }: { videoId: string; title?: string }) {
+  return <LazyYouTubeEmbed videoId={videoId} title={title} className="my-8 border-slate-800 bg-slate-900 shadow-none" />
 }
 
 function CTABanner() {
@@ -41,7 +33,7 @@ function CTABanner() {
     <div className="my-10 rounded-2xl border border-orange-500/30 bg-gradient-to-r from-orange-500/10 to-slate-900 p-8 text-center">
       <h3 className="font-sora mb-3 text-2xl font-bold text-white">Bereit für den nächsten Schritt?</h3>
       <p className="mb-6 text-gray-300">
-        Lerne Trading nach ICT Konzepten im Live-Mentoring — auf Deutsch, mit persönlicher Betreuung.
+        Lerne Trading nach ICT Konzepten im Live-Mentoring, auf Deutsch und mit persönlicher Betreuung.
       </p>
       <Link
         href="/lp-v2"
