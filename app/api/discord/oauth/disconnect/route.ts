@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
+import { warnOnProductScopedUserIdMatch } from '@/lib/stripe-customer-scope.mjs'
 import { prisma } from '@/lib/prisma'
 import { removeRoleFromGuildMember } from '@/lib/discord'
 
@@ -68,6 +69,9 @@ export async function POST(req: Request) {
         { status: 404 }
       )
     }
+
+    // Nur Log (DB-Mapping oder metadata.userId): Ergebnis bleibt unverändert.
+    warnOnProductScopedUserIdMatch([customer], 'discord disconnect')
 
     const rawDiscordUserId = customer.metadata?.discordUserId
     const discordUserId =
