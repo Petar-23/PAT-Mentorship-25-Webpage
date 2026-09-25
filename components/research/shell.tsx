@@ -3,7 +3,7 @@
 // Fork of components/mentorship/shell.tsx for PAT Research: English labels,
 // brand "Research", own theme cookie, sidebar rendered by the shell itself.
 // The mentorship shell stays untouched; both share mentorship.css and its tokens.
-import { Sun, Moon, SidebarSimple } from '@/components/mentorship/icons'
+import { Sun, Moon, SidebarSimple } from '@/components/research/icons'
 import { createContext, useContext, useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'

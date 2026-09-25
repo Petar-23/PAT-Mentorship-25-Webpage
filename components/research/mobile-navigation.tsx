@@ -2,7 +2,7 @@
 
 // Fork of components/mobile-courses-drawer.tsx for PAT Research: same reveal
 // motion and swipe-to-close gesture, English labels, research navigation.
-import { List, X } from '@/components/mentorship/icons'
+import { List, X } from '@/components/research/icons'
 import Image from 'next/image'
 import { useRef, useSyncExternalStore, type PointerEvent } from 'react'
 import { useResearchMobileNavigation, useResearchTheme } from '@/components/research/shell'

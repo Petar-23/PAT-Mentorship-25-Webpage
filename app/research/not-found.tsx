@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight } from '@/components/mentorship/icons'
+import { ArrowRight } from '@/components/research/icons'
 import { useResearchHref } from '@/components/research/base-path'
 
 export default function ResearchNotFound() {

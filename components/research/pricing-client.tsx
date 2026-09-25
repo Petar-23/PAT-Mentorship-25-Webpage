@@ -2,8 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useId, useRef, useState, type ComponentPropsWithoutRef, type FormEvent } from 'react'
-import { Info as PhosphorInfo } from '@phosphor-icons/react/dist/ssr/Info'
-import { ArrowRight, WarningCircle } from '@/components/mentorship/icons'
+import { ArrowRight, Info, WarningCircle } from '@/components/research/icons'
 import { useResearchHref } from '@/components/research/base-path'
 import { RESEARCH_CONSENT_TEXT, RESEARCH_TIERS, RESEARCH_TIER_DETAILS, type ResearchInterval, type ResearchTier } from '@/lib/research/config.mjs'
 import {
@@ -23,10 +22,6 @@ type Props = {
 }
 
 type CheckoutError = ReturnType<typeof researchCheckoutError>
-
-function Info(props: ComponentPropsWithoutRef<'svg'>) {
-  return <PhosphorInfo size={24} weight="bold" focusable="false" aria-hidden="true" {...props} />
-}
 
 function TermsConsentText({ termsHref }: { termsHref: string }) {
   const parts = splitTermsLink(RESEARCH_CONSENT_TEXT.terms)

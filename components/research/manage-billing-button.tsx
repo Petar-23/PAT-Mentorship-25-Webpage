@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ArrowUpRight } from '@/components/mentorship/icons'
+import { ArrowUpRight } from '@/components/research/icons'
 import { requestResearchPortal } from '@/lib/research/ui.mjs'
 
 // Research uses its own Stripe customer; requestResearchPortal posts to /api/research/portal (NOT base-prefixed).

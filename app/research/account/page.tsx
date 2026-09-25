@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ArrowRight } from '@/components/mentorship/icons'
+import { ArrowRight } from '@/components/research/icons'
 import { ManageBillingButton } from '@/components/research/manage-billing-button'
 import { getResearchRequestContext } from '@/lib/research/request-context'
 import { researchHref } from '@/lib/research/routing.mjs'

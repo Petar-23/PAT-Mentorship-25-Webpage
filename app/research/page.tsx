@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight } from '@/components/mentorship/icons'
+import { ArrowRight } from '@/components/research/icons'
 import { ResearchSignInLink } from '@/components/research/sign-in-link'
 import { getResearchRequestContext } from '@/lib/research/request-context'
 import { researchHref } from '@/lib/research/routing.mjs'

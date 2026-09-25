@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { ArrowClockwise } from '@phosphor-icons/react/dist/ssr/ArrowClockwise'
-import { CheckCircle, WarningCircle } from '@/components/mentorship/icons'
+import { ArrowClockwise, CheckCircle, WarningCircle } from '@/components/research/icons'
 import { ResearchRefreshOnMount } from '@/components/research/refresh-on-mount'
 import { consumeResearchRateLimit } from '@/lib/research/rate-limit'
 import { getResearchRequestContext } from '@/lib/research/request-context'
@@ -64,7 +63,7 @@ export default async function ResearchWelcomePage({ searchParams }: { searchPara
       body: <p className="m-page-intro">Your membership is active. Thank you for supporting independent, tested research.</p>,
     },
     pending: {
-      icon: <ArrowClockwise size={24} weight="bold" focusable="false" />,
+      icon: <ArrowClockwise />,
       eyebrow: 'Almost there',
       title: 'Confirming your payment',
       body: <>
