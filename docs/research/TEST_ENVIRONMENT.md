@@ -19,7 +19,7 @@ Alle Werte trägst du selbst ein. Claude bekommt keine Secrets zu sehen, und die
 - **Isolationsnachweis** (`scripts/research-verify-test-env.mjs`): „Research-Testumgebung ist isoliert.“ Die Production-DB wurde über `PROD_DATABASE_URL` verglichen; Production-`DATABASE_URL` ist in Vercel „Sensitive“ und nicht lesbar.
 - **Noch offen, nur für Kauftests:** Stripe-Test-Objekte und Test-Webhook, erledigt mit **einem Befehl** (Abschnitt 3).
 - **Vercel-Einstellungen:** Previews sind ohne Vercel-Login erreichbar (keine Deployment Protection), und `VERCEL_ENV` wird bereitgestellt.
-- **Offen zur Entscheidung:** Die Prisma-Installation zeigt „Scheduled to change to Free on Oct 1, 2026“. Free wären 100.000 Operationen/Monat und 500 MB für **alle** DBs inklusive Production.
+- **Prisma-Tarif:** Beim Anlegen der Test-DB hat `--plan free` die Umstellung der **ganzen** Installation auf Free (ab 1. Oktober) vorgemerkt. Der Tarif gilt pro Installation, nicht pro DB. Auf Petars Wunsch per `vercel integration update prisma --plan starter` zurückgenommen; alle drei DBs laufen weiter im Starter-Tarif. Merke: bei `vercel integration add prisma/prisma-postgres` **nie** `--plan` angeben.
 
 ## 1. Eigene Test-Datenbank (✓ erledigt, Referenz)
 
