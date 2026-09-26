@@ -91,8 +91,8 @@ export function Navbar() {
   const postCheckoutRef = useRef(false)
 
   const isMentorship = pathname?.startsWith('/mentorship')
-  // Seiten mit eigener Kopfzeile: Mitgliederbereich und die Landingpage /lp-v3
-  const hasOwnHeader = isMentorship || pathname === '/lp-v3'
+  // Seiten mit eigener Kopfzeile: Mitgliederbereich und die Landingpage auf der Startseite
+  const hasOwnHeader = isMentorship || pathname === '/'
   const isDashboard = pathname === '/dashboard'
   const isRaidMap = pathname?.startsWith('/raid-map')
   const isRaidMapAccount =

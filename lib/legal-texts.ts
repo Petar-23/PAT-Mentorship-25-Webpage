@@ -306,7 +306,6 @@ export const CHECKOUT_PAYMENT_METHODS: readonly string[] = Object.freeze([
   'Apple Pay',
   'Google Pay',
   'SEPA-Lastschrift',
-  'PayPal',
 ])
 
 // Zustimmung zum sofortigen Leistungsbeginn (§ 356 Abs. 4 und 5, § 357a Abs. 2 BGB).
