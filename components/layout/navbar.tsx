@@ -91,6 +91,8 @@ export function Navbar() {
   const postCheckoutRef = useRef(false)
 
   const isMentorship = pathname?.startsWith('/mentorship')
+  // Seiten mit eigener Kopfzeile: Mitgliederbereich und die Landingpage /lp-v3
+  const hasOwnHeader = isMentorship || pathname === '/lp-v3'
   const isDashboard = pathname === '/dashboard'
   const isRaidMap = pathname?.startsWith('/raid-map')
   const isRaidMapAccount =
@@ -113,7 +115,7 @@ export function Navbar() {
 
   // Lade Mentorship-Status beim ersten Laden
   useEffect(() => {
-    if (!isSignedIn || !userId || isMentorship || isAdmin) {
+    if (!isSignedIn || !userId || hasOwnHeader || isAdmin) {
       setMentorshipStatus(null)
       postCheckoutRef.current = false
       return
@@ -222,7 +224,7 @@ export function Navbar() {
       }
       if (fallbackIdleId) clearTimeout(fallbackIdleId)
     }
-  }, [isAdmin, isDashboard, isSignedIn, isMentorship, userId])
+  }, [isAdmin, isDashboard, isSignedIn, hasOwnHeader, userId])
 
   // Prevent body scroll when menu is open
   useEffect(() => {
@@ -236,7 +238,7 @@ export function Navbar() {
     }
   }, [isOpen])
 
-  if (isMentorship) return null
+  if (hasOwnHeader) return null
 
   return (
     <>

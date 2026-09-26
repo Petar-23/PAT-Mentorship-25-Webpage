@@ -35,6 +35,16 @@ const nextConfig = {
       bodySizeLimit: '20mb',
     },
   },
+  async headers() {
+    return [
+      {
+        // Trailer der Landingpage: versionierter Dateiname (trailer-v4.mp4), deshalb lange cachebar.
+        // Neue Fassung immer unter neuem Namen ablegen, nie eine bestehende Datei überschreiben.
+        source: '/landing/:file(trailer-[^/]+\\.mp4)',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+    ]
+  },
   async redirects() {
     // /agb und /widerruf leitet middleware.ts weiter (lib/legal-path-aliases.mjs).
     // Hier ginge es nicht: Next vergleicht source ohne Groß-/Kleinschreibung,
