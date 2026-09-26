@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { useIsResearchSurface } from '@/components/research/surface'
 
 const GoogleTagManager = dynamic(
   () => import('@/components/analytics/google-tag-manager').then((mod) => mod.GoogleTagManager),
@@ -23,10 +24,18 @@ const Analytics = dynamic(
 )
 
 export function AnalyticsScriptsLoader() {
+  // PAT Research: kein Google Tag und kein Clarity, nur cookielose Vercel-Messung.
+  // Die Haupt-Seite lädt beide wie bisher (ssr: false, also ohnehin erst im Browser).
+  const isResearchSurface = useIsResearchSurface()
+
   return (
     <>
-      <GoogleTagManager />
-      <MicrosoftClarity />
+      {isResearchSurface === false ? (
+        <>
+          <GoogleTagManager />
+          <MicrosoftClarity />
+        </>
+      ) : null}
       <SpeedInsights />
       <Analytics />
     </>

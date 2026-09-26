@@ -15,7 +15,7 @@
     "test:hermes-upload": "node --test scripts/hermes-upload.test.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --test lib/*.test.mjs scripts/*.test.mjs",
+    "test": "node --test lib/*.test.mjs lib/research/*.test.mjs scripts/*.test.mjs",
     "measure:mentorship": "node scripts/measure-mentorship-bundle.mjs"
   },
   "dependencies": {

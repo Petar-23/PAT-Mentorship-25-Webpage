@@ -2,6 +2,7 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { legalPathRedirect } from '@/lib/legal-path-aliases.mjs'
+import { resolveResearchRoute } from '@/lib/research/routing.mjs'
 
 // Nur diese Bereiche verlangen ein Konto. Bewusst öffentlich bleiben u. a. /checkout, /willkommen
 // (auch /willkommen/anmelden) und /api/checkout/start: Beim Gast-Checkout entsteht das Konto erst
@@ -14,6 +15,33 @@ const isAuthRequiredRoute = createRouteMatcher([
 ])
 
 export default clerkMiddleware(async (auth, req) => {
+  // PAT Research zuerst: Host-/Pfad-Routing aus lib/research/routing.mjs.
+  // Für den Haupt-Host liefert es { type: 'next' }, dann läuft alles wie bisher.
+  // Env-Werte explizit: NODE_ENV wird beim Build eingesetzt (Edge-Runtime).
+  const researchRoute = resolveResearchRoute({
+    host: req.headers.get('host'),
+    pathname: req.nextUrl.pathname,
+    search: req.nextUrl.search,
+    env: {
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL_ENV: process.env.VERCEL_ENV,
+      RESEARCH_PUBLIC_HOST: process.env.RESEARCH_PUBLIC_HOST,
+      RESEARCH_EXTRA_HOSTS: process.env.RESEARCH_EXTRA_HOSTS,
+      RESEARCH_ALLOW_PATH_MODE: process.env.RESEARCH_ALLOW_PATH_MODE,
+    },
+  })
+  if (researchRoute.type === 'redirect') {
+    return NextResponse.redirect(new URL(researchRoute.location, req.url), researchRoute.status)
+  }
+  if (researchRoute.type === 'not_found') {
+    return new NextResponse('Not found', { status: 404 })
+  }
+  if (researchRoute.type === 'rewrite') {
+    const url = req.nextUrl.clone()
+    url.pathname = researchRoute.pathname
+    return NextResponse.rewrite(url)
+  }
+
   // /agb, /widerruf und andere Schreibweisen dauerhaft auf /AGB bzw. /Widerruf.
   // Nicht in next.config.ts, weil Next dort ohne Groß-/Kleinschreibung vergleicht (Schleife).
   const legalTarget = legalPathRedirect(req.nextUrl.pathname)
