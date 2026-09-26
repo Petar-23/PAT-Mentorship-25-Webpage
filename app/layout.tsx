@@ -12,6 +12,8 @@ import { JsonLd } from '@/components/seo/json-ld'
 import { Suspense, lazy } from 'react'
 import { CURRENT_BUNNY_THUMBNAIL_HOST } from '@/lib/bunny-thumbnail'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
+import { CheckoutModeProvider } from '@/components/checkout/checkout-mode'
+import { isGuestCheckoutEnabled } from '@/lib/checkout-mode'
 
 // Agentation nur in Development laden (ist devDependency)
 const Agentation = process.env.NODE_ENV === 'development' 
@@ -120,13 +122,15 @@ export default function RootLayout({
           >
             Zum Inhalt springen
           </a>
-          <div className="min-h-full flex flex-col">
-            <Navbar />
-            <main id="main-content" className="flex-1 min-h-0">
-              {children}
-            </main>
-            <Footer />
-          </div>
+          <CheckoutModeProvider guestCheckout={isGuestCheckoutEnabled()}>
+            <div className="min-h-full flex flex-col">
+              <Navbar />
+              <main id="main-content" className="flex-1 min-h-0">
+                {children}
+              </main>
+              <Footer />
+            </div>
+          </CheckoutModeProvider>
           <ToasterLoader />
           <CookieBannerLoader />
           <AnalyticsScriptsLoader />

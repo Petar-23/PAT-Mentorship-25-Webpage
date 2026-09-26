@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { HormoziLandingCtaButton } from '@/components/sections/hormozi-landing-cta-button'
+import { CheckoutFlowHint } from '@/components/checkout/checkout-mode'
 
 export default function HormoziLanding() {
   return (
@@ -38,9 +39,7 @@ export default function HormoziLanding() {
               buttonText="Jetzt einsteigen"
               className="h-14 w-full px-8 text-base sm:w-auto sm:text-lg"
             />
-            <p className="text-xs text-slate-500">
-              Kostenlos anmelden → Konditionen prüfen → sicher über Stripe buchen
-            </p>
+            <CheckoutFlowHint className="text-xs text-slate-500" />
           </div>
         </div>
       </section>
@@ -154,9 +153,7 @@ export default function HormoziLanding() {
               buttonText="Jetzt einsteigen"
               className="h-14 w-full bg-blue-600 px-8 text-base text-white hover:bg-blue-700 sm:h-16 sm:w-auto sm:text-lg"
             />
-            <p className="text-xs text-slate-500">
-              Kostenlos anmelden → Konditionen prüfen → sicher über Stripe buchen
-            </p>
+            <CheckoutFlowHint className="text-xs text-slate-500" />
           </div>
         </div>
       </section>

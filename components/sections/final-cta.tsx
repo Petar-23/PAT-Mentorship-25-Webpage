@@ -8,6 +8,7 @@ import { Users } from "@phosphor-icons/react/Users"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { MentorshipEntryCta } from '@/components/sections/mentorship-entry-cta'
+import { CheckoutFlowHint } from '@/components/checkout/checkout-mode'
 
 const Vortex = dynamic(
     () => import("@/components/ui/vortex").then((mod) => mod.Vortex),
@@ -175,9 +176,7 @@ export default function FinalCTA() {
                         className="h-auto bg-white px-6 py-4 text-sm text-slate-900 hover:bg-white/90 sm:px-8 sm:py-6 sm:text-lg"
                     />
                     
-                    <p className="mt-4 sm:mt-6 text-xs sm:text-base text-gray-400">
-                        Kostenlos anmelden → Konditionen prüfen → sicher über Stripe buchen
-                    </p>
+                    <CheckoutFlowHint className="mt-4 sm:mt-6 text-xs sm:text-base text-gray-400" />
 
                     <div className="mt-6 sm:mt-12 inline-flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 pr-3 sm:pr-4 py-1 rounded-full bg-white/10 ring-1 ring-white/20">
                         <div className="bg-amber-500/20 text-amber-400 rounded-full px-2 py-0.5 text-xs sm:text-sm">⚡</div>

@@ -14,13 +14,16 @@ export const PAT_SOURCE_OPTIONS = [
 
 export type PatSource = (typeof PAT_SOURCE_OPTIONS)[number]
 
-export function mentorshipSourceCustomFields(): Stripe.Checkout.SessionCreateParams.CustomField[] {
+// optional: true für den Gast-Checkout (/api/checkout/start), dort soll die Frage den Kauf nicht bremsen.
+export function mentorshipSourceCustomFields(
+  options: { optional?: boolean } = {}
+): Stripe.Checkout.SessionCreateParams.CustomField[] {
   return [
     {
       key: PAT_SOURCE_KEY,
       label: { type: 'custom', custom: 'Wie hast du uns gefunden?' },
       type: 'dropdown',
-      optional: false,
+      optional: options.optional ?? false,
       dropdown: {
         options: PAT_SOURCE_OPTIONS.map((option) => ({
           label: option,

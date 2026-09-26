@@ -4,6 +4,9 @@ import { sendCortanaTelegram } from '@/lib/telegram-notify'
 import type Stripe from 'stripe'
 import { stripe } from './stripe'
 import { prisma } from './prisma'
+import { upsertUserSubscription } from './user-subscription-cache'
+import { fulfillCheckoutSession, handleCheckoutAsyncPaymentFailed } from './checkout-fulfillment'
+import { CHECKOUT_PRODUCT, readCheckoutMetadata } from './checkout-guest.mjs'
 import { ensureCustomerTaxInfo } from './updateCustomers'
 import {
   addRoleToGuildMember,
@@ -42,79 +45,6 @@ function unixToDate(unix: number | null | undefined): Date | null {
   if (!unix || !Number.isFinite(unix)) return null
   return new Date(unix * 1000)
 }
-
-function getPriceIdsFromSubscription(subscription: Stripe.Subscription): string[] {
-  const items = subscription.items?.data ?? []
-  const ids = items
-    .map((item) => {
-      const price = item.price
-      const priceId = typeof price === 'string' ? price : price?.id
-      return typeof priceId === 'string' && priceId.length > 0 ? priceId : null
-    })
-    .filter((id): id is string => typeof id === 'string')
-
-  return Array.from(new Set(ids))
-}
-
-async function upsertUserSubscription(params: {
-  userId: string
-  stripeCustomerId: string
-  subscription: Stripe.Subscription
-}) {
-  const { userId, stripeCustomerId, subscription } = params
-
-  const priceIds = getPriceIdsFromSubscription(subscription)
-  const stripeStatus = subscription.status
-
-  // Guard: If Stripe is reporting a non-active status (canceled, past_due, etc.),
-  // check if the user has an active PayPal subscription. If so, preserve 'active'
-  // status so PayPal access isn't overwritten by a stale Stripe webhook.
-  let effectiveStatus = stripeStatus
-  if (stripeStatus !== 'active' && stripeStatus !== 'trialing') {
-    try {
-      const paypalSub = await prisma.payPalSubscriber.findUnique({
-        where: { userId },
-        select: { status: true },
-      })
-      if (paypalSub?.status === 'ACTIVE') {
-        effectiveStatus = 'active'
-        console.log(
-          `[stripe-webhook] User ${userId} has active PayPal sub — preserving 'active' status despite Stripe '${stripeStatus}'`
-        )
-      }
-    } catch (err) {
-      console.error('[stripe-webhook] PayPal guard check failed:', err)
-    }
-  }
-
-  await prisma.userSubscription.upsert({
-    where: { userId },
-    create: {
-      userId,
-      stripeCustomerId,
-      stripeSubscriptionId: subscription.id,
-      status: effectiveStatus,
-      cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
-      currentPeriodEnd: unixToDate(subscription.current_period_end),
-      cancelAt: unixToDate(subscription.cancel_at),
-      priceIds,
-    },
-    update: {
-      stripeCustomerId,
-      stripeSubscriptionId: subscription.id,
-      status: effectiveStatus,
-      cancelAtPeriodEnd: effectiveStatus === 'active' && stripeStatus !== 'active'
-        ? false  // Don't mark as canceling if PayPal keeps it active
-        : Boolean(subscription.cancel_at_period_end),
-      currentPeriodEnd: unixToDate(subscription.current_period_end),
-      cancelAt: effectiveStatus === 'active' && stripeStatus !== 'active'
-        ? null
-        : unixToDate(subscription.cancel_at),
-      priceIds,
-    },
-  })
-}
-
 
 // Raid-Map-Abos: eigener Cache (RaidMapSubscription), komplett getrennt vom
 // Mentorship-Pfad. userId kommt aus subscription.metadata (wird im Checkout
@@ -239,6 +169,34 @@ function shouldHaveAccessAndRole(subscription: Stripe.Subscription) {
 
   // status === 'active'
   return true
+}
+
+/** Session aus /api/checkout/start (Gast-Checkout oder angemeldeter Kauf über /checkout)? */
+function isGuestCheckoutSession(session: Stripe.Checkout.Session) {
+  const meta = readCheckoutMetadata(session)
+  return meta.product === CHECKOUT_PRODUCT && meta.flow !== null
+}
+
+/**
+ * Stripe soll das Event erneut zustellen, wenn die Freischaltung noch nicht fertig ist (Konto wird
+ * gerade anderswo angelegt) oder die Vertragsbestätigung an einem vorübergehenden Fehler scheiterte.
+ * Der Zugang steht in diesem Fall schon, die Wiederholung holt nur Fehlendes nach.
+ */
+function assertWebhookFulfillment(
+  result: Awaited<ReturnType<typeof fulfillCheckoutSession>>,
+  sessionId: string
+) {
+  if (result.status === 'pending') {
+    throw new Error(`Checkout fulfillment pending for ${sessionId}, retry later`)
+  }
+  if (
+    result.status === 'fulfilled' &&
+    typeof result.sideEffects === 'object' &&
+    (result.sideEffects.mail === 'failed_transient' || result.sideEffects.mail === 'in_progress')
+  ) {
+    // in_progress: Ein paralleler Versuch (/willkommen) hält die Mail-Sperre und hat nicht versendet.
+    throw new Error(`Checkout confirmation mail not sent yet for ${sessionId} (${result.sideEffects.mail}), retry later`)
+  }
 }
 
 /**
@@ -530,6 +488,32 @@ export async function handleStripeEvent(event: Stripe.Event) {
         } else {
           console.log('Checkout completed, customer and subscription events will follow')
           await persistPatSourceFromMentorshipCheckout(session, stripe)
+          // Gast-Checkout (/api/checkout/start): Konto, Zugang und Vertragsbestätigung. Der alte
+          // Kontoweg (ohne metadata.flow) läuft wie bisher über die customer.subscription.*-Events.
+          if (isGuestCheckoutSession(session)) {
+            assertWebhookFulfillment(await fulfillCheckoutSession(session.id), session.id)
+          }
+        }
+        break
+      }
+
+      case 'checkout.session.async_payment_succeeded': {
+        // Verzögerte Zahlungsarten (z. B. SEPA-Lastschrift): Zahlung ist eingegangen. Freischaltung
+        // erneut ausführen (idempotent), damit der Zugangs-Cache den aktuellen Stripe-Status hat.
+        const session = event.data.object as Stripe.Checkout.Session
+        if (isGuestCheckoutSession(session)) {
+          assertWebhookFulfillment(await fulfillCheckoutSession(session.id), session.id)
+        }
+        break
+      }
+
+      case 'checkout.session.async_payment_failed': {
+        // Verzögerte Zahlung gescheitert: Cache aktualisieren, Petar und Käufer je einmal informieren.
+        // Der Zugang richtet sich nach dem Abo-Status, den Stripe danach meldet.
+        const session = event.data.object as Stripe.Checkout.Session
+        if (isGuestCheckoutSession(session)) {
+          const result = await handleCheckoutAsyncPaymentFailed(session.id)
+          if (result.status === 'pending') assertWebhookFulfillment(result, session.id)
         }
         break
       }

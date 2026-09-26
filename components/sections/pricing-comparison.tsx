@@ -4,6 +4,7 @@ import { Check } from "@phosphor-icons/react/dist/ssr/Check"
 import { X } from "@phosphor-icons/react/dist/ssr/X"
 import { HeroPill } from "@/components/ui/hero-pill"
 import { PricingComparisonCta } from '@/components/sections/pricing-comparison-cta'
+import { CheckoutFlowHint } from '@/components/checkout/checkout-mode'
 
 interface Feature {
   name: string
@@ -245,9 +246,7 @@ export default function PricingComparison() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <PricingComparisonCta />
           </div>
-          <p className="text-sm leading-relaxed text-gray-500">
-            Kostenlos anmelden → Konditionen prüfen → sicher über Stripe buchen
-          </p>
+          <CheckoutFlowHint className="text-sm leading-relaxed text-gray-500" />
         </div>
       </div>
     </section>

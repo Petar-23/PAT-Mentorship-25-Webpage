@@ -2,6 +2,7 @@ import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { Check } from "@phosphor-icons/react/dist/ssr/Check"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MentorshipEntryCta } from '@/components/sections/mentorship-entry-cta'
+import { CheckoutFlowHint } from '@/components/checkout/checkout-mode'
 
 const features = [
   "2 Live-Sessions pro Woche (Di + Do)",
@@ -66,9 +67,7 @@ export default function Pricing() {
                 source="pricing_cta"
                 className="w-full"
               />
-              <p className="mt-3 text-center text-sm leading-relaxed text-gray-500">
-                Kostenlos anmelden → Konditionen prüfen → sicher über Stripe buchen
-              </p>
+              <CheckoutFlowHint className="mt-3 text-center text-sm leading-relaxed text-gray-500" />
             </div>
           </CardContent>
         </Card>

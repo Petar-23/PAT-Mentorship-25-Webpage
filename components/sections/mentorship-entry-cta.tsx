@@ -7,6 +7,7 @@ import { SpinnerGap } from '@phosphor-icons/react/SpinnerGap'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { trackConversion } from '@/components/analytics/tracking'
+import { checkoutEntryHref, useGuestCheckout } from '@/components/checkout/checkout-mode'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -26,6 +27,7 @@ export function MentorshipEntryCta({
   variant = 'default',
 }: MentorshipEntryCtaProps) {
   const { isLoaded, isSignedIn } = useUser()
+  const guestCheckout = useGuestCheckout()
   const router = useRouter()
   const [isNavigating, setIsNavigating] = useState(false)
   const navigationTimeoutRef = useRef<number | null>(null)
@@ -68,6 +70,19 @@ export function MentorshipEntryCta({
   )
 
   const buttonClassName = cn('touch-manipulation', className)
+
+  // Gast-Checkout (CHECKOUT_GUEST_ENABLED): für alle ein normaler Link auf /checkout, auch vor der
+  // Hydration. /checkout schickt angemeldete Mitglieder selbst ins Dashboard.
+  if (guestCheckout) {
+    return (
+      <Button asChild size={size} variant={variant} className={buttonClassName}>
+        <Link href={checkoutEntryHref(source)} prefetch={false} onClick={() => trackConversion.ctaClick(source)}>
+          <span>{label}</span>
+          <ArrowRight aria-hidden="true" className="h-4 w-4" />
+        </Link>
+      </Button>
+    )
+  }
 
   if (!isLoaded) {
     return (
