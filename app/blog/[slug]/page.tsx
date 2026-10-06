@@ -5,6 +5,8 @@ import { evaluate } from '@mdx-js/mdx'
 import * as jsxRuntime from 'react/jsx-runtime'
 import { getAllSlugs, getPostBySlug, formatDateDE } from '@/lib/blog'
 import { getMDXComponents } from '@/components/blog/mdx-components'
+import { JsonLd } from '@/components/seo/json-ld'
+import { articleGraph } from '@/lib/structured-data.mjs'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -29,8 +31,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: `https://www.price-action-trader.de/blog/${slug}`,
       type: 'article',
       publishedTime: post.frontmatter.date,
+      modifiedTime: post.frontmatter.updated || post.frontmatter.date,
       authors: [post.frontmatter.author],
-      images: [{ url: post.frontmatter.image || '/images/pat-banner.jpeg', width: 1200, height: 630 }],
+      images: [{ url: post.frontmatter.image || '/images/pat-banner.jpeg' }],
     },
     twitter: {
       card: 'summary_large_image',
@@ -76,42 +79,18 @@ export default async function BlogPostPage({ params }: PageProps) {
     useMDXComponents: () => components,
   })
 
-  const articleJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: post.frontmatter.title,
+  const structuredData = articleGraph({
+    slug,
+    title: post.frontmatter.title,
     description: post.frontmatter.description,
-    author: { '@type': 'Person' as const, name: post.frontmatter.author },
-    datePublished: post.frontmatter.date,
-    image: post.frontmatter.image
-      ? `https://www.price-action-trader.de${post.frontmatter.image}`
-      : 'https://www.price-action-trader.de/images/pat-banner.jpeg',
-    publisher: {
-      '@type': 'Organization' as const,
-      name: 'Price Action Trader',
-    },
-  }
-
-  const breadcrumbJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem' as const, position: 1, name: 'Home', item: 'https://www.price-action-trader.de' },
-      { '@type': 'ListItem' as const, position: 2, name: 'Blog', item: 'https://www.price-action-trader.de/blog' },
-      { '@type': 'ListItem' as const, position: 3, name: post.frontmatter.title },
-    ],
-  }
+    date: post.frontmatter.date,
+    updated: post.frontmatter.updated,
+    image: post.frontmatter.image,
+  })
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
-      />
+      <JsonLd data={structuredData} />
       <article className="min-h-screen bg-slate-950 px-4 py-20">
         <div className="mx-auto max-w-4xl">
           {/* Breadcrumb */}
