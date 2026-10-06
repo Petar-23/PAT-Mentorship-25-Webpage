@@ -1,13 +1,36 @@
-# robots.txt — PAT Mentorship Website
-# https://price-action-trader.de
+# robots.txt — Price Action Trader / PAT Mentorship
+# https://www.price-action-trader.de
+#
+# Suchmaschinen und KI-Crawler sind bewusst erlaubt, damit Google, ChatGPT, Claude,
+# Perplexity und Gemini die öffentlichen Seiten lesen und zitieren können.
+# Alle genannten Crawler stehen in einer Gruppe und bekommen dieselben Regeln:
+# Ein Crawler mit eigener Gruppe würde die Regeln unter "*" sonst nicht mehr lesen.
+#
+# OpenAI:     GPTBot (Training), OAI-SearchBot (ChatGPT-Suche), ChatGPT-User (Abruf auf Nutzerwunsch)
+# Anthropic:  ClaudeBot (Training), Claude-SearchBot (Suche), Claude-User (Abruf auf Nutzerwunsch)
+# Perplexity: PerplexityBot (Suche), Perplexity-User (Abruf auf Nutzerwunsch)
+# Google:     Google-Extended (Gemini-Training und -Grounding; kein Einfluss auf die Google-Suche)
+# Apple:      Applebot-Extended (Apple-KI-Training)
 
 User-agent: *
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
 Allow: /
+# Mitgliederbereich und Verwaltung: leiten ohne Login nur zur Anmeldung weiter.
 Disallow: /api/
-Disallow: /(dashboard)/
-Disallow: /sign-in/
-Disallow: /mentorship/create
-Disallow: /courses/create
+Disallow: /dashboard
+Disallow: /mentorship
+Disallow: /courses
 Disallow: /owner
+# /sign-in, /checkout, /willkommen, /lp-v1, /lp-v2 und /quick-guide bleiben crawlbar,
+# damit Google ihr "noindex" lesen kann. Eine Sperre hier würde das verhindern.
 
-Sitemap: https://price-action-trader.de/sitemap.xml
+Sitemap: https://www.price-action-trader.de/sitemap.xml
