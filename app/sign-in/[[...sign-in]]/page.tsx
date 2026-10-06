@@ -1,4 +1,11 @@
 import { SignIn } from '@clerk/nextjs'
+import type { Metadata } from 'next'
+
+// Funktionsseite ohne eigenen Suchnutzen: nicht indexieren.
+export const metadata: Metadata = {
+  title: 'Anmelden',
+  robots: { index: false, follow: true },
+}
 
 export default function SignInPage() {
   return (

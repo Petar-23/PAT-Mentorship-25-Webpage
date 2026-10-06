@@ -7,6 +7,12 @@ import PricingComparison from '@/components/sections/pricing-comparison'
 import Testimonials from '@/components/sections/testimonials'
 import Faq from '@/components/sections/faq'
 import FinalCTA from '@/components/sections/final-cta'
+import type { Metadata } from 'next'
+
+// Alte Landingpage. Nicht indexieren: Die Startseite ist die aktuelle Seite, die alten Texte sind nicht mehr freigegeben.
+export const metadata: Metadata = {
+  robots: { index: false, follow: true },
+}
 
 export default function LpV2Page() {
   return (

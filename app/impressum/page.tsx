@@ -1,5 +1,12 @@
 // src/app/impressum/page.tsx
 import { Card } from "@/components/ui/card"
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Impressum',
+  description: 'Impressum von Price Action Trader (Maric Capital GmbH).',
+  alternates: { canonical: '/impressum' },
+}
 
 export default function ImpressumPage() {
   return (

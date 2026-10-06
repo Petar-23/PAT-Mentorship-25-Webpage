@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     title: 'Blog | PAT Mentorship',
     description: 'Trading-Wissen, ICT Konzepte und Smart Money Strategien — verständlich erklärt auf Deutsch.',
     url: 'https://www.price-action-trader.de/blog',
-    images: [{ url: '/images/pat-banner.jpeg', width: 1200, height: 630 }],
+    images: [{ url: '/images/pat-banner.jpeg' }],
   },
   alternates: {
     canonical: '/blog',

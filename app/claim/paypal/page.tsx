@@ -3,6 +3,13 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { auth } from '@clerk/nextjs/server'
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+// Funktionsseite ohne eigenen Suchnutzen: nicht indexieren.
+export const metadata: Metadata = {
+  title: 'PayPal-Zugang übernehmen',
+  robots: { index: false, follow: true },
+}
 
 export default async function PayPalClaimPage() {
   const { userId } = await auth()

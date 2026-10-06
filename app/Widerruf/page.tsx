@@ -1,6 +1,13 @@
 import { Card } from "@/components/ui/card"
 import { LegalAnchor, LegalBlockView } from "@/components/legal/legal-blocks"
 import { WIDERRUFSBELEHRUNG } from "@/lib/legal-texts"
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Widerrufsbelehrung',
+  description: 'Widerrufsbelehrung für Verträge mit Price Action Trader.',
+  alternates: { canonical: '/Widerruf' },
+}
 
 // Wortlaut steht in lib/legal-texts.ts (gemeinsame Quelle für diese Seite und die Vertragsbestätigung per E-Mail).
 
