@@ -10,6 +10,7 @@ import { Bereich } from '@/components/landing-v3/sections/bereich'
 import { Fragen } from '@/components/landing-v3/sections/fragen'
 import { Hero } from '@/components/landing-v3/sections/hero'
 import { Lehrplan } from '@/components/landing-v3/sections/lehrplan'
+import { Partner, PartnerBar } from '@/components/landing-v3/sections/partner'
 import { Petar } from '@/components/landing-v3/sections/petar'
 import { Preis } from '@/components/landing-v3/sections/preis'
 import { Proof } from '@/components/landing-v3/sections/proof'
@@ -34,6 +35,7 @@ export function LandingV3({ reviews }: { reviews: LandingReviews }) {
       {/* blendet den globalen Footer aus (app/globals.css); die globale Navigation blendet navbar.tsx per Pfad aus */}
       <div hidden data-hide-root-footer="true" />
       <span className="lf-sentinel" aria-hidden="true" />
+      <PartnerBar />
       <SiteHeader />
       <Hero />
       <Proof reviews={reviews} />
@@ -44,6 +46,7 @@ export function LandingV3({ reviews }: { reviews: LandingReviews }) {
       <Stimmen reviews={reviews} />
       <Petar />
       <Preis />
+      <Partner />
       <Fragen />
       <Schluss />
       <SiteFooter />

@@ -143,3 +143,27 @@ export const FAQ = [
 
 export const RISK_NOTE =
   'Trading ist mit Risiken verbunden. Die Inhalte dienen der Bildung und sind keine Anlageberatung. Price Action Trader ist ein unabhängiges Angebot und nicht mit ICT (Inner Circle Trader) verbunden.'
+
+/**
+ * Partner-Angebot eToro (Vorschau, noch nicht freigegeben). Wer über den Partnerlink ein Konto eröffnet und mindestens 50 €
+ * einzahlt, bekommt von eToro einen Code für einen kostenlosen Monat Mentorship. Risikohinweise im Wortlaut von eToro (Mail vom 01.10.2026).
+ * enabled: false blendet Leiste, Abschnitt und Hinweis im Preis wieder aus.
+ */
+export const ETORO_OFFER = {
+  enabled: true,
+  // Partnerlink mit Tracking: führt auf go.etoro.com/de/24-7-trading. Ersetzen, sobald die Co-Branded-Seite steht.
+  href: 'https://med.etoro.com/B22479_A132628_TClick.aspx',
+  minDeposit: '50 €',
+  // Original-SVG vom eToro-CDN (eToro-PAT-Video-Kit auf der SSD), unverändert
+  logo: '/landing/partner/etoro-logo-mint.svg',
+  riskPlatform: 'eToro ist eine Multi-Asset-Investmentplattform. Der Wert deiner Investments kann steigen oder fallen. Dein Kapital ist gefährdet.',
+  riskCfd: '51% der Privatkunden-CFD-Konten machen Verluste.',
+  disclosure: 'Partnerlink: Ich erhalte von eToro eine Vergütung, wenn du über diesen Link ein Konto eröffnest.',
+} as const
+
+export const ETORO_CTA = { bar: 'lp3-etoro-bar', tip: 'lp3-etoro-tip', section: 'lp3-etoro' } as const
+
+export const ETORO_FAQ = {
+  q: 'Wie funktioniert das eToro-Angebot?',
+  a: `Du eröffnest über meinen Partnerlink ein Konto bei eToro und zahlst ${ETORO_OFFER.minDeposit} ein. Traden musst du nicht, das Geld bleibt dein Guthaben bei eToro. Danach schickt dir eToro einen Code per E-Mail, mit dem dein erster Monat Mentorship 0 € kostet. Anschließend läuft das Abo für ${MENTORSHIP_CONFIG.price} € pro Monat inkl. MwSt. weiter und ist monatlich kündbar. Für die Vermittlung erhalte ich eine Vergütung von eToro.`,
+} as const
