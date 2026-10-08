@@ -35,6 +35,14 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.redirect(signInUrl)
   }
 
+  if (req.nextUrl.pathname.startsWith('/owner/customer-preview') || req.nextUrl.pathname.startsWith('/api/admin/customer-preview')) {
+    const response = NextResponse.next()
+    response.headers.set('Cache-Control', 'private, no-store')
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow')
+    response.headers.set('Referrer-Policy', 'strict-origin')
+    return response
+  }
+
 })
 
 export const config = {

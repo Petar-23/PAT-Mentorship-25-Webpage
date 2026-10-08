@@ -7,6 +7,8 @@ import Image from 'next/image'
 import { UserButton, useUser } from '@clerk/nextjs'
 import { Cookie } from '@phosphor-icons/react/dist/ssr/Cookie'
 import { openCookieSettings } from '@/lib/cookie-consent-client'
+import { useCustomerPreview } from './customer-preview-context'
+import { customerPreviewBase } from '@/lib/customer-preview-policy'
 
 export type MentorshipTheme = 'light' | 'dark'
 const ThemeContext = createContext<MentorshipTheme>('light')
@@ -36,6 +38,7 @@ export function MentorshipShell({ children, headerNavigation, headerStatus, init
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false)
   const [navigationContainer, setNavigationContainer] = useState<HTMLDivElement | null>(null)
   const { user } = useUser()
+  const preview = useCustomerPreview()
   const isAdmin = user?.organizationMemberships?.some(membership => membership.role === 'org:admin')
 
   useEffect(() => {
@@ -49,7 +52,7 @@ export function MentorshipShell({ children, headerNavigation, headerStatus, init
     setTheme(next)
     // This preference is also read by the layout: the first paint already has the chosen theme.
     try {
-      document.cookie = `pat-mentorship-theme=${next}; Path=/; Max-Age=31536000; SameSite=Lax`
+      if (!preview) document.cookie = `pat-mentorship-theme=${next}; Path=/; Max-Age=31536000; SameSite=Lax`
     } catch {
       // The switch still works if this browser does not allow preference cookies.
     }
@@ -62,6 +65,10 @@ export function MentorshipShell({ children, headerNavigation, headerStatus, init
       <div className={`mentorship-typography m-app ${theme === 'dark' ? 'dark' : ''} ${className}`} data-theme={theme} data-sidebar={navigationOpen ? 'open' : 'closed'} data-mobile-navigation={mobileNavigationOpen ? 'open' : 'closed'}>
         <div className="m-mobile-navigation-host" ref={setNavigationContainer} />
         <div className="m-app-frame">
+        {preview ? <div className="m-customer-preview-banner" role="region" aria-label="Kundenvorschau">
+          <div><strong>Kundenvorschau: {preview.name}</strong><span>{preview.email} · Nur lesen</span></div>
+          <Link href="/owner/customer-preview" prefetch={false}>Vorschau beenden</Link>
+        </div> : null}
         <header className="m-topbar">
           <div className="m-topbar-leading">
             <button type="button" className="m-icon-button m-sidebar-toggle"
@@ -70,20 +77,20 @@ export function MentorshipShell({ children, headerNavigation, headerStatus, init
               aria-expanded={navigationOpen} aria-controls="mentorship-desktop-navigation"
               onClick={() => setNavigationOpen(open => !open)}><SidebarSimple /></button>
             <div className="m-header-menu">{headerNavigation}</div>
-            <Link href="/mentorship" className="m-brand" aria-label="PAT Mentorship – Übersicht">
+            <Link href={preview ? customerPreviewBase(preview.id) : '/mentorship'} prefetch={false} className="m-brand" aria-label="PAT Mentorship – Übersicht">
               <Image src="/images/hero/PAT-logo.png" alt="" width={32} height={32} className="m-brand-logo" sizes="32px" />
               <span className="m-brand-name">Mentorship</span>
             </Link>
           </div>
           <div className="m-topbar-actions">
             {headerStatus}
-            {isAdmin ? <Link href="/owner" className="m-admin-link" prefetch={false}>Verwaltung</Link> : null}
+            {isAdmin && !preview ? <Link href="/owner" className="m-admin-link" prefetch={false}>Verwaltung</Link> : null}
             <button type="button" className="m-appearance-toggle" aria-label={theme === 'dark' ? 'Helle Darstellung' : 'Dunkle Darstellung'}
               title={theme === 'dark' ? 'Helle Darstellung' : 'Dunkle Darstellung'}
               onClick={() => changeTheme(theme === 'dark' ? 'light' : 'dark')}>
               <span className="m-appearance-symbol" aria-hidden="true"><Sun className="m-theme-sun" /><Moon className="m-theme-moon" /></span>
             </button>
-            <UserButton afterSignOutUrl="/" appearance={{
+            {!preview ? <UserButton afterSignOutUrl="/" appearance={{
               elements: { avatarBox: 'h-8 w-8', userButtonTrigger: 'h-11 w-11 justify-center' },
               variables: { colorBackground: theme === 'dark' ? '#3d3d3a' : '#ffffff', colorText: theme === 'dark' ? '#faf9f5' : '#141413', colorPrimary: theme === 'dark' ? '#faf9f5' : '#141413' },
             }}>
@@ -91,7 +98,7 @@ export function MentorshipShell({ children, headerNavigation, headerStatus, init
               <UserButton.MenuItems>
                 <UserButton.Action label="Cookie-Einstellungen" labelIcon={<Cookie size={16} weight="bold" aria-hidden="true" />} onClick={openCookieSettings} />
               </UserButton.MenuItems>
-            </UserButton>
+            </UserButton> : null}
           </div>
         </header>
         <div className="m-app-content">{children}</div>

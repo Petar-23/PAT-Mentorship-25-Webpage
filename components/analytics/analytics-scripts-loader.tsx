@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { usePathname } from 'next/navigation'
 
 const GoogleTagManager = dynamic(
   () => import('@/components/analytics/google-tag-manager').then((mod) => mod.GoogleTagManager),
@@ -23,6 +24,9 @@ const Analytics = dynamic(
 )
 
 export function AnalyticsScriptsLoader() {
+  const pathname = usePathname()
+  // Support views contain customer identifiers; do not load analytics/replay for them.
+  if (pathname.startsWith('/owner/customer-preview')) return null
   return (
     <>
       <GoogleTagManager />

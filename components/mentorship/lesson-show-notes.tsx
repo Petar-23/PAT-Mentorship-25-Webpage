@@ -5,6 +5,8 @@ import ReactMarkdown from 'react-markdown'
 import { Button } from '@/components/ui/button'
 import { ActionFeedbackIcon } from '@/components/mentorship/action-feedback-icon'
 import { MAX_SHOW_NOTES_LENGTH, normalizeShowNotes } from '@/lib/video-show-notes'
+import { useCustomerPreview } from './customer-preview-context'
+import { MentorshipLink } from './navigation-link'
 
 type Props = {
   videoId: string
@@ -32,12 +34,16 @@ function storeDraft(key: string, draft: Draft | null) {
 }
 
 function NotesBody({ text }: { text: string }) {
+  const customerPreview = useCustomerPreview()
   return (
     <div className="m-show-notes-body">
       <ReactMarkdown
         skipHtml
         allowedElements={['p', 'br', 'strong', 'em', 'a', 'ul', 'ol', 'li', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'pre', 'code']}
         components={{
+          a: ({ href, children, title }) => customerPreview
+            ? <MentorshipLink href={href ?? ''} title={title}>{children}</MentorshipLink>
+            : <a href={href} title={title}>{children}</a>,
           h1: ({ children }) => <h3>{children}</h3>,
           h2: ({ children }) => <h3>{children}</h3>,
           h3: ({ children }) => <h3>{children}</h3>,

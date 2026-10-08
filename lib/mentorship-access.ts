@@ -15,12 +15,14 @@ export type MentorshipAccessState = {
 
 export async function getMentorshipAccessState(
   userId: string,
-  sessionClaims?: unknown
+  sessionClaims?: unknown,
+  options: { customerPreview?: { verifiedEmail: string | null } } = {},
 ): Promise<MentorshipAccessState> {
   const mentorshipAccessible = isMentorshipAccessible()
+  const readOnly = options.customerPreview !== undefined
 
   // Fast path: bestehende DB-/PayPal-Daten sind günstig und reichen für die meisten Mitglieder.
-  const hasSubscription = await hasActiveSubscription(userId)
+  const hasSubscription = await hasActiveSubscription(userId, undefined, { readOnly })
   if (hasSubscription) {
     return {
       isAdmin: null,
@@ -30,7 +32,7 @@ export async function getMentorshipAccessState(
     }
   }
 
-  const isAdmin = await getIsAdmin(userId, sessionClaims)
+  const isAdmin = readOnly ? false : await getIsAdmin(userId, sessionClaims)
   if (isAdmin) {
     return {
       isAdmin: true,
@@ -41,8 +43,8 @@ export async function getMentorshipAccessState(
   }
 
   // Nur wenn der schnelle Subscription-Check negativ ist, nutzen wir den teureren Email-Fallback.
-  let email = getEmailFromSessionClaims(sessionClaims)
-  if (!email) {
+  let email = readOnly ? options.customerPreview!.verifiedEmail : getEmailFromSessionClaims(sessionClaims)
+  if (!email && !readOnly) {
     const user = await currentUser()
     email = user?.primaryEmailAddress?.emailAddress ?? null
   }
@@ -57,7 +59,7 @@ export async function getMentorshipAccessState(
   }
 
   const hasSubscriptionWithFallback = email
-    ? await hasActiveSubscription(userId, email)
+    ? await hasActiveSubscription(userId, email, { readOnly })
     : false
 
   return {

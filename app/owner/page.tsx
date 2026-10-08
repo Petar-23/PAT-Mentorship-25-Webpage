@@ -15,6 +15,9 @@ export default async function OwnerPage() {
 
   return (
     <div className="container mx-auto">
+      {/* Full navigation starts support mode without previously loaded analytics/replay scripts. */}
+      <div className="flex justify-end px-4 pt-4"><a href="/owner/customer-preview"
+        className="inline-flex min-h-11 items-center rounded-lg border px-4 text-sm font-medium">Als Kunde ansehen</a></div>
       <AdminDashboardV2 initialMetrics={initialMetrics} initialError={initialError} />
     </div>
   )
