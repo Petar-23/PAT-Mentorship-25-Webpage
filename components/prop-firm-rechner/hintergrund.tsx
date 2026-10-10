@@ -2,14 +2,19 @@ import type { RegelDaten } from '@/lib/prop-firm/konten'
 import { FIRMEN } from '@/lib/prop-firm/konten'
 import { datum } from './texte'
 
+/** Quellen je Firma, mit Quellen-ID als eindeutigem Schlüssel (verschiedene IDs können dieselbe URL haben). */
+export function quellenJeFirma(daten: RegelDaten) {
+  return FIRMEN.map((firma) => {
+    const ids = new Set<string>()
+    for (const k of [...daten.konten, ...daten.nicht_simulierbar]) if (k.firma === firma) k.quellen.forEach((q) => ids.add(q))
+    const quellen = [...ids].sort().filter((id) => daten.quellen[id]).map((id) => ({ id, ...daten.quellen[id] }))
+    return { firma, quellen }
+  })
+}
+
 /** Statischer Teil unter dem Rechner (Server Component): Methode, Annahmen, Regelstand und Quellen, Rechtliches. */
 export function Hintergrund({ daten }: { daten: RegelDaten }) {
   const stand = datum(daten.stand)
-  const quellenJeFirma = FIRMEN.map((firma) => {
-    const keys = new Set<string>()
-    for (const k of [...daten.konten, ...daten.nicht_simulierbar]) if (k.firma === firma) k.quellen.forEach((q) => keys.add(q))
-    return { firma, quellen: [...keys].sort().map((q) => daten.quellen[q]).filter(Boolean) }
-  })
   return (
     <>
       <section className="wrap abschnitt" aria-labelledby="methode-titel">
@@ -92,12 +97,12 @@ export function Hintergrund({ daten }: { daten: RegelDaten }) {
         <details className="akk" style={{ marginTop: 18 }}>
           <summary>Alle Quellen anzeigen ({Object.keys(daten.quellen).length})</summary>
           <div className="quellen">
-            {quellenJeFirma.map(({ firma, quellen }) => (
+            {quellenJeFirma(daten).map(({ firma, quellen }) => (
               <div key={firma}>
                 <h3 style={{ fontSize: 18, marginBottom: 8 }}>{firma}</h3>
                 <ul>
                   {quellen.map((q) => (
-                    <li key={q.url}>
+                    <li key={q.id}>
                       <a href={q.url} target="_blank" rel="noopener noreferrer nofollow">{q.titel}</a>
                       {q.abruf ? <span className="klein"> · abgerufen {datum(q.abruf)}</span> : null}
                     </li>
