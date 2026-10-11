@@ -21,6 +21,7 @@ const VideoPlayer = dynamic(
 import { useToast } from '@/hooks/use-toast'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { useSearchParams } from 'next/navigation'
+import { useCustomerPreview } from '@/components/mentorship/customer-preview-context'
 
 type Video = {
   id: string
@@ -75,6 +76,7 @@ export function ModulDetailClient({
   isAdmin,
 }: Props) {
   const { toast } = useToast()
+  const readOnly = Boolean(useCustomerPreview())
   const searchParams = useSearchParams()
   const view = searchParams.get('view')
   const videoParam = searchParams.get('video')
@@ -160,7 +162,7 @@ export function ModulDetailClient({
 
   // "Zuletzt angesehen" speichern (für /mentorship Dashboard → Weiterlernen)
   useEffect(() => {
-    if (isAdmin) return
+    if (isAdmin || readOnly) return
     if (!activeVideoId) return
     if (lastViewedSentRef.current === activeVideoId) return
 
@@ -177,7 +179,7 @@ export function ModulDetailClient({
     } catch {
       // ignore
     }
-  }, [activeVideoId, isAdmin])
+  }, [activeVideoId, isAdmin, readOnly])
 
   const activeVideo = useMemo(
     () => allVideos.find((video) => video.id === activeVideoId),

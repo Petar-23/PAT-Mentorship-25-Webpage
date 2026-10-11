@@ -246,7 +246,7 @@ async function checkPayPalAccess(userId: string): Promise<SubscriptionSnapshot |
 
 export async function getSubscriptionSnapshot(
   userId: string,
-  options: { retryCount?: number; checkForRecentCheckout?: boolean; email?: string } = {}
+  options: { retryCount?: number; checkForRecentCheckout?: boolean; email?: string; readOnly?: boolean } = {}
 ): Promise<SubscriptionSnapshot> {
   // Nicht parallel gegen den kleinen Serverless-Pool schießen: direkt nach Deploys kann die erste
   // DB-Verbindung kalt sein, und parallele Acquires treffen dann denselben Connection-Timeout.
@@ -322,7 +322,7 @@ export async function getSubscriptionSnapshot(
         if (picked) {
           // Best-effort: Link the Stripe customer to the app user for future lookups.
           try {
-            if (picked.metadata?.userId !== userId) {
+            if (!options.readOnly && picked.metadata?.userId !== userId) {
               await stripe.customers.update(picked.id, {
                 metadata: { ...(picked.metadata ?? {}), userId },
               })
@@ -335,7 +335,7 @@ export async function getSubscriptionSnapshot(
       }
 
       if (!customers.data.length) {
-        await writeSubscriptionToDb({
+        if (!options.readOnly) await writeSubscriptionToDb({
           userId,
           stripeCustomerId: null,
           stripeSubscriptionId: null,
@@ -363,7 +363,7 @@ export async function getSubscriptionSnapshot(
       })
 
       if (!subscriptions.data.length) {
-        await writeSubscriptionToDb({
+        if (!options.readOnly) await writeSubscriptionToDb({
           userId,
           stripeCustomerId: stripeCustomerId,
           stripeSubscriptionId: null,
@@ -423,7 +423,7 @@ export async function getSubscriptionSnapshot(
         ? new Date(accessSubscription.current_period_end * 1000)
         : null
 
-      await writeSubscriptionToDb({
+      if (!options.readOnly) await writeSubscriptionToDb({
         userId,
         stripeCustomerId,
         stripeSubscriptionId: accessSubscription.id,
@@ -473,8 +473,8 @@ export async function getSubscriptionSnapshot(
   return { hasActiveSubscription: false, subscriptionDetails: null }
 }
 
-export async function hasActiveSubscription(userId: string, email?: string): Promise<boolean> {
-  const snapshot = await getSubscriptionSnapshot(userId, { retryCount: 1, email })
+export async function hasActiveSubscription(userId: string, email?: string, options: { readOnly?: boolean } = {}): Promise<boolean> {
+  const snapshot = await getSubscriptionSnapshot(userId, { retryCount: 1, email, readOnly: options.readOnly })
   return snapshot.hasActiveSubscription
 }
 

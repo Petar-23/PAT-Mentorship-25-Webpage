@@ -8,6 +8,8 @@ import { useMentorshipNavigation } from '@/components/mentorship/shell'
 import { Fragment } from 'react'
 import NextLink from 'next/link'
 import { LABELS } from '@/lib/vertrag-erklaerung.mjs'
+import { useCustomerPreview } from '@/components/mentorship/customer-preview-context'
+import { customerPreviewPathname } from '@/lib/customer-preview-policy'
 
 type Kurs = {
   id: string
@@ -37,7 +39,9 @@ function courseIcon(slug: string) {
 }
 
 export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourseId, onNavigate }: Props) {
-  const pathname = usePathname()
+  const actualPathname = usePathname()
+  const preview = useCustomerPreview()
+  const pathname = preview ? customerPreviewPathname(actualPathname, preview.id) : actualPathname
   const navigationOpen = useMentorshipNavigation()
   const hidden = !onNavigate && !navigationOpen
   const items = [
@@ -74,6 +78,7 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
         </div>
       </nav>
       <div className="m-sidebar-footer">
+        {preview ? <p className="text-xs leading-relaxed">Konto und Mitgliedschaft sind in der Vorschau gesperrt.</p> : <>
         <ManageSubscriptionButton variant="ghost" label="Mitgliedschaft" className="m-account-link" icon={<CreditCard aria-hidden="true" />} />
         <Link href="/dashboard" prefetch={false} className="m-account-link" onNavigate={onNavigate}><UserCircle aria-hidden="true" /><span>Mein Konto</span></Link>
         {/* § 312k und § 356a BGB: Der Root-Footer ist in der Mentorship ausgeblendet, deshalb hier. */}
@@ -81,6 +86,7 @@ export function SidebarUser({ kurse, pages = [], savedSidebarOrder, activeCourse
           <NextLink href="/kuendigen" prefetch={false}>{LABELS.cancelEntry}</NextLink>
           <NextLink href="/widerrufen" prefetch={false}>{LABELS.withdrawEntry}</NextLink>
         </p>
+        </>}
       </div>
     </aside>
   )

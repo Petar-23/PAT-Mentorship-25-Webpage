@@ -92,7 +92,7 @@ export function Navbar() {
 
   const isMentorship = pathname?.startsWith('/mentorship')
   // Seiten mit eigener Kopfzeile: Mitgliederbereich und die Landingpage auf der Startseite
-  const hasOwnHeader = isMentorship || pathname === '/'
+  const hasOwnHeader = isMentorship || pathname === '/' || pathname?.startsWith('/owner/customer-preview')
   const isDashboard = pathname === '/dashboard'
   const isRaidMap = pathname?.startsWith('/raid-map')
   const isRaidMapAccount =

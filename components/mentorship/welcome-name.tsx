@@ -1,6 +1,7 @@
 'use client'
 
 import { useUser } from '@clerk/nextjs'
+import { useCustomerPreview } from './customer-preview-context'
 
 function getFirstNameLike(value: string | null | undefined) {
   if (!value) return null
@@ -11,8 +12,9 @@ function getFirstNameLike(value: string | null | undefined) {
 
 export function MentorshipWelcomeName() {
   const { user, isLoaded } = useUser()
+  const preview = useCustomerPreview()
 
-  const firstName = isLoaded
+  const firstName = preview ? getFirstNameLike(preview.firstName) : isLoaded
     ? getFirstNameLike(user?.firstName) ?? getFirstNameLike(user?.fullName) ?? getFirstNameLike(user?.username)
     : null
 

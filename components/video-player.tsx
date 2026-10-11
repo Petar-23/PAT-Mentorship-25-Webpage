@@ -1,6 +1,7 @@
 // components/video-player.tsx
 
 'use client'
+import { useCustomerPreview } from '@/components/mentorship/customer-preview-context'
 
 import { ArrowLeft, ArrowRight, Check, FastForward, FileText, Pause, Play, Rewind, Trash as Trash2 } from '@/components/mentorship/icons'
 import { useMentorshipMobileNavigation, useMentorshipTheme } from '@/components/mentorship/shell'
@@ -101,6 +102,7 @@ export function VideoPlayer({
   nextVideoDisabled = false,
   autoPlay = false,
 }: Props) {
+  const readOnly = Boolean(useCustomerPreview())
   const { container: portalContainer } = useMentorshipMobileNavigation()
   const theme = useMentorshipTheme()
   const { toast } = useToast()
@@ -323,6 +325,7 @@ export function VideoPlayer({
   }, [isPlayerApiReady])
 
   const persistWatched = useCallback(async (videoId: string, watched: boolean, manual: boolean) => {
+    if (readOnly) return false
     try {
       const res = await fetch(`/api/progress/video/${videoId}`, {
         method: 'POST',
@@ -342,10 +345,10 @@ export function VideoPlayer({
       }
       return false
     }
-  }, [onVideoWatchedChange, toast])
+  }, [onVideoWatchedChange, toast, readOnly])
 
   useEffect(() => {
-    if (isAdmin) return
+    if (isAdmin || readOnly) return
     if (!activeVideo?.id) return
     if (!activeVideo?.bunnyGuid) return
 
@@ -403,7 +406,7 @@ export function VideoPlayer({
 
     window.addEventListener('message', handler)
     return () => window.removeEventListener('message', handler)
-  }, [isAdmin, activeVideo?.id, activeVideo?.bunnyGuid, activeVideoWatched, persistWatched])
+  }, [isAdmin, readOnly, activeVideo?.id, activeVideo?.bunnyGuid, activeVideoWatched, persistWatched])
 
   const applyBunnyGuidToActiveVideo = (guid: string) => {
     if (!activeVideo) return
@@ -972,7 +975,8 @@ export function VideoPlayer({
                       })
                     }
                   }}
-                  disabled={isSavingWatched}
+                  disabled={readOnly || isSavingWatched}
+                  title={readOnly ? 'Lernfortschritt ist in der Kundenvorschau schreibgeschützt' : undefined}
                   className="w-full"
                 >
                   <Check aria-hidden="true" />
