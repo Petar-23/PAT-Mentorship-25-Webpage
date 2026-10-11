@@ -9,6 +9,8 @@ export interface BlogFrontmatter {
   title: string
   description: string
   date: string
+  /** Letzte inhaltliche Überarbeitung (optional), für dateModified und article:modified_time. */
+  updated?: string
   author: string
   tags: string[]
   image: string
@@ -57,6 +59,7 @@ export function getPostBySlug(slug: string): BlogPost | null {
       title: data.title ?? '',
       description: data.description ?? '',
       date: data.date ?? '',
+      updated: data.updated ?? undefined,
       author: data.author ?? 'Petar',
       tags: data.tags ?? [],
       image: data.image ?? '/images/pat-banner.jpeg',

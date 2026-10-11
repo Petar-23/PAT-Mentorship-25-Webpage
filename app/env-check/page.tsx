@@ -2,6 +2,12 @@ import { testConnection } from '@/lib/bunny'
 import { getIsAdmin } from '@/lib/authz'
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
+import type { Metadata } from 'next'
+
+// Funktionsseite ohne eigenen Suchnutzen: nicht indexieren.
+export const metadata: Metadata = {
+  robots: { index: false, follow: true },
+}
 
 function isSet(name: string) {
   return Boolean(process.env[name])

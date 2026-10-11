@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import { LandingV3 } from '@/components/landing-v3/landing-v3'
-import { WHOP_FALLBACK } from '@/components/landing-v3/content'
+import { FAQ, WHOP_FALLBACK } from '@/components/landing-v3/content'
 import type { LandingReviews } from '@/components/landing-v3/types'
+import { JsonLd } from '@/components/seo/json-ld'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
+import { homeGraph } from '@/lib/structured-data.mjs'
 import { getWhopReviewSummary } from '@/lib/whop-reviews-server'
 
 // Statisch mit stündlicher Aktualisierung (Whop-Zahl). Kein Cookie- oder Header-Zugriff, damit die Seite aus dem Cache kommt.
@@ -42,5 +44,19 @@ async function loadReviews(): Promise<LandingReviews> {
 
 export default async function HomePage() {
   const reviews = await loadReviews()
-  return <LandingV3 reviews={reviews} />
+  // Kurs, Preis, Whop-Bewertung und FAQ im Markup sind dieselben Werte, die die Seite sichtbar zeigt.
+  const structuredData = homeGraph({
+    name: MENTORSHIP_CONFIG.programName,
+    description: DESCRIPTION,
+    price: MENTORSHIP_CONFIG.price,
+    currency: MENTORSHIP_CONFIG.currency,
+    faq: FAQ,
+    reviews,
+  })
+  return (
+    <>
+      <JsonLd data={structuredData} />
+      <LandingV3 reviews={reviews} />
+    </>
+  )
 }

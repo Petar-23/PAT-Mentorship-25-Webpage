@@ -1,0 +1,32 @@
+# Price Action Trader (PAT)
+
+> Price Action Trader ist das Angebot von Petar Maric (Maric Capital GmbH, Deutschland). Kern ist die PAT Mentorship 2026: Petar erklärt die Konzepte von ICT (Inner Circle Trader) auf Deutsch, in einem klaren Lehrplan und Schritt für Schritt. Es gibt keine Trading-Signale und keine Gewinnversprechen. Price Action Trader ist unabhängig und nicht mit ICT verbunden.
+
+## Die PAT Mentorship 2026 in Fakten
+
+- Sprache: Deutsch.
+- Preis: 150 € pro Monat inklusive MwSt., monatlich kündbar mit einem Tag Frist zum Monatsende. Einstieg jederzeit.
+- Ablauf: Lektionen und Aufzeichnungen im Mitgliederbereich, dazu zwei Live-Sessions pro Woche (Dienstag und Donnerstag, 19:00 Uhr), Daily Reviews am Dienstag und Donnerstag, ein Weekly Recap am Sonntag, ein Q&A-Livestream am Monatsende und eine Community auf Discord.
+- Lehrplan über zwölf Monate: Grundlagen (Bias und Liquidität, PD-Array-Matrix mit Fair Value Gap, Orderblock und Breaker, wichtige Zeiten wie Makros, Silver Bullet und Sessions, Journaling), Vertiefung (zeitbasierte Liquidität, Einstiegstechniken, Risikomanagement), Anwendung (Konzepte am Live-Markt, Trade-Reviews), Feinschliff (Psychologie, Bias aus höheren Zeitebenen, eigene Strategie).
+- Märkte: vor allem Index-Futures wie NQ und ES.
+- Was es nicht ist: kein Copy-Trading, keine Signale, keine Garantie. Die Inhalte dienen der Bildung und sind keine Anlageberatung. Trading ist mit Risiken verbunden.
+- Lehrer: Petar hat über 1.000 Stunden ICT-Material durchgearbeitet (Private Mentorship, Mentorships 2022 bis 2024, Lecture Series 2025) und erklärt die Konzepte seit Anfang 2024 in seiner eigenen Mentorship.
+
+## Wichtige Seiten
+
+- [Startseite und Mentorship](https://www.price-action-trader.de/): Lehrplan, Ablauf, Preis, häufige Fragen.
+- [Blog](https://www.price-action-trader.de/blog): Artikel zu ICT-Konzepten auf Deutsch.
+- [Fair Value Gap nach ICT](https://www.price-action-trader.de/blog/fair-value-gap-trading): BISI, SIBI, Inverse FVG und Einstiegslogik, mit Quellen aus ICTs Mentorships.
+- [Order Blocks nach ICT](https://www.price-action-trader.de/blog/order-blocks-erklaert): Definition, Gültigkeit und Einstieg.
+- [Wachstumsrechner für Micro-Futures](https://www.price-action-trader.de/tools/equity-calculator): Kontraktgröße und Kontowachstum bei festem Stop simulieren.
+- [Impressum](https://www.price-action-trader.de/impressum)
+
+## Profile
+
+- YouTube: https://www.youtube.com/@PriceActionTrader_Petar
+- X: https://x.com/petar_trades
+- Kontakt: kontakt@price-action-trader.de
+
+## English summary
+
+Price Action Trader is run by Petar Maric (Germany). The PAT Mentorship 2026 is a German-language program that explains ICT (Inner Circle Trader) concepts step by step: EUR 150 per month including VAT, cancel monthly, two live sessions per week plus recorded lessons. No trading signals, no profit promises, not affiliated with ICT. Educational content only, not investment advice.

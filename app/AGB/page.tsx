@@ -1,6 +1,13 @@
 import { Card } from "@/components/ui/card"
 import { LegalBlockView } from "@/components/legal/legal-blocks"
 import { AGB } from "@/lib/legal-texts"
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'AGB',
+  description: 'Allgemeine Geschäftsbedingungen der PAT Mentorship.',
+  alternates: { canonical: '/AGB' },
+}
 
 // Wortlaut steht in lib/legal-texts.ts (gemeinsame Quelle für diese Seite und die Vertragsbestätigung per E-Mail).
 

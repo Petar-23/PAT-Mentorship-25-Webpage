@@ -38,6 +38,14 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // Nur www.price-action-trader.de soll in Suchmaschinen und KI-Indizes landen. dev.price-action-trader.de,
+        // *.vercel.app und Branch-Domains bekommen noindex, sonst konkurrieren alte Stände mit der echten Seite.
+        // Greift auf dev erst, wenn dieser Stand auch in den dev-Branch gemergt ist.
+        source: '/:path*',
+        has: [{ type: 'host', value: '^(?!www\\.price-action-trader\\.de$).*$' }],
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
+      {
         // Trailer der Landingpage: versionierter Dateiname (trailer-v4.mp4), deshalb lange cachebar.
         // Neue Fassung immer unter neuem Namen ablegen, nie eine bestehende Datei überschreiben.
         source: '/landing/:file(trailer-[^/]+\\.mp4)',

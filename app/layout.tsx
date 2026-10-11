@@ -9,6 +9,7 @@ import { LocalizedClerkProvider } from '@/components/layout/localized-clerk-prov
 import { CookieBannerLoader } from '@/components/ui/cookie-banner-loader'
 import { AnalyticsScriptsLoader } from '@/components/analytics/analytics-scripts-loader'
 import { JsonLd } from '@/components/seo/json-ld'
+import { siteGraph } from '@/lib/structured-data.mjs'
 import { Suspense, lazy } from 'react'
 import { CURRENT_BUNNY_THUMBNAIL_HOST } from '@/lib/bunny-thumbnail'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
@@ -40,40 +41,35 @@ const sora = Sora({
   weight: ['400', '600', '700'],
 })
 
+const DEFAULT_TITLE = 'PAT Mentorship 2026: ICT verstehen. Auf Deutsch. Schritt für Schritt.'
+const DEFAULT_DESCRIPTION = `Die Konzepte von ICT in einem klaren Lehrplan, auf Deutsch und Schritt für Schritt. ${MENTORSHIP_CONFIG.sessionsPerWeek} Live-Sessions pro Woche, ${MENTORSHIP_CONFIG.price} € pro Monat inkl. MwSt., monatlich kündbar.`
+
+// Kein Canonical und keine og:url hier: Sonst erben alle Seiten ohne eigene Angabe den Canonical der Startseite
+// und sagen Google damit, sie seien ein Duplikat von "/". Jede indexierbare Seite setzt ihren Canonical selbst.
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.price-action-trader.de'),
   title: {
-    default: 'PAT Mentorship 2026 | Trading nach ICT Konzepten lernen — Live & auf Deutsch',
+    default: DEFAULT_TITLE,
     template: '%s | PAT Mentorship',
   },
-  description: `Lerne Trading nach ICT Smart Money Konzepten im Live-Mentoring. ${MENTORSHIP_CONFIG.sessionsPerWeek} Sessions pro Woche, auf Deutsch. 130+ Mentees seit 2024. Monatlich kündbar.`,
-  keywords: ['ICT Trading', 'Smart Money Concept', 'Price Action Trading', 'Trading Mentoring Deutsch', 'Live Trading lernen', 'ICT auf Deutsch', 'Trading Ausbildung'],
-  authors: [{ name: 'Petar', url: 'https://www.price-action-trader.de' }],
+  description: DEFAULT_DESCRIPTION,
+  keywords: ['ICT Trading', 'ICT auf Deutsch', 'ICT Mentorship Deutsch', 'Smart Money Concepts', 'Fair Value Gap', 'Trading Mentoring Deutsch'],
+  authors: [{ name: 'Petar Maric', url: 'https://www.price-action-trader.de/#petar' }],
   creator: 'Price Action Trader',
   publisher: 'Price Action Trader',
-  alternates: {
-    canonical: '/',
-  },
   openGraph: {
     type: 'website',
     locale: 'de_DE',
-    url: 'https://www.price-action-trader.de',
     siteName: 'Price Action Trader',
-    title: 'PAT Mentorship 2026 | ICT Trading Live & auf Deutsch',
-    description: `Lerne Trading nach ICT Smart Money Konzepten im Live-Mentoring. ${MENTORSHIP_CONFIG.sessionsPerWeek} Sessions/Woche, deutschsprachig, monatlich kündbar.`,
-    images: [
-      {
-        url: '/images/pat-banner.jpeg',
-        width: 1200,
-        height: 630,
-        alt: 'PAT Mentorship 2026 — Live Trading Mentoring nach ICT Konzepten',
-      },
-    ],
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    // Das Bild ist 618 × 685 px. Keine falschen Maße angeben (vorher 1200 × 630).
+    images: [{ url: '/images/pat-banner.jpeg', alt: 'PAT Mentorship 2026' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PAT Mentorship 2026 | ICT Trading Live & auf Deutsch',
-    description: 'Live-Mentoring für Trading nach ICT Smart Money Konzepten. 130+ Mentees seit 2024.',
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
     images: ['/images/pat-banner.jpeg'],
   },
   verification: {
@@ -113,7 +109,7 @@ export default function RootLayout({
         <head>
           <link rel="preconnect" href={`https://${CURRENT_BUNNY_THUMBNAIL_HOST}`} crossOrigin="" />
           <link rel="preconnect" href="https://iframe.mediadelivery.net" crossOrigin="" />
-          <JsonLd />
+          <JsonLd data={siteGraph()} />
         </head>
         <body className={`${geistSans.variable} ${geistMono.variable} ${sora.variable} font-sans antialiased h-full overflow-x-hidden`}>
           <a

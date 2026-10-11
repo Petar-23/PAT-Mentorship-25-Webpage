@@ -33,10 +33,11 @@ function CTABanner() {
     <div className="my-10 rounded-2xl border border-orange-500/30 bg-gradient-to-r from-orange-500/10 to-slate-900 p-8 text-center">
       <h3 className="font-sora mb-3 text-2xl font-bold text-white">Bereit für den nächsten Schritt?</h3>
       <p className="mb-6 text-gray-300">
-        Lerne Trading nach ICT Konzepten im Live-Mentoring, auf Deutsch und mit persönlicher Betreuung.
+        ICT verstehen. Auf Deutsch. Schritt für Schritt. In der PAT Mentorship erkläre ich dir die Konzepte in einem klaren Lehrplan.
       </p>
+      {/* Ziel ist die aktuelle Landingpage. /lp-v2 ist die alte Seite und steht auf noindex. */}
       <Link
-        href="/lp-v2"
+        href="/"
         className="inline-block rounded-lg bg-orange-500 px-8 py-3 font-semibold text-white transition hover:bg-orange-600"
       >
         Zum Mentorship →
@@ -54,8 +55,10 @@ export const customComponents = {
 export function getMDXComponents(): MDXComponents {
   return {
     ...customComponents,
+    // Die Seite setzt den Titel schon als <h1>. Ein "# ..." im Artikel wird deshalb als <h2> ausgegeben,
+    // sonst hat die Seite zwei <h1> (so beim FVG-Artikel). Das Aussehen bleibt gleich.
     h1: ({ children }) => (
-      <h1 className="font-sora mb-6 mt-10 text-4xl font-bold text-white">{children}</h1>
+      <h2 className="font-sora mb-6 mt-10 text-4xl font-bold text-white">{children}</h2>
     ),
     h2: ({ children }) => (
       <h2 className="font-sora mb-4 mt-8 text-2xl font-bold text-white">{children}</h2>
