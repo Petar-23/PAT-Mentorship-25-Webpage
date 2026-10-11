@@ -1,4 +1,5 @@
 import { CTA_LABEL, OFFER_FEATURES, PRICE_LABEL, checkoutHref, ctaSource } from '@/components/landing-v3/content'
+import { PartnerTip } from '@/components/landing-v3/sections/partner'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
 
 export function Preis() {
@@ -14,6 +15,7 @@ export function Preis() {
             Du zahlst monatlich und entscheidest jeden Monat neu, ob die Mentorship zu dir passt. Keine Mindestlaufzeit, keine Einmalzahlung
             vorab.
           </p>
+          <PartnerTip />
         </div>
         <div className="offer" id="offer">
           <p className="nm">{MENTORSHIP_CONFIG.programName}</p>
