@@ -531,6 +531,7 @@ html:has(.pat-lf[data-js]:not([data-smooth])){scroll-behavior:auto}
 .pat-lf .pt-steps .no{font:500 20px/28px var(--serif);font-variant-numeric:tabular-nums;color:var(--text-3)}
 .pat-lf .pt-steps b{display:block;font-size:16.5px;font-weight:600;line-height:28px;color:var(--text)}
 .pat-lf .pt-steps div > span{display:block;font-size:15.5px;line-height:1.55;color:var(--text-2)}
+.pat-lf .pt-steps div > span a{color:var(--text);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;overflow-wrap:anywhere}
 .pat-lf .pt-co{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:var(--text-2)}
 .pat-lf .pt-logo{flex:none;display:inline-flex;align-items:center;border-radius:7px;background:#0C0C0D;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 .pat-lf .pt-logo img{display:block;width:auto}

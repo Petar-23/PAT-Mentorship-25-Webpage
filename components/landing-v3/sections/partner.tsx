@@ -7,8 +7,17 @@ const STEPS = [
     title: `${ETORO_OFFER.minDeposit} einzahlen`,
     text: `Das ist die Bedingung. Traden musst du nicht, die ${ETORO_OFFER.minDeposit} bleiben dein Guthaben auf deinem eToro-Konto.`,
   },
-  { title: 'Code einlösen', text: 'Deinen Code bekommst du per E-Mail. Du löst ihn im Checkout ein und startest mit 0 € im ersten Monat.' },
-] as const
+  {
+    title: 'Mir kurz schreiben',
+    text: (
+      <>
+        Schick mir an <a href={`mailto:${ETORO_OFFER.claimEmail}`}>{ETORO_OFFER.claimEmail}</a> die E-Mail-Adresse deines eToro-Kontos. Ich gebe
+        sie an eToro weiter, damit eToro die Einzahlung bestätigt.
+      </>
+    ),
+  },
+  { title: 'Code einlösen', text: 'Danach schicke ich dir deinen Code. Du löst ihn im Checkout ein und startest mit 0 € im ersten Monat.' },
+]
 
 /** Original-Logo von eToro (mintgrün, für dunkle Flächen), daher immer auf dunklem Chip. */
 function EtoroLogo({ size = 'md' }: { size?: 'sm' | 'md' }) {
