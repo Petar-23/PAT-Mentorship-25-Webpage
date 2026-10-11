@@ -27,7 +27,7 @@ export function PartnerBar() {
       <span className="pt-tag">Anzeige</span>
       <EtoroLogo size="sm" />
       <span className="pt-l">
-        Erster Monat Mentorship geschenkt: Konto eröffnen und {ETORO_OFFER.minDeposit} einzahlen. Traden musst du nicht.
+        <b>Erster Monat Mentorship geschenkt:</b> Konto eröffnen und {ETORO_OFFER.minDeposit} einzahlen. Traden musst du nicht.
       </span>
       <span className="pt-s">Erster Monat geschenkt, ab {ETORO_OFFER.minDeposit} Einzahlung</span>
       <span className="pt-more">
