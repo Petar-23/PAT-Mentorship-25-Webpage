@@ -375,8 +375,9 @@ export const de = {
       titel: 'Erster Monat Mentorship gratis, gesponsert von eToro',
       zusatz: '',
       bedingung: (min: string) =>
-        `So geht’s: eToro-Konto über meinen Partnerlink eröffnen und ${min} einzahlen, dann bekommst du deinen Code für den ` +
-        'ersten Monat. Traden musst du nicht.',
+        `So geht’s: eToro-Konto über meinen Partnerlink eröffnen und eine Ersteinzahlung von mindestens ${min} tätigen. ` +
+        'Danach erhältst du deinen Code für den ersten Monat automatisch per E-Mail von eToro.',
+      codeHilfe: (tage: number) => `Nur wenn dein Code nach ${tage} Tagen nicht angekommen ist, schreib an`,
       knopf: 'Konto bei eToro eröffnen',
       wie: 'Alle Schritte',
       anzeige: 'Anzeige',

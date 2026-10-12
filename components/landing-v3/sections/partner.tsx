@@ -4,19 +4,19 @@ import { ETORO_CTA, ETORO_OFFER, PRICE_LABEL } from '@/components/landing-v3/con
 const STEPS = [
   { title: 'Konto eröffnen', text: 'Über den Button bei eToro. Für das Angebot zählen nur Konten über diesen Link.' },
   {
-    title: `${ETORO_OFFER.minDeposit} einzahlen`,
-    text: `Das ist die Bedingung. Traden musst du nicht, die ${ETORO_OFFER.minDeposit} bleiben dein Guthaben auf deinem eToro-Konto.`,
+    title: 'Ersteinzahlung tätigen',
+    text: `Zahle mindestens ${ETORO_OFFER.minDeposit} bei eToro ein. Das Geld bleibt dein Guthaben auf deinem eToro-Konto.`,
   },
   {
-    title: 'Mir kurz schreiben',
+    title: 'Code per E-Mail erhalten',
     text: (
       <>
-        Schick mir an <a href={`mailto:${ETORO_OFFER.claimEmail}`}>{ETORO_OFFER.claimEmail}</a> die E-Mail-Adresse deines eToro-Kontos. Ich gebe
-        sie an eToro weiter, damit eToro die Einzahlung bestätigt.
+        Nach der Einzahlung sendet dir eToro deinen Code automatisch per E-Mail. Nur wenn er nach {ETORO_OFFER.codeWaitDays} Tagen nicht
+        angekommen ist, schreib an <a href={`mailto:${ETORO_OFFER.supportEmail}`}>{ETORO_OFFER.supportEmail}</a>.
       </>
     ),
   },
-  { title: 'Code einlösen', text: 'Danach schicke ich dir deinen Code. Du löst ihn im Checkout ein und startest mit 0 € im ersten Monat.' },
+  { title: 'Code einlösen', text: 'Löse deinen Code im PAT-Checkout ein und starte mit 0 € im ersten Monat.' },
 ]
 
 /** Original-Logo von eToro (mintgrün, für dunkle Flächen), daher immer auf dunklem Chip. */
@@ -36,9 +36,9 @@ export function PartnerBar() {
       <span className="pt-tag">Anzeige</span>
       <EtoroLogo size="sm" />
       <span className="pt-l">
-        <b>Erster Monat Mentorship geschenkt:</b> Konto eröffnen und {ETORO_OFFER.minDeposit} einzahlen. Traden musst du nicht.
+        <b>Erster Monat Mentorship geschenkt:</b> Konto bei eToro eröffnen und mindestens {ETORO_OFFER.minDeposit} erstmals einzahlen.
       </span>
-      <span className="pt-s">Erster Monat geschenkt, ab {ETORO_OFFER.minDeposit} Einzahlung</span>
+      <span className="pt-s">Erster Monat geschenkt, ab {ETORO_OFFER.minDeposit} Ersteinzahlung</span>
       <span className="pt-more">
         <span className="pt-more-t">So geht&apos;s </span>
         <span className="arr" aria-hidden="true">→</span>
@@ -54,8 +54,8 @@ export function PartnerTip() {
     <a className="pt-tip" href="#etoro" data-cta={ETORO_CTA.tip}>
       <EtoroLogo size="sm" />
       <span>
-        <b>Erster Monat geschenkt.</b> Voraussetzung: ein eToro-Konto über meinen Link und {ETORO_OFFER.minDeposit} Einzahlung. Traden musst du
-        nicht. <span className="pt-go">So funktioniert es</span>
+        <b>Erster Monat geschenkt.</b> Voraussetzung: ein eToro-Konto über meinen Link und mindestens {ETORO_OFFER.minDeposit} Ersteinzahlung.{' '}
+        <span className="pt-go">So funktioniert es</span>
         <small className="pt-tip-tag">Anzeige</small>
       </span>
     </a>
@@ -100,11 +100,7 @@ export function PartnerCard({ cta = ETORO_CTA.section }: { cta?: string }) {
       <p className="terms">Mentorship im Wert von {PRICE_LABEL}</p>
       <div className="pt-req">
         <b>{ETORO_OFFER.minDeposit}</b>
-        <span>
-          Einzahlung bei eToro ist die Bedingung.
-          <br />
-          Traden musst du nicht.
-        </span>
+        <span>Mindestbetrag für deine Ersteinzahlung bei eToro.</span>
       </div>
       <ul>
         <li>Alle Lektionen, Live-Sessions und die Community</li>
@@ -137,8 +133,8 @@ export function Partner() {
             <span>Geht auf eToro.</span>
           </h2>
           <p className="lead">
-            Eröffne über meinen Link ein Konto bei eToro und zahle {ETORO_OFFER.minDeposit} ein. Dann übernimmt eToro deinen ersten Monat PAT
-            Mentorship. Traden musst du dafür nicht. Das normale Angebot bleibt daneben genauso bestehen.
+            Eröffne über meinen Link ein Konto bei eToro und tätige eine Ersteinzahlung von mindestens {ETORO_OFFER.minDeposit}. Dann übernimmt
+            eToro deinen ersten Monat PAT Mentorship. Das normale Angebot bleibt daneben genauso bestehen.
           </p>
           <PartnerSteps />
         </div>
