@@ -300,6 +300,7 @@ export const de = {
     soRechnet: 'So rechnet der Rechner',
     impressum: 'Impressum',
     datenschutz: 'Datenschutz',
+    cookies: 'Cookies',
     keineBeratung: 'Keine Finanzberatung',
     schliessen: 'Schließen',
     rechtliches: 'Rechtliches und Kontakt',
@@ -345,6 +346,7 @@ export const de = {
     andereKonten: 'Andere Konten ansehen',
     andereTitel: 'Andere Konten',
     neuRechnen: 'Neu rechnen',
+    eigeneZahlen: 'Eigene Zahlen',
     keinKonto: (crv: string) =>
       `Mit CRV ${crv} ist dieses Ziel in dieser Zeit bei keinem passenden Konto mit höchstens 80 % Trefferquote erreichbar. ` +
       'Probier ein höheres CRV, mehr Zeit, ein größeres Konto oder ein kleineres Ziel.',
@@ -554,7 +556,25 @@ export const de = {
     methodeLead: 'Kein Orakel, sondern Regeln: Tag für Tag, Trade für Trade, mit allen Gebühren.',
     methode: [
       [
-        'Für jeden Kontotyp erzeugt der Rechner 1.000 zufällige Handelsjahre aus deinen Eingaben, keine echten Kursdaten. Ein Jahr ' +
+        { b: 'Vom Ziel aus (Standard).' },
+        ' Hier rechnet der Rechner rückwärts, aus einer vorab gerechneten Tabelle. Das Raster: Ziele von 500 bis 50.000 USD ' +
+          'netto, Zeiträume von 1, 2, 3, 6 und 12 Monaten, 2, 5, 10 oder 20 Trades pro Woche, CRV 1 : 1, 1 : 1,5, 1 : 2 und ' +
+          '1 : 3, Risiko je Trade 2,5, 5, 7,5 oder 10 % des Drawdowns und 29 Trefferquoten von 10 bis 80 % in Schritten von ' +
+          '2,5 Punkten. Jede Rasterstelle läuft mit 300 Pfaden, alle mit denselben Zufallszahlen: Eine höhere Trefferquote macht ' +
+          'nur Verlierer zu Gewinnern, sonst bleibt jeder Pfad gleich. So lassen sich die Trefferquoten fair vergleichen.',
+      ],
+      [
+        'Gerechnet wird ein Konto-Platz mit Nachkauf: Geht ein Konto verloren, wird neu gekauft. Ausgezahlt wird auf dem Weg ' +
+          '„Nimm und geh“, also jede mögliche Auszahlung sofort in voller Höhe. Netto heißt: alle Auszahlungen nach Split minus ' +
+          'alle Gebühren für Käufe, Abos, Resets und Aktivierung. Für jedes Risiko sucht der Rechner die kleinste Trefferquote, ' +
+          'ab der dein Ziel in X von 10 Pfaden erreicht ist, zwischen zwei Rasterstellen linear eingepasst, und nimmt das Risiko ' +
+          'mit der kleinsten nötigen Trefferquote. Reichen auch 80 % nicht, gilt das Ziel als kaum erreichbar. Die Trefferquote ' +
+          'zeigt er auf ganze Prozent aufgerundet, damit sie sicher reicht; bei „X von 10“ rundet er ab. Den Satz „5 Punkte ' +
+          'darunter“ rechnet er live in deinem Browser nach, mit denselben 300 Pfaden.',
+      ],
+      [
+        { b: 'Mit deinen eigenen Zahlen.' },
+        ' Für jeden Kontotyp erzeugt der Rechner 1.000 zufällige Handelsjahre aus deinen Eingaben, keine echten Kursdaten. Ein Jahr ' +
           'hat rund 260 Handelstage. Wie viele ' +
           'Trades an einem Tag fallen, ist zufällig, im Schnitt so viele wie du pro Woche angibst. Jeder Trade gewinnt mit deiner ' +
           'Trefferquote. Ein Gewinner bringt dein CRV in R, ein Verlierer kostet 1 R, also dein Risiko. Unter „Annahmen anpassen“ ' +

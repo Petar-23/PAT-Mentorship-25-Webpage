@@ -2,11 +2,12 @@ import type { Metadata } from 'next'
 import { PFADE } from '@/components/prop-firm-rechner/pfade'
 import { RechnerSeite } from '@/components/prop-firm-rechner/seite'
 
-const TITLE = 'Prop Firm Calculator: Which prop firm fits your trades?'
+const TITLE = 'Prop Firm Calculator: What win rate do you need for your goal?'
 const DESCRIPTION =
-  'Free prop firm calculator: enter your win rate and R values and see, for 140 account types from Topstep, ' +
-  'MyFundedFutures, Tradeify, MyFundedPerps and Vest, how often you pass, when the first payout comes and what is ' +
-  'left after all fees. With an honest zero-edge comparison.'
+  'Free prop firm calculator: pick your goal, time frame and trades per week. After six questions you see the win rate ' +
+  'you need and which account from Topstep, MyFundedFutures, Tradeify, MyFundedPerps or Vest gets you there most easily, ' +
+  'after all fees.'
+const IMAGE = { url: '/images/og/prop-firm-rechner-en.png', width: 1200, height: 630, alt: 'Prop firm calculator: What win rate do you need for your goal?' }
 
 export const metadata: Metadata = {
   // absolute: the site-wide title template appends the German mentorship name
@@ -25,9 +26,9 @@ export const metadata: Metadata = {
     siteName: 'Price Action Trader',
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: '/images/pat-banner.jpeg', alt: 'Prop firm calculator by Price Action Trader' }],
+    images: [IMAGE],
   },
-  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: ['/images/pat-banner.jpeg'] },
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: [IMAGE] },
 }
 
 export default function PropFirmCalculatorPage() {

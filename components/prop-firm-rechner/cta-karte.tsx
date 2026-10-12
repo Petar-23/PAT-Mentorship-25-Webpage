@@ -1,6 +1,9 @@
+'use client'
+
 import Link from 'next/link'
 import { ETORO_CTA, ETORO_OFFER, YOUTUBE_URL } from '@/components/landing-v3/content'
 import { EtoroLogo } from '@/components/landing-v3/sections/partner'
+import { messe } from './messung'
 import { woerterbuch, type Sprache } from './texte'
 
 export const X_URL = 'https://x.com/petar_trades'
@@ -15,6 +18,7 @@ export function CtaKarte({ sprache, ohneTitel = false }: { sprache: Sprache; ohn
   const t = woerterbuch(sprache)
   const C = t.cta
   const o = sprache === 'de' ? ETORO_OFFER : { ...ETORO_OFFER, ...ETORO_OFFER.en }
+  const klick = (ziel: 'x' | 'youtube' | 'substack' | 'etoro') => () => messe(sprache, { name: 'rechner_cta', ziel })
   return (
     <section className={`cta-karte${ohneTitel ? ' ohne-titel' : ''}`} aria-label={C.titel}>
       {!ohneTitel && <h3>{C.titel}</h3>}
@@ -26,10 +30,10 @@ export function CtaKarte({ sprache, ohneTitel = false }: { sprache: Sprache; ohn
               <b>{C.folgen.titel}</b>
               <small>{C.folgen.text}</small>
               <span className="cta-paar">
-                <a className="cta-ziel" href={X_URL} target="_blank" rel="noopener" data-cta={`pfr-${sprache}-x`}>
+                <a className="cta-ziel" href={X_URL} target="_blank" rel="noopener" data-cta={`pfr-${sprache}-x`} onClick={klick('x')}>
                   {C.folgen.x} <span className="arr" aria-hidden="true">↗</span>
                 </a>
-                <a className="cta-ziel" href={YOUTUBE_URL} target="_blank" rel="noopener" data-cta={`pfr-${sprache}-youtube`}>
+                <a className="cta-ziel" href={YOUTUBE_URL} target="_blank" rel="noopener" data-cta={`pfr-${sprache}-youtube`} onClick={klick('youtube')}>
                   {C.folgen.yt} <span className="arr" aria-hidden="true">↗</span>
                 </a>
               </span>
@@ -37,7 +41,7 @@ export function CtaKarte({ sprache, ohneTitel = false }: { sprache: Sprache; ohn
           </div>
         </li>
         <li>
-          <a className="cta-weg" href={AI_LAB_URL} target="_blank" rel="noopener" data-cta={`pfr-${sprache}-ailab`}>
+          <a className="cta-weg" href={AI_LAB_URL} target="_blank" rel="noopener" data-cta={`pfr-${sprache}-ailab`} onClick={klick('substack')}>
             <span className="cta-nr" aria-hidden="true">02</span>
             <span className="cta-text">
               <b>{C.lab.titel}</b>
@@ -59,7 +63,7 @@ export function CtaKarte({ sprache, ohneTitel = false }: { sprache: Sprache; ohn
                 {C.etoro.zusatz && <small className="cta-zusatz">{C.etoro.zusatz}</small>}
                 <small>{C.etoro.bedingung(o.minDeposit)}</small>
                 <span className="cta-knoepfe">
-                  <a className="btn btn-inv" href={ETORO_OFFER.href} target="_blank" rel="sponsored noopener" data-cta={ETORO_CTA.tool}>
+                  <a className="btn btn-inv" href={ETORO_OFFER.href} target="_blank" rel="sponsored noopener" data-cta={ETORO_CTA.tool} onClick={klick('etoro')}>
                     {C.etoro.knopf} <span className="arr" aria-hidden="true">↗</span>
                   </a>
                   <Link className="lnk" href="/#etoro" prefetch={false} hrefLang={sprache === 'en' ? 'de' : undefined}>

@@ -399,6 +399,7 @@ export const en: Woerterbuch = {
     soRechnet: 'How the calculator works',
     impressum: 'Legal notice',
     datenschutz: 'Privacy policy',
+    cookies: 'Cookies',
     keineBeratung: 'Not financial advice',
     schliessen: 'Close',
     rechtliches: 'Legal and contact',
@@ -443,6 +444,7 @@ export const en: Woerterbuch = {
     andereKonten: 'See other accounts',
     andereTitel: 'Other accounts',
     neuRechnen: 'Start over',
+    eigeneZahlen: 'My own numbers',
     keinKonto: (crv: string) =>
       `At R:R ${crv}, this goal is not reachable in this time at any matching account with a win rate of 80% or less. ` +
       'Try a higher R:R, more time, a larger account or a smaller goal.',
@@ -649,7 +651,25 @@ export const en: Woerterbuch = {
     methodeLead: 'No oracle, just rules: day by day, trade by trade, with every fee.',
     methode: [
       [
-        'For each account type, the calculator generates 1,000 random trading years from your inputs, not from real market data. ' +
+        { b: 'From your goal (default).' },
+        ' Here the calculator works backwards, from a table computed in advance. The grid: goals from 500 to 50,000 USD net, ' +
+          'periods of 1, 2, 3, 6 and 12 months, 2, 5, 10 or 20 trades per week, R:R 1 : 1, 1 : 1.5, 1 : 2 and 1 : 3, risk per ' +
+          'trade 2.5, 5, 7.5 or 10% of the drawdown and 29 win rates from 10 to 80% in steps of 2.5 points. Each grid point runs ' +
+          '300 paths, all with the same random numbers: a higher win rate only turns losers into winners, everything else on ' +
+          'each path stays the same. That keeps the win rates fairly comparable.',
+      ],
+      [
+        'It models one account slot with rebuys: if an account is lost, a new one is bought. Payouts follow the “Take and go” ' +
+          'path, so every possible payout is taken right away, in full. Net means: all payouts after the split minus all fees ' +
+          'for purchases, subscriptions, resets and activation. For each risk level the calculator looks for the lowest win ' +
+          'rate at which your goal is reached in X out of 10 paths, interpolated linearly between two grid points, and picks ' +
+          'the risk level that needs the lowest win rate. If even 80% is not enough, the goal counts as hardly reachable. The ' +
+          'win rate is rounded up to a whole percent so it is sure to be enough; “X in 10” is rounded down. The sentence ' +
+          '“5 points lower” is recomputed live in your browser, with the same 300 paths.',
+      ],
+      [
+        { b: 'With your own numbers.' },
+        ' For each account type, the calculator generates 1,000 random trading years from your inputs, not from real market data. ' +
           'A year has about 260 trading days. How ' +
           'many trades fall on a given day is random, on average as many as you enter per week. Each trade wins with your win rate. ' +
           'A winner makes your R:R in R, a loser costs 1 R, which is your risk. Under “Adjust assumptions” winners and losses can vary.',

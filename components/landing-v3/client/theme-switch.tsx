@@ -75,6 +75,7 @@ const LABELS = {
     light: 'Tag',
     dark: 'Nacht',
     autoTitle: (rise: string, set: string) => `Automatisch: hell von ${rise} bis ${set} Uhr, danach dunkel`,
+    cycle: (now: string, next: string) => `Farbschema: ${now}. Tippen für ${next}`,
   },
   en: {
     group: 'Color scheme',
@@ -82,6 +83,7 @@ const LABELS = {
     light: 'Day',
     dark: 'Night',
     autoTitle: (rise: string, set: string) => `Automatic: light from ${rise} to ${set}, dark after that`,
+    cycle: (now: string, next: string) => `Color scheme: ${now}. Tap for ${next}`,
   },
 } as const
 
@@ -90,8 +92,9 @@ const VALUES: ReadonlyArray<ThemePreference> = ['auto', 'light', 'dark']
 /**
  * Umschalter Auto/Tag/Nacht als Radiogruppe mit Roving-Tabindex (ein Tab-Stopp, Pfeiltasten wählen).
  * Hält das Farbschema am Wrapper aktuell: bei Wahl, jede Minute im Auto-Modus und beim Zurückkehren in den Tab.
+ * kompakt: ein einziger Knopf, der Auto → Tag → Nacht durchschaltet (schmale Kopfzeilen mit 44-px-Tap-Zielen).
  */
-export function ThemeSwitch({ sprache = 'de' }: { sprache?: 'de' | 'en' } = {}) {
+export function ThemeSwitch({ sprache = 'de', kompakt = false }: { sprache?: 'de' | 'en'; kompakt?: boolean } = {}) {
   const labels = LABELS[sprache]
   const options = VALUES.map((value) => ({ value, label: labels[value], icon: ICONS[value] }))
   const groupRef = useRef<HTMLDivElement>(null)
@@ -138,6 +141,22 @@ export function ThemeSwitch({ sprache = 'de' }: { sprache?: 'de' | 'en' } = {}) 
     event.preventDefault()
     writePreference(VALUES[next])
     buttonRefs.current[next]?.focus()
+  }
+
+  if (kompakt) {
+    const next = VALUES[(VALUES.indexOf(preference) + 1) % VALUES.length]
+    return (
+      <div className="seg seg-kompakt" ref={groupRef}>
+        <button
+          type="button"
+          aria-label={labels.cycle(labels[preference], labels[next])}
+          title={preference === 'auto' ? autoTitle : labels[preference]}
+          onClick={() => writePreference(next)}
+        >
+          {ICONS[preference]}
+        </button>
+      </div>
+    )
   }
 
   return (

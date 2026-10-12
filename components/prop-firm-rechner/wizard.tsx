@@ -9,21 +9,23 @@ import { SiteFooter } from '@/components/landing-v3/sections/site-footer'
 import rohDaten from '@/lib/prop-firm/daten/regeln-2026-10-09.json'
 import { ladeTabelle } from '@/lib/prop-firm/daten/rueckwaerts'
 import { ladeKonten, type RegelDaten } from '@/lib/prop-firm/konten'
+import { openCookieSettings } from '@/lib/cookie-consent-client'
 import { RW, detailRueckwaerts, type RwDetail, type RwTabelle } from '@/lib/prop-firm/rueckwaerts'
 import { Blatt } from './blatt'
 import { DAUER, EASE, Erklaerung, Herein } from './bewegung'
 import { CrvSkizze } from './crv-skizze'
 import { CtaKarte } from './cta-karte'
 import { Hintergrund } from './hintergrund'
+import { messe } from './messung'
 import { DARUNTER_PUNKTE, RueckKlartext, VorKlartext } from './klartext'
 import { Feld, VorAnnahmen, VorKonten, useVorRechnung, zahlAus } from './rechner'
 import { KontenListe, loeseAntworten, type RueckAntworten, type Zeile } from './rueckwaerts'
 import { Sprachwahl } from './sprachwahl'
+import { START_STAND, schreibeVerlauf, verlaufAus, zielImVerlauf, type BlattArt, type Pfad, type Stand } from './verlauf'
 import { RUECK_START, STARTS, type Form } from './start'
 import { woerterbuch, type Sprache } from './texte'
 
 const DATEN = rohDaten as unknown as RegelDaten
-type Pfad = 'rueck' | 'vor'
 type Phase = 'frage' | 'rechnen' | 'fertig' | 'ergebnis'
 const RUECK_FRAGEN = ['ziel', 'zeit', 'tpw', 'crv', 'sicher', 'groesse'] as const
 const VOR_FRAGEN = ['treffer', 'crv', 'risiko', 'tpw'] as const
@@ -65,38 +67,103 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
   const [form, setForm] = useState<Form>(STARTS[sprache])
   const [tabelle, setTabelle] = useState<{ schl: string; t: RwTabelle } | null>(null)
   const [rueck, setRueck] = useState<RueckErgebnis | null>(null)
-  const [blatt, setBlatt] = useState<null | 'methode' | 'andere' | 'annahmen'>(null)
+  const [blatt, setBlatt] = useState<BlattArt | null>(null)
   const frage = useRef<HTMLHeadingElement>(null)
   const buehne = useRef<HTMLDivElement>(null)
 
   const fragen = pfad === 'rueck' ? RUECK_FRAGEN : VOR_FRAGEN
   const n = fragen.length
-  const phase: Phase = index < n ? 'frage' : index === n ? 'rechnen' : index === n + 1 ? 'fertig' : 'ergebnis'
-  const schluessel = `${pfad}-${index}`
   const antwortSchl = JSON.stringify(antworten)
   const tabelleBereit = tabelle?.schl === `${antworten.tpw}-${antworten.monate}` ? tabelle.t : null
   const rueckBereit = rueck?.schl === antwortSchl ? rueck : null
+  // Fertig-Schirm oder Ergebnis ohne passende Rechnung (etwa per Browser-Vor nach geänderter Antwort): erst rechnen
+  const phase: Phase =
+    index < n ? 'frage' : index === n || (pfad === 'rueck' && !rueckBereit) ? 'rechnen' : index === n + 1 ? 'fertig' : 'ergebnis'
+  const schluessel = `${pfad}-${index}-${phase}`
   const eintraege = useMemo(() => new Map(ladeKonten(DATEN).map((e) => [e.id, e])), [])
   const rechnung = useVorRechnung(form, sprache, pfad === 'vor' && index >= n)
 
-  const geh = useCallback((neu: number, dir: number) => {
+  // ---------------------------------------------------------------------------------------------- Schritte und Verlauf
+  // Jeder gezeigte Schritt ist ein Eintrag im Browser-Verlauf (verlauf.ts): vorwärts = neuer Eintrag, zurück = history.back.
+  const stapel = useRef<(Stand | undefined)[]>([START_STAND])
+  const tiefe = useRef(0)
+  const zeige = useCallback((s: Stand, dir: number) => {
     setRichtung(dir)
-    setIndex(neu)
+    setPfad(s.pfad)
+    setIndex(s.index)
+    setBlatt(s.blatt)
   }, [])
-  const weiter = useCallback(() => geh(index + 1, 1), [geh, index])
+  /** Vorwärts zu s; ersetzen: ohne neuen Eintrag (Rechen-Animation → Fertig-Schirm). */
+  const vor = useCallback((s: Stand, dir = 1, ersetzen = false) => {
+    if (!ersetzen) {
+      tiefe.current += 1
+      stapel.current = stapel.current.slice(0, tiefe.current)
+    }
+    stapel.current[tiefe.current] = s
+    schreibeVerlauf(ersetzen ? 'replace' : 'push', { tiefe: tiefe.current, stand: s })
+    zeige(s, dir)
+  }, [zeige])
+  /** Zurück zu s: liegt s in der Kette davor, geht der Browser dorthin (popstate zeigt es), sonst wird ersetzt. */
+  const zurueckZu = useCallback((s: Stand) => {
+    const d = zielImVerlauf(stapel.current, tiefe.current, s)
+    if (d >= 0) {
+      window.history.go(d - tiefe.current)
+      return
+    }
+    stapel.current[tiefe.current] = s
+    schreibeVerlauf('replace', { tiefe: tiefe.current, stand: s })
+    zeige(s, -1)
+  }, [zeige])
+  useEffect(() => {
+    const pfadName = window.location.pathname
+    schreibeVerlauf('replace', { tiefe: 0, stand: START_STAND })
+    const beiPop = (ev: PopStateEvent) => {
+      // Eintrag ohne Rechner-Daten auf derselben Seite: der Anfang (etwa wenn Next.js den ersten Eintrag neu geschrieben hat)
+      const e = verlaufAus(ev.state) ?? (window.location.pathname === pfadName ? { tiefe: 0, stand: START_STAND } : null)
+      if (!e) return
+      const dir = e.tiefe < tiefe.current ? -1 : 1
+      tiefe.current = e.tiefe
+      stapel.current[e.tiefe] = e.stand
+      zeige(e.stand, dir)
+    }
+    window.addEventListener('popstate', beiPop)
+    return () => window.removeEventListener('popstate', beiPop)
+  }, [zeige])
+
+  // Messen (nur mit Einwilligung, siehe messung.ts): Start einmal je Seitenaufruf, Ergebnis einmal je Rechnung
+  const gestartet = useRef(false)
+  const gemeldet = useRef('')
+  const starte = () => {
+    if (gestartet.current) return
+    gestartet.current = true
+    messe(sprache, { name: 'rechner_start' })
+  }
+  const weiter = () => {
+    starte()
+    vor({ pfad, index: index + 1, blatt: null })
+  }
   const wechsle = (p: Pfad) => {
-    setRichtung(p === 'vor' ? 1 : -1)
-    setPfad(p)
-    setIndex(0)
+    starte()
+    vor({ pfad: p, index: 0, blatt: null }, p === 'vor' ? 1 : -1)
+  }
+  const zumErgebnis = () => {
+    const schl = `${pfad}:${pfad === 'rueck' ? antwortSchl : JSON.stringify(form)}`
+    if (gemeldet.current !== schl) {
+      gemeldet.current = schl
+      messe(sprache, { name: 'rechner_ergebnis', modus: pfad === 'rueck' ? 'rueckwaerts' : 'vorwaerts' })
+    }
+    vor({ pfad, index: n + 2, blatt: null })
   }
   const zurueck = () => {
     if (index === 0) {
-      if (pfad === 'vor') wechsle('rueck')
+      if (pfad === 'vor') zurueckZu({ pfad: 'rueck', index: 0, blatt: null })
       return
     }
     // aus dem Fertig-Schirm zurück zur letzten Frage (die Rechnung wird nicht noch einmal gezeigt)
-    geh(phase === 'fertig' ? n - 1 : index - 1, -1)
+    zurueckZu({ pfad, index: phase === 'fertig' ? n - 1 : index - 1, blatt: null })
   }
+  const oeffne = (b: BlattArt) => vor({ pfad, index, blatt: b }, richtung)
+  const schliesse = () => zurueckZu({ pfad, index, blatt: null })
 
   // Tabelle laden, sobald Trades pro Woche und Zeitraum feststehen (meist schon während der letzten Fragen)
   useEffect(() => {
@@ -138,9 +205,9 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
   useEffect(() => {
     if (phase !== 'rechnen' || !rechnungFertig) return
     const rest = ruhig ? 0 : Math.max(0, RECHNEN_MS - (performance.now() - rechnenSeit.current))
-    const id = window.setTimeout(() => geh(n + 1, 1), rest)
+    const id = window.setTimeout(() => vor({ pfad, index: n + 1, blatt: null }, 1, true), rest)
     return () => window.clearTimeout(id)
-  }, [phase, rechnungFertig, ruhig, geh, n])
+  }, [phase, rechnungFertig, ruhig, vor, pfad, n])
 
   // Nach jedem Schrittwechsel: Bühne nach oben, Fokus auf die Frage (für Tastatur und Screenreader)
   const ersterRender = useRef(true)
@@ -188,12 +255,41 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
     const rechts = info.offset.x > WISCH_PX || info.velocity.x > WISCH_TEMPO
     if (links && Math.abs(info.offset.x) > Math.abs(info.offset.y)) {
       if (phase === 'frage' && weiterOk) weiter()
-      else if (phase === 'fertig') geh(n + 2, 1)
+      else if (phase === 'fertig') zumErgebnis()
     } else if (rechts && Math.abs(info.offset.x) > Math.abs(info.offset.y)) {
-      if (phase === 'ergebnis') geh(n + 1, -1)
+      if (phase === 'ergebnis') zurueckZu({ pfad, index: n + 1, blatt: null })
       else zurueck()
     }
   }
+
+  // Tastatur: Pfeil rechts oder Enter = Weiter, Pfeil links = Zurück. Nicht in Eingabefeldern, nicht bei offenem Blatt oder
+  // Cookie-Dialog; Enter auf Knöpfen und Links bleibt deren eigener Klick.
+  const taste = useRef<(e: KeyboardEvent) => void>(() => {})
+  useEffect(() => {
+    taste.current = (e: KeyboardEvent) => {
+      if (blatt || phase === 'rechnen' || e.defaultPrevented || e.repeat || e.isComposing) return
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
+      const ziel = e.target instanceof Element ? e.target : null
+      if (ziel?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"], [role="radiogroup"]')) return
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return
+      const vorwaerts = e.key === 'ArrowRight' || (e.key === 'Enter' && !ziel?.closest('button, a, summary, [role="button"]'))
+      if (vorwaerts) {
+        if (phase === 'frage' && weiterOk) weiter()
+        else if (phase === 'fertig') zumErgebnis()
+        else return
+      } else if (e.key === 'ArrowLeft') {
+        if (phase === 'ergebnis') zurueckZu({ pfad, index: n + 1, blatt: null })
+        else if (index > 0 || pfad === 'vor') zurueck()
+        else return
+      } else return
+      e.preventDefault()
+    }
+  })
+  useEffect(() => {
+    const beiTaste = (e: KeyboardEvent) => taste.current(e)
+    window.addEventListener('keydown', beiTaste)
+    return () => window.removeEventListener('keydown', beiTaste)
+  }, [])
 
   const varianten = {
     rein: (d: number) => (ruhig ? { opacity: 0 } : { opacity: 0, x: d * 36 }),
@@ -388,7 +484,7 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
             bester={rueckBereit.liste[0]?.gewaehlt ? rueckBereit.liste[0] : null}
             detail={rueckBereit.detail}
             darunter={rueckBereit.darunter}
-            onAndere={() => setBlatt('andere')}
+            onAndere={() => oeffne('andere')}
           />
         )}
       </div>
@@ -397,7 +493,7 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
     inhalt = (
       <div className="wz-ergebnis">
         <h2 className="sr-only" ref={frage} tabIndex={-1}>{W.vorKicker}</h2>
-        <VorKlartext sprache={sprache} form={form} rechnung={rechnung} onAndere={() => setBlatt('andere')} onAnnahmen={() => setBlatt('annahmen')} />
+        <VorKlartext sprache={sprache} form={form} rechnung={rechnung} onAndere={() => oeffne('andere')} onAnnahmen={() => oeffne('annahmen')} />
       </div>
     )
   }
@@ -421,7 +517,7 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
     nav = (
       <>
         <button type="button" className="knopf-leise" onClick={zurueck}><span aria-hidden="true">←</span> {W.zurueck}</button>
-        <button type="button" className="btn btn-accent wz-weiter wz-ansehen" onClick={() => geh(n + 2, 1)}>
+        <button type="button" className="btn btn-accent wz-weiter wz-ansehen" onClick={zumErgebnis}>
           {A.ergebnisAnsehen} <span className="arr" aria-hidden="true">→</span>
         </button>
       </>
@@ -431,7 +527,7 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
       <>
         <button type="button" className="knopf-leise" onClick={() => wechsle('rueck')}>{A.neuRechnen}</button>
         <button type="button" className="btn btn-inv wz-weiter" onClick={() => wechsle(pfad === 'rueck' ? 'vor' : 'rueck')}>
-          {pfad === 'rueck' ? W.kenneZahlen : A.vomZiel} <span className="arr" aria-hidden="true">→</span>
+          {pfad === 'rueck' ? A.eigeneZahlen : A.vomZiel} <span className="arr" aria-hidden="true">→</span>
         </button>
       </>
     )
@@ -449,7 +545,8 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
           <h1 className="app-titel">{A.titel}</h1>
           <div className="app-rechts">
             <Sprachwahl sprache={sprache} />
-            <ThemeSwitch sprache={sprache} />
+            <span className="thema-voll"><ThemeSwitch sprache={sprache} /></span>
+            <span className="thema-kompakt"><ThemeSwitch sprache={sprache} kompakt /></span>
           </div>
         </header>
 
@@ -477,35 +574,32 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
         </div>
 
         <footer className="app-fuss">
-          <ol className="punkte" aria-label={A.punkte}>
+          {/* Fortschritt: reine Anzeige (zurück geht es mit „Zurück“, Wischen, Pfeil links oder Browser-Zurück) */}
+          <div className="punkte" role="img" aria-label={A.punkt(aktiverPunkt + 1, punkte)}>
             {Array.from({ length: punkte }, (_, i) => (
-              <li key={i}>
-                <button
-                  type="button"
-                  className="punkt"
-                  aria-current={i === aktiverPunkt ? 'step' : undefined}
-                  aria-label={A.punkt(i + 1, punkte)}
-                  data-erledigt={i < aktiverPunkt ? '' : undefined}
-                  disabled={i >= aktiverPunkt || phase === 'rechnen'}
-                  onClick={() => geh(i, -1)}
-                />
-              </li>
+              <span
+                key={i}
+                className="punkt"
+                data-aktiv={i === aktiverPunkt ? '' : undefined}
+                data-erledigt={i < aktiverPunkt ? '' : undefined}
+              />
             ))}
-          </ol>
+          </div>
           {nav && <div className="app-nav">{nav}</div>}
           <nav className="app-recht" aria-label={A.rechtliches}>
-            <button type="button" onClick={() => setBlatt('methode')}>{A.soRechnet}</button>
+            <button type="button" onClick={() => oeffne('methode')}>{A.soRechnet}</button>
             <Link href="/impressum" prefetch={false} hrefLang={sprache === 'en' ? 'de' : undefined}>{A.impressum}</Link>
             <Link href="/datenschutz" prefetch={false} hrefLang={sprache === 'en' ? 'de' : undefined}>{A.datenschutz}</Link>
-            <button type="button" onClick={() => setBlatt('methode')}>{A.keineBeratung}</button>
+            <button type="button" onClick={openCookieSettings}>{A.cookies}</button>
+            <span className="app-hinweis">{A.keineBeratung}</span>
           </nav>
         </footer>
 
-        <Blatt id="blatt-methode" offen={blatt === 'methode'} onClose={() => setBlatt(null)} titel={A.soRechnet} schliessen={A.schliessen}>
+        <Blatt id="blatt-methode" offen={blatt === 'methode'} onClose={schliesse} titel={A.soRechnet} schliessen={A.schliessen}>
           <Hintergrund daten={DATEN} sprache={sprache} />
           <SiteFooter sprache={sprache} />
         </Blatt>
-        <Blatt id="blatt-andere" offen={blatt === 'andere'} onClose={() => setBlatt(null)} titel={A.andereTitel} schliessen={A.schliessen}>
+        <Blatt id="blatt-andere" offen={blatt === 'andere'} onClose={schliesse} titel={A.andereTitel} schliessen={A.schliessen}>
           <div className="blatt-wrap">
             {pfad === 'rueck' && rueckBereit ? (
               <KontenListe sprache={sprache} liste={rueckBereit.liste} antworten={antworten} />
@@ -514,7 +608,7 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
             )}
           </div>
         </Blatt>
-        <Blatt id="blatt-annahmen" offen={blatt === 'annahmen'} onClose={() => setBlatt(null)} titel={A.annahmen} schliessen={A.schliessen}>
+        <Blatt id="blatt-annahmen" offen={blatt === 'annahmen'} onClose={schliesse} titel={A.annahmen} schliessen={A.schliessen}>
           <div className="blatt-wrap">
             <VorAnnahmen sprache={sprache} form={form} setForm={setForm} />
           </div>
