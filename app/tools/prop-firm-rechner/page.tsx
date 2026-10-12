@@ -6,7 +6,7 @@ const TITEL = 'Prop-Firm-Rechner: Welche Prop-Firma passt zu deinen Trades?'
 const BESCHREIBUNG =
   'Kostenloser Prop-Firm-Rechner auf Deutsch: Trefferquote und R-Werte eingeben und für 140 Kontotypen von Topstep, ' +
   'MyFundedFutures, Tradeify, MyFundedPerps und Vest sehen, wie oft du bestehst, wann die erste Auszahlung kommt und ' +
-  'was nach allen Gebühren bleibt. Mit ehrlichem Glücksvergleich.'
+  'was nach allen Gebühren bleibt. Mit ehrlichem Vergleich ohne Kante.'
 
 export const metadata: Metadata = {
   title: TITEL,

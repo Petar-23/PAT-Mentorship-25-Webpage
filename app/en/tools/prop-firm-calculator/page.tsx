@@ -6,7 +6,7 @@ const TITLE = 'Prop Firm Calculator: Which prop firm fits your trades?'
 const DESCRIPTION =
   'Free prop firm calculator: enter your win rate and R values and see, for 140 account types from Topstep, ' +
   'MyFundedFutures, Tradeify, MyFundedPerps and Vest, how often you pass, when the first payout comes and what is ' +
-  'left after all fees. With an honest luck check.'
+  'left after all fees. With an honest zero-edge comparison.'
 
 export const metadata: Metadata = {
   // absolute: the site-wide title template appends the German mentorship name

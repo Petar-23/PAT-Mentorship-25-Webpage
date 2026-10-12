@@ -52,7 +52,7 @@ export function unterzeile(e: KontoEintrag, t: Woerterbuch): string {
   return `${e.programm}${e.variante ? `, ${t.daten.variante(e.variante)}` : ''}`
 }
 
-/** Ergebnisse: Glücksvergleich, Kanten-Sicherheit, Top 3, Tabelle mit Filtern und Details. */
+/** Ergebnisse: Vergleich ohne Kante, Kanten-Sicherheit, Top 3, Tabelle mit Filtern und Details. */
 export function Ergebnisse({ ergebnis, eintraege, daten, veraltet, sprache }: {
   ergebnis: Ergebnis
   eintraege: KontoEintrag[]
@@ -128,7 +128,7 @@ export function Ergebnisse({ ergebnis, eintraege, daten, veraltet, sprache }: {
 
       <div className="ehrlich">
         <div className="karte">
-          <h3>{T.glueckTitel}</h3>
+          <h3>{T.ohneKanteTitel}</h3>
           <dl className="vergleich">
             <div>
               <dt>{T.bestMitWerten}<small>{best ? `${best.eintrag.firma} ${groesseKurz(best.eintrag.groesse)}, ${best.eintrag.programm}` : T.keinerMitPreis}</small></dt>

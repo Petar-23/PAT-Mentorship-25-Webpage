@@ -31,7 +31,34 @@
 
 /* Hero und Eckdaten */
 .pat-lf.pfr .pfr-hero{padding-block:clamp(40px,7vh,88px) clamp(40px,5.5vh,64px)}
-.pat-lf.pfr .pfr-hero h1{max-width:13.5em}
+.pat-lf.pfr .pfr-hero h1{font-size:clamp(40px,4.5vw,64px)}
+.pat-lf.pfr .pfr-hero .hero-grid{align-items:center}
+
+/* Beispiel-Karte rechts im Hero (wie die Angebotskarte der Landing): Ergebnis mit den Startwerten, zwei ruhige Balken */
+.pat-lf.pfr .beispiel{justify-self:end;width:100%;max-width:460px;border-radius:22px;background:var(--surface);box-shadow:0 0 0 1px var(--line),0 18px 40px -30px rgba(17,17,18,.18);padding:clamp(24px,2.6vw,34px)}
+.pat-lf.pfr[data-mode="dark"] .beispiel{box-shadow:0 0 0 1px var(--line)}
+.pat-lf.pfr .beispiel-kopf{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font-size:13.5px;color:var(--text-2)}
+.pat-lf.pfr .beispiel-marke{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:6px;font:600 10.5px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--text-2);box-shadow:inset 0 0 0 1px var(--ink-soft)}
+.pat-lf.pfr .beispiel-annahmen{margin-top:10px;font-size:13px;line-height:1.55;color:var(--text-3)}
+.pat-lf.pfr .beispiel-best{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);display:grid;gap:6px}
+.pat-lf.pfr .beispiel-label{font:600 11px/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--text-3)}
+.pat-lf.pfr .beispiel-best b{font-size:17px;font-weight:600;letter-spacing:-.01em;line-height:1.35;color:var(--text)}
+.pat-lf.pfr .beispiel-best b.beispiel-warte{font-weight:500;color:var(--text-3)}
+.pat-lf.pfr .beispiel-best small{display:block;margin-top:2px;font-weight:400;font-size:13.5px;letter-spacing:0;color:var(--text-3)}
+.pat-lf.pfr .beispiel-wert{margin-top:14px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px}
+.pat-lf.pfr .beispiel-wert b{font:500 clamp(46px,4.4vw,62px)/1 var(--serif);letter-spacing:-.02em;color:var(--text)}
+.pat-lf.pfr .beispiel-wert span{font-size:14.5px;color:var(--text-2)}
+.pat-lf.pfr .beispiel-vergleich{margin-top:26px;display:grid;gap:14px}
+.pat-lf.pfr .beispiel-zeile{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:baseline;font-size:14px;color:var(--text-2)}
+.pat-lf.pfr .beispiel-zeile-wert{font-weight:600}
+.pat-lf.pfr .beispiel-spur{grid-column:1 / -1;position:relative;height:6px;border-radius:999px;background:var(--bg-soft)}
+.pat-lf.pfr[data-mode="dark"] .beispiel-spur{background:var(--line)}
+.pat-lf.pfr .beispiel-spur::before{content:"";position:absolute;left:50%;top:-4px;bottom:-4px;width:1px;background:var(--ink-soft)}
+.pat-lf.pfr .beispiel-spur i{position:absolute;top:0;bottom:0;border-radius:999px;background:var(--ink-line);transition:left .5s cubic-bezier(.2,0,0,1),width .5s cubic-bezier(.2,0,0,1)}
+.pat-lf.pfr .beispiel-zeile.ohne .beispiel-spur i{background:var(--ink-soft)}
+.pat-lf.pfr .beispiel-abstand{font-size:13px;line-height:1.5;color:var(--text-3)}
+.pat-lf.pfr .beispiel-fuss{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;line-height:1.6;color:var(--text-3)}
+.pat-lf.pfr .beispiel .lnk{font-size:13.5px;white-space:nowrap;text-underline-offset:4px}
 .pat-lf.pfr .pfr-hero .sub{margin-bottom:0;max-width:35em}
 .pat-lf.pfr .proof b{font-size:clamp(21px,1.9vw,26px);overflow-wrap:anywhere;hyphens:auto}
 .pat-lf.pfr .proof-grid > div{align-content:start}
@@ -210,6 +237,9 @@
   .pat-lf.pfr .details-grid{position:sticky;left:18px;width:calc(100cqw - 36px)}
   .pat-lf.pfr .scroll-hinweis{display:block;margin:0 0 10px}
 }
+@media (max-width:900px){
+  .pat-lf.pfr .beispiel{justify-self:start;max-width:520px;margin-top:8px}
+}
 @media (max-width:980px){
   .pat-lf.pfr .eingaben-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .pat-lf.pfr .eingaben-grid fieldset:last-child{grid-column:1 / -1}
@@ -242,5 +272,5 @@
   .pat-lf.pfr .nav-right{gap:10px}
 }
 @media (prefers-reduced-motion:reduce){
-  .pat-lf.pfr :is(.balken span,.eingabe,.wahl button,.chips button,.ergebnis){transition:none}
+  .pat-lf.pfr :is(.balken span,.eingabe,.wahl button,.chips button,.ergebnis,.beispiel-spur i){transition:none}
 }

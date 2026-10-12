@@ -93,7 +93,7 @@ export const KO_TEXT: Record<string, string> = {
 }
 
 export const VERBOT_TEXT: Record<string, string> = {
-  gambling: 'Glücksspiel-Verhalten',
+  gambling: 'Gambling-Verhalten',
   max_risiko_je_trade: 'Höchstrisiko je Trade',
   windfall: 'Windfall-Gewinne',
   kopierhandel: 'Kopierhandel',

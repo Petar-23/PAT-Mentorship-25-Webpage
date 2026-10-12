@@ -119,15 +119,34 @@ export const de = {
     titel: 'Welche Firma passt zu deinen Trades?',
     lead: (anzahl: number) =>
       `Gib Trefferquote, Gewinn und Verlust in R ein. Der Rechner spielt tausende Handelsjahre gegen die Regeln von ${anzahl} ` +
-      'Kontotypen durch, mit allen Gebühren, und zeigt dir ehrlich, wie viel davon Glück wäre.',
+      'Kontotypen durch, mit allen Gebühren, und stellt daneben, was dieselben Konten ohne Kante ergeben würden.',
     sprungRechner: 'Zum Rechner',
     aufEinenBlick: 'Auf einen Blick',
     eckdaten: (anzahl: number, firmen: readonly string[], stand: string) => [
       { wert: `${anzahl} Kontotypen`, text: firmen.join(', ') },
       { wert: stand, text: 'Regelstand, jede Regel mit Quelle' },
-      { wert: 'Glücksvergleich', text: 'Derselbe Lauf mit Kante 0 daneben' },
+      { wert: 'Vergleich ohne Kante', text: 'Derselbe Lauf mit Kante 0 daneben' },
       { wert: 'Im Browser', text: 'Deine Eingaben verlassen dein Gerät nicht' },
     ],
+  },
+
+  /** Beispiel-Karte im Hero: Ergebnis der ersten Rechnung mit den Startwerten. */
+  beispiel: {
+    aria: 'Beispiel-Ergebnis mit den Startwerten',
+    marke: 'Beispiel',
+    kopf: 'Mit den Startwerten unten',
+    annahmen: (z: { trefferquote: number; gewinnR: number; verlustR: number; tradesProWoche: number; risikoUsd: number }) =>
+      `${f.prozent(z.trefferquote)} Trefferquote · Ø Gewinn ${f.zahlText(z.gewinnR, 1)} R · Ø Verlust ${f.zahlText(z.verlustR, 1)} R · ` +
+      `${f.zahlText(z.tradesProWoche, 1)} Trades pro Woche · ${usd(z.risikoUsd)} Risiko je Trade`,
+    besterTyp: 'Bester Kontotyp',
+    proMonat: 'pro Monat nach allen Gebühren',
+    mitKante: 'Mit diesen Werten',
+    ohneKante: 'Ohne Kante',
+    abstand: (b: string) => `Abstand, der aus der Kante kommt: ${b} pro Monat`,
+    rechnet: 'Rechnet gerade in deinem Browser …',
+    abgebrochen: 'Das Ergebnis mit deinen Werten steht unten.',
+    fuss: 'Simulation, keine Prognose.',
+    link: 'Eigene Werte eingeben',
   },
 
   eingaben: {
@@ -171,7 +190,7 @@ export const de = {
     belegTitel: 'Beleg für eine Kante',
     beleg: (n: string) => `rund ${n} Trades`,
     belegText: 'brauchst du, um diese Kante sicher von null zu unterscheiden.',
-    keineKante: 'Ohne positive Erwartung gibt es keine Kante. Jeder Gewinn wäre Glück.',
+    keineKante: 'Ohne positive Erwartung gibt es keine Kante. Ein Plus käme dann nicht aus deinen Trades.',
     keineKanteWert: 'keine Kante',
     bittePruefen: 'Bitte prüfen:',
     fehler: {
@@ -192,8 +211,6 @@ export const de = {
       `Fertig: ${pfade} Jahre × ${varianten} Regelvarianten in ${sekunden} s, direkt in deinem Browser.`,
     fehlerPrefix: 'Fehler:',
     workerAbbruch: 'Die Rechnung im Hintergrund ist abgebrochen.',
-    /** Startwerte im Zahlenformat der Sprache. */
-    startGewinnR: '1,5',
   },
 
   ergebnis: {
@@ -204,7 +221,7 @@ export const de = {
       `${pfade} simulierte Jahre je Kontotyp, Auszahlungsweg „${weg}“${faktor ? ` mit ${faktor}x Drawdown Polster` : ''}` +
       `${bot ? ', Handel per Bot' : ''}. Netto pro Monat heißt: alle Auszahlungen nach Split minus alle Gebühren (Kauf, Abo, ` +
       'Reset, Aktivierung, Fixkosten) über zwölf Monate, mit Nachkauf nach jedem verlorenen Konto.',
-    glueckTitel: 'So sähe es mit reinem Glück aus',
+    ohneKanteTitel: 'So sähe es ohne Kante aus',
     bestMitWerten: 'Bester Kontotyp mit deinen Werten',
     keinerMitPreis: 'keiner mit Preis in der Auswahl',
     proMonatKurz: '/ Monat',
@@ -214,11 +231,11 @@ export const de = {
     mittelNullKlein: 'Ohne echte Kante gehen über viele Konten die Gebühren verloren.',
     urteil: {
       keinPreis: 'In dieser Auswahl gibt es keinen Kontotyp mit bekanntem Preis.',
-      keineKante: 'Deine Eingaben haben keine positive Kante. Was hier im Plus steht, ist Glück. Über viele Konten gehen die Gebühren verloren.',
+      keineKante: 'Deine Eingaben haben keine positive Kante. Was hier im Plus steht, kommt nicht aus deinen Trades. Über viele Konten gehen die Gebühren verloren.',
       nichtBesser:
-        'Dein bester Wert liegt nicht über dem besten Wert mit reinem Glück. Mit diesen Eingaben ist das Ergebnis von Glück nicht zu unterscheiden.',
+        'Dein bester Wert liegt nicht über dem besten Wert ohne Kante. Mit diesen Eingaben ist das Ergebnis von Kante 0 nicht zu unterscheiden.',
       abstand: (betrag: string) =>
-        `Dein bester Kontotyp liegt ${betrag} pro Monat über dem besten Kontotyp mit reinem Glück. Nur dieser Abstand kommt aus ` +
+        `Dein bester Kontotyp liegt ${betrag} pro Monat über dem besten Kontotyp ohne Kante. Nur dieser Abstand kommt aus ` +
         'deiner Kante, und nur, wenn deine Trefferquote und deine R-Werte stimmen.',
       nullPlus:
         ' Dass auch mit Kante 0 ein Kontotyp leicht im Plus liegt, kommt aus den vereinfachten Annahmen (sofortige Auszahlung, ' +
@@ -229,10 +246,11 @@ export const de = {
     sicherBand: (lo: string, hi: string, n: string) =>
       ` Aus 100 Trades geschätzt, kann die echte Erwartung irgendwo zwischen ${lo} und ${hi} liegen. Erst ab rund ${n} Trades ist ` +
       'sie mit 95 % Sicherheit größer als null.',
-    sicherOhne: ' Ohne positive Erwartung ist jedes Plus Glück. Über viele Konten gehen dann die Gebühren verloren.',
+    sicherOhne: ' Ohne positive Erwartung kommt kein Plus aus deinen Trades. Über viele Konten gehen dann die Gebühren verloren.',
     schaetzung:
       'Deine Trefferquote und deine R-Werte sind selbst Schätzungen. Stammen sie aus wenigen Trades oder aus einem Backtest, der ' +
-      'nach dem Ergebnis ausgesucht wurde, ist ein Teil davon Glück. Der Rechner kann nur so gut sein wie diese Zahlen.',
+      'nach dem Ergebnis ausgesucht wurde, stammt ein Teil davon aus der Auswahl und nicht aus einer echten Kante. Der Rechner kann nur so ' +
+      'gut sein wie diese Zahlen.',
     topTitel: 'Die drei besten Kontotypen für deine Eingaben',
     topUnter:
       'Sortiert nach Netto pro Monat in der vorsichtigeren Lesart, wenn eine Regel der Firma nicht eindeutig ist. Der beste Wert ' +
@@ -268,7 +286,7 @@ export const de = {
       netto: 'Netto / Monat',
       nettoTitel: 'Konto-Platz über 12 Monate mit Nachkauf, alle Gebühren. Darunter: 10 % bis 90 % der Jahre',
       null: 'Kante 0',
-      nullTitel: 'Dasselbe mit reinem Glück: Erwartung je Trade null',
+      nullTitel: 'Dasselbe ohne Kante: Erwartung je Trade null',
     },
     mehr: (n: number) => `Alle ${n} Kontotypen anzeigen`,
     weniger: (n: number) => `Nur die ersten ${n} anzeigen`,
@@ -345,7 +363,7 @@ export const de = {
       [
         { b: 'Kante 0:' },
         ' Derselbe Lauf mit denselben Trades, nur ist jedes Ergebnis um deine Erwartung je Trade verschoben. Form und Streuung ' +
-          'bleiben gleich, die Erwartung ist null. So siehst du, was Glück und die Regelstruktur allein liefern. Die Rechenregeln ' +
+          'bleiben gleich, die Erwartung ist null. So siehst du, was die Regeln und die Streuung allein liefern, ganz ohne Kante. Die Rechenregeln ' +
           'stimmen mit einem geprüften Referenz-Simulator überein; automatische Tests vergleichen beide auf festen Trade-Strömen.',
       ],
     ] as Absatz[],

@@ -223,15 +223,33 @@ export const en: Woerterbuch = {
     titel: 'Which firm fits your trades?',
     lead: (anzahl: number) =>
       `Enter your win rate and your average win and loss in R. The calculator plays thousands of trading years against the rules of ${anzahl} ` +
-      'account types, with every fee, and shows you honestly how much of the result would be luck.',
+      'account types, with every fee, and puts next to it what the same accounts would return without an edge.',
     sprungRechner: 'Go to the calculator',
     aufEinenBlick: 'At a glance',
     eckdaten: (anzahl: number, firmen: readonly string[], stand: string) => [
       { wert: `${anzahl} account types`, text: firmen.join(', ') },
       { wert: stand, text: 'Rules as of this date, each rule with a source' },
-      { wert: 'Luck check', text: 'The same run with zero edge, side by side' },
+      { wert: 'Zero-edge comparison', text: 'The same run with zero edge, side by side' },
       { wert: 'In your browser', text: 'Your inputs never leave your device' },
     ],
+  },
+
+  beispiel: {
+    aria: 'Example result with the starting values',
+    marke: 'Example',
+    kopf: 'With the starting values below',
+    annahmen: (z: { trefferquote: number; gewinnR: number; verlustR: number; tradesProWoche: number; risikoUsd: number }) =>
+      `${f.prozent(z.trefferquote)} win rate · avg. win ${f.zahlText(z.gewinnR, 1)} R · avg. loss ${f.zahlText(z.verlustR, 1)} R · ` +
+      `${f.zahlText(z.tradesProWoche, 1)} trades per week · ${usd(z.risikoUsd)} risk per trade`,
+    besterTyp: 'Best account type',
+    proMonat: 'per month after all fees',
+    mitKante: 'With these numbers',
+    ohneKante: 'Without an edge',
+    abstand: (b: string) => `Gap that comes from the edge: ${b} per month`,
+    rechnet: 'Calculating in your browser …',
+    abgebrochen: 'The result for your numbers is below.',
+    fuss: 'Simulation, not a forecast.',
+    link: 'Enter your own numbers',
   },
 
   eingaben: {
@@ -275,7 +293,7 @@ export const en: Woerterbuch = {
     belegTitel: 'Evidence for an edge',
     beleg: (n: string) => `about ${n} trades`,
     belegText: 'is what it takes to tell this edge apart from zero with confidence.',
-    keineKante: 'Without a positive expectancy there is no edge. Any profit would be luck.',
+    keineKante: 'Without a positive expectancy there is no edge. Any profit would not come from your trades.',
     keineKanteWert: 'no edge',
     bittePruefen: 'Please check:',
     fehler: {
@@ -296,7 +314,6 @@ export const en: Woerterbuch = {
       `Done: ${pfade} years × ${varianten} rule variants in ${sekunden} s, right in your browser.`,
     fehlerPrefix: 'Error:',
     workerAbbruch: 'The background calculation stopped.',
-    startGewinnR: '1.5',
   },
 
   ergebnis: {
@@ -307,7 +324,7 @@ export const en: Woerterbuch = {
       `${pfade} simulated years per account type, payout path “${weg}”${faktor ? ` with a ${faktor}x drawdown cushion` : ''}` +
       `${bot ? ', trading by bot' : ''}. Net per month means: all payouts after the split minus all fees (purchase, subscription, ` +
       'reset, activation, fixed costs) over twelve months, buying again after every lost account.',
-    glueckTitel: 'What pure luck would look like',
+    ohneKanteTitel: 'What it would look like without an edge',
     bestMitWerten: 'Best account type with your numbers',
     keinerMitPreis: 'none with a known price in this selection',
     proMonatKurz: '/ month',
@@ -317,10 +334,10 @@ export const en: Woerterbuch = {
     mittelNullKlein: 'Without a real edge, the fees are lost across many accounts.',
     urteil: {
       keinPreis: 'No account type in this selection has a known price.',
-      keineKante: 'Your inputs have no positive edge. Whatever shows a profit here is luck. Across many accounts, the fees are lost.',
-      nichtBesser: 'Your best value is not above the best value with pure luck. With these inputs, the result cannot be told apart from luck.',
+      keineKante: 'Your inputs have no positive edge. Whatever shows a profit here does not come from your trades. Across many accounts, the fees are lost.',
+      nichtBesser: 'Your best value is not above the best value without an edge. With these inputs, the result cannot be told apart from zero edge.',
       abstand: (betrag: string) =>
-        `Your best account type is ${betrag} per month above the best account type with pure luck. Only this gap comes from your ` +
+        `Your best account type is ${betrag} per month above the best account type without an edge. Only this gap comes from your ` +
         'edge, and only if your win rate and R values are right.',
       nullPlus:
         ' That an account type is slightly positive even with zero edge comes from the simplified assumptions (instant payout, ' +
@@ -331,10 +348,10 @@ export const en: Woerterbuch = {
     sicherBand: (lo: string, hi: string, n: string) =>
       ` Estimated from 100 trades, the true expectancy could be anywhere between ${lo} and ${hi}. Only from about ${n} trades is ` +
       'it above zero with 95% confidence.',
-    sicherOhne: ' Without a positive expectancy, every profit is luck. Across many accounts, the fees are lost.',
+    sicherOhne: ' Without a positive expectancy, no profit comes from your trades. Across many accounts, the fees are lost.',
     schaetzung:
       'Your win rate and R values are estimates themselves. If they come from a few trades or from a backtest picked for its ' +
-      'result, part of it is luck. The calculator can only be as good as these numbers.',
+      'result, part of it comes from the selection, not from a real edge. The calculator can only be as good as these numbers.',
     topTitel: 'The three best account types for your inputs',
     topUnter:
       "Sorted by net per month, using the more cautious reading when a firm’s rule is unclear. The best value out of many account " +
@@ -370,7 +387,7 @@ export const en: Woerterbuch = {
       netto: 'Net / month',
       nettoTitel: 'One account slot over 12 months with rebuys, all fees. Below: 10% to 90% of years',
       null: 'Zero edge',
-      nullTitel: 'The same with pure luck: expectancy per trade zero',
+      nullTitel: 'The same without an edge: expectancy per trade zero',
     },
     mehr: (n: number) => `Show all ${n} account types`,
     weniger: (n: number) => `Show only the first ${n}`,
@@ -447,7 +464,7 @@ export const en: Woerterbuch = {
       [
         { b: 'Zero edge:' },
         ' the same run with the same trades, except every result is shifted by your expectancy per trade. Shape and spread stay ' +
-          'the same, the expectancy is zero. This shows what luck and the rule structure alone deliver. The calculation rules match ' +
+          'the same, the expectancy is zero. This shows what the rules and the spread alone deliver, without any edge. The calculation rules match ' +
           'a verified reference simulator; automated tests compare both on fixed trade streams.',
       ],
     ],

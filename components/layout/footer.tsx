@@ -22,7 +22,7 @@ export function Footer() {
     {
       title: "Prop-Firm-Rechner",
       href: "/tools/prop-firm-rechner",
-      description: "Welche Prop-Firma passt zu deinen Trades? Mit allen Gebühren und Glücksvergleich",
+      description: "Welche Prop-Firma passt zu deinen Trades? Mit allen Gebühren und Vergleich ohne Kante",
       icon: Calculator
     },
     {

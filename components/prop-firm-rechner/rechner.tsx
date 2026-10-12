@@ -3,51 +3,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import rohDaten from '@/lib/prop-firm/daten/regeln-2026-10-09.json'
 import { ladeKonten, type RegelDaten } from '@/lib/prop-firm/konten'
-import { kantenSicherheit, schluesselFuer, verbinde } from '@/lib/prop-firm/auswertung'
+import { baueZeilen, gluecksvergleich, kantenSicherheit, schluesselFuer, verbinde } from '@/lib/prop-firm/auswertung'
 import type { RohErgebnis, SimEinstellungen } from '@/lib/prop-firm/simulation'
-import { PUNKTWERT, type Streuung } from '@/lib/prop-firm/stroeme'
+import { PUNKTWERT } from '@/lib/prop-firm/stroeme'
+import { setzeBeispiel, beispielStatus } from './beispiel'
 import { Ergebnisse, type Ergebnis } from './ergebnisse'
+import { STARTS, type Form } from './start'
 import { woerterbuch, type Sprache, type Woerterbuch } from './texte'
 
 const DATEN = rohDaten as unknown as RegelDaten
 const SAAT = 20261009
-
-type Form = {
-  trefferquote: string
-  gewinnR: string
-  verlustR: string
-  tradesProWoche: string
-  streuung: Streuung
-  groessenModus: 'risiko' | 'kontrakte' | 'dd_anteil'
-  risikoUsd: string
-  instrument: 'MNQ' | 'NQ'
-  stopPunkte: string
-  kontrakte: string
-  ddAnteil: string
-  politik: 'A' | 'B' | 'C'
-  politikFaktor: 1 | 2
-  botBetrieb: boolean
-  perpKosten: boolean
-  pfade: number
-}
-
-/** Startwerte; nur das Dezimalzeichen hängt an der Sprache, die Zahlen sind gleich. */
-function startWerte(t: Woerterbuch): Form {
-  return {
-    trefferquote: '45', gewinnR: t.eingaben.startGewinnR, verlustR: '1', tradesProWoche: '5', streuung: 'gemischt', groessenModus: 'risiko',
-    risikoUsd: '200', instrument: 'MNQ', stopPunkte: '20', kontrakte: '3', ddAnteil: '10', politik: 'A', politikFaktor: 1,
-    botBetrieb: false, perpKosten: true, pfade: 1000,
-  }
-}
 
 /** Eingabe -> Zahl. Deutsch: Komma ist das Dezimalzeichen. Englisch: Punkt, Komma trennt Tausender. */
 function zahlAus(s: string, sprache: Sprache): number {
   const t = String(s).replace(/\s/g, '')
   return Number(sprache === 'de' ? t.replace(',', '.') : t.replace(/,/g, ''))
 }
-
-/** Startwerte je Sprache, einmal beim Laden des Moduls. */
-const STARTS: Record<Sprache, Form> = { de: startWerte(woerterbuch('de')), en: startWerte(woerterbuch('en')) }
 
 function pruefe(f: Form, t: Woerterbuch): { einst: SimEinstellungen | null; fehler: string[] } {
   const fehler: string[] = []
@@ -136,7 +107,20 @@ export function PropFirmRechner({ sprache }: { sprache: Sprache }) {
             teile[i] = m.roh as Record<string, RohErgebnis>
             stand[i] = bis - von
             if (teile.every((x) => x !== null)) {
-              setErgebnis({ roh: verbinde(teile as Record<string, RohErgebnis>[]), einst, pfade, dauerMs: performance.now() - t0, formSchl: schl })
+              const roh = verbinde(teile as Record<string, RohErgebnis>[])
+              // Erste Rechnung mit den Startwerten: Ergebnis auch an die Beispiel-Karte im Hero geben (gleiche Zahlen wie unten)
+              if (schl === JSON.stringify(STARTS[sprache])) {
+                const vergleich = gluecksvergleich(baueZeilen(eintraege, roh, einst.botBetrieb))
+                const best = vergleich.bestKanteZeile
+                if (best && vergleich.bestKante !== null && vergleich.bestNull !== null) {
+                  const e = best.eintrag
+                  setzeBeispiel({
+                    status: 'fertig',
+                    wert: { firma: e.firma, groesse: e.groesse, programm: e.programm, variante: e.variante, netto: vergleich.bestKante, ohneKante: vergleich.bestNull },
+                  })
+                }
+              }
+              setErgebnis({ roh, einst, pfade, dauerMs: performance.now() - t0, formSchl: schl })
               setLauf({ status: 'fertig', fertig: pfade, gesamt: pfade })
             }
           } else if (m.typ === 'fehler') {
@@ -147,13 +131,15 @@ export function PropFirmRechner({ sprache }: { sprache: Sprache }) {
         w.postMessage({ typ: 'auftrag', id, einst, schluessel: alleSchluessel, von, bis })
       })
     },
-    [beende, alleSchluessel, sprache],
+    [beende, alleSchluessel, eintraege, sprache],
   )
 
   const starte = () => {
     const { einst } = pruefe(form, t)
     if (!einst) return
     if (lauf.status === 'laeuft') beende()
+    // Startwerte-Rechnung abgebrochen, bevor das Beispiel stand: Karte im Hero verweist dann auf das Ergebnis unten
+    if (beispielStatus() === 'rechnet' && formSchl !== JSON.stringify(STARTS[sprache])) setzeBeispiel({ status: 'abgebrochen' })
     setLauf({ status: 'laeuft', fertig: 0, gesamt: form.pfade })
     rechne(einst, form.pfade, formSchl)
   }
