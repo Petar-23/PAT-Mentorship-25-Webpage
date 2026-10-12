@@ -222,8 +222,9 @@ export const en: Woerterbuch = {
     titelDim: 'Prop firm calculator.',
     titel: 'Which firm fits your trades?',
     lead: (anzahl: number) =>
-      `Enter your win rate and your average win and loss in R. The calculator plays thousands of trading years against the rules of ${anzahl} ` +
-      'account types, with every fee, and puts next to it what the same accounts would return without an edge.',
+      `Enter your win rate and your average win and loss in R. From these numbers, the calculator generates 1,000 random trading ` +
+      `years per account type and runs them against the rules of ${anzahl} account types, with every fee. It is a simulation ` +
+      'of your numbers, not market data. Next to it you see what the same accounts would return without an edge.',
     sprungRechner: 'Go to the calculator',
     aufEinenBlick: 'At a glance',
     eckdaten: (anzahl: number, firmen: readonly string[], stand: string) => [
@@ -445,7 +446,8 @@ export const en: Woerterbuch = {
     methodeLead: 'No oracle, just rules: day by day, trade by trade, with every fee.',
     methode: [
       [
-        'For each account type, the calculator plays through many possible trading years. A year has about 260 trading days. How ' +
+        'For each account type, the calculator generates 1,000 random trading years from your inputs, not from real market data. ' +
+          'A year has about 260 trading days. How ' +
           'many trades fall on a given day is random, on average as many as you enter per week. Each trade wins with your win rate. ' +
           'Winners scatter around your average win, losers lose your average loss.',
       ],

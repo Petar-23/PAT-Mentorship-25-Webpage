@@ -118,8 +118,9 @@ export const de = {
     titelDim: 'Prop-Firm-Rechner.',
     titel: 'Welche Firma passt zu deinen Trades?',
     lead: (anzahl: number) =>
-      `Gib Trefferquote, Gewinn und Verlust in R ein. Der Rechner spielt tausende Handelsjahre gegen die Regeln von ${anzahl} ` +
-      'Kontotypen durch, mit allen Gebühren, und stellt daneben, was dieselben Konten ohne Kante ergeben würden.',
+      `Gib Trefferquote, Gewinn und Verlust in R ein. Der Rechner erzeugt daraus je Kontotyp 1.000 zufällige Handelsjahre und spielt ` +
+      `sie gegen die Regeln von ${anzahl} Kontotypen durch, mit allen Gebühren. Das ist eine Simulation aus deinen Zahlen, keine ` +
+      'Kursdaten. Daneben steht, was dieselben Konten ohne Kante ergeben würden.',
     sprungRechner: 'Zum Rechner',
     aufEinenBlick: 'Auf einen Blick',
     eckdaten: (anzahl: number, firmen: readonly string[], stand: string) => [
@@ -344,7 +345,8 @@ export const de = {
     methodeLead: 'Kein Orakel, sondern Regeln: Tag für Tag, Trade für Trade, mit allen Gebühren.',
     methode: [
       [
-        'Für jeden Kontotyp spielt der Rechner viele mögliche Handelsjahre durch. Ein Jahr hat rund 260 Handelstage. Wie viele ' +
+        'Für jeden Kontotyp erzeugt der Rechner 1.000 zufällige Handelsjahre aus deinen Eingaben, keine echten Kursdaten. Ein Jahr ' +
+          'hat rund 260 Handelstage. Wie viele ' +
           'Trades an einem Tag fallen, ist zufällig, im Schnitt so viele wie du pro Woche angibst. Jeder Trade gewinnt mit deiner ' +
           'Trefferquote. Gewinner streuen um deinen Durchschnittsgewinn, Verlierer verlieren deinen Durchschnittsverlust.',
       ],
