@@ -64,7 +64,7 @@ export function readCookieConsent(): CookieConsent | null {
   return cachedConsent
 }
 
-/** Von Google-Tag und Clarity gemeldet, sobald sie für eine Kategorie Daten erheben dürfen und geladen werden. */
+/** Von den Analyse- und Marketing-Diensten gemeldet, sobald sie mit Einwilligung geladen werden. */
 export function markTrackingActive(category: ConsentCategory) {
   activeCategories.add(category)
 }
@@ -145,7 +145,7 @@ export function subscribeToCookieConsent(listener: ConsentListener): () => void 
 /**
  * Speichert die Entscheidung und informiert alle Dienste.
  * needsReload ist true, wenn eine Kategorie ohne Einwilligung ist, deren Skripte in dieser Seite schon laufen:
- * gtag.js und Clarity lassen sich nicht vollständig entladen, erst ein Neuladen stellt sicher, dass nichts mehr gesendet wird.
+ * Bereits geladene Drittanbieter-Skripte lassen sich nicht vollständig entladen. Der Banner lädt deshalb nach Widerruf neu.
  */
 export function saveCookieConsent(consent: CookieConsent): { needsReload: boolean } {
   const previous = lastNotifiedConsent !== undefined ? lastNotifiedConsent : readCookieConsent()

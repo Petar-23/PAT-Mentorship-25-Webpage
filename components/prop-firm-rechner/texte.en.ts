@@ -471,8 +471,9 @@ export const en: Woerterbuch = {
       titel: 'First month of mentorship free, sponsored by eToro',
       zusatz: 'German-language mentorship',
       bedingung: (min: string) =>
-        `How it works: open an eToro account through my partner link and deposit ${min}, then you get your code for the ` +
-        'first month. No trading needed.',
+        `How it works: open an eToro account through my partner link and make a first deposit of at least ${min}. ` +
+        'eToro will then automatically email you your code for the first month.',
+      codeHilfe: (days: number) => `Only if your code has not arrived after ${days} days, email`,
       knopf: 'Open an eToro account',
       wie: 'All steps (German page)',
       anzeige: 'Ad',

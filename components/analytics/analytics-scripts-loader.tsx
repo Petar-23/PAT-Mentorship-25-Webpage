@@ -1,6 +1,9 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { useEffect } from 'react'
+import { markTrackingActive, useCookieConsent } from '@/lib/cookie-consent-client'
+import { beforeVercelSend } from '@/lib/vercel-consent'
 
 const GoogleTagManager = dynamic(
   () => import('@/components/analytics/google-tag-manager').then((mod) => mod.GoogleTagManager),
@@ -23,12 +26,23 @@ const Analytics = dynamic(
 )
 
 export function AnalyticsScriptsLoader() {
+  const consent = useCookieConsent()
+  const analyticsGranted = consent?.analytics === true
+
+  useEffect(() => {
+    if (analyticsGranted) markTrackingActive('analytics')
+  }, [analyticsGranted])
+
   return (
     <>
       <GoogleTagManager />
       <MicrosoftClarity />
-      <SpeedInsights />
-      <Analytics />
+      {analyticsGranted ? (
+        <>
+          <SpeedInsights beforeSend={beforeVercelSend} />
+          <Analytics beforeSend={beforeVercelSend} />
+        </>
+      ) : null}
     </>
   )
 }

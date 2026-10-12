@@ -62,6 +62,10 @@ export function CtaKarte({ sprache, ohneTitel = false }: { sprache: Sprache; ohn
                 <b>{C.etoro.titel}</b>
                 {C.etoro.zusatz && <small className="cta-zusatz">{C.etoro.zusatz}</small>}
                 <small>{C.etoro.bedingung(o.minDeposit)}</small>
+                <small>
+                  {C.etoro.codeHilfe(o.codeWaitDays)}{' '}
+                  <a className="lnk" href={`mailto:${o.supportEmail}`}>{o.supportEmail}</a>.
+                </small>
                 <span className="cta-knoepfe">
                   <a className="btn btn-inv" href={ETORO_OFFER.href} target="_blank" rel="sponsored noopener" data-cta={ETORO_CTA.tool} onClick={klick('etoro')}>
                     {C.etoro.knopf} <span className="arr" aria-hidden="true">↗</span>

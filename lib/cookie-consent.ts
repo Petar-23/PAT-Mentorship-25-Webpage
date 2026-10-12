@@ -9,11 +9,11 @@ export const COOKIE_CONSENT_CHANGED_EVENT = 'cookieConsentChanged'
 export const OPEN_COOKIE_SETTINGS_EVENT = 'openCookieSettings'
 
 /**
- * Version 2: Banner mit gleichwertigem "Alle ablehnen" und benannten Diensten.
+ * Version 3: Vercel Web Analytics und Speed Insights als Analyse-Dienste ergänzt.
  * Entscheidungen ohne oder mit anderer Version gelten als nicht getroffen: das Banner erscheint erneut,
  * und bis zur neuen Entscheidung wird nichts geladen. Bei geänderten Zwecken oder Diensten hochzählen.
  */
-export const COOKIE_CONSENT_VERSION = 2
+export const COOKIE_CONSENT_VERSION = 3
 
 export type ConsentCategory = 'analytics' | 'marketing'
 export const CONSENT_CATEGORIES: readonly ConsentCategory[] = ['analytics', 'marketing']
