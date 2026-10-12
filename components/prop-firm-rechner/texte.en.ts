@@ -393,6 +393,71 @@ export const en: Woerterbuch = {
     annahmen: 'Adjust assumptions',
   },
 
+  app: {
+    titel: 'Prop firm calculator',
+    start: 'Price Action Trader, home page',
+    soRechnet: 'How the calculator works',
+    impressum: 'Legal notice',
+    datenschutz: 'Privacy policy',
+    keineBeratung: 'Not financial advice',
+    schliessen: 'Close',
+    rechtliches: 'Legal and contact',
+    punkte: 'Progress',
+    punkt: (i: number, n: number) => `Step ${i} of ${n}`,
+    groesse: {
+      frage: 'How large may the account be?',
+      unter: 'Optional. Larger accounts forgive more but cost more.',
+      erklaerung:
+        'This is the account size at the firm, for example 50K. Larger accounts have more drawdown and allow more risk per ' +
+        'trade, but cost more. “All” includes every size.',
+    },
+    groessen: { alle: 'All', k50: 'up to 50K', k100: 'up to 100K', k150: 'up to 150K' } as Record<string, string>,
+    fertigTitel: 'Your result is ready.',
+    fertigUnter: 'Before you look: three ways to go from here. Your result is already unlocked.',
+    ergebnisAnsehen: 'See result',
+    rechnetVor: (n: string) => `Simulating ${n} years per account type …`,
+    intro: (zeit: string, ziel: string, s: number) => `You want ${ziel} paid out within ${zeit}, in ${s} of 10 cases.`,
+    muss: 'Then your strategy has to deliver this:',
+    trefferMin: 'Win rate at least',
+    beiCrv: (c: string) => `at R:R ${c}`,
+    tradesProWoche: 'trades per week',
+    risikoJeTrade: 'Risk per trade',
+    risikoAnteil: (a: string) => `${a} of the drawdown`,
+    erwartung: (e: string) => `That is at least ${e} per trade after costs.`,
+    leichtesten: 'You reach it most easily at',
+    ddArt: {
+      eod_trailing: 'only trailed at the end of the day',
+      intraday_trailing: 'trailed in real time',
+      statisch: 'static, not trailed',
+      keiner: 'no drawdown limit',
+    } as Record<string, string>,
+    warum: (dd: string, art: string, preis: string) => `Why there: ${dd} drawdown, ${art}, for ${preis}.`,
+    preisEinmalig: (b: string) => `${b} one-time`,
+    preisMonatlich: (b: string) => `${b} per month until you pass`,
+    darunter: (punkte: number, p: string, x: number) =>
+      x === 0
+        ? `If your win rate is ${punkte} points lower (${p}), you reach this goal at this account in none of 10 cases.`
+        : `If your win rate is ${punkte} points lower (${p}), you reach this goal at this account in only ${x} of 10 cases.`,
+    scheitert: (name: string, anteil: string) => `Where it mostly fails: ${name} (${anteil} of purchases).`,
+    keinScheitern: 'Only a few purchases failed in the simulation.',
+    andereKonten: 'See other accounts',
+    andereTitel: 'Other accounts',
+    neuRechnen: 'Start over',
+    keinKonto: (crv: string) =>
+      `At R:R ${crv}, this goal is not reachable in this time at any matching account with a win rate of 80% or less. ` +
+      'Try a higher R:R, more time, a larger account or a smaller goal.',
+    vorIntro: (p: string, crv: string, risiko: string, tpw: string) =>
+      `With a ${p} win rate at R:R ${crv}, ${risiko} risk per trade and ${tpw} trades per week, you make the most at:`,
+    proMonat: 'per month net',
+    bei: 'at',
+    nachGebuehren: 'After all fees, on average over 12 months, buying again after every lost account.',
+    imPlus: (x: number) => `In ${x} of 10 simulated years you end up positive there.`,
+    vorErwartung: (e: string) => `Your numbers give ${e} per trade after costs.`,
+    vorMinus: 'No account ends up positive with these numbers. You lose the least at:',
+    annahmen: 'Adjust assumptions',
+    vomZiel: 'Start from a goal',
+  },
+
   cta: {
     titel: 'What’s next',
     folgen: { titel: 'Follow me on X and YouTube', text: 'What I’m testing right now, what holds up and what doesn’t.', x: 'X', yt: 'YouTube' },
@@ -587,7 +652,7 @@ export const en: Woerterbuch = {
         'For each account type, the calculator generates 1,000 random trading years from your inputs, not from real market data. ' +
           'A year has about 260 trading days. How ' +
           'many trades fall on a given day is random, on average as many as you enter per week. Each trade wins with your win rate. ' +
-          'A winner makes your R:R in R, a loser costs 1 R, which is your risk. Under “More settings” winners and losses can vary.',
+          'A winner makes your R:R in R, a loser costs 1 R, which is your risk. Under “Adjust assumptions” winners and losses can vary.',
       ],
       [
         "Day by day, the firm’s rules run alongside: drawdown (trailing at end of day, in real time, or static), daily loss limit " +

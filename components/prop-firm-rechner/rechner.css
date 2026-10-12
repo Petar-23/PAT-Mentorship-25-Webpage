@@ -438,3 +438,103 @@
   .pat-lf.pfr :is(.wz-chip,.cta-ziel){transition:none}
   .pat-lf.pfr .erkl-knopf i::after{transition:none}
 }
+
+/* ------------------------------------------------------------------------------------------------------------------
+ * Bildschirm-App: genau ein Bildschirm hoch, kein Seiten-Scroll. Nur die Bühne scrollt, falls ein Schritt länger ist.
+ * ---------------------------------------------------------------------------------------------------------------- */
+html:has(.pfr-app),html:has(.pfr-app) body{height:100%;overflow:hidden;overscroll-behavior:none}
+.pat-lf.pfr.pfr-app{height:100vh;height:100dvh;overflow:hidden}
+.pat-lf.pfr .pfr-app-innen{height:100%;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) 0 env(safe-area-inset-left,0px)}
+.pat-lf.pfr .app-kopf{flex:none;width:100%;max-width:1080px;height:56px;margin:0 auto;padding:0 clamp(16px,4vw,32px);display:flex;align-items:center;gap:10px}
+.pat-lf.pfr .app-marke{display:flex;text-decoration:none}
+.pat-lf.pfr .app-marke .mark{width:26px;height:26px;border-radius:7px}
+.pat-lf.pfr .app-marke:focus-visible{outline:2px solid var(--text);outline-offset:3px;border-radius:8px}
+.pat-lf.pfr h1.app-titel{font:600 14.5px/1.2 var(--sans);letter-spacing:-.01em;color:var(--text)}
+.pat-lf.pfr .app-rechts{margin-left:auto;display:flex;align-items:center;gap:8px}
+.pat-lf.pfr .app-buehne{flex:1;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.pat-lf.pfr .wz-schritt{max-width:760px;min-height:100%;margin:0 auto;padding:clamp(12px,3vh,40px) clamp(16px,4vw,32px) 28px;display:flex;flex-direction:column;touch-action:pan-y}
+.pat-lf.pfr .wz-schritt.wz-p-ergebnis,.pat-lf.pfr .wz-schritt.wz-p-fertig{max-width:800px}
+.pat-lf.pfr .wz-schritt .wz-frage{margin-top:0}
+.pat-lf.pfr .wz-abzweig{max-width:none;margin:22px 0 0;padding-top:16px;border-top:1px solid var(--line)}
+@media (min-width:700px){
+  .pat-lf.pfr .wz-schritt.wz-p-frage,.pat-lf.pfr .wz-schritt.wz-p-rechnen{justify-content:center}
+}
+
+/* Fuß: Punkte, Zurück/Weiter, Rechtliches */
+.pat-lf.pfr .app-fuss{flex:none;border-top:1px solid var(--line);background:var(--bg);padding:10px clamp(16px,4vw,32px) calc(8px + env(safe-area-inset-bottom,0px))}
+.pat-lf.pfr .app-fuss > *{max-width:760px;margin-inline:auto}
+.pat-lf.pfr .punkte{display:flex;justify-content:center;align-items:center;gap:8px;margin-bottom:10px}
+.pat-lf.pfr .punkt{appearance:none;border:0;padding:0;display:block;width:8px;height:8px;border-radius:999px;background:var(--line);cursor:pointer;transition:width .3s cubic-bezier(.2,0,0,1),background-color .3s ease}
+.pat-lf.pfr[data-mode="dark"] .punkt{background:#2E2E33}
+.pat-lf.pfr .punkt[data-erledigt]{background:var(--ink-soft)}
+.pat-lf.pfr .punkt[aria-current="step"]{width:26px;background:var(--accent)}
+.pat-lf.pfr .punkt:disabled{cursor:default}
+.pat-lf.pfr .punkt:focus-visible{outline:2px solid var(--text);outline-offset:3px}
+.pat-lf.pfr .app-nav{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.pat-lf.pfr .app-nav .wz-weiter{height:50px;padding:0 24px;font-size:15.5px}
+.pat-lf.pfr .app-nav .btn-accent.wz-ansehen{height:50px}
+.pat-lf.pfr .app-recht{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 14px;margin-top:10px;font-size:11.5px;line-height:1.6;color:var(--text-3)}
+.pat-lf.pfr .app-recht :is(a,button){appearance:none;border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.pat-lf.pfr .app-recht :is(a,button):hover{color:var(--text)}
+.pat-lf.pfr .app-recht :is(a,button):focus-visible{outline:2px solid var(--text);outline-offset:2px}
+
+/* Vollbild-Blatt */
+.pat-lf.pfr .blatt{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;background:var(--bg);padding-top:env(safe-area-inset-top,0px)}
+.pat-lf.pfr .blatt-kopf{flex:none;width:100%;max-width:1080px;height:58px;margin:0 auto;padding:0 clamp(16px,4vw,32px);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.pat-lf.pfr .blatt-kopf h2{font-family:var(--serif);font-weight:500;font-size:22px;line-height:1.2;letter-spacing:-.01em}
+.pat-lf.pfr .blatt-zu{appearance:none;border:0;flex:none;width:40px;height:40px;border-radius:999px;background:var(--seg-bg);color:var(--text);font:400 24px/1 var(--sans);cursor:pointer;display:grid;place-items:center}
+.pat-lf.pfr .blatt-zu:hover{background:var(--seg-on);box-shadow:var(--seg-shadow)}
+.pat-lf.pfr .blatt-zu:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+.pat-lf.pfr .blatt-inhalt{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;border-top:1px solid var(--line);padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.pat-lf.pfr .blatt .sec{padding-block:clamp(28px,5vw,56px)}
+.pat-lf.pfr .blatt .foot{padding-block:28px 40px}
+.pat-lf.pfr .blatt-wrap{max-width:920px;margin:0 auto;padding:18px clamp(16px,4vw,32px)}
+.pat-lf.pfr .blatt .rw-liste{margin-top:0}
+
+/* Ergebnis in Klartext */
+.pat-lf.pfr .klar{display:grid;gap:14px}
+.pat-lf.pfr .klar-intro{font-family:var(--serif);font-weight:500;font-size:clamp(24px,3.2vw,34px);line-height:1.22;letter-spacing:-.01em;color:var(--text)}
+.pat-lf.pfr .klar-zeilen{display:grid;margin:4px 0;border-block:1px solid var(--line)}
+.pat-lf.pfr .klar-zeile{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;padding:12px 0;font-size:16px;line-height:1.35;color:var(--text-2)}
+.pat-lf.pfr .klar-zeile + .klar-zeile{border-top:1px solid var(--line)}
+.pat-lf.pfr .klar-zeile b{font:500 clamp(36px,5vw,52px)/1 var(--serif);letter-spacing:-.02em;color:var(--text)}
+.pat-lf.pfr .klar-satz{font-size:16.5px;line-height:1.55;color:var(--text)}
+.pat-lf.pfr .klar-satz .erkl{margin-top:4px}
+.pat-lf.pfr .klar-konto{font-size:17px;line-height:1.45;color:var(--text)}
+.pat-lf.pfr .klar-konto b{font-weight:600}
+.pat-lf.pfr .klar-konto small{display:block;margin-top:2px;font-size:14px;color:var(--text-3)}
+.pat-lf.pfr .klar-klein{font-size:14px;line-height:1.5;color:var(--text-3);margin-top:-8px}
+.pat-lf.pfr .klar-gross{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.pat-lf.pfr .klar-gross b{font:500 clamp(48px,7vw,72px)/1 var(--serif);letter-spacing:-.02em;color:var(--text)}
+.pat-lf.pfr .klar-gross b.minus{color:var(--minus)}
+.pat-lf.pfr .klar-gross span{font-size:16px;font-weight:500;color:var(--text-2)}
+.pat-lf.pfr .klar-links{display:flex;flex-wrap:wrap;gap:12px 24px;margin-top:4px}
+.pat-lf.pfr .wz-fertig .cta-karte{margin-top:20px}
+.pat-lf.pfr .wz-fertig .wz-unter{max-width:34em}
+
+@media (max-width:600px){
+  .pat-lf.pfr .app-kopf{height:52px}
+  .pat-lf.pfr .app-rechts{gap:6px}
+  .pat-lf.pfr .wz-schritt{padding-top:14px}
+  .pat-lf.pfr .wz-schritt .wz-frage{font-size:28px}
+  .pat-lf.pfr .app-nav .wz-weiter{height:48px;padding:0 18px;font-size:15px}
+  .pat-lf.pfr .app-fuss{padding-top:8px}
+  .pat-lf.pfr .punkte{margin-bottom:8px}
+  .pat-lf.pfr .app-recht{gap:0 12px;margin-top:6px;font-size:11px}
+  .pat-lf.pfr .wz-fertig .cta-karte{padding:16px}
+  .pat-lf.pfr .klar-intro{font-size:23px}
+}
+@media (prefers-reduced-motion:reduce){
+  .pat-lf.pfr .punkt{transition:none}
+}
+
+/* Zweitknopf (Zurück, Neu rechnen, Mehr anzeigen) und Link-Knopf mit Unterzeile */
+.pat-lf.pfr .knopf-leise{appearance:none;border:0;display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 18px;border-radius:var(--radius);background:transparent;box-shadow:inset 0 0 0 1px var(--line);font:600 15px/1 var(--sans);color:var(--text);cursor:pointer;transition:box-shadow .15s ease,background-color .15s ease}
+.pat-lf.pfr .knopf-leise:hover{background:var(--surface);box-shadow:inset 0 0 0 1px var(--ink-soft)}
+.pat-lf.pfr .knopf-leise:focus-visible{outline:2px solid var(--text);outline-offset:3px}
+.pat-lf.pfr .lnk-knopf small{display:inline-block;width:100%}
+.pat-lf.pfr .mehr{display:flex;justify-content:center;margin-top:20px}
+
+.pat-lf.pfr .cta-karte.ohne-titel .cta-wege{margin-top:0}
+.pat-lf.pfr .cta-karte.ohne-titel .cta-wege > li:first-child{border-top:0}
+.pat-lf.pfr .cta-karte.ohne-titel .cta-wege > li:first-child .cta-weg{padding-top:4px}

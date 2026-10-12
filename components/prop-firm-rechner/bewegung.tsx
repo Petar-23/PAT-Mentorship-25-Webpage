@@ -95,3 +95,19 @@ export function Herein({ i, children, klasse, als = 'li' }: { i: number; childre
     </Tag>
   )
 }
+
+/** Satzteil des Ergebnisses: kommt nach seinem Vorgänger herein (Index i, je 120 ms später). */
+export function Satz({ i, children, klasse, als = 'p' }: { i: number; children: ReactNode; klasse?: string; als?: 'p' | 'div' }) {
+  const ruhig = useReducedMotion()
+  const Tag = als === 'p' ? motion.p : motion.div
+  return (
+    <Tag
+      className={klasse}
+      initial={ruhig ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.34, delay: 0.08 + i * 0.12, ease: EASE }}
+    >
+      {children}
+    </Tag>
+  )
+}

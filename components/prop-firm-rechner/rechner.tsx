@@ -2,13 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import rohDaten from '@/lib/prop-firm/daten/regeln-2026-10-09.json'
-import { ladeKonten, type RegelDaten } from '@/lib/prop-firm/konten'
-import { baueZeilen, kantenSicherheit, schluesselFuer, verbinde } from '@/lib/prop-firm/auswertung'
+import { ladeKonten, type KontoEintrag, type RegelDaten } from '@/lib/prop-firm/konten'
+import { baueZeilen, kantenSicherheit, schluesselFuer, verbinde, type Zeile } from '@/lib/prop-firm/auswertung'
 import type { RohErgebnis, SimEinstellungen } from '@/lib/prop-firm/simulation'
 import { PUNKTWERT } from '@/lib/prop-firm/stroeme'
-import { Ergebnisse, unterzeile, type Ergebnis } from './ergebnisse'
-import { Scheitern } from './scheitern'
-import { Erklaerung, Zaehler } from './bewegung'
+import { Ergebnisse, type Ergebnis } from './ergebnisse'
 import { type Form } from './start'
 import { woerterbuch, type Sprache, type Woerterbuch } from './texte'
 
@@ -56,32 +54,30 @@ export function pruefe(f: Form, t: Woerterbuch): { einst: SimEinstellungen | nul
 
 type Lauf = { status: 'leer' | 'laeuft' | 'fertig' | 'fehler'; fertig: number; gesamt: number; fehler?: string }
 
+export type VorRechnung = {
+  lauf: Lauf
+  ergebnis: Ergebnis | null
+  veraltet: boolean
+  bester: Zeile | null
+  eintraege: KontoEintrag[]
+  varianten: number
+}
+
 /**
- * Vorwärts-Ergebnis im geführten Ablauf: rechnet die Antworten (Trefferquote, CRV, Risiko, Trades pro Woche) in Workern
- * gegen alle Kontotypen, sofort beim Öffnen und nach jeder Änderung der Annahmen. Zusammenfassung, Gründe, Top 3, Tabelle.
+ * Vorwärts-Rechnung in Workern: rechnet die Antworten (Trefferquote, CRV, Risiko, Trades pro Woche und Annahmen) gegen alle
+ * Kontotypen, sobald `aktiv` wird, und danach nach jeder Änderung der Antworten (kurz gewartet). Ergebnis und bester
+ * Kontotyp bleiben erhalten, bis die nächste Rechnung fertig ist.
  */
-export function VorErgebnis({ sprache, form, setForm, onAendern }: {
-  sprache: Sprache
-  form: Form
-  setForm: (f: (alt: Form) => Form) => void
-  onAendern: () => void
-}) {
-  const t = woerterbuch(sprache)
-  const E = t.eingaben
-  const R = t.ergebnis
-  const { usd, zahlText, r: rText } = t.f
+export function useVorRechnung(form: Form, sprache: Sprache, aktiv: boolean): VorRechnung {
   const eintraege = useMemo(() => ladeKonten(DATEN), [])
   const alleSchluessel = useMemo(() => eintraege.flatMap((e) => e.rechnungen.map((r) => schluesselFuer(e.id, r.name))), [eintraege])
-  const [lauf, setLauf] = useState<Lauf>({ status: 'laeuft', fertig: 0, gesamt: form.pfade })
+  const [lauf, setLauf] = useState<Lauf>({ status: 'leer', fertig: 0, gesamt: form.pfade })
   const [ergebnis, setErgebnis] = useState<Ergebnis | null>(null)
   const workers = useRef<Worker[]>([])
   const laufId = useRef(0)
   const angefragt = useRef('')
-
   const geprueft = useMemo(() => pruefe(form, woerterbuch(sprache)), [form, sprache])
   const formSchl = JSON.stringify(form)
-  const veraltet = ergebnis !== null && ergebnis.formSchl !== formSchl
-  const setze = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }))
 
   const beende = useCallback(() => {
     for (const w of workers.current) w.terminate()
@@ -105,6 +101,7 @@ export function VorErgebnis({ sprache, form, setForm, onAendern }: {
       const teile: (Record<string, RohErgebnis> | null)[] = new Array(anzahl).fill(null)
       const stand = new Array<number>(anzahl).fill(0)
       const schritt = Math.ceil(pfade / anzahl)
+      setLauf({ status: 'laeuft', fertig: 0, gesamt: pfade })
       workers.current.forEach((w, i) => {
         const von = Math.min(i * schritt, pfade)
         const bis = Math.min(von + schritt, pfade)
@@ -132,33 +129,23 @@ export function VorErgebnis({ sprache, form, setForm, onAendern }: {
     [beende, alleSchluessel, sprache],
   )
 
-  const starte = useCallback(
-    (f: Form) => {
-      const { einst } = pruefe(f, woerterbuch(sprache))
-      if (!einst) return
-      angefragt.current = JSON.stringify(f)
-      beende()
-      setLauf({ status: 'laeuft', fertig: 0, gesamt: f.pfade })
-      rechne(einst, f.pfade, JSON.stringify(f))
-    },
-    [beende, rechne, sprache],
-  )
-
   // Beim Verlassen Worker beenden
   useEffect(() => beende, [beende])
 
-  // Sofort beim Öffnen rechnen, danach nach jeder gültigen Änderung kurz warten und neu rechnen
+  // Sobald aktiv: sofort rechnen; danach nach jeder gültigen Änderung kurz warten und neu rechnen
   useEffect(() => {
-    if (!geprueft.einst || formSchl === angefragt.current) return
+    if (!aktiv || !geprueft.einst || formSchl === angefragt.current) return
     const sofort = angefragt.current === ''
-    const id = window.setTimeout(() => starte(JSON.parse(formSchl) as Form), sofort ? 0 : WARTEN_MS)
+    const id = window.setTimeout(() => {
+      const f = JSON.parse(formSchl) as Form
+      const { einst } = pruefe(f, woerterbuch(sprache))
+      if (!einst) return
+      angefragt.current = formSchl
+      beende()
+      rechne(einst, f.pfade, formSchl)
+    }, sofort ? 0 : WARTEN_MS)
     return () => window.clearTimeout(id)
-  }, [formSchl, geprueft.einst, starte])
-
-  const sicherheit = geprueft.einst ? kantenSicherheit(geprueft.einst.strom) : null
-  const kontrakteBeiRisiko = geprueft.einst
-    ? Math.floor(geprueft.einst.risikoUsd / (geprueft.einst.strom.stopPunkte * PUNKTWERT[geprueft.einst.strom.instrument]))
-    : 0
+  }, [aktiv, formSchl, geprueft.einst, beende, rechne, sprache])
 
   // bester Kontotyp in der Rangfolge (alle Firmen und Größen)
   const bester = useMemo(() => {
@@ -166,157 +153,117 @@ export function VorErgebnis({ sprache, form, setForm, onAendern }: {
     const zeilen = baueZeilen(eintraege, ergebnis.roh, ergebnis.einst.botBetrieb).filter((z) => z.inRangfolge && z.rangNetto !== null)
     return zeilen.sort((a, b) => (b.rangNetto as number) - (a.rangNetto as number))[0] ?? null
   }, [ergebnis, eintraege])
-  const antworten = `${form.trefferquote} % · ${E.crv} ${form.crv} · ${form.risikoUsd} USD · ${form.tradesProWoche} ${t.wz.proWoche}`
 
+  return { lauf, ergebnis, veraltet: ergebnis !== null && ergebnis.formSchl !== formSchl, bester, eintraege, varianten: alleSchluessel.length }
+}
+
+/** Weitere Annahmen der Vorwärts-Rechnung (im Blatt „Annahmen anpassen“). */
+export function VorAnnahmen({ sprache, form, setForm }: { sprache: Sprache; form: Form; setForm: (f: (alt: Form) => Form) => void }) {
+  const t = woerterbuch(sprache)
+  const E = t.eingaben
+  const { usd, zahlText } = t.f
+  const setze = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }))
+  const geprueft = pruefe(form, t)
+  const kontrakteBeiRisiko = geprueft.einst
+    ? Math.floor(geprueft.einst.risikoUsd / (geprueft.einst.strom.stopPunkte * PUNKTWERT[geprueft.einst.strom.instrument]))
+    : 0
   return (
-    <div className="vor">
-      <section className="zusammenfassung" aria-live="polite" aria-labelledby="vor-ergebnis">
-        <p className="ebene" id="vor-ergebnis">{t.wz.vorKicker}</p>
-        {bester && bester.rangNetto !== null ? (
-          <>
-            <p className="zf-name">
-              {bester.eintrag.firma} {t.f.groesseKurz(bester.eintrag.groesse)}
-              <small>{unterzeile(bester.eintrag, t)}</small>
-            </p>
-            <p className="zf-zahl">
-              <b className={`num ${bester.rangNetto > 0 ? '' : 'minus'}`}>
-                <Zaehler wert={bester.rangNetto} format={(x) => usd(x, true)} />
-              </b>
-              <span>{R.proMonatKurz}</span>
-            </p>
-            <p className="zf-satz zf-klein">
-              {bester.rangNetto > 0
-                ? R.zusammenfassung(`${bester.eintrag.firma} ${t.f.groesseKurz(bester.eintrag.groesse)}`, usd(bester.rangNetto, true))
-                : R.zusammenfassungMinus(`${bester.eintrag.firma} ${t.f.groesseKurz(bester.eintrag.groesse)}`, usd(bester.rangNetto, true))}
-              {sicherheit ? ` ${R.erwartungSatz(rText(sicherheit.erwartung))}` : ''}
-            </p>
-            <Scheitern anteile={bester.kante} sprache={sprache} kompakt />
-          </>
-        ) : (
-          <p className="zf-satz">{R.rechnet}</p>
-        )}
-        <div className="zf-status">
-          {lauf.status === 'laeuft' && (
-            <div className="fortschritt" role="status">
-              <span>{E.fortschritt(zahlText(lauf.fertig), zahlText(lauf.gesamt))}</span>
-              <div className="balken"><span style={{ width: `${lauf.gesamt ? (100 * lauf.fertig) / lauf.gesamt : 0}%` }} /></div>
-            </div>
-          )}
-          {lauf.status === 'fertig' && !veraltet && ergebnis && (
-            <span className="status">{E.fertig(zahlText(ergebnis.pfade), alleSchluessel.length, zahlText(ergebnis.dauerMs / 1000, 1))}</span>
-          )}
-          {lauf.status === 'fehler' && <span className="hinweis" role="alert">{E.fehlerPrefix} {lauf.fehler}</span>}
+    <div className="mehr-grid">
+      <div className="feld">
+        <span id="streuung-l">{E.gewinner}</span>
+        <Wahl
+          label="streuung-l"
+          wert={form.streuung}
+          onChange={(v) => setze('streuung', v)}
+          optionen={[['gleich', E.streuung.gleich], ['gemischt', E.streuung.gemischt], ['wenige_grosse', E.streuung.wenige_grosse]]}
+        />
+        <span className="hilfe">{E.streuungHilfe}</span>
+      </div>
+      <label className="schalter">
+        <input type="checkbox" checked={form.verlustStreuung} onChange={(ev) => setze('verlustStreuung', ev.target.checked)} />
+        <span>
+          {E.verlustStreuung}
+          <small>{E.verlustStreuungHilfe}</small>
+        </span>
+      </label>
+      <div className="zwei">
+        <div className="feld">
+          <span id="instr-l">{E.instrument}</span>
+          <Wahl label="instr-l" wert={form.instrument} onChange={(v) => setze('instrument', v)} optionen={[['MNQ', 'MNQ'], ['NQ', 'NQ']]} />
         </div>
-        <div className="zf-antworten">
-          <span>{antworten}</span>
-          <button type="button" className="lnk-knopf" onClick={onAendern}>{t.wz.aendern}</button>
+        <Feld label={E.stopp} einheit={E.punkte} wert={form.stopPunkte} onChange={(v) => setze('stopPunkte', v)} />
+      </div>
+      <p className="hilfe">{E.stoppSatz}</p>
+      {geprueft.einst && (
+        <p className="hilfe">
+          {E.futuresHinweis(
+            kontrakteBeiRisiko,
+            form.instrument,
+            usd(kontrakteBeiRisiko * geprueft.einst.strom.stopPunkte * PUNKTWERT[form.instrument]),
+            usd(geprueft.einst.risikoUsd),
+          )}
+        </p>
+      )}
+      {geprueft.einst && kontrakteBeiRisiko === 0 && <p className="warnung">{E.keinKontrakt}</p>}
+      <div className="feld">
+        <span id="politik-l">{E.weg}</span>
+        <Wahl
+          label="politik-l"
+          wert={form.politik}
+          onChange={(v) => setze('politik', v)}
+          optionen={[['A', `A: ${t.politik.A.name}`], ['B', `B: ${t.politik.B.name}`], ['C', `C: ${t.politik.C.name}`]]}
+        />
+        <span className="hilfe">{t.politik[form.politik].kurz}</span>
+      </div>
+      {form.politik !== 'A' && (
+        <div className="feld">
+          <span id="polster-l">{E.polster}</span>
+          <Wahl
+            label="polster-l"
+            wert={String(form.politikFaktor) as '1' | '2'}
+            onChange={(v) => setze('politikFaktor', v === '2' ? 2 : 1)}
+            optionen={[['1', E.polsterOptionen['1']], ['2', E.polsterOptionen['2']]]}
+          />
         </div>
-        <Erklaerung titel={t.wz.annahmen}>
-          <div className="mehr-grid">
-            <div className="feld">
-              <span id="streuung-l">{E.gewinner}</span>
-              <Wahl
-                label="streuung-l"
-                wert={form.streuung}
-                onChange={(v) => setze('streuung', v)}
-                optionen={[['gleich', E.streuung.gleich], ['gemischt', E.streuung.gemischt], ['wenige_grosse', E.streuung.wenige_grosse]]}
-              />
-              <span className="hilfe">{E.streuungHilfe}</span>
-            </div>
-            <label className="schalter">
-              <input type="checkbox" checked={form.verlustStreuung} onChange={(ev) => setze('verlustStreuung', ev.target.checked)} />
-              <span>
-                {E.verlustStreuung}
-                <small>{E.verlustStreuungHilfe}</small>
-              </span>
-            </label>
-            <div className="zwei">
-              <div className="feld">
-                <span id="instr-l">{E.instrument}</span>
-                <Wahl label="instr-l" wert={form.instrument} onChange={(v) => setze('instrument', v)} optionen={[['MNQ', 'MNQ'], ['NQ', 'NQ']]} />
-              </div>
-              <Feld label={E.stopp} einheit={E.punkte} wert={form.stopPunkte} onChange={(v) => setze('stopPunkte', v)} />
-            </div>
-            <p className="hilfe">{E.stoppSatz}</p>
-            {geprueft.einst && (
-              <p className="hilfe">
-                {E.futuresHinweis(
-                  kontrakteBeiRisiko,
-                  form.instrument,
-                  usd(kontrakteBeiRisiko * geprueft.einst.strom.stopPunkte * PUNKTWERT[form.instrument]),
-                  usd(geprueft.einst.risikoUsd),
-                )}
-              </p>
-            )}
-            {geprueft.einst && kontrakteBeiRisiko === 0 && <p className="warnung">{E.keinKontrakt}</p>}
-            <div className="feld">
-              <span id="politik-l">{E.weg}</span>
-              <Wahl
-                label="politik-l"
-                wert={form.politik}
-                onChange={(v) => setze('politik', v)}
-                optionen={[['A', `A: ${t.politik.A.name}`], ['B', `B: ${t.politik.B.name}`], ['C', `C: ${t.politik.C.name}`]]}
-              />
-              <span className="hilfe">{t.politik[form.politik].kurz}</span>
-            </div>
-            {form.politik !== 'A' && (
-              <div className="feld">
-                <span id="polster-l">{E.polster}</span>
-                <Wahl
-                  label="polster-l"
-                  wert={String(form.politikFaktor) as '1' | '2'}
-                  onChange={(v) => setze('politikFaktor', v === '2' ? 2 : 1)}
-                  optionen={[['1', E.polsterOptionen['1']], ['2', E.polsterOptionen['2']]]}
-                />
-              </div>
-            )}
-            <label className="schalter">
-              <input type="checkbox" checked={form.botBetrieb} onChange={(ev) => setze('botBetrieb', ev.target.checked)} />
-              <span>
-                {E.bot}
-                <small>{E.botHilfe}</small>
-              </span>
-            </label>
-            <label className="schalter">
-              <input type="checkbox" checked={form.perpKosten} onChange={(ev) => setze('perpKosten', ev.target.checked)} />
-              <span>
-                {E.perp}
-                <small>{E.perpHilfe}</small>
-              </span>
-            </label>
-            <div className="feld">
-              <span id="pfade-l">{E.genauigkeit}</span>
-              <Wahl
-                label="pfade-l"
-                wert={String(form.pfade) as '500' | '1500' | '3000'}
-                onChange={(v) => setze('pfade', Number(v))}
-                optionen={[['500', E.pfade['500']], ['1500', E.pfade['1500']], ['3000', E.pfade['3000']]]}
-              />
-              <span className="hilfe">{E.pfadeHilfe(zahlText(form.pfade))}</span>
-            </div>
-          </div>
-        </Erklaerung>
-        {sicherheit && (
-          <Erklaerung titel={t.modi.warum}>
-            <p>
-              {R.sicherText(rText(sicherheit.erwartung), rText(sicherheit.sd, false))}
-              {sicherheit.tradesNoetig
-                ? R.sicherBand(rText(sicherheit.erwartung - sicherheit.band100), rText(sicherheit.erwartung + sicherheit.band100), zahlText(sicherheit.tradesNoetig))
-                : R.sicherOhne}
-            </p>
-            <p>{R.schaetzung}</p>
-            {ergebnis && (
-              <p>
-                {R.unter(zahlText(ergebnis.pfade), t.politik[ergebnis.einst.politik].name, ergebnis.einst.politik !== 'A' ? ergebnis.einst.politikFaktor : null, ergebnis.einst.botBetrieb)}
-              </p>
-            )}
-          </Erklaerung>
-        )}
-      </section>
-
-      {ergebnis && <Ergebnisse ergebnis={ergebnis} eintraege={eintraege} daten={DATEN} veraltet={veraltet} sprache={sprache} />}
+      )}
+      <label className="schalter">
+        <input type="checkbox" checked={form.botBetrieb} onChange={(ev) => setze('botBetrieb', ev.target.checked)} />
+        <span>
+          {E.bot}
+          <small>{E.botHilfe}</small>
+        </span>
+      </label>
+      <label className="schalter">
+        <input type="checkbox" checked={form.perpKosten} onChange={(ev) => setze('perpKosten', ev.target.checked)} />
+        <span>
+          {E.perp}
+          <small>{E.perpHilfe}</small>
+        </span>
+      </label>
+      <div className="feld">
+        <span id="pfade-l">{E.genauigkeit}</span>
+        <Wahl
+          label="pfade-l"
+          wert={String(form.pfade) as '500' | '1500' | '3000'}
+          onChange={(v) => setze('pfade', Number(v))}
+          optionen={[['500', E.pfade['500']], ['1500', E.pfade['1500']], ['3000', E.pfade['3000']]]}
+        />
+        <span className="hilfe">{E.pfadeHilfe(zahlText(form.pfade))}</span>
+      </div>
     </div>
   )
+}
+
+/** Alle Kontotypen der Vorwärts-Rechnung (Blatt „Andere Konten“): Top 3 und Tabelle mit Details. */
+export function VorKonten({ sprache, rechnung }: { sprache: Sprache; rechnung: VorRechnung }) {
+  if (!rechnung.ergebnis) return null
+  return <Ergebnisse ergebnis={rechnung.ergebnis} eintraege={rechnung.eintraege} daten={DATEN} veraltet={rechnung.veraltet} sprache={sprache} />
+}
+
+/** Erwartung je Trade der Antworten (oder null, wenn ungültig). */
+export function erwartungVor(form: Form, sprache: Sprache): number | null {
+  const { einst } = pruefe(form, woerterbuch(sprache))
+  return einst ? kantenSicherheit(einst.strom).erwartung : null
 }
 
 export function Feld({ label, einheit, wert, onChange, hilfe }: { label: string; einheit?: string; wert: string; onChange: (v: string) => void; hilfe?: string }) {

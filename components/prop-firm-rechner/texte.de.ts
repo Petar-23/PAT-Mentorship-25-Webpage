@@ -293,6 +293,74 @@ export const de = {
     annahmen: 'Annahmen anpassen',
   },
 
+  /** Bildschirm-App: Kopfleiste, Blätter, Rechtliches, Fertig-Schirm und Ergebnis in Klartext. */
+  app: {
+    titel: 'Prop-Firm-Rechner',
+    start: 'Price Action Trader, zur Startseite',
+    soRechnet: 'So rechnet der Rechner',
+    impressum: 'Impressum',
+    datenschutz: 'Datenschutz',
+    keineBeratung: 'Keine Finanzberatung',
+    schliessen: 'Schließen',
+    rechtliches: 'Rechtliches und Kontakt',
+    punkte: 'Fortschritt',
+    punkt: (i: number, n: number) => `Schritt ${i} von ${n}`,
+    groesse: {
+      frage: 'Wie groß darf das Konto sein?',
+      unter: 'Optional. Größere Konten verzeihen mehr, kosten aber mehr.',
+      erklaerung:
+        'Gemeint ist die Kontogröße bei der Firma, zum Beispiel 50K. Größere Konten haben mehr Drawdown und erlauben mehr ' +
+        'Risiko je Trade, kosten aber mehr. „Alle“ rechnet mit jeder Größe.',
+    },
+    groessen: { alle: 'Alle', k50: 'bis 50K', k100: 'bis 100K', k150: 'bis 150K' } as Record<string, string>,
+    fertigTitel: 'Dein Ergebnis ist fertig.',
+    fertigUnter: 'Bevor du es ansiehst: drei Wege, wie es weitergehen kann. Das Ergebnis ist schon freigeschaltet.',
+    ergebnisAnsehen: 'Ergebnis ansehen',
+    rechnetVor: (n: string) => `Rechne ${n} simulierte Jahre je Kontotyp …`,
+    // Rückwärts in Klartext
+    intro: (zeit: string, ziel: string, s: number) => `Du willst in ${zeit} ${ziel} ausgezahlt bekommen, in ${s} von 10 Fällen.`,
+    muss: 'Dann muss deine Strategie das leisten:',
+    trefferMin: 'Trefferquote mindestens',
+    beiCrv: (c: string) => `bei CRV ${c}`,
+    tradesProWoche: 'Trades pro Woche',
+    risikoJeTrade: 'Risiko je Trade',
+    risikoAnteil: (a: string) => `${a} des Drawdowns`,
+    erwartung: (e: string) => `Das sind mindestens ${e} pro Trade nach Kosten.`,
+    leichtesten: 'Am leichtesten schaffst du das bei',
+    ddArt: {
+      eod_trailing: 'nur am Tagesende nachgezogen',
+      intraday_trailing: 'in Echtzeit nachgezogen',
+      statisch: 'fest, ohne Nachziehen',
+      keiner: 'ohne Drawdown-Grenze',
+    } as Record<string, string>,
+    warum: (dd: string, art: string, preis: string) => `Warum dort: ${dd} Drawdown, ${art}, bei ${preis}.`,
+    preisEinmalig: (b: string) => `${b} einmalig`,
+    preisMonatlich: (b: string) => `${b} pro Monat bis zum Bestehen`,
+    darunter: (punkte: number, p: string, x: number) =>
+      x === 0
+        ? `Liegt deine Trefferquote ${punkte} Punkte darunter (${p}), schaffst du dieses Ziel bei diesem Konto in keinem von 10 Fällen.`
+        : `Liegt deine Trefferquote ${punkte} Punkte darunter (${p}), schaffst du dieses Ziel bei diesem Konto nur noch in ${x} von 10 Fällen.`,
+    scheitert: (name: string, anteil: string) => `Woran es meist scheitert: ${name} (${anteil} der Käufe).`,
+    keinScheitern: 'Gescheitert sind in der Simulation nur wenige Käufe.',
+    andereKonten: 'Andere Konten ansehen',
+    andereTitel: 'Andere Konten',
+    neuRechnen: 'Neu rechnen',
+    keinKonto: (crv: string) =>
+      `Mit CRV ${crv} ist dieses Ziel in dieser Zeit bei keinem passenden Konto mit höchstens 80 % Trefferquote erreichbar. ` +
+      'Probier ein höheres CRV, mehr Zeit, ein größeres Konto oder ein kleineres Ziel.',
+    // Vorwärts in Klartext
+    vorIntro: (p: string, crv: string, risiko: string, tpw: string) =>
+      `Mit ${p} Trefferquote bei CRV ${crv}, ${risiko} Risiko je Trade und ${tpw} Trades pro Woche bringt dir am meisten:`,
+    proMonat: 'pro Monat netto',
+    bei: 'bei',
+    nachGebuehren: 'Nach allen Gebühren, im Schnitt über 12 Monate mit Nachkauf nach jedem verlorenen Konto.',
+    imPlus: (x: number) => `In ${x} von 10 simulierten Jahren liegst du dort im Plus.`,
+    vorErwartung: (e: string) => `Deine Zahlen ergeben ${e} pro Trade nach Kosten.`,
+    vorMinus: 'Kein Konto liegt mit diesen Zahlen im Plus. Am wenigsten verlierst du:',
+    annahmen: 'Annahmen anpassen',
+    vomZiel: 'Vom Ziel aus rechnen',
+  },
+
   /** CTA-Karte am Ende: genau drei Wege weiter. */
   cta: {
     titel: 'Wie es weitergeht',
@@ -489,7 +557,7 @@ export const de = {
         'Für jeden Kontotyp erzeugt der Rechner 1.000 zufällige Handelsjahre aus deinen Eingaben, keine echten Kursdaten. Ein Jahr ' +
           'hat rund 260 Handelstage. Wie viele ' +
           'Trades an einem Tag fallen, ist zufällig, im Schnitt so viele wie du pro Woche angibst. Jeder Trade gewinnt mit deiner ' +
-          'Trefferquote. Ein Gewinner bringt dein CRV in R, ein Verlierer kostet 1 R, also dein Risiko. Unter „Mehr Einstellungen“ ' +
+          'Trefferquote. Ein Gewinner bringt dein CRV in R, ein Verlierer kostet 1 R, also dein Risiko. Unter „Annahmen anpassen“ ' +
           'lassen sich Gewinner und Verluste streuen.',
       ],
       [

@@ -1,56 +1,102 @@
 'use client'
 
-import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'motion/react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { AnimatePresence, MotionConfig, motion, useReducedMotion, type PanInfo } from 'motion/react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { ThemeSwitch } from '@/components/landing-v3/client/theme-switch'
+import { SiteFooter } from '@/components/landing-v3/sections/site-footer'
+import rohDaten from '@/lib/prop-firm/daten/regeln-2026-10-09.json'
 import { ladeTabelle } from '@/lib/prop-firm/daten/rueckwaerts'
-import { RW, type RwTabelle } from '@/lib/prop-firm/rueckwaerts'
+import { ladeKonten, type RegelDaten } from '@/lib/prop-firm/konten'
+import { RW, detailRueckwaerts, type RwDetail, type RwTabelle } from '@/lib/prop-firm/rueckwaerts'
+import { Blatt } from './blatt'
 import { DAUER, EASE, Erklaerung, Herein } from './bewegung'
 import { CrvSkizze } from './crv-skizze'
 import { CtaKarte } from './cta-karte'
-import { Feld, VorErgebnis, pruefe, zahlAus } from './rechner'
-import { RueckErgebnis, type RueckAntworten } from './rueckwaerts'
+import { Hintergrund } from './hintergrund'
+import { DARUNTER_PUNKTE, RueckKlartext, VorKlartext } from './klartext'
+import { Feld, VorAnnahmen, VorKonten, useVorRechnung, zahlAus } from './rechner'
+import { KontenListe, loeseAntworten, type RueckAntworten, type Zeile } from './rueckwaerts'
+import { Sprachwahl } from './sprachwahl'
 import { RUECK_START, STARTS, type Form } from './start'
 import { woerterbuch, type Sprache } from './texte'
 
+const DATEN = rohDaten as unknown as RegelDaten
 type Pfad = 'rueck' | 'vor'
-const RUECK_FRAGEN = ['ziel', 'zeit', 'tpw', 'crv', 'sicher'] as const
+type Phase = 'frage' | 'rechnen' | 'fertig' | 'ergebnis'
+const RUECK_FRAGEN = ['ziel', 'zeit', 'tpw', 'crv', 'sicher', 'groesse'] as const
 const VOR_FRAGEN = ['treffer', 'crv', 'risiko', 'tpw'] as const
 const CRV_WAHL = [1, 1.5, 2, 3]
-/** Mindestdauer der Rechen-Animation; die Tabelle ist meist schneller geladen */
+const GROESSEN: { schl: string; max: number | null }[] = [
+  { schl: 'alle', max: null },
+  { schl: 'k50', max: 50000 },
+  { schl: 'k100', max: 100000 },
+  { schl: 'k150', max: 150000 },
+]
+/** Mindestdauer der Rechen-Animation */
 const RECHNEN_MS = 1300
 /** Nach einem Tipp auf eine Antwort kurz stehen lassen, dann weiter */
 const AUTO_WEITER_MS = 260
+/** Wischweg bzw. -tempo, ab dem ein Schritt wechselt */
+const WISCH_PX = 70
+const WISCH_TEMPO = 500
 
-const ANZAHL_RUECK = 126
+type RueckErgebnis = { schl: string; liste: Zeile[]; detail: RwDetail | null; darunter: RwDetail | null; fertigUm: number }
 
 /**
- * Geführter Ablauf: eine Frage je Bildschirm mit Fortschritt, Zurück und Weiter.
- * Standard ist rückwärts (Ziel, Zeitraum, Trades pro Woche, CRV, Sicherheit → Rechen-Animation → Ergebnis);
- * „Ich kenne meine Zahlen“ zweigt vorwärts ab (Trefferquote, CRV, Risiko, Trades pro Woche → Ergebnis).
- * Am Ende steht immer die CTA-Karte. Bewegung über motion; bei „Bewegung reduzieren“ nur kurze Überblendungen.
+ * Der Prop-Firm-Rechner als Bildschirm-App: genau ein Bildschirm hoch (100dvh), kein Seiten-Scroll.
+ * Oben klein Titel, Sprache und Farbschema; in der Mitte eine Frage je Schritt (wischbar); unten Punkte, Zurück/Weiter und
+ * eine Zeile mit „So rechnet der Rechner“, Impressum, Datenschutz, „Keine Finanzberatung“. Methode, Quellen, andere Konten
+ * und Annahmen öffnen als Vollbild-Blatt. Am Ende: Rechen-Animation, Fertig-Schirm mit der CTA-Karte, Ergebnis in Klartext.
  */
 export function Wizard({ sprache }: { sprache: Sprache }) {
   const t = woerterbuch(sprache)
   const W = t.wz
+  const A = t.app
   const F = W.fragen
   const ruhig = useReducedMotion()
   const [pfad, setPfad] = useState<Pfad>('rueck')
   const [index, setIndex] = useState(0)
   const [richtung, setRichtung] = useState(1)
-  const [antworten, setAntworten] = useState<RueckAntworten>({ ziel: RUECK_START.ziel, monate: RUECK_START.monate, tpw: RUECK_START.tradesProWoche, sicherheit: RUECK_START.sicherheit, crv: 2 })
+  const [antworten, setAntworten] = useState<RueckAntworten>({
+    ziel: RUECK_START.ziel, monate: RUECK_START.monate, tpw: RUECK_START.tradesProWoche, sicherheit: RUECK_START.sicherheit, crv: 2, groesseMax: null,
+  })
   const [form, setForm] = useState<Form>(STARTS[sprache])
   const [tabelle, setTabelle] = useState<{ schl: string; t: RwTabelle } | null>(null)
-  const [rechnenFertig, setRechnenFertig] = useState(false)
-  const wurzel = useRef<HTMLElement>(null)
+  const [rueck, setRueck] = useState<RueckErgebnis | null>(null)
+  const [blatt, setBlatt] = useState<null | 'methode' | 'andere' | 'annahmen'>(null)
   const frage = useRef<HTMLHeadingElement>(null)
+  const buehne = useRef<HTMLDivElement>(null)
 
   const fragen = pfad === 'rueck' ? RUECK_FRAGEN : VOR_FRAGEN
   const n = fragen.length
-  const phase: 'frage' | 'rechnen' | 'ergebnis' =
-    index < n ? 'frage' : pfad === 'rueck' && index === n && !rechnenFertig ? 'rechnen' : 'ergebnis'
-  const schluessel = `${pfad}-${index}-${phase}`
-  const tabSchl = `${antworten.tpw}-${antworten.monate}`
-  const tabelleBereit = tabelle?.schl === tabSchl ? tabelle.t : null
+  const phase: Phase = index < n ? 'frage' : index === n ? 'rechnen' : index === n + 1 ? 'fertig' : 'ergebnis'
+  const schluessel = `${pfad}-${index}`
+  const antwortSchl = JSON.stringify(antworten)
+  const tabelleBereit = tabelle?.schl === `${antworten.tpw}-${antworten.monate}` ? tabelle.t : null
+  const rueckBereit = rueck?.schl === antwortSchl ? rueck : null
+  const eintraege = useMemo(() => new Map(ladeKonten(DATEN).map((e) => [e.id, e])), [])
+  const rechnung = useVorRechnung(form, sprache, pfad === 'vor' && index >= n)
+
+  const geh = useCallback((neu: number, dir: number) => {
+    setRichtung(dir)
+    setIndex(neu)
+  }, [])
+  const weiter = useCallback(() => geh(index + 1, 1), [geh, index])
+  const wechsle = (p: Pfad) => {
+    setRichtung(p === 'vor' ? 1 : -1)
+    setPfad(p)
+    setIndex(0)
+  }
+  const zurueck = () => {
+    if (index === 0) {
+      if (pfad === 'vor') wechsle('rueck')
+      return
+    }
+    // aus dem Fertig-Schirm zurück zur letzten Frage (die Rechnung wird nicht noch einmal gezeigt)
+    geh(phase === 'fertig' ? n - 1 : index - 1, -1)
+  }
 
   // Tabelle laden, sobald Trades pro Woche und Zeitraum feststehen (meist schon während der letzten Fragen)
   useEffect(() => {
@@ -64,48 +110,50 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
     }
   }, [pfad, index, antworten.tpw, antworten.monate])
 
-  // Rechen-Animation: mindestens RECHNEN_MS, und erst weiter, wenn die Tabelle da ist
+  // Rückwärts rechnen: Tabelle auswerten, für das beste Konto live nachrechnen (Gründe und 5 Punkte darunter)
   useEffect(() => {
-    if (phase !== 'rechnen' || !tabelleBereit) return
-    const id = window.setTimeout(() => setRechnenFertig(true), ruhig ? 300 : RECHNEN_MS)
+    if (pfad !== 'rueck' || phase !== 'rechnen' || !tabelleBereit || rueckBereit) return
+    const id = window.setTimeout(() => {
+      const a = JSON.parse(antwortSchl) as RueckAntworten
+      const liste = loeseAntworten(tabelleBereit, a, eintraege)
+      const b = liste[0]?.gewaehlt ? liste[0] : null
+      let detail: RwDetail | null = null
+      let darunter: RwDetail | null = null
+      if (b && b.gewaehlt) {
+        const z = b.gewaehlt
+        detail = detailRueckwaerts(b.e.konto, z.trefferquote, z.crv, a.tpw, z.risikoIndex, a.monate, a.ziel)
+        darunter = detailRueckwaerts(b.e.konto, Math.max(0.01, z.trefferquote - DARUNTER_PUNKTE / 100), z.crv, a.tpw, z.risikoIndex, a.monate, a.ziel)
+      }
+      setRueck({ schl: antwortSchl, liste, detail, darunter, fertigUm: performance.now() })
+    }, ruhig ? 0 : 350)
     return () => window.clearTimeout(id)
-  }, [phase, tabelleBereit, ruhig])
+  }, [pfad, phase, tabelleBereit, rueckBereit, antwortSchl, eintraege, ruhig])
 
-  // Nach jedem Schrittwechsel: Anfang des Ablaufs ins Bild, Fokus auf die Frage (für Tastatur und Screenreader)
+  // Nach der Rechen-Animation (mindestens RECHNEN_MS) zum Fertig-Schirm
+  const rechnenSeit = useRef(0)
+  useEffect(() => {
+    if (phase === 'rechnen') rechnenSeit.current = performance.now()
+  }, [phase, schluessel])
+  const rechnungFertig = pfad === 'rueck' ? rueckBereit !== null : rechnung.lauf.status === 'fertig' && !rechnung.veraltet
+  useEffect(() => {
+    if (phase !== 'rechnen' || !rechnungFertig) return
+    const rest = ruhig ? 0 : Math.max(0, RECHNEN_MS - (performance.now() - rechnenSeit.current))
+    const id = window.setTimeout(() => geh(n + 1, 1), rest)
+    return () => window.clearTimeout(id)
+  }, [phase, rechnungFertig, ruhig, geh, n])
+
+  // Nach jedem Schrittwechsel: Bühne nach oben, Fokus auf die Frage (für Tastatur und Screenreader)
   const ersterRender = useRef(true)
   useEffect(() => {
     if (ersterRender.current) {
       ersterRender.current = false
       return
     }
-    const el = wurzel.current
-    if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: 'start', behavior: ruhig ? 'auto' : 'smooth' })
+    buehne.current?.scrollTo({ top: 0 })
     const id = window.setTimeout(() => frage.current?.focus({ preventScroll: true }), DAUER * 1000 + 40)
     return () => window.clearTimeout(id)
-  }, [schluessel, ruhig])
+  }, [schluessel])
 
-  const geh = (neu: number, dir: number) => {
-    setRichtung(dir)
-    if (neu <= n - 1) setRechnenFertig(false)
-    setIndex(neu)
-  }
-  const weiter = () => geh(index + 1, 1)
-  const zurueck = () => {
-    if (index === 0 && pfad === 'vor') return wechsle('rueck')
-    geh(Math.max(0, index - 1), -1)
-  }
-  const wechsle = (p: Pfad) => {
-    setRichtung(p === 'vor' ? 1 : -1)
-    setPfad(p)
-    setRechnenFertig(false)
-    setIndex(0)
-  }
-  const neuStart = () => {
-    setRichtung(-1)
-    setPfad('rueck')
-    setRechnenFertig(false)
-    setIndex(0)
-  }
   // Antwort tippen: Wert setzen, kurz zeigen, dann weiter (ein zweiter Tipp in der Zeit zählt nicht doppelt)
   const wartet = useRef(false)
   const waehle = <K extends keyof RueckAntworten>(k: K, v: RueckAntworten[K]) => {
@@ -119,7 +167,6 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
   }
 
   // Vorwärts: Gültigkeit je Frage
-  const fehlerVor = pruefe(form, t).fehler
   const zahlOk = (s: string, min: number, max: number) => {
     const x = zahlAus(s, sprache)
     return Number.isFinite(x) && x >= min && x <= max
@@ -131,150 +178,182 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
     tpw: zahlOk(form.tradesProWoche, 0.2, 60),
   }
   const setzeForm = (k: keyof Form, v: string) => setForm((f) => ({ ...f, [k]: v }))
+  const art = phase === 'frage' ? fragen[index] : null
+  const weiterOk = phase !== 'frage' || pfad === 'rueck' || vorOk[art as (typeof VOR_FRAGEN)[number]]
+
+  // Wischen: links = weiter (wenn die Antwort steht), rechts = zurück
+  const wisch = (_: unknown, info: PanInfo) => {
+    if (phase === 'rechnen') return
+    const links = info.offset.x < -WISCH_PX || info.velocity.x < -WISCH_TEMPO
+    const rechts = info.offset.x > WISCH_PX || info.velocity.x > WISCH_TEMPO
+    if (links && Math.abs(info.offset.x) > Math.abs(info.offset.y)) {
+      if (phase === 'frage' && weiterOk) weiter()
+      else if (phase === 'fertig') geh(n + 2, 1)
+    } else if (rechts && Math.abs(info.offset.x) > Math.abs(info.offset.y)) {
+      if (phase === 'ergebnis') geh(n + 1, -1)
+      else zurueck()
+    }
+  }
 
   const varianten = {
-    rein: (d: number) => (ruhig ? { opacity: 0 } : { opacity: 0, x: d * 32 }),
+    rein: (d: number) => (ruhig ? { opacity: 0 } : { opacity: 0, x: d * 36 }),
     da: { opacity: 1, x: 0 },
-    raus: (d: number) => (ruhig ? { opacity: 0 } : { opacity: 0, x: d * -32 }),
+    raus: (d: number) => (ruhig ? { opacity: 0 } : { opacity: 0, x: d * -36 }),
   }
-  const fortschritt = phase === 'ergebnis' ? 1 : phase === 'rechnen' ? (n + 0.5) / (n + 1) : (index + 1) / (n + 1)
-
   const crvText = (c: number) => t.f.zahlText(c, 1)
+
+  // ---------------------------------------------------------------------------------------------- Inhalt der Bühne
   let inhalt: ReactNode = null
-  if (phase === 'frage') {
-    const art = fragen[index]
-    // Frage, Unterzeile und „Was heißt das?“ direkt darunter (auf dem Handy ohne Scrollen erreichbar)
-    const kopf = (f: { frage: string; unter: string; erklaerung: string }) => (
-      <>
-        <p className="wz-nr">{W.schritt(index + 1, n)}</p>
-        <h2 className="wz-frage" ref={frage} tabIndex={-1}>{f.frage}</h2>
-        <p className="wz-unter">{f.unter}</p>
-        <Erklaerung titel={W.wasHeisst} klasse="erkl-frage">{f.erklaerung}</Erklaerung>
-      </>
-    )
-    if (pfad === 'rueck') {
-      if (art === 'ziel') {
-        inhalt = (
-          <>
-            {kopf(F.ziel)}
-            <Optionen>
-              {RW.ziele.map((z, i) => (
-                <Chip key={z} i={i} an={antworten.ziel === z} onClick={() => waehle('ziel', z)}>
-                  {t.f.usd(z)}
-                </Chip>
-              ))}
-            </Optionen>
-          </>
-        )
-      } else if (art === 'zeit') {
-        inhalt = (
-          <>
-            {kopf(F.zeit)}
-            <Optionen>
-              {RW.monate.map((m, i) => (
-                <Chip key={m} i={i} an={antworten.monate === m} onClick={() => waehle('monate', m)}>
-                  {t.rueck.monateChip(m)}
-                </Chip>
-              ))}
-            </Optionen>
-          </>
-        )
-      } else if (art === 'tpw') {
-        inhalt = (
-          <>
-            {kopf(F.tpw)}
-            <Optionen>
-              {RW.tradesProWoche.map((x, i) => (
-                <Chip key={x} i={i} an={antworten.tpw === x} onClick={() => waehle('tpw', x)} unter={W.proWoche}>
-                  {x}
-                </Chip>
-              ))}
-            </Optionen>
-          </>
-        )
-      } else if (art === 'crv') {
-        inhalt = (
-          <>
-            {kopf(F.crv)}
-            <div className="wz-crv">
-              <Optionen>
-                {CRV_WAHL.map((c, i) => (
-                  <Chip key={c} i={i} an={antworten.crv === c} onClick={() => setAntworten((a) => ({ ...a, crv: c }))}>
-                    {`1 : ${crvText(c)}`}
-                  </Chip>
-                ))}
-              </Optionen>
-              <CrvSkizze crv={antworten.crv} sprache={sprache} />
-            </div>
-          </>
-        )
-      } else {
-        inhalt = (
-          <>
-            {kopf(F.sicher)}
-            <Optionen>
-              {RW.sicherheit.map((s, i) => (
-                <Chip key={s} i={i} an={antworten.sicherheit === s} onClick={() => waehle('sicherheit', s)} unter={W.sicherHinweis[String(s)]}>
-                  {t.rueck.sicherheitOption(s)}
-                </Chip>
-              ))}
-            </Optionen>
-          </>
-        )
-      }
-    } else {
-      const feldMitChips = (k: keyof Form, einheit: string, chips: number[], fmt: (x: number) => string) => (
-        <div className="wz-eingabe">
+  const kopf = (f: { frage: string; unter: string; erklaerung: string }) => (
+    <>
+      <h2 className="wz-frage" ref={frage} tabIndex={-1}>{f.frage}</h2>
+      <p className="wz-unter">{f.unter}</p>
+      <Erklaerung titel={W.wasHeisst} klasse="erkl-frage">{f.erklaerung}</Erklaerung>
+    </>
+  )
+  if (phase === 'frage' && pfad === 'rueck') {
+    if (art === 'ziel') {
+      inhalt = (
+        <>
+          {kopf(F.ziel)}
           <Optionen>
-            {chips.map((c, i) => (
-              <Chip key={c} i={i} an={zahlAus(String(form[k]), sprache) === c} onClick={() => setzeForm(k, t.f.zahlText(c, 1))}>
-                {fmt(c)}
+            {RW.ziele.map((z, i) => (
+              <Chip key={z} i={i} an={antworten.ziel === z} onClick={() => waehle('ziel', z)}>{t.f.usd(z)}</Chip>
+            ))}
+          </Optionen>
+          <p className="wz-abzweig">
+            <button type="button" className="lnk-knopf" onClick={() => wechsle('vor')}>
+              {W.kenneZahlen} <span aria-hidden="true">→</span>
+              <small>{W.kenneZahlenKurz}</small>
+            </button>
+          </p>
+        </>
+      )
+    } else if (art === 'zeit') {
+      inhalt = (
+        <>
+          {kopf(F.zeit)}
+          <Optionen>
+            {RW.monate.map((m, i) => (
+              <Chip key={m} i={i} an={antworten.monate === m} onClick={() => waehle('monate', m)}>{t.rueck.monateChip(m)}</Chip>
+            ))}
+          </Optionen>
+        </>
+      )
+    } else if (art === 'tpw') {
+      inhalt = (
+        <>
+          {kopf(F.tpw)}
+          <Optionen>
+            {RW.tradesProWoche.map((x, i) => (
+              <Chip key={x} i={i} an={antworten.tpw === x} onClick={() => waehle('tpw', x)} unter={W.proWoche}>{x}</Chip>
+            ))}
+          </Optionen>
+        </>
+      )
+    } else if (art === 'crv') {
+      inhalt = (
+        <>
+          {kopf(F.crv)}
+          <div className="wz-crv">
+            <Optionen>
+              {CRV_WAHL.map((c, i) => (
+                <Chip key={c} i={i} an={antworten.crv === c} onClick={() => setAntworten((a) => ({ ...a, crv: c }))}>{`1 : ${crvText(c)}`}</Chip>
+              ))}
+            </Optionen>
+            <CrvSkizze crv={antworten.crv} sprache={sprache} />
+          </div>
+        </>
+      )
+    } else if (art === 'sicher') {
+      inhalt = (
+        <>
+          {kopf(F.sicher)}
+          <Optionen>
+            {RW.sicherheit.map((s, i) => (
+              <Chip key={s} i={i} an={antworten.sicherheit === s} onClick={() => waehle('sicherheit', s)} unter={W.sicherHinweis[String(s)]}>
+                {t.rueck.sicherheitOption(s)}
               </Chip>
             ))}
           </Optionen>
-          <Feld label={W.crvAnders} einheit={einheit} wert={String(form[k])} onChange={(v) => setzeForm(k, v)} />
-        </div>
+        </>
       )
-      if (art === 'treffer') {
-        inhalt = (
-          <>
-            {kopf(F.treffer)}
-            {feldMitChips('trefferquote', '%', [35, 40, 45, 50, 55, 60], (x) => t.f.prozent(x))}
-          </>
-        )
-      } else if (art === 'crv') {
-        const c = zahlAus(form.crv, sprache)
-        inhalt = (
-          <>
-            {kopf(F.crv)}
-            <div className="wz-crv">
-              {feldMitChips('crv', ': 1', CRV_WAHL, (x) => `1 : ${crvText(x)}`)}
-              <CrvSkizze crv={Number.isFinite(c) && c > 0 ? c : 2} sprache={sprache} />
-            </div>
-          </>
-        )
-      } else if (art === 'risiko') {
-        inhalt = (
-          <>
-            {kopf(F.risiko)}
-            {feldMitChips('risikoUsd', 'USD', [100, 200, 300, 500], (x) => t.f.usd(x))}
-          </>
-        )
-      } else {
-        inhalt = (
-          <>
-            {kopf(F.tpw)}
-            {feldMitChips('tradesProWoche', W.proWoche, [2, 5, 10, 20], (x) => String(x))}
-          </>
-        )
-      }
+    } else {
+      inhalt = (
+        <>
+          {kopf(A.groesse)}
+          <Optionen>
+            {GROESSEN.map((g, i) => (
+              <Chip key={g.schl} i={i} an={antworten.groesseMax === g.max} onClick={() => setAntworten((a) => ({ ...a, groesseMax: g.max }))}>
+                {A.groessen[g.schl]}
+              </Chip>
+            ))}
+          </Optionen>
+        </>
+      )
+    }
+  } else if (phase === 'frage') {
+    const feldMitChips = (k: keyof Form, einheit: string, chips: number[], fmt: (x: number) => string) => (
+      <div className="wz-eingabe">
+        <Optionen>
+          {chips.map((c, i) => (
+            <Chip key={c} i={i} an={zahlAus(String(form[k]), sprache) === c} onClick={() => setzeForm(k, t.f.zahlText(c, 1))}>{fmt(c)}</Chip>
+          ))}
+        </Optionen>
+        <Feld label={W.crvAnders} einheit={einheit} wert={String(form[k])} onChange={(v) => setzeForm(k, v)} />
+      </div>
+    )
+    if (art === 'treffer') {
+      inhalt = (
+        <>
+          {kopf(F.treffer)}
+          {feldMitChips('trefferquote', '%', [35, 40, 45, 50, 55, 60], (x) => t.f.prozent(x))}
+          <p className="wz-abzweig">
+            <button type="button" className="lnk-knopf" onClick={() => wechsle('rueck')}>
+              <span aria-hidden="true">←</span> {W.vomZiel}
+            </button>
+          </p>
+        </>
+      )
+    } else if (art === 'crv') {
+      const c = zahlAus(form.crv, sprache)
+      inhalt = (
+        <>
+          {kopf(F.crv)}
+          <div className="wz-crv">
+            {feldMitChips('crv', ': 1', CRV_WAHL, (x) => `1 : ${crvText(x)}`)}
+            <CrvSkizze crv={Number.isFinite(c) && c > 0 ? c : 2} sprache={sprache} />
+          </div>
+        </>
+      )
+    } else if (art === 'risiko') {
+      inhalt = (
+        <>
+          {kopf(F.risiko)}
+          {feldMitChips('risikoUsd', 'USD', [100, 200, 300, 500], (x) => t.f.usd(x))}
+        </>
+      )
+    } else {
+      inhalt = (
+        <>
+          {kopf(F.tpw)}
+          {feldMitChips('tradesProWoche', W.proWoche, [2, 5, 10, 20], (x) => String(x))}
+        </>
+      )
     }
   } else if (phase === 'rechnen') {
+    const anteil = pfad === 'vor' && rechnung.lauf.gesamt ? rechnung.lauf.fertig / rechnung.lauf.gesamt : null
     inhalt = (
       <div className="wz-rechnen" role="status">
-        <h2 className="wz-frage" ref={frage} tabIndex={-1}>{W.rechnet(tabelleBereit?.konten.length ?? ANZAHL_RUECK)}</h2>
+        <h2 className="wz-frage" ref={frage} tabIndex={-1}>
+          {pfad === 'rueck' ? W.rechnet(tabelleBereit?.konten.length ?? 126) : A.rechnetVor(t.f.zahlText(form.pfade))}
+        </h2>
         <div className="wz-rechnen-balken">
-          <motion.i initial={{ width: '0%' }} animate={{ width: '100%' }} transition={{ duration: ruhig ? 0 : RECHNEN_MS / 1000, ease: [0.4, 0, 0.2, 1] }} />
+          {anteil === null ? (
+            <motion.i initial={{ width: '0%' }} animate={{ width: '100%' }} transition={{ duration: ruhig ? 0 : RECHNEN_MS / 1000, ease: [0.4, 0, 0.2, 1] }} />
+          ) : (
+            <motion.i animate={{ width: `${Math.max(0.05, anteil) * 100}%` }} transition={{ duration: 0.2 }} />
+          )}
         </div>
         <ul>
           {W.rechnetZeilen.map((z, i) => (
@@ -290,89 +369,157 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
         </ul>
       </div>
     )
-  } else if (pfad === 'rueck' && tabelleBereit) {
+  } else if (phase === 'fertig') {
+    inhalt = (
+      <div className="wz-fertig">
+        <h2 className="wz-frage" ref={frage} tabIndex={-1}>{A.fertigTitel}</h2>
+        <p className="wz-unter">{A.fertigUnter}</p>
+        <CtaKarte sprache={sprache} ohneTitel />
+      </div>
+    )
+  } else if (pfad === 'rueck') {
     inhalt = (
       <div className="wz-ergebnis">
         <h2 className="sr-only" ref={frage} tabIndex={-1}>{W.ergebnisKicker}</h2>
-        <RueckErgebnis sprache={sprache} tabelle={tabelleBereit} antworten={antworten} onAendern={() => geh(0, -1)} />
-        <CtaKarte sprache={sprache} />
-        <p className="wz-neu">
-          <button type="button" className="lnk-knopf" onClick={neuStart}>{W.neu}</button>
-        </p>
+        {rueckBereit && (
+          <RueckKlartext
+            sprache={sprache}
+            antworten={antworten}
+            bester={rueckBereit.liste[0]?.gewaehlt ? rueckBereit.liste[0] : null}
+            detail={rueckBereit.detail}
+            darunter={rueckBereit.darunter}
+            onAndere={() => setBlatt('andere')}
+          />
+        )}
       </div>
     )
-  } else if (pfad === 'vor') {
+  } else {
     inhalt = (
       <div className="wz-ergebnis">
         <h2 className="sr-only" ref={frage} tabIndex={-1}>{W.vorKicker}</h2>
-        <VorErgebnis sprache={sprache} form={form} setForm={setForm} onAendern={() => geh(0, -1)} />
-        <CtaKarte sprache={sprache} />
-        <p className="wz-neu">
-          <button type="button" className="lnk-knopf" onClick={neuStart}>{W.neu}</button>
-        </p>
+        <VorKlartext sprache={sprache} form={form} rechnung={rechnung} onAndere={() => setBlatt('andere')} onAnnahmen={() => setBlatt('annahmen')} />
       </div>
     )
   }
 
-  const istFrage = phase === 'frage'
-  const art = istFrage ? fragen[index] : null
-  const weiterOk = pfad === 'rueck' || (art !== null && vorOk[art as (typeof VOR_FRAGEN)[number]])
-  const letzte = index === n - 1
+  // ---------------------------------------------------------------------------------------------- Navigation unten
+  const punkte = n + 1
+  const aktiverPunkt = Math.min(index, n)
+  let nav: ReactNode = null
+  if (phase === 'frage') {
+    nav = (
+      <>
+        {index > 0 || pfad === 'vor' ? (
+          <button type="button" className="knopf-leise" onClick={zurueck}><span aria-hidden="true">←</span> {W.zurueck}</button>
+        ) : <span />}
+        <button type="button" className="btn btn-inv wz-weiter" onClick={weiter} disabled={!weiterOk}>
+          {index === n - 1 ? W.ergebnisZeigen : W.weiter} <span className="arr" aria-hidden="true">→</span>
+        </button>
+      </>
+    )
+  } else if (phase === 'fertig') {
+    nav = (
+      <>
+        <button type="button" className="knopf-leise" onClick={zurueck}><span aria-hidden="true">←</span> {W.zurueck}</button>
+        <button type="button" className="btn btn-accent wz-weiter wz-ansehen" onClick={() => geh(n + 2, 1)}>
+          {A.ergebnisAnsehen} <span className="arr" aria-hidden="true">→</span>
+        </button>
+      </>
+    )
+  } else if (phase === 'ergebnis') {
+    nav = (
+      <>
+        <button type="button" className="knopf-leise" onClick={() => wechsle('rueck')}>{A.neuRechnen}</button>
+        <button type="button" className="btn btn-inv wz-weiter" onClick={() => wechsle(pfad === 'rueck' ? 'vor' : 'rueck')}>
+          {pfad === 'rueck' ? W.kenneZahlen : A.vomZiel} <span className="arr" aria-hidden="true">→</span>
+        </button>
+      </>
+    )
+  }
 
   return (
     <MotionConfig reducedMotion="user">
-      <section ref={wurzel} className={`wrap wz${phase === 'ergebnis' ? ' wz-am-ende' : ''}`} id="rechner" aria-label={W.aria}>
-        <div className="wz-leiste" aria-hidden="true">
-          <motion.i animate={{ width: `${fortschritt * 100}%` }} transition={{ duration: 0.35, ease: EASE }} />
-        </div>
-        <div className="wz-buehne">
+      <div className="pfr-app-innen">
+        <header className="app-kopf">
+          <Link className="app-marke" href="/" prefetch={false} aria-label={A.start}>
+            <span className="mark" aria-hidden="true">
+              <Image src="/landing/logo.jpg" alt="" width={26} height={26} sizes="26px" />
+            </span>
+          </Link>
+          <h1 className="app-titel">{A.titel}</h1>
+          <div className="app-rechts">
+            <Sprachwahl sprache={sprache} />
+            <ThemeSwitch sprache={sprache} />
+          </div>
+        </header>
+
+        <div className="app-buehne" ref={buehne} role="region" aria-label={W.aria}>
           <AnimatePresence mode="wait" custom={richtung} initial={false}>
             <motion.div
               key={schluessel}
-              className="wz-schritt"
+              className={`wz-schritt wz-p-${phase}`}
               custom={richtung}
               variants={varianten}
               initial="rein"
               animate="da"
               exit="raus"
               transition={{ duration: DAUER, ease: EASE }}
+              drag={phase === 'rechnen' ? false : 'x'}
+              dragDirectionLock
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.16}
+              dragSnapToOrigin
+              onDragEnd={wisch}
             >
               {inhalt}
             </motion.div>
           </AnimatePresence>
         </div>
-        {istFrage && (
-          <div className="wz-nav">
-            {index > 0 || pfad === 'vor' ? (
-              <button type="button" className="knopf-leise" onClick={zurueck}>
-                <span aria-hidden="true">←</span> {W.zurueck}
-              </button>
+
+        <footer className="app-fuss">
+          <ol className="punkte" aria-label={A.punkte}>
+            {Array.from({ length: punkte }, (_, i) => (
+              <li key={i}>
+                <button
+                  type="button"
+                  className="punkt"
+                  aria-current={i === aktiverPunkt ? 'step' : undefined}
+                  aria-label={A.punkt(i + 1, punkte)}
+                  data-erledigt={i < aktiverPunkt ? '' : undefined}
+                  disabled={i >= aktiverPunkt || phase === 'rechnen'}
+                  onClick={() => geh(i, -1)}
+                />
+              </li>
+            ))}
+          </ol>
+          {nav && <div className="app-nav">{nav}</div>}
+          <nav className="app-recht" aria-label={A.rechtliches}>
+            <button type="button" onClick={() => setBlatt('methode')}>{A.soRechnet}</button>
+            <Link href="/impressum" prefetch={false} hrefLang={sprache === 'en' ? 'de' : undefined}>{A.impressum}</Link>
+            <Link href="/datenschutz" prefetch={false} hrefLang={sprache === 'en' ? 'de' : undefined}>{A.datenschutz}</Link>
+            <button type="button" onClick={() => setBlatt('methode')}>{A.keineBeratung}</button>
+          </nav>
+        </footer>
+
+        <Blatt id="blatt-methode" offen={blatt === 'methode'} onClose={() => setBlatt(null)} titel={A.soRechnet} schliessen={A.schliessen}>
+          <Hintergrund daten={DATEN} sprache={sprache} />
+          <SiteFooter sprache={sprache} />
+        </Blatt>
+        <Blatt id="blatt-andere" offen={blatt === 'andere'} onClose={() => setBlatt(null)} titel={A.andereTitel} schliessen={A.schliessen}>
+          <div className="blatt-wrap">
+            {pfad === 'rueck' && rueckBereit ? (
+              <KontenListe sprache={sprache} liste={rueckBereit.liste} antworten={antworten} />
             ) : (
-              <span />
+              <VorKonten sprache={sprache} rechnung={rechnung} />
             )}
-            <button type="button" className="btn btn-inv wz-weiter" onClick={weiter} disabled={!weiterOk}>
-              {letzte ? W.ergebnisZeigen : W.weiter} <span className="arr" aria-hidden="true">→</span>
-            </button>
           </div>
-        )}
-        {istFrage && index === 0 && (
-          <p className="wz-abzweig">
-            {pfad === 'rueck' ? (
-              <button type="button" className="lnk-knopf" onClick={() => wechsle('vor')}>
-                {W.kenneZahlen} <span aria-hidden="true">→</span>
-                <small>{W.kenneZahlenKurz}</small>
-              </button>
-            ) : (
-              <button type="button" className="lnk-knopf" onClick={() => wechsle('rueck')}>
-                <span aria-hidden="true">←</span> {W.vomZiel}
-              </button>
-            )}
-          </p>
-        )}
-        {istFrage && pfad === 'vor' && fehlerVor.length > 0 && !weiterOk && (
-          <p className="warnung" role="alert">{t.eingaben.bittePruefen} {fehlerVor.join(' · ')}</p>
-        )}
-      </section>
+        </Blatt>
+        <Blatt id="blatt-annahmen" offen={blatt === 'annahmen'} onClose={() => setBlatt(null)} titel={A.annahmen} schliessen={A.schliessen}>
+          <div className="blatt-wrap">
+            <VorAnnahmen sprache={sprache} form={form} setForm={setForm} />
+          </div>
+        </Blatt>
+      </div>
     </MotionConfig>
   )
 }

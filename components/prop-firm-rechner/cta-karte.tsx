@@ -11,13 +11,13 @@ export const AI_LAB_URL = 'https://petartrades.substack.com'
  * Das eToro-Angebot trägt Kennzeichnung, Bedingung, Vergütungs- und Risikohinweis im selben Block (Texte aus ETORO_OFFER,
  * auf Englisch aus ETORO_OFFER.en). Ist das Angebot aus, bleiben die ersten beiden.
  */
-export function CtaKarte({ sprache }: { sprache: Sprache }) {
+export function CtaKarte({ sprache, ohneTitel = false }: { sprache: Sprache; ohneTitel?: boolean }) {
   const t = woerterbuch(sprache)
   const C = t.cta
   const o = sprache === 'de' ? ETORO_OFFER : { ...ETORO_OFFER, ...ETORO_OFFER.en }
   return (
-    <section className="cta-karte" aria-labelledby={`cta-titel-${sprache}`}>
-      <h3 id={`cta-titel-${sprache}`}>{C.titel}</h3>
+    <section className={`cta-karte${ohneTitel ? ' ohne-titel' : ''}`} aria-label={C.titel}>
+      {!ohneTitel && <h3>{C.titel}</h3>}
       <ol className="cta-wege">
         <li>
           <div className="cta-weg cta-weg-block">
