@@ -7,12 +7,11 @@ import { SiteFooter } from '@/components/landing-v3/sections/site-footer'
 import { SiteHeader } from '@/components/landing-v3/sections/site-header'
 import { THEME_BOOT_SCRIPT } from '@/components/landing-v3/theme-core'
 import rohDaten from '@/lib/prop-firm/daten/regeln-2026-10-09.json'
-import { FIRMEN, type RegelDaten } from '@/lib/prop-firm/konten'
+import type { RegelDaten } from '@/lib/prop-firm/konten'
 import { Angebot } from './angebot'
-import { BeispielKarte } from './beispiel-karte'
 import { Hintergrund } from './hintergrund'
 import { PFADE } from './pfade'
-import { PropFirmRechner } from './rechner'
+import { Modi } from './modi'
 import { woerterbuch, type Sprache } from './texte'
 
 const DATEN = rohDaten as unknown as RegelDaten
@@ -35,7 +34,8 @@ function Sprachwahl({ sprache }: { sprache: Sprache }) {
 /**
  * Prop-Firm-Rechner als ganze Seite im Stil der Landing (.pat-lf: Schriften, Farben, Tag/Nacht nach Sonnenstand,
  * Kopf- und Fußzeile). Beide Sprachfassungen rendern diese eine Komponente, nur `sprache` unterscheidet sie.
- * Aufbau: Hero (rechts Beispiel-Ergebnis mit den Startwerten), Rechner, Ergebnisse, Angebot (DE eToro und Mentorship, EN Research-Newsletter), Methode und Quellen.
+ * Aufbau: kurzer Hero, Rechner mit zwei Rechenarten (rückwärts als Standard, vorwärts), jeweils Eingabe, Zusammenfassung und
+ * Ergebnis direkt darunter, dann Ergebnisse, Angebot (DE eToro und Mentorship, EN Research-Newsletter), Methode und Quellen.
  */
 export function RechnerSeite({ sprache }: { sprache: Sprache }) {
   const t = woerterbuch(sprache)
@@ -63,29 +63,16 @@ export function RechnerSeite({ sprache }: { sprache: Sprache }) {
         }
       />
       <section className="hero pfr-hero" aria-labelledby="pfr-titel">
-        <div className="wrap hero-grid">
-          <div>
-            <p className="kicker rise">{S.kicker}</p>
-            <h1 id="pfr-titel">
-              <span className="dim rise">{S.titelDim}</span>
-              <span className="rise">{S.titel}</span>
-            </h1>
-            <p className="sub rise">{S.lead(anzahl)}</p>
-          </div>
-          <BeispielKarte sprache={sprache} />
+        <div className="wrap">
+          <p className="kicker rise">{S.kicker}</p>
+          <h1 id="pfr-titel">
+            <span className="dim rise">{S.titelDim}</span>
+            <span className="rise">{S.titel}</span>
+          </h1>
+          <p className="sub rise">{S.lead(anzahl)}</p>
         </div>
       </section>
-      <section className="proof" aria-label={S.aufEinenBlick}>
-        <div className="wrap proof-grid">
-          {S.eckdaten(anzahl, FIRMEN, t.f.datum(DATEN.stand)).map((e) => (
-            <div key={e.wert}>
-              <b>{e.wert}</b>
-              <span className="l">{e.text}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-      <PropFirmRechner sprache={sprache} />
+      <Modi sprache={sprache} />
       <Angebot sprache={sprache} />
       <Hintergrund daten={DATEN} sprache={sprache} />
       <SiteFooter sprache={sprache} />

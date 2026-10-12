@@ -222,73 +222,129 @@ export const en: Woerterbuch = {
     titelDim: 'Prop firm calculator.',
     titel: 'Which firm fits your trades?',
     lead: (anzahl: number) =>
-      `Enter your win rate and your average win and loss in R. From these numbers, the calculator generates 1,000 random trading ` +
-      `years per account type and runs them against the rules of ${anzahl} account types, with every fee. It is a simulation ` +
-      'of your numbers, not market data. Next to it you see what the same accounts would return without an edge.',
-    sprungRechner: 'Go to the calculator',
-    aufEinenBlick: 'At a glance',
-    eckdaten: (anzahl: number, firmen: readonly string[], stand: string) => [
-      { wert: `${anzahl} account types`, text: firmen.join(', ') },
-      { wert: stand, text: 'Rules as of this date, each rule with a source' },
-      { wert: 'Zero-edge comparison', text: 'The same run with zero edge, side by side' },
-      { wert: 'In your browser', text: 'Your inputs never leave your device' },
-    ],
+      `Say how much you want paid out by when, or enter your win rate and R:R. The calculator runs random trading years from ` +
+      `these numbers against the rules of ${anzahl} account types, with every fee. A simulation, not market data.`,
   },
 
-  beispiel: {
-    aria: 'Example result with the starting values',
-    marke: 'Example',
-    kopf: 'With the starting values below',
-    annahmen: (z: { trefferquote: number; gewinnR: number; verlustR: number; tradesProWoche: number; risikoUsd: number }) =>
-      `${f.prozent(z.trefferquote)} win rate · avg. win ${f.zahlText(z.gewinnR, 1)} R · avg. loss ${f.zahlText(z.verlustR, 1)} R · ` +
-      `${f.zahlText(z.tradesProWoche, 1)} trades per week · ${usd(z.risikoUsd)} risk per trade`,
-    besterTyp: 'Best account type',
-    proMonat: 'per month after all fees',
-    mitKante: 'With these numbers',
-    ohneKante: 'Without an edge',
-    abstand: (b: string) => `Gap that comes from the edge: ${b} per month`,
-    rechnet: 'Calculating in your browser …',
-    abgebrochen: 'The result for your numbers is below.',
-    fuss: 'Simulation, not a forecast.',
-    link: 'Enter your own numbers',
+  modi: {
+    aria: 'Calculation',
+    rueck: 'What do I need?',
+    rueckKurz: 'Payout goal → required win rate per account',
+    vor: 'What do my numbers make?',
+    vorKurz: 'Win rate and R:R → result per account',
+    eingabe: 'Input',
+    ergebnis: 'Result',
+    warum: 'Why?',
+  },
+
+  rueck: {
+    ziel: 'Paid out, net',
+    zielHilfe: 'All payouts after the split minus all fees (purchases, subscriptions, resets, activation).',
+    zeitraum: 'By when',
+    monate: (m: number) => (m === 1 ? '1 month' : `${m} months`),
+    monateChip: (m: number) => `${m} mo`,
+    trades: 'Trades per week',
+    sicherheit: 'How sure',
+    sicherheitOption: (x: number) => `${x} in 10`,
+    sicherheitHilfe: 'In how many of 10 simulated cases the goal should be reached.',
+    soGerechnet: 'How this is calculated',
+    soGerechnetText: (pfade: string) =>
+      `One account slot, buying again after every lost account, payout path “Take and go”. Losers −1 R, winners +R:R R. ` +
+      `MNQ with a 20 point stop, risk per trade as a share of the drawdown (5, 10, 15 or 25%); the share that reaches the goal ` +
+      `most easily counts. ${pfade} simulated account slots per grid point, calculated in advance. Rules in their standard ` +
+      'reading, only currently offered account types with a known price.',
+    zielGrenze: (min: string, max: string) => `Goals from ${min} to ${max} are calculated in advance.`,
+    laden: 'Loading table …',
+    ladeFehler: 'The table could not be loaded. Please reload the page.',
+    zusammenfassung: (name: string, p: string, crv: string, risiko: string) =>
+      `Easiest: ${name} needs a ${p} win rate at R:R ${crv}, with ${risiko}.`,
+    erwartung: (e: string, betrag: string, risiko: string) =>
+      `That is ${e} per trade: in the long run each trade makes ${e} of your risk on average, so about ${betrag} at ${risiko} risk.`,
+    keinKonto: 'Hardly reachable under these rules: no account type reaches this goal in this time with a win rate of 80% or less.',
+    sortiert: 'Sorted by the easiest requirement, meaning the smallest expectancy per trade needed. Tap a card for details.',
+    crv: (c: string) => `R:R ${c}`,
+    kaum: 'hardly reachable',
+    risikoKurz: (anteil: string, betrag: string) => `${betrag} · ${anteil} DD`,
+    risikoSatz: (anteil: string, betrag: string) => `${betrag} risk per trade (${anteil} of the drawdown)`,
+    leichteste: 'easiest',
+    erwartungKurz: (e: string) => `expectancy ${e}`,
+    mehr: (n: number) => `Show all ${n} account types`,
+    weniger: 'Show fewer',
+    detailsRechnen: 'Calculating the details …',
+    detailsFuer: (crv: string, p: string, risiko: string) => `With R:R ${crv}, a ${p} win rate and ${risiko}:`,
+    kurzBester: 'easiest',
+    erreicht: (anteil: string, ziel: string, zeit: string) => `${anteil} of the simulated cases have at least ${ziel} net after ${zeit}.`,
+    median: (betrag: string, zeit: string) => `Middle net result after ${zeit}: ${betrag}.`,
+    vergleich: (betrag: string, zeit: string) =>
+      `For comparison: a trader without an advantage (expectancy 0) would have ${betrag} net with this account after ${zeit}, ` +
+      'in the middle case. That shows how much of the result comes from the rules alone.',
+    regelnZeigen: 'Rules, costs and sources',
+  },
+
+  enden: {
+    titel: 'Where it fails',
+    unter: 'One purchase over 12 months, without buying again: how it ends or where it stands.',
+    pruefung: 'in the evaluation',
+    funded: 'in the funded account',
+    name: {
+      dd: 'Max drawdown',
+      dll: 'Daily loss limit',
+      zeitlimit: 'Time limit',
+      inaktivitaet: 'Inactivity',
+      offen_eval: 'Evaluation still open after 12 months',
+      funded_laeuft: 'Funded account still running',
+      weiter: 'Moved on as planned',
+    },
+    erklaerung: {
+      dd: 'The balance fell further below its high (or start) than the drawdown allows. Then the account is gone.',
+      dll: 'Lost more in one day than allowed. At this firm that costs the account.',
+      zeitlimit: 'The profit target was not reached within the allowed days.',
+      inaktivitaet: 'No trade for too long.',
+      offen_eval: 'Neither passed nor blown: profit target, consistency or minimum days not met yet.',
+      funded_laeuft: 'Passed and still active after 12 months.',
+      weiter: 'Moved to a live account, reached the maximum number of payouts, or passed without a funded part.',
+    },
+    consHebt: (a: string) => `Consistency raised the evaluation target in ${a} of purchases: a single very good day may only make up part of the profit.`,
+    consSperre: (a: string) => `Consistency held back a payout in ${a} of purchases.`,
+    hauptgrund: (name: string, anteil: string) => `mostly: ${name} (${anteil})`,
+    keinScheitern: 'rarely fails',
   },
 
   eingaben: {
     titel: 'Your inputs',
     trades: 'Your trades',
     trefferquote: 'Win rate',
-    gewinn: 'Avg. win',
-    verlust: 'Avg. loss',
-    rHinweis: 'In R after fees and slippage. 1 R = your risk per trade.',
+    crv: 'R:R',
+    crvHilfe: 'Reward-to-risk ratio: a winner makes R:R times your risk, a loser costs your risk (−1 R).',
+    rHinweis: 'Wins and losses are net, after fees and slippage.',
     tradesProWoche: 'Trades per week',
+    mehrEinstellungen: 'More settings',
     gewinner: 'Winners',
-    streuung: { gleich: 'all similar', gemischt: 'mixed', wenige_grosse: 'few big ones' },
+    streuung: { gleich: 'always +R:R', gemischt: 'mixed', wenige_grosse: 'few big ones' },
     streuungHilfe: 'Same average, different spread: “few big ones” means many small winners and the occasional outlier.',
+    verlustStreuung: 'Losses vary (no fixed stop)',
+    verlustStreuungHilfe: 'Losers cost your risk on average, sometimes less, now and then much more (about one in 10 above 1.8 R). Matters for daily loss limits.',
     groesse: 'Position size',
-    groesseUeber: 'Set size by',
-    modus: { risiko: 'Risk in USD', kontrakte: 'Contracts', dd_anteil: 'Share of drawdown' },
     risiko: 'Risk per trade',
-    kontrakte: 'Contracts per trade',
-    ddAnteil: 'Risk per trade as a share of the drawdown',
-    ddHilfe: 'Scales the size to every account size automatically. 10% means ten losers in a row use up the drawdown.',
     instrument: 'Instrument',
     stopp: 'Stop',
     punkte: 'points',
+    stoppSatz:
+      'The stop size only changes the result through the number of contracts (whole contracts, the firm’s contract limits) and perp costs. Wins and losses in R stay the same.',
     futuresHinweis: (k: number, instrument: string, echt: string, perp: string) =>
       `Futures: ${k} ${instrument} per trade (${echt} actual risk, whole contracts, capped by the firm’s limits). Perps: ${perp}.`,
-    kontrakteHinweis: (risiko: string) => `= ${risiko} risk per trade (perps use the same amount).`,
     keinKontrakt: 'With this risk and stop, not even one contract fits. Futures accounts will not trade at all.',
     rahmen: 'Payout path and setup',
     weg: 'Payout path',
     polster: 'Cushion',
     polsterOptionen: { '1': '1x drawdown', '2': '2x drawdown' },
     bot: 'I trade with a bot (API)',
-    botHilfe: "Adds API fees and hides firms that don’t allow bots.",
+    botHilfe: 'Adds API fees and hides firms that don’t allow bots.',
     perp: 'Include extra perp costs',
-    perpHilfe: "Spread 0.5 points, funding 10% a year, the firm’s commission (Vest, MyFundedPerps).",
+    perpHilfe: 'Spread 0.5 points, funding 10% a year, the firm’s commission (Vest, MyFundedPerps).',
     genauigkeit: 'Precision',
-    pfade: { '300': 'fast', '1000': 'precise', '3000': 'very precise' },
-    pfadeHilfe: (n: string) => `${n} simulated years per account type, each with and without edge.`,
+    pfade: { '500': 'fast', '1500': 'precise', '3000': 'very precise' },
+    pfadeHilfe: (n: string) => `${n} simulated years per account type.`,
     erwartung: 'Expectancy per trade',
     streuungJeTrade: 'Standard deviation per trade',
     belegTitel: 'Evidence for an edge',
@@ -299,51 +355,31 @@ export const en: Woerterbuch = {
     bittePruefen: 'Please check:',
     fehler: {
       trefferquote: 'Win rate between 1 and 99%',
-      gewinn: 'Average win above 0 and at most 20 R',
-      verlust: 'Average loss above 0 and at most 5 R',
+      crv: 'R:R above 0 and at most 20',
       trades: 'Trades per week between 0.2 and 60',
       stopp: 'Stop between 1 and 500 points',
       risiko: 'Risk per trade between 1 and 100,000 USD',
-      kontrakte: 'Contracts as a whole number from 1 to 200',
-      dd: 'Share of drawdown between 1 and 100%',
     },
-    berechnen: 'Calculate',
-    neuStarten: 'Restart',
+    berechnen: 'Recalculate',
     fortschritt: (a: string, b: string) => `Simulating ${a} of ${b} years …`,
-    veraltet: 'Inputs changed. Calculate again for new numbers.',
     fertig: (pfade: string, varianten: number, sekunden: string) =>
-      `Done: ${pfade} years × ${varianten} rule variants in ${sekunden} s, right in your browser.`,
+      `${pfade} years × ${varianten} rule variants in ${sekunden} s, right in your browser.`,
     fehlerPrefix: 'Error:',
     workerAbbruch: 'The background calculation stopped.',
   },
 
   ergebnis: {
-    titel: 'Your results.',
-    titelZusatz: 'Calculated honestly.',
     groessen: { k10: 'up to 10K', k25: '20K to 25K', k50: '50K', k100: '100K', k150: '150K and up' },
     unter: (pfade: string, weg: string, faktor: number | null, bot: boolean) =>
       `${pfade} simulated years per account type, payout path “${weg}”${faktor ? ` with a ${faktor}x drawdown cushion` : ''}` +
       `${bot ? ', trading by bot' : ''}. Net per month means: all payouts after the split minus all fees (purchase, subscription, ` +
       'reset, activation, fixed costs) over twelve months, buying again after every lost account.',
-    ohneKanteTitel: 'What it would look like without an edge',
-    bestMitWerten: 'Best account type with your numbers',
-    keinerMitPreis: 'none with a known price in this selection',
     proMonatKurz: '/ month',
-    bestNull: 'Best account type with zero edge',
-    bestNullKlein: 'same trades and spread, expectancy per trade exactly zero',
-    mittelNull: (n: number) => `Average over all ${n} account types with zero edge`,
-    mittelNullKlein: 'Without a real edge, the fees are lost across many accounts.',
-    urteil: {
-      keinPreis: 'No account type in this selection has a known price.',
-      keineKante: 'Your inputs have no positive edge. Whatever shows a profit here does not come from your trades. Across many accounts, the fees are lost.',
-      nichtBesser: 'Your best value is not above the best value without an edge. With these inputs, the result cannot be told apart from zero edge.',
-      abstand: (betrag: string) =>
-        `Your best account type is ${betrag} per month above the best account type without an edge. Only this gap comes from your ` +
-        'edge, and only if your win rate and R values are right.',
-      nullPlus:
-        ' That an account type is slightly positive even with zero edge comes from the simplified assumptions (instant payout, ' +
-        "no rejection by the firm) and the simulation’s noise, not from a strategy.",
-    },
+    zusammenfassung: (name: string, netto: string) => `Best account type: ${name} with ${netto} per month net.`,
+    zusammenfassungMinus: (name: string, netto: string) =>
+      `No account type ends up positive. You lose the least with ${name} (${netto} per month net).`,
+    erwartungSatz: (e: string) => `Your numbers give ${e} per trade.`,
+    rechnet: 'Calculating …',
     sicherTitel: 'How certain is your edge?',
     sicherText: (erw: string, sd: string) => `Your inputs give ${erw} per trade with a standard deviation of ${sd}.`,
     sicherBand: (lo: string, hi: string, n: string) =>
@@ -351,23 +387,22 @@ export const en: Woerterbuch = {
       'it above zero with 95% confidence.',
     sicherOhne: ' Without a positive expectancy, no profit comes from your trades. Across many accounts, the fees are lost.',
     schaetzung:
-      'Your win rate and R values are estimates themselves. If they come from a few trades or from a backtest picked for its ' +
+      'Your win rate and R:R are estimates themselves. If they come from a few trades or from a backtest picked for its ' +
       'result, part of it comes from the selection, not from a real edge. The calculator can only be as good as these numbers.',
-    topTitel: 'The three best account types for your inputs',
+    topTitel: 'The three best account types',
     topUnter:
-      "Sorted by net per month, using the more cautious reading when a firm’s rule is unclear. The best value out of many account " +
+      'Sorted by net per month, using the more cautious reading when a firm’s rule is unclear. The best value out of many account ' +
       'types is always estimated a little too high: the simulation has noise too (± figure).',
     platz: (i: number) => `Rank ${i}`,
     proMonatPlusMinus: (x: string) => `per month, ± ${x} USD`,
     bestehen60: 'Pass within 60 trading days',
     ohnePruefung: 'no evaluation',
     ausz6: 'First payout within 6 months',
-    mitNull: 'With zero edge',
     gesprengt12: 'Blown within 12 months',
     gerechnetMit: (v: string) => `Calculated with: ${v}.`,
     alleTitel: 'All account types',
     angezeigt: (a: number, b: number, bot: number) =>
-      `${a} of ${b} account types selected${bot ? `, ${bot} hidden (firm does not allow bots)` : ''}. Tap a row for rules, costs and sources.`,
+      `${a} of ${b} account types selected${bot ? `, ${bot} hidden (firm does not allow bots)` : ''}. Tap a row for reasons, rules, costs and sources.`,
     firmen: 'Firms',
     kontogroesse: 'Account size',
     nurAktiv: 'currently offered only',
@@ -387,8 +422,6 @@ export const en: Woerterbuch = {
       bruchTitel: 'One purchase: share of accounts lost within 12 months',
       netto: 'Net / month',
       nettoTitel: 'One account slot over 12 months with rebuys, all fees. Below: 10% to 90% of years',
-      null: 'Zero edge',
-      nullTitel: 'The same without an edge: expectancy per trade zero',
     },
     mehr: (n: number) => `Show all ${n} account types`,
     weniger: (n: number) => `Show only the first ${n}`,
@@ -417,6 +450,8 @@ export const en: Woerterbuch = {
 
   details: {
     regeln: 'Rules',
+    vergleich: (betrag: string) =>
+      `For comparison: a trader without an advantage (expectancy 0) would get ${betrag} per month net with this account. That shows how much of the result comes from the rules alone.`,
     live: 'A later live account is not simulated (the account slot ends there and is bought again).',
     kosten: 'Costs',
     weitere: 'More figures',
@@ -449,7 +484,7 @@ export const en: Woerterbuch = {
         'For each account type, the calculator generates 1,000 random trading years from your inputs, not from real market data. ' +
           'A year has about 260 trading days. How ' +
           'many trades fall on a given day is random, on average as many as you enter per week. Each trade wins with your win rate. ' +
-          'Winners scatter around your average win, losers lose your average loss.',
+          'A winner makes your R:R in R, a loser costs 1 R, which is your risk. Under “More settings” winners and losses can vary.',
       ],
       [
         "Day by day, the firm’s rules run alongside: drawdown (trailing at end of day, in real time, or static), daily loss limit " +

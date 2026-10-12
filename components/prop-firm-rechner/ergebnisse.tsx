@@ -2,11 +2,12 @@
 
 import { Fragment, useMemo, useState } from 'react'
 import {
-  baueZeilen, gluecksvergleich, kantenSicherheit, type Zeile,
+  baueZeilen, type Zeile,
 } from '@/lib/prop-firm/auswertung'
 import { FIRMEN, type KontoEintrag, type RegelDaten } from '@/lib/prop-firm/konten'
 import type { RohErgebnis, SimEinstellungen } from '@/lib/prop-firm/simulation'
 import { Details } from './details'
+import { hauptgrund } from './scheitern'
 import { woerterbuch, type Sprache, type Woerterbuch } from './texte'
 
 export type Ergebnis = { roh: Record<string, RohErgebnis>; einst: SimEinstellungen; pfade: number; dauerMs: number; formSchl: string }
@@ -22,7 +23,7 @@ const GROESSEN = [
 /** So viele Zeilen zeigt die Tabelle zuerst; der Rest auf Knopfdruck (die Seite bleibt ruhig, sortiert ist ohnehin nach Netto). */
 const ERSTE_ZEILEN = 25
 
-type SortKey = 'rang' | 'fk30' | 'fk60' | 'fk90' | 'ausz6' | 'median' | 'bruch' | 'null' | 'preis' | 'name'
+type SortKey = 'rang' | 'fk30' | 'fk60' | 'fk90' | 'ausz6' | 'median' | 'bruch' | 'preis' | 'name'
 
 function sortWert(z: Zeile, key: SortKey): number | string | null {
   const k = z.kante
@@ -34,7 +35,6 @@ function sortWert(z: Zeile, key: SortKey): number | string | null {
     case 'ausz6': return k.ausz6
     case 'median': return k.auszMedianHT
     case 'bruch': return k.bruch12
-    case 'null': return z.rangNull
     case 'preis': return z.eintrag.konto.preis
     case 'name': return `${z.eintrag.firma} ${String(z.eintrag.groesse).padStart(8, '0')} ${z.eintrag.programm} ${z.eintrag.variante}`
   }
@@ -71,7 +71,6 @@ export function Ergebnisse({ ergebnis, eintraege, daten, veraltet, sprache }: {
   const [offen, setOffen] = useState<Set<string>>(() => new Set())
   const [alleZeilen, setAlleZeilen] = useState(false)
   const einstErg = ergebnis.einst
-  const sicherheitErg = kantenSicherheit(einstErg.strom)
 
   const zeilenAlle = useMemo(() => baueZeilen(eintraege, ergebnis.roh, einstErg.botBetrieb), [ergebnis, eintraege, einstErg])
   const ausgeblendetBot = einstErg.botBetrieb ? zeilenAlle.filter((z) => z.eintrag.botAusschluss).length : 0
@@ -91,7 +90,6 @@ export function Ergebnisse({ ergebnis, eintraege, daten, veraltet, sprache }: {
       return (x - y) * dir
     })
   }, [zeilenAlle, firmen, groessen, nurAktiv, sort, einstErg])
-  const glueck = useMemo(() => gluecksvergleich(zeilen), [zeilen])
   const top = useMemo(
     () => zeilen.filter((z) => z.inRangfolge).sort((a, b) => (b.rangNetto as number) - (a.rangNetto as number)).slice(0, 3),
     [zeilen],
@@ -111,56 +109,9 @@ export function Ergebnisse({ ergebnis, eintraege, daten, veraltet, sprache }: {
     </th>
   )
   const S = T.spalten
-  const monat = (x: number | null) => (x !== null ? `${usd(x, true)} ${T.proMonatKurz}` : ka)
-  const best = glueck.bestKanteZeile
 
   return (
-    <section className="wrap abschnitt ergebnis" aria-labelledby="ergebnis-titel" data-veraltet={veraltet ? '' : undefined}>
-      <div className="kopfzeile">
-        <h2 id="ergebnis-titel">
-          <span className="dim">{T.titel}</span>
-          <span>{T.titelZusatz}</span>
-        </h2>
-        <p className="lead">
-          {T.unter(zahlText(ergebnis.pfade), t.politik[einstErg.politik].name, einstErg.politik !== 'A' ? einstErg.politikFaktor : null, einstErg.botBetrieb)}
-        </p>
-      </div>
-
-      <div className="ehrlich">
-        <div className="karte">
-          <h3>{T.ohneKanteTitel}</h3>
-          <dl className="vergleich">
-            <div>
-              <dt>{T.bestMitWerten}<small>{best ? `${best.eintrag.firma} ${groesseKurz(best.eintrag.groesse)}, ${best.eintrag.programm}` : T.keinerMitPreis}</small></dt>
-              <dd className={(glueck.bestKante ?? 0) > 0 ? 'plus' : 'minus'}>{monat(glueck.bestKante)}</dd>
-            </div>
-            <div>
-              <dt>{T.bestNull}<small>{T.bestNullKlein}</small></dt>
-              <dd className={(glueck.bestNull ?? 0) > 0 ? 'plus' : 'minus'}>{monat(glueck.bestNull)}</dd>
-            </div>
-            <div>
-              <dt>{T.mittelNull(glueck.n)}<small>{T.mittelNullKlein}</small></dt>
-              <dd className={(glueck.mittelNull ?? 0) > 0 ? 'plus' : 'minus'}>{monat(glueck.mittelNull)}</dd>
-            </div>
-          </dl>
-          <p className="urteil">{urteil(glueck, sicherheitErg.erwartung, t)}</p>
-        </div>
-        <div className="karte">
-          <h3>{T.sicherTitel}</h3>
-          <p className="karte-text">
-            {T.sicherText(rText(sicherheitErg.erwartung), rText(sicherheitErg.sd, false))}
-            {sicherheitErg.tradesNoetig
-              ? T.sicherBand(
-                rText(sicherheitErg.erwartung - sicherheitErg.band100),
-                rText(sicherheitErg.erwartung + sicherheitErg.band100),
-                zahlText(sicherheitErg.tradesNoetig),
-              )
-              : T.sicherOhne}
-          </p>
-          <p className="karte-text leise">{T.schaetzung}</p>
-        </div>
-      </div>
-
+    <section className="ergebnis" aria-label={T.alleTitel} data-veraltet={veraltet ? '' : undefined}>
       {top.length > 0 && (
         <>
           <h3 className="zwischen">{T.topTitel}</h3>
@@ -181,9 +132,9 @@ export function Ergebnisse({ ergebnis, eintraege, daten, veraltet, sprache }: {
                   <dl className="werte">
                     <div><dt>{T.bestehen60}</dt><dd>{z.eintrag.hatEval ? pct(z.kante.fk60) : T.ohnePruefung}</dd></div>
                     <div><dt>{T.ausz6}</dt><dd>{pct(z.kante.ausz6)}</dd></div>
-                    <div><dt>{T.mitNull}</dt><dd className={(z.rangNull ?? 0) > 0 ? 'plus' : 'minus'}>{usd(z.rangNull, true)}</dd></div>
                     <div><dt>{T.gesprengt12}</dt><dd>{pct(z.kante.bruch12)}</dd></div>
                   </dl>
+                  <p className="top-grund">{hauptgrund(z.kante, t)}</p>
                   {v && <span className="klein">{T.gerechnetMit(v)}</span>}
                 </li>
               )
@@ -229,12 +180,11 @@ export function Ergebnisse({ ergebnis, eintraege, daten, veraltet, sprache }: {
               {thSort('median', S.median, S.medianTitel)}
               {thSort('bruch', S.bruch, S.bruchTitel)}
               {thSort('rang', S.netto, S.nettoTitel)}
-              {thSort('null', S.null, S.nullTitel)}
             </tr>
           </thead>
           <tbody>
             {zeilen.length === 0 && (
-              <tr><td colSpan={10} className="leer">{T.leer}</td></tr>
+              <tr><td colSpan={9} className="leer">{T.leer}</td></tr>
             )}
             {(alleZeilen ? zeilen : zeilen.slice(0, ERSTE_ZEILEN)).map((z) => {
               const e = z.eintrag
@@ -286,13 +236,10 @@ export function Ergebnisse({ ergebnis, eintraege, daten, veraltet, sprache }: {
                         </>
                       ) : T.preisUnbekannt}
                     </td>
-                    <td>
-                      {z.null.netto ? <span className={z.null.netto.mittel > 0 ? 'plus' : 'minus'}>{usd(z.null.netto.mittel, true)}</span> : '·'}
-                    </td>
                   </tr>
                   {auf && (
                     <tr className="details">
-                      <td colSpan={10}>
+                      <td colSpan={9}>
                         <Details zeile={z} daten={DATEN} botBetrieb={einstErg.botBetrieb} sprache={sprache} />
                       </td>
                     </tr>
@@ -326,15 +273,4 @@ export function Ergebnisse({ ergebnis, eintraege, daten, veraltet, sprache }: {
       )}
     </section>
   )
-}
-
-function urteil(g: ReturnType<typeof gluecksvergleich>, erwartung: number, t: Woerterbuch): string {
-  const U = t.ergebnis.urteil
-  if (g.bestKante === null || g.bestNull === null) return U.keinPreis
-  if (erwartung <= 0) return U.keineKante
-  const abstand = g.bestKante - g.bestNull
-  if (abstand <= 0) return U.nichtBesser
-  let s = U.abstand(t.f.usd(abstand))
-  if (g.bestNull > 0) s += U.nullPlus
-  return s
 }

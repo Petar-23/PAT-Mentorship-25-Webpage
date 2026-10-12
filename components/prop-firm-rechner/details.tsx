@@ -2,6 +2,7 @@
 
 import type { Zeile } from '@/lib/prop-firm/auswertung'
 import type { RegelDaten } from '@/lib/prop-firm/konten'
+import { Scheitern } from './scheitern'
 import { woerterbuch, type Sprache } from './texte'
 
 /** Aufgeklappte Tabellenzeile: Regeln, Kosten, weitere Kennzahlen, offene Punkte, Bot-Bedingungen, Quellen. */
@@ -15,6 +16,10 @@ export function Details({ zeile, daten, botBetrieb, sprache }: { zeile: Zeile; d
   const strenger = [...new Set(e.strenger.map(t.daten.feld))]
   return (
     <div className="details-grid">
+      <div className="details-breit">
+        <Scheitern anteile={k} sprache={sprache} />
+        {zeile.rangNull !== null && <p className="details-vergleich">{D.vergleich(usd(zeile.rangNull, true))}</p>}
+      </div>
       <div>
         <h4>{D.regeln}</h4>
         {t.regelSaetze(e.konto).map((p) => (

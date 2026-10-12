@@ -3,7 +3,7 @@
  */
 import { EPS, MONAT, quantil } from './kern'
 import type { KontoEintrag } from './konten'
-import { M, N_METRIKEN } from './simulation'
+import { ENDEN, M, N_METRIKEN } from './simulation'
 import type { RohErgebnis } from './simulation'
 import { erwartungR, streuungR } from './stroeme'
 import type { StromEingaben } from './stroeme'
@@ -29,6 +29,11 @@ export type Kennzahlen = {
   kaeufe: number | null
   einsatzP90: number | null
   kAusz6: number | null
+  /** Anteile der Käufe je Ende (Reihenfolge wie ENDEN), getrennt nach Prüfung und Funded-Teil */
+  endenEval: number[]
+  endenFunded: number[]
+  consHebt: number
+  consSperre: number
 }
 
 function spalte(arr: Float64Array, m: number): number[] {
@@ -59,6 +64,10 @@ export function kennzahlen(arr: Float64Array, hatEval: boolean): Kennzahlen {
   }
   const mit = (m: number) => (vert ? mittel(spalte(arr, m)) : null)
   const kAusz = spalte(arr, M.kAuszTage)
+  const ende = spalte(arr, M.ende)
+  const endeFunded = spalte(arr, M.endeFunded)
+  const endenEval = ENDEN.map((_, j) => (n ? ende.filter((v, i) => v === j && endeFunded[i] === 0).length / n : 0))
+  const endenFunded = ENDEN.map((_, j) => (n ? ende.filter((v, i) => v === j && endeFunded[i] === 1).length / n : 0))
   return {
     n,
     fk30: hatEval ? anteil(pass, (v) => v <= 30) : null,
@@ -78,6 +87,10 @@ export function kennzahlen(arr: Float64Array, hatEval: boolean): Kennzahlen {
     kaeufe: mit(M.kaeufe),
     einsatzP90: vert ? quantil(spalte(arr, M.einsatz), 0.9) : null,
     kAusz6: vert ? anteil(kAusz, (v) => v <= 6 * MONAT + EPS) : null,
+    endenEval,
+    endenFunded,
+    consHebt: anteil(spalte(arr, M.consHebt), (v) => v === 1),
+    consSperre: anteil(spalte(arr, M.consSperre), (v) => v === 1),
   }
 }
 

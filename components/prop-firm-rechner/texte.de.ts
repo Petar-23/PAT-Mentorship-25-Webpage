@@ -118,62 +118,120 @@ export const de = {
     titelDim: 'Prop-Firm-Rechner.',
     titel: 'Welche Firma passt zu deinen Trades?',
     lead: (anzahl: number) =>
-      `Gib Trefferquote, Gewinn und Verlust in R ein. Der Rechner erzeugt daraus je Kontotyp 1.000 zufällige Handelsjahre und spielt ` +
-      `sie gegen die Regeln von ${anzahl} Kontotypen durch, mit allen Gebühren. Das ist eine Simulation aus deinen Zahlen, keine ` +
-      'Kursdaten. Daneben steht, was dieselben Konten ohne Kante ergeben würden.',
-    sprungRechner: 'Zum Rechner',
-    aufEinenBlick: 'Auf einen Blick',
-    eckdaten: (anzahl: number, firmen: readonly string[], stand: string) => [
-      { wert: `${anzahl} Kontotypen`, text: firmen.join(', ') },
-      { wert: stand, text: 'Regelstand, jede Regel mit Quelle' },
-      { wert: 'Vergleich ohne Kante', text: 'Derselbe Lauf mit Kante 0 daneben' },
-      { wert: 'Im Browser', text: 'Deine Eingaben verlassen dein Gerät nicht' },
-    ],
+      `Sag, was du in welcher Zeit ausgezahlt haben willst, oder gib Trefferquote und CRV ein. Der Rechner spielt zufällige ` +
+      `Handelsjahre aus diesen Zahlen gegen die Regeln von ${anzahl} Kontotypen durch, mit allen Gebühren. Simulation, keine Kursdaten.`,
   },
 
-  /** Beispiel-Karte im Hero: Ergebnis der ersten Rechnung mit den Startwerten. */
-  beispiel: {
-    aria: 'Beispiel-Ergebnis mit den Startwerten',
-    marke: 'Beispiel',
-    kopf: 'Mit den Startwerten unten',
-    annahmen: (z: { trefferquote: number; gewinnR: number; verlustR: number; tradesProWoche: number; risikoUsd: number }) =>
-      `${f.prozent(z.trefferquote)} Trefferquote · Ø Gewinn ${f.zahlText(z.gewinnR, 1)} R · Ø Verlust ${f.zahlText(z.verlustR, 1)} R · ` +
-      `${f.zahlText(z.tradesProWoche, 1)} Trades pro Woche · ${usd(z.risikoUsd)} Risiko je Trade`,
-    besterTyp: 'Bester Kontotyp',
-    proMonat: 'pro Monat nach allen Gebühren',
-    mitKante: 'Mit diesen Werten',
-    ohneKante: 'Ohne Kante',
-    abstand: (b: string) => `Abstand, der aus der Kante kommt: ${b} pro Monat`,
-    rechnet: 'Rechnet gerade in deinem Browser …',
-    abgebrochen: 'Das Ergebnis mit deinen Werten steht unten.',
-    fuss: 'Simulation, keine Prognose.',
-    link: 'Eigene Werte eingeben',
+  /** Zwei Rechenarten: rückwärts (Standard) und vorwärts. */
+  modi: {
+    aria: 'Rechenart',
+    rueck: 'Was brauche ich?',
+    rueckKurz: 'Ziel in USD → nötige Trefferquote je Konto',
+    vor: 'Was bringen meine Zahlen?',
+    vorKurz: 'Trefferquote und CRV → Ergebnis je Konto',
+    eingabe: 'Eingabe',
+    ergebnis: 'Ergebnis',
+    warum: 'Warum?',
+  },
+
+  /** Rückwärts-Modus: Ziel → nötige Trefferquote je Kontotyp und CRV. */
+  rueck: {
+    ziel: 'Ausgezahlt, netto',
+    zielHilfe: 'Alle Auszahlungen nach Split minus alle Gebühren (Käufe, Abos, Resets, Aktivierung).',
+    zeitraum: 'Bis wann',
+    monate: (m: number) => (m === 1 ? '1 Monat' : `${m} Monaten`),
+    monateChip: (m: number) => `${m} Mon.`,
+    trades: 'Trades pro Woche',
+    sicherheit: 'Wie sicher',
+    sicherheitOption: (x: number) => `${x} von 10`,
+    sicherheitHilfe: 'In wie vielen von 10 simulierten Fällen das Ziel erreicht sein soll.',
+    soGerechnet: 'So ist gerechnet',
+    soGerechnetText: (pfade: string) =>
+      `Ein Konto-Platz mit Nachkauf nach jedem verlorenen Konto, Auszahlungsweg „Nimm und geh“. Verlierer −1 R, Gewinner +CRV R. ` +
+      `MNQ mit 20 Punkten Stopp, Risiko je Trade als Anteil am Drawdown (5, 10, 15 oder 25 %), es zählt der Anteil, mit dem das ` +
+      `Ziel am leichtesten erreicht wird. Je Rasterpunkt ${pfade} simulierte Konto-Plätze, vorab gerechnet. Regeln in der ` +
+      'Standard-Lesart, nur aktuell angebotene Kontotypen mit bekanntem Preis.',
+    zielGrenze: (min: string, max: string) => `Vorgerechnet sind Ziele von ${min} bis ${max}.`,
+    laden: 'Lade Tabelle …',
+    ladeFehler: 'Die Tabelle ließ sich nicht laden. Bitte Seite neu laden.',
+    zusammenfassung: (name: string, p: string, crv: string, risiko: string) =>
+      `Am leichtesten: ${name} braucht ${p} Trefferquote bei CRV ${crv}, mit ${risiko}.`,
+    erwartung: (e: string, betrag: string, risiko: string) =>
+      `Das sind ${e} je Trade: Auf lange Sicht bringt jeder Trade im Schnitt ${e} deines Risikos, bei ${risiko} Risiko also etwa ${betrag}.`,
+    keinKonto: 'Mit diesen Regeln kaum erreichbar: Kein Kontotyp schafft dieses Ziel in dieser Zeit mit höchstens 80 % Trefferquote.',
+    sortiert: 'Sortiert nach der leichtesten Anforderung, also der kleinsten nötigen Erwartung je Trade. Karte antippen für Details.',
+    crv: (c: string) => `CRV ${c}`,
+    kaum: 'kaum erreichbar',
+    risikoKurz: (anteil: string, betrag: string) => `${betrag} · ${anteil} DD`,
+    risikoSatz: (anteil: string, betrag: string) => `${betrag} Risiko je Trade (${anteil} des Drawdowns)`,
+    leichteste: 'am leichtesten',
+    erwartungKurz: (e: string) => `Erwartung ${e}`,
+    mehr: (n: number) => `Alle ${n} Kontotypen anzeigen`,
+    weniger: 'Weniger anzeigen',
+    detailsRechnen: 'Rechnet die Details …',
+    detailsFuer: (crv: string, p: string, risiko: string) => `Mit CRV ${crv}, ${p} Trefferquote und ${risiko}:`,
+    kurzBester: 'am leichtesten',
+    erreicht: (anteil: string, ziel: string, zeit: string) => `${anteil} der simulierten Fälle haben nach ${zeit} mindestens ${ziel} netto.`,
+    median: (betrag: string, zeit: string) => `Mittlerer Netto-Stand nach ${zeit}: ${betrag}.`,
+    vergleich: (betrag: string, zeit: string) =>
+      `Zum Vergleich: Ein Trader ohne Vorteil (Erwartung 0) hätte mit diesem Konto nach ${zeit} im Mittel ${betrag} netto. ` +
+      'Das zeigt, wie viel vom Ergebnis die Regeln allein ausmachen.',
+    regelnZeigen: 'Regeln, Kosten und Quellen',
+  },
+
+  /** Woran ein Kauf scheitert bzw. wo er nach 12 Monaten steht (Codes aus simulation.ENDEN). */
+  enden: {
+    titel: 'Woran es scheitert',
+    unter: 'Ein Kauf über 12 Monate, ohne Nachkauf: wie er endet oder wo er steht.',
+    pruefung: 'in der Prüfung',
+    funded: 'im Funded-Konto',
+    name: {
+      dd: 'Maximaler Drawdown',
+      dll: 'Tagesverlustgrenze',
+      zeitlimit: 'Zeitlimit',
+      inaktivitaet: 'Inaktivität',
+      offen_eval: 'Prüfung nach 12 Monaten offen',
+      funded_laeuft: 'Funded-Konto läuft noch',
+      weiter: 'Regulär weiter',
+    },
+    erklaerung: {
+      dd: 'Das Konto fiel weiter unter seinen Höchststand (oder Start), als der Drawdown erlaubt. Dann ist es weg.',
+      dll: 'An einem Tag mehr verloren als erlaubt. Bei dieser Firma kostet das das Konto.',
+      zeitlimit: 'Das Gewinnziel war nicht innerhalb der erlaubten Tage erreicht.',
+      inaktivitaet: 'Zu lange nicht gehandelt.',
+      offen_eval: 'Weder bestanden noch gesprengt: Gewinnziel, Consistency oder Mindesttage noch nicht erfüllt.',
+      funded_laeuft: 'Bestanden und nach 12 Monaten noch aktiv.',
+      weiter: 'Ins Live-Konto gewechselt, die Höchstzahl an Auszahlungen erreicht oder bestanden ohne Funded-Teil.',
+    },
+    consHebt: (a: string) => `Consistency hat bei ${a} der Käufe das Prüfungsziel angehoben: Ein einzelner sehr guter Tag darf nur einen Teil des Gewinns ausmachen.`,
+    consSperre: (a: string) => `Consistency hat bei ${a} der Käufe eine Auszahlung aufgeschoben.`,
+    hauptgrund: (name: string, anteil: string) => `meist: ${name} (${anteil})`,
+    keinScheitern: 'scheitert selten',
   },
 
   eingaben: {
     titel: 'Deine Eingaben',
     trades: 'Deine Trades',
     trefferquote: 'Trefferquote',
-    gewinn: 'Ø Gewinn',
-    verlust: 'Ø Verlust',
-    rHinweis: 'In R nach Gebühren und Slippage. 1 R = dein Risiko je Trade.',
+    crv: 'CRV',
+    crvHilfe: 'Chance-Risiko-Verhältnis: Ein Gewinner bringt das CRV-Fache deines Risikos, ein Verlierer kostet dein Risiko (−1 R).',
+    rHinweis: 'Gewinne und Verluste netto, also nach Gebühren und Slippage.',
     tradesProWoche: 'Trades pro Woche',
+    mehrEinstellungen: 'Mehr Einstellungen',
     gewinner: 'Gewinner',
-    streuung: { gleich: 'gleich groß', gemischt: 'gemischt', wenige_grosse: 'wenige große' },
+    streuung: { gleich: 'immer +CRV', gemischt: 'gemischt', wenige_grosse: 'wenige große' },
     streuungHilfe: 'Gleicher Durchschnitt, andere Verteilung: „wenige große“ heißt viele kleine Gewinner und ab und zu ein Ausreißer.',
+    verlustStreuung: 'Verluste schwanken (kein fester Stopp)',
+    verlustStreuungHilfe: 'Verlierer kosten im Schnitt dein Risiko, manchmal weniger, gelegentlich deutlich mehr (etwa jeder 10. über 1,8 R). Wichtig bei Tagesverlustgrenzen.',
     groesse: 'Positionsgröße',
-    groesseUeber: 'Größe festlegen über',
-    modus: { risiko: 'Risiko in USD', kontrakte: 'Kontrakte', dd_anteil: 'Anteil Drawdown' },
     risiko: 'Risiko pro Trade',
-    kontrakte: 'Kontrakte je Trade',
-    ddAnteil: 'Risiko je Trade als Anteil vom Drawdown',
-    ddHilfe: 'Passt die Größe automatisch an jede Kontogröße an. 10 % heißt: zehn Verlierer in Folge leeren den Drawdown.',
     instrument: 'Instrument',
     stopp: 'Stopp',
     punkte: 'Punkte',
+    stoppSatz:
+      'Die Stopp-Größe ändert das Ergebnis nur über die Zahl der Kontrakte (ganze Kontrakte, Kontraktgrenzen der Firma) und die Kosten bei Perps. Gewinn und Verlust in R bleiben gleich.',
     futuresHinweis: (k: number, instrument: string, echt: string, perp: string) =>
       `Futures: ${k} ${instrument} je Trade (${echt} echtes Risiko, ganze Kontrakte, gedeckelt durch die Firmengrenzen). Perps: ${perp}.`,
-    kontrakteHinweis: (risiko: string) => `= ${risiko} Risiko je Trade (Perps rechnen mit demselben Betrag).`,
     keinKontrakt: 'Mit diesem Risiko und Stopp ist nicht einmal ein Kontrakt möglich. Futures-Konten handeln dann gar nicht.',
     rahmen: 'Auszahlungsweg und Rahmen',
     weg: 'Auszahlungsweg',
@@ -184,8 +242,8 @@ export const de = {
     perp: 'Zusatzkosten bei Perps einrechnen',
     perpHilfe: 'Spread 0,5 Punkte, Finanzierung 10 % im Jahr, Kommission der Firma (Vest, MyFundedPerps).',
     genauigkeit: 'Genauigkeit',
-    pfade: { '300': 'schnell', '1000': 'genau', '3000': 'sehr genau' },
-    pfadeHilfe: (n: string) => `${n} simulierte Jahre je Kontotyp, jeweils mit und ohne Kante.`,
+    pfade: { '500': 'schnell', '1500': 'genau', '3000': 'sehr genau' },
+    pfadeHilfe: (n: string) => `${n} simulierte Jahre je Kontotyp.`,
     erwartung: 'Erwartung je Trade',
     streuungJeTrade: 'Streuung je Trade',
     belegTitel: 'Beleg für eine Kante',
@@ -196,52 +254,31 @@ export const de = {
     bittePruefen: 'Bitte prüfen:',
     fehler: {
       trefferquote: 'Trefferquote zwischen 1 und 99 %',
-      gewinn: 'Durchschnittsgewinn größer 0 und höchstens 20 R',
-      verlust: 'Durchschnittsverlust größer 0 und höchstens 5 R',
+      crv: 'CRV größer 0 und höchstens 20',
       trades: 'Trades pro Woche zwischen 0,2 und 60',
       stopp: 'Stopp zwischen 1 und 500 Punkten',
       risiko: 'Risiko pro Trade zwischen 1 und 100.000 USD',
-      kontrakte: 'Kontrakte als ganze Zahl von 1 bis 200',
-      dd: 'Anteil vom Drawdown zwischen 1 und 100 %',
     },
-    berechnen: 'Berechnen',
-    neuStarten: 'Neu starten',
+    berechnen: 'Neu rechnen',
     fortschritt: (a: string, b: string) => `Rechne ${a} von ${b} simulierten Jahren …`,
-    veraltet: 'Eingaben geändert. Für neue Zahlen bitte neu berechnen.',
     fertig: (pfade: string, varianten: number, sekunden: string) =>
-      `Fertig: ${pfade} Jahre × ${varianten} Regelvarianten in ${sekunden} s, direkt in deinem Browser.`,
+      `${pfade} Jahre × ${varianten} Regelvarianten in ${sekunden} s, direkt in deinem Browser.`,
     fehlerPrefix: 'Fehler:',
     workerAbbruch: 'Die Rechnung im Hintergrund ist abgebrochen.',
   },
 
   ergebnis: {
-    titel: 'Dein Ergebnis.',
-    titelZusatz: 'Ehrlich gerechnet.',
     groessen: { k10: 'bis 10K', k25: '20K bis 25K', k50: '50K', k100: '100K', k150: 'ab 150K' },
     unter: (pfade: string, weg: string, faktor: number | null, bot: boolean) =>
       `${pfade} simulierte Jahre je Kontotyp, Auszahlungsweg „${weg}“${faktor ? ` mit ${faktor}x Drawdown Polster` : ''}` +
       `${bot ? ', Handel per Bot' : ''}. Netto pro Monat heißt: alle Auszahlungen nach Split minus alle Gebühren (Kauf, Abo, ` +
       'Reset, Aktivierung, Fixkosten) über zwölf Monate, mit Nachkauf nach jedem verlorenen Konto.',
-    ohneKanteTitel: 'So sähe es ohne Kante aus',
-    bestMitWerten: 'Bester Kontotyp mit deinen Werten',
-    keinerMitPreis: 'keiner mit Preis in der Auswahl',
     proMonatKurz: '/ Monat',
-    bestNull: 'Bester Kontotyp mit Kante 0',
-    bestNullKlein: 'gleiche Trades und Streuung, Erwartung je Trade genau null',
-    mittelNull: (n: number) => `Mittel über alle ${n} Kontotypen mit Kante 0`,
-    mittelNullKlein: 'Ohne echte Kante gehen über viele Konten die Gebühren verloren.',
-    urteil: {
-      keinPreis: 'In dieser Auswahl gibt es keinen Kontotyp mit bekanntem Preis.',
-      keineKante: 'Deine Eingaben haben keine positive Kante. Was hier im Plus steht, kommt nicht aus deinen Trades. Über viele Konten gehen die Gebühren verloren.',
-      nichtBesser:
-        'Dein bester Wert liegt nicht über dem besten Wert ohne Kante. Mit diesen Eingaben ist das Ergebnis von Kante 0 nicht zu unterscheiden.',
-      abstand: (betrag: string) =>
-        `Dein bester Kontotyp liegt ${betrag} pro Monat über dem besten Kontotyp ohne Kante. Nur dieser Abstand kommt aus ` +
-        'deiner Kante, und nur, wenn deine Trefferquote und deine R-Werte stimmen.',
-      nullPlus:
-        ' Dass auch mit Kante 0 ein Kontotyp leicht im Plus liegt, kommt aus den vereinfachten Annahmen (sofortige Auszahlung, ' +
-        'keine Ablehnung durch die Firma) und der Streuung der Simulation, nicht aus einer Strategie.',
-    },
+    zusammenfassung: (name: string, netto: string) => `Bester Kontotyp: ${name} mit ${netto} pro Monat netto.`,
+    zusammenfassungMinus: (name: string, netto: string) =>
+      `Kein Kontotyp liegt im Plus. Am wenigsten verlierst du bei ${name} (${netto} pro Monat netto).`,
+    erwartungSatz: (e: string) => `Deine Zahlen ergeben ${e} je Trade.`,
+    rechnet: 'Rechnet …',
     sicherTitel: 'Wie sicher ist deine Kante?',
     sicherText: (erw: string, sd: string) => `Deine Eingaben ergeben ${erw} je Trade bei einer Streuung von ${sd}.`,
     sicherBand: (lo: string, hi: string, n: string) =>
@@ -249,10 +286,10 @@ export const de = {
       'sie mit 95 % Sicherheit größer als null.',
     sicherOhne: ' Ohne positive Erwartung kommt kein Plus aus deinen Trades. Über viele Konten gehen dann die Gebühren verloren.',
     schaetzung:
-      'Deine Trefferquote und deine R-Werte sind selbst Schätzungen. Stammen sie aus wenigen Trades oder aus einem Backtest, der ' +
+      'Deine Trefferquote und dein CRV sind selbst Schätzungen. Stammen sie aus wenigen Trades oder aus einem Backtest, der ' +
       'nach dem Ergebnis ausgesucht wurde, stammt ein Teil davon aus der Auswahl und nicht aus einer echten Kante. Der Rechner kann nur so ' +
       'gut sein wie diese Zahlen.',
-    topTitel: 'Die drei besten Kontotypen für deine Eingaben',
+    topTitel: 'Die drei besten Kontotypen',
     topUnter:
       'Sortiert nach Netto pro Monat in der vorsichtigeren Lesart, wenn eine Regel der Firma nicht eindeutig ist. Der beste Wert ' +
       'aus vielen Kontotypen ist immer etwas zu gut geschätzt: Auch die Simulation streut (± Angabe).',
@@ -261,12 +298,11 @@ export const de = {
     bestehen60: 'Bestehen in 60 Handelstagen',
     ohnePruefung: 'ohne Prüfung',
     ausz6: 'Erste Auszahlung in 6 Monaten',
-    mitNull: 'Mit Kante 0',
     gesprengt12: 'Gesprengt in 12 Monaten',
     gerechnetMit: (v: string) => `Gerechnet mit: ${v}.`,
     alleTitel: 'Alle Kontotypen',
     angezeigt: (a: number, b: number, bot: number) =>
-      `${a} von ${b} Kontotypen in der Auswahl${bot ? `, ${bot} ausgeblendet (Firma erlaubt keine Bots)` : ''}. Zeile antippen für Regeln, Kosten und Quellen.`,
+      `${a} von ${b} Kontotypen in der Auswahl${bot ? `, ${bot} ausgeblendet (Firma erlaubt keine Bots)` : ''}. Zeile antippen für Gründe, Regeln, Kosten und Quellen.`,
     firmen: 'Firmen',
     kontogroesse: 'Kontogröße',
     nurAktiv: 'nur aktuell angebotene',
@@ -286,8 +322,6 @@ export const de = {
       bruchTitel: 'Ein Kauf: Anteil verlorener Konten in 12 Monaten',
       netto: 'Netto / Monat',
       nettoTitel: 'Konto-Platz über 12 Monate mit Nachkauf, alle Gebühren. Darunter: 10 % bis 90 % der Jahre',
-      null: 'Kante 0',
-      nullTitel: 'Dasselbe ohne Kante: Erwartung je Trade null',
     },
     mehr: (n: number) => `Alle ${n} Kontotypen anzeigen`,
     weniger: (n: number) => `Nur die ersten ${n} anzeigen`,
@@ -316,6 +350,8 @@ export const de = {
 
   details: {
     regeln: 'Regeln',
+    vergleich: (betrag: string) =>
+      `Zum Vergleich: Ein Trader ohne Vorteil (Erwartung 0) käme mit diesem Konto auf ${betrag} pro Monat netto. Das zeigt, wie viel vom Ergebnis die Regeln allein ausmachen.`,
     live: 'Ein späteres Live-Konto rechnet der Rechner nicht mit (der Konto-Platz endet dort und wird neu gekauft).',
     kosten: 'Kosten',
     weitere: 'Weitere Kennzahlen',
@@ -348,7 +384,8 @@ export const de = {
         'Für jeden Kontotyp erzeugt der Rechner 1.000 zufällige Handelsjahre aus deinen Eingaben, keine echten Kursdaten. Ein Jahr ' +
           'hat rund 260 Handelstage. Wie viele ' +
           'Trades an einem Tag fallen, ist zufällig, im Schnitt so viele wie du pro Woche angibst. Jeder Trade gewinnt mit deiner ' +
-          'Trefferquote. Gewinner streuen um deinen Durchschnittsgewinn, Verlierer verlieren deinen Durchschnittsverlust.',
+          'Trefferquote. Ein Gewinner bringt dein CRV in R, ein Verlierer kostet 1 R, also dein Risiko. Unter „Mehr Einstellungen“ ' +
+          'lassen sich Gewinner und Verluste streuen.',
       ],
       [
         'Tag für Tag laufen dabei die Regeln der Firma mit: Drawdown (nachziehend zum Tagesschluss, in Echtzeit oder fest), ' +

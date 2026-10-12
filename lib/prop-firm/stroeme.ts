@@ -3,7 +3,8 @@
  *
  * Ein Pfad = ein Jahr Handelstage (Montag bis Freitag) mit zufällig verteilten Trades. Jeder Trade gewinnt mit der
  * Trefferquote, Gewinner streuen um den Durchschnittsgewinn (Form wählbar), Verlierer verlieren den Durchschnitts-
- * verlust. Zu jedem Pfad gehört ein Zwilling mit Kante 0: dieselben Trades, jedes Ergebnis um die Erwartung je Trade
+ * verlust (fester Stopp) oder streuen um ihn mit gelegentlich größeren Verlusten (Option verlustStreuung, ohne festen
+ * Stopp; gleicher Mittelwert, die Erwartung je Trade bleibt gleich). Zu jedem Pfad gehört ein Zwilling mit Kante 0: dieselben Trades, jedes Ergebnis um die Erwartung je Trade
  * verschoben (gleiche Form und Streuung, Netto-Erwartung 0, wie die zentrierte Null der Referenz).
  */
 import type { Strom, Trade } from './kern'
@@ -19,9 +20,12 @@ export type StromEingaben = {
   stopPunkte: number // Stopp in NQ-Punkten
   instrument: 'MNQ' | 'NQ'
   nqKurs: number // Kursniveau für Perp-Hebel und Perp-Kosten
+  verlustStreuung?: boolean // Verluste schwanken um den Durchschnittsverlust (kein fester Stopp); Standard: aus
 }
 
 export const STREUUNG_SIGMA: Record<Streuung, number> = { gleich: 0, gemischt: 0.6, wenige_grosse: 1.1 }
+/** Streuung der Verluste ohne festen Stopp (log-normal, Mittelwert = Durchschnittsverlust): etwa jeder 10. Verlust ist größer als 1,8 R. */
+export const VERLUST_SIGMA = 0.5
 export const PUNKTWERT = { MNQ: 2, NQ: 20 } as const
 export const START_DATUM = Date.UTC(2027, 0, 4) // Montag; Feiertage bleiben unberücksichtigt
 export const TAGE_IM_PFAD = 380 // Kalendertage; ein Kauf und eine Kampagne laufen 365 Tage
@@ -33,11 +37,12 @@ export function erwartungR(e: Pick<StromEingaben, 'trefferquote' | 'gewinnR' | '
 }
 
 /** Streuung (Standardabweichung) eines Trades in R. */
-export function streuungR(e: Pick<StromEingaben, 'trefferquote' | 'gewinnR' | 'verlustR' | 'streuung'>): number {
+export function streuungR(e: Pick<StromEingaben, 'trefferquote' | 'gewinnR' | 'verlustR' | 'streuung' | 'verlustStreuung'>): number {
   const p = e.trefferquote
   const s = STREUUNG_SIGMA[e.streuung]
   const zweitesMomentGewinn = e.gewinnR * e.gewinnR * Math.exp(s * s)
-  const m2 = p * zweitesMomentGewinn + (1 - p) * e.verlustR * e.verlustR
+  const sv = e.verlustStreuung ? VERLUST_SIGMA : 0
+  const m2 = p * zweitesMomentGewinn + (1 - p) * e.verlustR * e.verlustR * Math.exp(sv * sv)
   const mu = erwartungR(e)
   return Math.sqrt(Math.max(m2 - mu * mu, 0))
 }
@@ -111,11 +116,14 @@ export type Pfad = {
  * Ein Pfad: Kalender, Trades je Tag (Poisson um Trades pro Woche / 5), Ergebnisse in R.
  * MAE/MFE (Annahmen, auf der Seite erklärt): Verlierer laufen bis zum Stopp (MAE = Verlust) und lagen vorher bis
  * 0,5 R im Plus; Gewinner lagen vorher bis 0,6 R im Minus und zwischendurch bis 25 % über dem Endergebnis.
+ * Mit verlustStreuung nutzen Verlierer die Normalzahl z, die sonst nur Gewinner brauchen: keine zusätzlichen
+ * Zufallszahlen, Pfade ohne die Option bleiben bitgleich.
  */
 export function erzeugePfad(e: StromEingaben, saat: number, pfad: number): Pfad {
   const r = zufall(saat, pfad)
   const lambda = Math.max(e.tradesProWoche, 0) / 5
   const sigma = STREUUNG_SIGMA[e.streuung]
+  const sv = e.verlustStreuung ? VERLUST_SIGMA : 0
   const uhr: number[] = []
   const woche: number[] = []
   const roh: RohTrade[][] = []
@@ -137,7 +145,8 @@ export function erzeugePfad(e: StromEingaben, saat: number, pfad: number): Pfad 
         const g = sigma > 0 ? e.gewinnR * Math.exp(sigma * z - (sigma * sigma) / 2) : e.gewinnR
         liste.push({ tag: uhr.length - 1, ein, aus: ein + 20, r: g, mae: 0.6 * u1, mfe: g * (1 + 0.25 * u2), stop: false })
       } else {
-        liste.push({ tag: uhr.length - 1, ein, aus: ein + 20, r: -e.verlustR, mae: e.verlustR, mfe: 0.5 * u2, stop: true })
+        const v = sv > 0 ? e.verlustR * Math.exp(sv * z - (sv * sv) / 2) : e.verlustR
+        liste.push({ tag: uhr.length - 1, ein, aus: ein + 20, r: -v, mae: v, mfe: 0.5 * u2, stop: sv === 0 })
       }
     }
     roh.push(liste)

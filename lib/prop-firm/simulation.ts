@@ -42,7 +42,25 @@ export const METRIKEN = [
   'kaeufe', // Käufe in der Kampagne
   'kAuszTage', // Kalendertage bis zur ersten Auszahlung in der Kampagne (mit Nachkauf)
   'einsatz', // größter Kapitaleinsatz (Gebühren vor der ersten Rückzahlung)
+  'ende', // ein Kauf, 12 Monate: Index in ENDEN (woran er endet bzw. wo er steht)
+  'endeFunded', // 1 = Ende im Funded- bzw. Live-Teil, 0 = in der Prüfung
+  'consHebt', // 1 = Consistency hat das Prüfungsziel angehoben
+  'consSperre', // 1 = Consistency hat mindestens eine Auszahlung aufgeschoben
 ] as const
+
+/**
+ * Wie ein Kauf nach 12 Monaten steht: an welcher Regel er gescheitert ist (dd, dll, zeitlimit, inaktivitaet; Codes aus
+ * kern.versuch) oder dass er noch in der Prüfung ist, im Funded-Konto läuft oder regulär weiterging (Live-Konto,
+ * Auszahlungs-Höchstzahl erreicht, bestanden ohne Funded-Teil).
+ */
+export const ENDEN = ['dd', 'dll', 'zeitlimit', 'inaktivitaet', 'offen_eval', 'funded_laeuft', 'weiter'] as const
+export type Ende = (typeof ENDEN)[number]
+
+export function endeVon(v: VersuchErgebnis): Ende {
+  if (v.status === 'bruch') return (ENDEN as readonly string[]).includes(v.grund ?? '') ? (v.grund as Ende) : 'dd'
+  if (v.status === 'offen') return v.end_phase === 'eval' ? 'offen_eval' : 'funded_laeuft'
+  return 'weiter'
+}
 export const M = Object.fromEntries(METRIKEN.map((m, i) => [m, i])) as Record<(typeof METRIKEN)[number], number>
 export const N_METRIKEN = METRIKEN.length
 
@@ -87,6 +105,10 @@ function schreibe(ziel: Float64Array, zeile: number, konto: Konto, strom: Strom,
   ziel[o + M.kaeufe] = k ? k.n_kauf : NaN
   ziel[o + M.kAuszTage] = k && k.erste_ausz_tage !== null ? k.erste_ausz_tage : NaN
   ziel[o + M.einsatz] = k ? k.einsatz : NaN
+  ziel[o + M.ende] = ENDEN.indexOf(endeVon(v))
+  ziel[o + M.endeFunded] = v.status === 'bruch' ? (v.bruch_phase === 'eval' ? 0 : 1) : v.end_phase === 'eval' ? 0 : 1
+  ziel[o + M.consHebt] = v.cons_hebt ? 1 : 0
+  ziel[o + M.consSperre] = v.cons_ausz_sperren > 0 ? 1 : 0
 }
 
 /**

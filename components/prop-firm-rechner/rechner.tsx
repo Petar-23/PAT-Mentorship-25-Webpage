@@ -3,49 +3,51 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import rohDaten from '@/lib/prop-firm/daten/regeln-2026-10-09.json'
 import { ladeKonten, type RegelDaten } from '@/lib/prop-firm/konten'
-import { baueZeilen, gluecksvergleich, kantenSicherheit, schluesselFuer, verbinde } from '@/lib/prop-firm/auswertung'
+import { baueZeilen, kantenSicherheit, schluesselFuer, verbinde } from '@/lib/prop-firm/auswertung'
 import type { RohErgebnis, SimEinstellungen } from '@/lib/prop-firm/simulation'
 import { PUNKTWERT } from '@/lib/prop-firm/stroeme'
-import { setzeBeispiel, beispielStatus } from './beispiel'
-import { Ergebnisse, type Ergebnis } from './ergebnisse'
+import { Ergebnisse, unterzeile, type Ergebnis } from './ergebnisse'
+import { hauptgrund } from './scheitern'
 import { STARTS, type Form } from './start'
 import { woerterbuch, type Sprache, type Woerterbuch } from './texte'
 
 const DATEN = rohDaten as unknown as RegelDaten
 const SAAT = 20261009
+/** Nach einer Eingabe so lange warten, bevor neu gerechnet wird (Tippen soll nicht jedes Mal starten). */
+const WARTEN_MS = 600
 
 /** Eingabe -> Zahl. Deutsch: Komma ist das Dezimalzeichen. Englisch: Punkt, Komma trennt Tausender. */
-function zahlAus(s: string, sprache: Sprache): number {
+export function zahlAus(s: string, sprache: Sprache): number {
   const t = String(s).replace(/\s/g, '')
-  return Number(sprache === 'de' ? t.replace(',', '.') : t.replace(/,/g, ''))
+  if (sprache === 'en') return Number(t.replace(/,/g, ''))
+  // Deutsch: Komma ist Dezimalzeichen, Punkte trennen Tausender (1.000 oder 1.000,5); „1.5“ bleibt 1,5
+  if (t.includes(',') || /^\d{1,3}(\.\d{3})+$/.test(t)) return Number(t.replace(/\./g, '').replace(',', '.'))
+  return Number(t)
 }
 
 function pruefe(f: Form, t: Woerterbuch): { einst: SimEinstellungen | null; fehler: string[] } {
   const fehler: string[] = []
   const z = (s: string) => zahlAus(s, t.sprache)
   const p = z(f.trefferquote)
-  const w = z(f.gewinnR)
-  const l = z(f.verlustR)
+  const crv = z(f.crv)
   const tw = z(f.tradesProWoche)
   const risiko = z(f.risikoUsd)
   const stop = z(f.stopPunkte)
-  const k = z(f.kontrakte)
-  const dd = z(f.ddAnteil)
   const F = t.eingaben.fehler
   if (!(p >= 1 && p <= 99)) fehler.push(F.trefferquote)
-  if (!(w > 0 && w <= 20)) fehler.push(F.gewinn)
-  if (!(l > 0 && l <= 5)) fehler.push(F.verlust)
+  if (!(crv > 0 && crv <= 20)) fehler.push(F.crv)
   if (!(tw >= 0.2 && tw <= 60)) fehler.push(F.trades)
   if (!(stop >= 1 && stop <= 500)) fehler.push(F.stopp)
-  if (f.groessenModus === 'risiko' && !(risiko >= 1 && risiko <= 100000)) fehler.push(F.risiko)
-  if (f.groessenModus === 'kontrakte' && !(Number.isInteger(k) && k >= 1 && k <= 200)) fehler.push(F.kontrakte)
-  if (f.groessenModus === 'dd_anteil' && !(dd >= 1 && dd <= 100)) fehler.push(F.dd)
+  if (!(risiko >= 1 && risiko <= 100000)) fehler.push(F.risiko)
   if (fehler.length) return { einst: null, fehler }
   return {
     fehler,
     einst: {
-      strom: { trefferquote: p / 100, gewinnR: w, verlustR: l, tradesProWoche: tw, streuung: f.streuung, stopPunkte: stop, instrument: f.instrument, nqKurs: 20000 },
-      groessenModus: f.groessenModus, risikoUsd: risiko, kontrakte: k, ddAnteil: dd / 100, politik: f.politik,
+      strom: {
+        trefferquote: p / 100, gewinnR: crv, verlustR: 1, tradesProWoche: tw, streuung: f.streuung, stopPunkte: stop,
+        instrument: f.instrument, nqKurs: 20000, verlustStreuung: f.verlustStreuung,
+      },
+      groessenModus: 'risiko', risikoUsd: risiko, kontrakte: 1, ddAnteil: 0.1, politik: f.politik,
       politikFaktor: f.politikFaktor, botBetrieb: f.botBetrieb, perpKosten: f.perpKosten, saat: SAAT,
     },
   }
@@ -53,9 +55,11 @@ function pruefe(f: Form, t: Woerterbuch): { einst: SimEinstellungen | null; fehl
 
 type Lauf = { status: 'leer' | 'laeuft' | 'fertig' | 'fehler'; fertig: number; gesamt: number; fehler?: string }
 
+/** Vorwärts: Trefferquote, CRV, Risiko und Trades pro Woche → Ergebnis je Kontotyp. Rechnet nach jeder Änderung neu. */
 export function PropFirmRechner({ sprache }: { sprache: Sprache }) {
   const t = woerterbuch(sprache)
   const E = t.eingaben
+  const R = t.ergebnis
   const { usd, zahlText, r: rText } = t.f
   const START = STARTS[sprache]
   const eintraege = useMemo(() => ladeKonten(DATEN), [])
@@ -65,6 +69,7 @@ export function PropFirmRechner({ sprache }: { sprache: Sprache }) {
   const [ergebnis, setErgebnis] = useState<Ergebnis | null>(null)
   const workers = useRef<Worker[]>([])
   const laufId = useRef(0)
+  const angefragt = useRef('')
 
   const geprueft = useMemo(() => pruefe(form, woerterbuch(sprache)), [form, sprache])
   const formSchl = JSON.stringify(form)
@@ -107,20 +112,7 @@ export function PropFirmRechner({ sprache }: { sprache: Sprache }) {
             teile[i] = m.roh as Record<string, RohErgebnis>
             stand[i] = bis - von
             if (teile.every((x) => x !== null)) {
-              const roh = verbinde(teile as Record<string, RohErgebnis>[])
-              // Erste Rechnung mit den Startwerten: Ergebnis auch an die Beispiel-Karte im Hero geben (gleiche Zahlen wie unten)
-              if (schl === JSON.stringify(STARTS[sprache])) {
-                const vergleich = gluecksvergleich(baueZeilen(eintraege, roh, einst.botBetrieb))
-                const best = vergleich.bestKanteZeile
-                if (best && vergleich.bestKante !== null && vergleich.bestNull !== null) {
-                  const e = best.eintrag
-                  setzeBeispiel({
-                    status: 'fertig',
-                    wert: { firma: e.firma, groesse: e.groesse, programm: e.programm, variante: e.variante, netto: vergleich.bestKante, ohneKante: vergleich.bestNull },
-                  })
-                }
-              }
-              setErgebnis({ roh, einst, pfade, dauerMs: performance.now() - t0, formSchl: schl })
+              setErgebnis({ roh: verbinde(teile as Record<string, RohErgebnis>[]), einst, pfade, dauerMs: performance.now() - t0, formSchl: schl })
               setLauf({ status: 'fertig', fertig: pfade, gesamt: pfade })
             }
           } else if (m.typ === 'fehler') {
@@ -131,225 +123,219 @@ export function PropFirmRechner({ sprache }: { sprache: Sprache }) {
         w.postMessage({ typ: 'auftrag', id, einst, schluessel: alleSchluessel, von, bis })
       })
     },
-    [beende, alleSchluessel, eintraege, sprache],
+    [beende, alleSchluessel, sprache],
   )
 
-  const starte = () => {
-    const { einst } = pruefe(form, t)
-    if (!einst) return
-    if (lauf.status === 'laeuft') beende()
-    // Startwerte-Rechnung abgebrochen, bevor das Beispiel stand: Karte im Hero verweist dann auf das Ergebnis unten
-    if (beispielStatus() === 'rechnet' && formSchl !== JSON.stringify(STARTS[sprache])) setzeBeispiel({ status: 'abgebrochen' })
-    setLauf({ status: 'laeuft', fertig: 0, gesamt: form.pfade })
-    rechne(einst, form.pfade, formSchl)
-  }
+  const starte = useCallback(
+    (f: Form) => {
+      const { einst } = pruefe(f, woerterbuch(sprache))
+      if (!einst) return
+      angefragt.current = JSON.stringify(f)
+      beende()
+      setLauf({ status: 'laeuft', fertig: 0, gesamt: f.pfade })
+      rechne(einst, f.pfade, JSON.stringify(f))
+    },
+    [beende, rechne, sprache],
+  )
 
-  // Erste Rechnung mit den Startwerten (Zustand steht schon auf „läuft“); beim Verlassen Worker beenden.
-  // Im Strict Mode läuft das zweimal: Aufräumen beendet die Worker, der zweite Lauf startet frisch.
+  // Erste Rechnung mit den Startwerten; beim Verlassen Worker beenden (Strict Mode: zweiter Lauf startet frisch).
   useEffect(() => {
     const start = STARTS[sprache]
     const { einst } = pruefe(start, woerterbuch(sprache))
+    angefragt.current = JSON.stringify(start)
     if (einst) rechne(einst, start.pfade, JSON.stringify(start))
     return beende
   }, [rechne, beende, sprache])
 
-  const sicherheit = geprueft.einst ? kantenSicherheit(geprueft.einst.strom) : null
+  // Nach jeder gültigen Änderung kurz warten und neu rechnen
+  useEffect(() => {
+    if (!geprueft.einst || formSchl === angefragt.current) return
+    const id = window.setTimeout(() => starte(JSON.parse(formSchl) as Form), WARTEN_MS)
+    return () => window.clearTimeout(id)
+  }, [formSchl, geprueft.einst, starte])
 
+  const sicherheit = geprueft.einst ? kantenSicherheit(geprueft.einst.strom) : null
   const kontrakteBeiRisiko = geprueft.einst
     ? Math.floor(geprueft.einst.risikoUsd / (geprueft.einst.strom.stopPunkte * PUNKTWERT[geprueft.einst.strom.instrument]))
     : 0
-  const risikoBeiKontrakten = geprueft.einst
-    ? geprueft.einst.kontrakte * geprueft.einst.strom.stopPunkte * PUNKTWERT[geprueft.einst.strom.instrument]
-    : 0
+
+  // Zusammenfassung oben: bester Kontotyp in der Rangfolge (alle Firmen und Größen)
+  const bester = useMemo(() => {
+    if (!ergebnis) return null
+    const zeilen = baueZeilen(eintraege, ergebnis.roh, ergebnis.einst.botBetrieb).filter((z) => z.inRangfolge && z.rangNetto !== null)
+    return zeilen.sort((a, b) => (b.rangNetto as number) - (a.rangNetto as number))[0] ?? null
+  }, [ergebnis, eintraege])
 
   return (
-    <>
-      <section className="wrap rechner" id="rechner" aria-labelledby="eingaben-titel">
-        <h2 id="eingaben-titel" className="sr-only">{E.titel}</h2>
-        <form
-          className="tafel eingaben"
-          onSubmit={(ev) => {
-            ev.preventDefault()
-            starte()
-          }}
-        >
-          <div className="eingaben-grid">
-            <fieldset>
-              <legend>{E.trades}</legend>
-              <Feld label={E.trefferquote} einheit="%" wert={form.trefferquote} onChange={(v) => setze('trefferquote', v)} />
-              <div className="zwei">
-                <Feld label={E.gewinn} einheit="R" wert={form.gewinnR} onChange={(v) => setze('gewinnR', v)} />
-                <Feld label={E.verlust} einheit="R" wert={form.verlustR} onChange={(v) => setze('verlustR', v)} />
-              </div>
-              <p className="hilfe hilfe-r">{E.rHinweis}</p>
-              <Feld label={E.tradesProWoche} wert={form.tradesProWoche} onChange={(v) => setze('tradesProWoche', v)} />
-              <div className="feld">
-                <span id="streuung-l">{E.gewinner}</span>
-                <Wahl
-                  label="streuung-l"
-                  wert={form.streuung}
-                  onChange={(v) => setze('streuung', v)}
-                  optionen={[
-                    ['gleich', E.streuung.gleich],
-                    ['gemischt', E.streuung.gemischt],
-                    ['wenige_grosse', E.streuung.wenige_grosse],
-                  ]}
-                />
-                <span className="hilfe">{E.streuungHilfe}</span>
-              </div>
-            </fieldset>
+    <div className="vor">
+      {bester && bester.rangNetto !== null && (
+        <p className="zf-kurz" aria-hidden="true">
+          <b className={`num ${bester.rangNetto > 0 ? '' : 'minus'}`}>{usd(bester.rangNetto, true)}</b> {R.proMonatKurz} · {bester.eintrag.firma} {t.f.groesseKurz(bester.eintrag.groesse)}
+        </p>
+      )}
+      <form
+        className="eingabe-feld"
+        aria-labelledby="vor-eingabe"
+        onSubmit={(ev) => {
+          ev.preventDefault()
+          starte(form)
+        }}
+      >
+        <p className="ebene" id="vor-eingabe">{t.modi.eingabe}</p>
+        <div className="eingabe-haupt">
+          <Feld label={E.trefferquote} einheit="%" wert={form.trefferquote} onChange={(v) => setze('trefferquote', v)} />
+          <Feld label={E.crv} einheit=": 1" wert={form.crv} onChange={(v) => setze('crv', v)} />
+          <Feld label={E.risiko} einheit="USD" wert={form.risikoUsd} onChange={(v) => setze('risikoUsd', v)} />
+          <Feld label={E.tradesProWoche} wert={form.tradesProWoche} onChange={(v) => setze('tradesProWoche', v)} />
+        </div>
+        <p className="hilfe">{E.crvHilfe} {E.rHinweis}</p>
+        {geprueft.fehler.length > 0 && <p className="warnung" role="alert">{E.bittePruefen} {geprueft.fehler.join(' · ')}</p>}
 
-            <fieldset>
-              <legend>{E.groesse}</legend>
+        <details className="mehr-einst">
+          <summary>{E.mehrEinstellungen}</summary>
+          <div className="mehr-grid">
+            <div className="feld">
+              <span id="streuung-l">{E.gewinner}</span>
+              <Wahl
+                label="streuung-l"
+                wert={form.streuung}
+                onChange={(v) => setze('streuung', v)}
+                optionen={[['gleich', E.streuung.gleich], ['gemischt', E.streuung.gemischt], ['wenige_grosse', E.streuung.wenige_grosse]]}
+              />
+              <span className="hilfe">{E.streuungHilfe}</span>
+            </div>
+            <label className="schalter">
+              <input type="checkbox" checked={form.verlustStreuung} onChange={(ev) => setze('verlustStreuung', ev.target.checked)} />
+              <span>
+                {E.verlustStreuung}
+                <small>{E.verlustStreuungHilfe}</small>
+              </span>
+            </label>
+            <div className="zwei">
               <div className="feld">
-                <span id="modus-l">{E.groesseUeber}</span>
-                <Wahl
-                  label="modus-l"
-                  wert={form.groessenModus}
-                  onChange={(v) => setze('groessenModus', v)}
-                  optionen={[
-                    ['risiko', E.modus.risiko],
-                    ['kontrakte', E.modus.kontrakte],
-                    ['dd_anteil', E.modus.dd_anteil],
-                  ]}
-                />
+                <span id="instr-l">{E.instrument}</span>
+                <Wahl label="instr-l" wert={form.instrument} onChange={(v) => setze('instrument', v)} optionen={[['MNQ', 'MNQ'], ['NQ', 'NQ']]} />
               </div>
-              {form.groessenModus === 'risiko' && (
-                <Feld label={E.risiko} einheit="USD" wert={form.risikoUsd} onChange={(v) => setze('risikoUsd', v)} />
-              )}
-              {form.groessenModus === 'kontrakte' && (
-                <Feld label={E.kontrakte} wert={form.kontrakte} onChange={(v) => setze('kontrakte', v)} />
-              )}
-              {form.groessenModus === 'dd_anteil' && (
-                <Feld label={E.ddAnteil} einheit="%" wert={form.ddAnteil} onChange={(v) => setze('ddAnteil', v)} hilfe={E.ddHilfe} />
-              )}
-              <div className="zwei">
-                <div className="feld">
-                  <span id="instr-l">{E.instrument}</span>
-                  <Wahl label="instr-l" wert={form.instrument} onChange={(v) => setze('instrument', v)} optionen={[['MNQ', 'MNQ'], ['NQ', 'NQ']]} />
-                </div>
-                <Feld label={E.stopp} einheit={E.punkte} wert={form.stopPunkte} onChange={(v) => setze('stopPunkte', v)} />
-              </div>
-              {geprueft.einst && form.groessenModus === 'risiko' && (
-                <p className="hilfe">
-                  {E.futuresHinweis(
-                    kontrakteBeiRisiko,
-                    form.instrument,
-                    usd(kontrakteBeiRisiko * geprueft.einst.strom.stopPunkte * PUNKTWERT[form.instrument]),
-                    usd(geprueft.einst.risikoUsd),
-                  )}
-                </p>
-              )}
-              {geprueft.einst && form.groessenModus === 'kontrakte' && <p className="hilfe">{E.kontrakteHinweis(usd(risikoBeiKontrakten))}</p>}
-              {geprueft.einst && form.groessenModus === 'risiko' && kontrakteBeiRisiko === 0 && <p className="warnung">{E.keinKontrakt}</p>}
-            </fieldset>
-
-            <fieldset>
-              <legend>{E.rahmen}</legend>
-              <div className="feld">
-                <span id="politik-l">{E.weg}</span>
-                <Wahl
-                  label="politik-l"
-                  wert={form.politik}
-                  onChange={(v) => setze('politik', v)}
-                  optionen={[
-                    ['A', `A: ${t.politik.A.name}`],
-                    ['B', `B: ${t.politik.B.name}`],
-                    ['C', `C: ${t.politik.C.name}`],
-                  ]}
-                />
-                <p className="hilfe">{t.politik[form.politik].kurz}</p>
-              </div>
-              {form.politik !== 'A' && (
-                <div className="feld">
-                  <span id="polster-l">{E.polster}</span>
-                  <Wahl
-                    label="polster-l"
-                    wert={String(form.politikFaktor) as '1' | '2'}
-                    onChange={(v) => setze('politikFaktor', v === '2' ? 2 : 1)}
-                    optionen={[['1', E.polsterOptionen['1']], ['2', E.polsterOptionen['2']]]}
-                  />
-                </div>
-              )}
-              <label className="schalter">
-                <input type="checkbox" checked={form.botBetrieb} onChange={(ev) => setze('botBetrieb', ev.target.checked)} />
-                <span>
-                  {E.bot}
-                  <small>{E.botHilfe}</small>
-                </span>
-              </label>
-              <label className="schalter">
-                <input type="checkbox" checked={form.perpKosten} onChange={(ev) => setze('perpKosten', ev.target.checked)} />
-                <span>
-                  {E.perp}
-                  <small>{E.perpHilfe}</small>
-                </span>
-              </label>
-              <div className="feld">
-                <span id="pfade-l">{E.genauigkeit}</span>
-                <Wahl
-                  label="pfade-l"
-                  wert={String(form.pfade) as '300' | '1000' | '3000'}
-                  onChange={(v) => setze('pfade', Number(v))}
-                  optionen={[['300', E.pfade['300']], ['1000', E.pfade['1000']], ['3000', E.pfade['3000']]]}
-                />
-                <span className="hilfe">{E.pfadeHilfe(zahlText(form.pfade))}</span>
-              </div>
-            </fieldset>
-          </div>
-
-          {sicherheit && (
-            <dl className="kante" aria-live="polite">
-              <div>
-                <dt>{E.erwartung}</dt>
-                <dd className={`num ${sicherheit.erwartung > 0 ? 'plus' : 'minus'}`}>{rText(sicherheit.erwartung)}</dd>
-              </div>
-              <div>
-                <dt>{E.streuungJeTrade}</dt>
-                <dd className="num">{rText(sicherheit.sd, false)}</dd>
-              </div>
-              <div className="kante-beleg">
-                <dt>{E.belegTitel}</dt>
-                {sicherheit.tradesNoetig ? (
-                  <dd>
-                    <b className="num">{E.beleg(zahlText(sicherheit.tradesNoetig))}</b> <span>{E.belegText}</span>
-                  </dd>
-                ) : (
-                  <dd>
-                    <b className="minus">{E.keineKanteWert}</b> <span>{E.keineKante}</span>
-                  </dd>
+              <Feld label={E.stopp} einheit={E.punkte} wert={form.stopPunkte} onChange={(v) => setze('stopPunkte', v)} />
+            </div>
+            <p className="hilfe">{E.stoppSatz}</p>
+            {geprueft.einst && (
+              <p className="hilfe">
+                {E.futuresHinweis(
+                  kontrakteBeiRisiko,
+                  form.instrument,
+                  usd(kontrakteBeiRisiko * geprueft.einst.strom.stopPunkte * PUNKTWERT[form.instrument]),
+                  usd(geprueft.einst.risikoUsd),
                 )}
-              </div>
-            </dl>
-          )}
-          {geprueft.fehler.length > 0 && (
-            <p className="warnung" role="alert">{E.bittePruefen} {geprueft.fehler.join(' · ')}</p>
-          )}
-          <div className="aktion">
-            <button className="btn btn-inv knopf" type="submit" disabled={!geprueft.einst}>
-              {lauf.status === 'laeuft' ? E.neuStarten : E.berechnen}
-            </button>
-            {lauf.status === 'laeuft' && (
-              <div className="fortschritt" role="status">
-                <span>{E.fortschritt(zahlText(lauf.fertig), zahlText(lauf.gesamt))}</span>
-                <div className="balken"><span style={{ width: `${lauf.gesamt ? (100 * lauf.fertig) / lauf.gesamt : 0}%` }} /></div>
+              </p>
+            )}
+            {geprueft.einst && kontrakteBeiRisiko === 0 && <p className="warnung">{E.keinKontrakt}</p>}
+            <div className="feld">
+              <span id="politik-l">{E.weg}</span>
+              <Wahl
+                label="politik-l"
+                wert={form.politik}
+                onChange={(v) => setze('politik', v)}
+                optionen={[['A', `A: ${t.politik.A.name}`], ['B', `B: ${t.politik.B.name}`], ['C', `C: ${t.politik.C.name}`]]}
+              />
+              <span className="hilfe">{t.politik[form.politik].kurz}</span>
+            </div>
+            {form.politik !== 'A' && (
+              <div className="feld">
+                <span id="polster-l">{E.polster}</span>
+                <Wahl
+                  label="polster-l"
+                  wert={String(form.politikFaktor) as '1' | '2'}
+                  onChange={(v) => setze('politikFaktor', v === '2' ? 2 : 1)}
+                  optionen={[['1', E.polsterOptionen['1']], ['2', E.polsterOptionen['2']]]}
+                />
               </div>
             )}
-            {lauf.status !== 'laeuft' && veraltet && <span className="hinweis">{E.veraltet}</span>}
-            {lauf.status === 'fertig' && !veraltet && ergebnis && (
-              <span className="status">{E.fertig(zahlText(ergebnis.pfade), alleSchluessel.length, zahlText(ergebnis.dauerMs / 1000, 1))}</span>
-            )}
-            {lauf.status === 'fehler' && <span className="hinweis" role="alert">{E.fehlerPrefix} {lauf.fehler}</span>}
+            <label className="schalter">
+              <input type="checkbox" checked={form.botBetrieb} onChange={(ev) => setze('botBetrieb', ev.target.checked)} />
+              <span>
+                {E.bot}
+                <small>{E.botHilfe}</small>
+              </span>
+            </label>
+            <label className="schalter">
+              <input type="checkbox" checked={form.perpKosten} onChange={(ev) => setze('perpKosten', ev.target.checked)} />
+              <span>
+                {E.perp}
+                <small>{E.perpHilfe}</small>
+              </span>
+            </label>
+            <div className="feld">
+              <span id="pfade-l">{E.genauigkeit}</span>
+              <Wahl
+                label="pfade-l"
+                wert={String(form.pfade) as '500' | '1500' | '3000'}
+                onChange={(v) => setze('pfade', Number(v))}
+                optionen={[['500', E.pfade['500']], ['1500', E.pfade['1500']], ['3000', E.pfade['3000']]]}
+              />
+              <span className="hilfe">{E.pfadeHilfe(zahlText(form.pfade))}</span>
+            </div>
           </div>
-        </form>
+        </details>
+      </form>
+
+      <section className="zusammenfassung" aria-live="polite" aria-labelledby="vor-ergebnis">
+        <p className="ebene" id="vor-ergebnis">{t.modi.ergebnis}</p>
+        {bester && bester.rangNetto !== null ? (
+          <>
+            <p className="zf-zahl">
+              <b className={`num ${bester.rangNetto > 0 ? '' : 'minus'}`}>{usd(bester.rangNetto, true)}</b>
+              <span>{R.proMonatKurz}</span>
+            </p>
+            <p className="zf-satz">
+              {bester.rangNetto > 0
+                ? R.zusammenfassung(`${bester.eintrag.firma} ${t.f.groesseKurz(bester.eintrag.groesse)}`, usd(bester.rangNetto, true))
+                : R.zusammenfassungMinus(`${bester.eintrag.firma} ${t.f.groesseKurz(bester.eintrag.groesse)}`, usd(bester.rangNetto, true))}{' '}
+              <span className="zf-klein">{unterzeile(bester.eintrag, t)}</span>
+            </p>
+            <p className="zf-satz zf-grund">{hauptgrund(bester.kante, t)}</p>
+          </>
+        ) : (
+          <p className="zf-satz">{R.rechnet}</p>
+        )}
+        {sicherheit && <p className="zf-satz zf-klein">{R.erwartungSatz(rText(sicherheit.erwartung))}</p>}
+        <div className="zf-status">
+          {lauf.status === 'laeuft' && (
+            <div className="fortschritt" role="status">
+              <span>{E.fortschritt(zahlText(lauf.fertig), zahlText(lauf.gesamt))}</span>
+              <div className="balken"><span style={{ width: `${lauf.gesamt ? (100 * lauf.fertig) / lauf.gesamt : 0}%` }} /></div>
+            </div>
+          )}
+          {lauf.status === 'fertig' && !veraltet && ergebnis && (
+            <span className="status">{E.fertig(zahlText(ergebnis.pfade), alleSchluessel.length, zahlText(ergebnis.dauerMs / 1000, 1))}</span>
+          )}
+          {lauf.status === 'fehler' && <span className="hinweis" role="alert">{E.fehlerPrefix} {lauf.fehler}</span>}
+        </div>
+        {sicherheit && (
+          <details className="warum">
+            <summary>{t.modi.warum}</summary>
+            <p>
+              {R.sicherText(rText(sicherheit.erwartung), rText(sicherheit.sd, false))}
+              {sicherheit.tradesNoetig
+                ? R.sicherBand(rText(sicherheit.erwartung - sicherheit.band100), rText(sicherheit.erwartung + sicherheit.band100), zahlText(sicherheit.tradesNoetig))
+                : R.sicherOhne}
+            </p>
+            <p>{R.schaetzung}</p>
+            {ergebnis && (
+              <p>
+                {R.unter(zahlText(ergebnis.pfade), t.politik[ergebnis.einst.politik].name, ergebnis.einst.politik !== 'A' ? ergebnis.einst.politikFaktor : null, ergebnis.einst.botBetrieb)}
+              </p>
+            )}
+          </details>
+        )}
       </section>
 
       {ergebnis && <Ergebnisse ergebnis={ergebnis} eintraege={eintraege} daten={DATEN} veraltet={veraltet} sprache={sprache} />}
-    </>
+    </div>
   )
 }
 
-function Feld({ label, einheit, wert, onChange, hilfe }: { label: string; einheit?: string; wert: string; onChange: (v: string) => void; hilfe?: string }) {
+export function Feld({ label, einheit, wert, onChange, hilfe }: { label: string; einheit?: string; wert: string; onChange: (v: string) => void; hilfe?: string }) {
   return (
     <label className="feld">
       <span>{label}</span>
@@ -363,7 +349,7 @@ function Feld({ label, einheit, wert, onChange, hilfe }: { label: string; einhei
 }
 
 /** Segmentierte Auswahl (eine Option aktiv). Eigene Klasse, damit die Landing-Regeln für .seg (Farbschema-Schalter) nicht greifen. */
-function Wahl<T extends string>({ label, wert, onChange, optionen }: { label: string; wert: T; onChange: (v: T) => void; optionen: [T, string][] }) {
+export function Wahl<T extends string>({ label, wert, onChange, optionen }: { label: string; wert: T; onChange: (v: T) => void; optionen: [T, string][] }) {
   return (
     <div className="wahl" role="group" aria-labelledby={label}>
       {optionen.map(([v, text]) => (
