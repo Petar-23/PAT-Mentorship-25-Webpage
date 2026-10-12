@@ -1,4 +1,7 @@
+'use client'
+
 import { ENDEN, type Ende } from '@/lib/prop-firm/simulation'
+import { Erklaerung, Wachsen } from './bewegung'
 import { woerterbuch, type Sprache, type Woerterbuch } from './texte'
 
 const FEHLER: readonly Ende[] = ['dd', 'dll', 'zeitlimit', 'inaktivitaet']
@@ -36,22 +39,28 @@ export function hauptgrund(a: EndenAnteile, t: Woerterbuch): string {
   return t.enden.hauptgrund(name(f[0], t), t.f.pct(f[0].anteil))
 }
 
-/** „Woran es scheitert“: Balken mit den Anteilen und je Ausgang ein Satz Erklärung. */
-export function Scheitern({ anteile, sprache, titel = true }: { anteile: EndenAnteile; sprache: Sprache; titel?: boolean }) {
+/**
+ * „Woran es scheitert“: Balken, der von links wächst, die Ausgänge mit Anteil, Erklärungen erst auf Wunsch.
+ * kompakt: nur die drei größten Posten (Zusammenfassung oben).
+ */
+export function Scheitern({ anteile, sprache, titel = true, kompakt = false }: { anteile: EndenAnteile; sprache: Sprache; titel?: boolean; kompakt?: boolean }) {
   const t = woerterbuch(sprache)
   const E = t.enden
-  const liste = posten(anteile)
+  const alle = posten(anteile)
+  const liste = kompakt ? alle.slice(0, 3) : alle
+  // Startpunkt je Segment (für die gestaffelte Verzögerung beim Wachsen)
+  const starts = alle.map((_, i) => alle.slice(0, i).reduce((s, p) => s + p.anteil, 0))
   return (
-    <div className="scheitern">
+    <div className={`scheitern${kompakt ? ' kompakt' : ''}`}>
       {titel && (
         <>
           <h4>{E.titel}</h4>
-          <p className="scheitern-unter">{E.unter}</p>
+          {!kompakt && <p className="scheitern-unter">{E.unter}</p>}
         </>
       )}
       <div className="scheitern-balken" aria-hidden="true">
-        {liste.map((p) => (
-          <i key={p.schluessel} className={p.fehler ? 'fehler' : `ok ${p.ende}`} style={{ width: `${p.anteil * 100}%` }} />
+        {alle.map((p, i) => (
+          <Wachsen key={p.schluessel} anteil={p.anteil} verzoegerung={0.05 + starts[i] * 0.35 + i * 0.02} klasse={p.fehler ? 'fehler' : `ok ${p.ende}`} />
         ))}
       </div>
       <ul>
@@ -61,12 +70,20 @@ export function Scheitern({ anteile, sprache, titel = true }: { anteile: EndenAn
               <span>{name(p, t)}</span>
               <b className="num">{t.f.pct(p.anteil)}</b>
             </span>
-            <small>{E.erklaerung[p.ende]}</small>
           </li>
         ))}
       </ul>
-      {anteile.consHebt >= 0.005 && <p className="scheitern-notiz">{E.consHebt(t.f.pct(anteile.consHebt))}</p>}
-      {anteile.consSperre >= 0.005 && <p className="scheitern-notiz">{E.consSperre(t.f.pct(anteile.consSperre))}</p>}
+      <Erklaerung titel={t.wz.wasHeisst} klasse="erkl-klein">
+        <ul className="scheitern-erkl">
+          {liste.map((p) => (
+            <li key={p.schluessel}>
+              <b>{name(p, t)}:</b> {E.erklaerung[p.ende]}
+            </li>
+          ))}
+        </ul>
+        {anteile.consHebt >= 0.005 && <p className="scheitern-notiz">{E.consHebt(t.f.pct(anteile.consHebt))}</p>}
+        {anteile.consSperre >= 0.005 && <p className="scheitern-notiz">{E.consSperre(t.f.pct(anteile.consSperre))}</p>}
+      </Erklaerung>
     </div>
   )
 }

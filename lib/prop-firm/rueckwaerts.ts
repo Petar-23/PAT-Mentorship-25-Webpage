@@ -19,10 +19,10 @@ import { erzeugePfad, stromAusPfad } from './stroeme'
 import type { StromEingaben } from './stroeme'
 
 export const RW = {
-  version: 1,
+  version: 2,
   crv: [1, 1.5, 2, 3],
-  /** Risiko je Trade als Anteil am Drawdown der jeweiligen Phase */
-  risiko: [0.05, 0.1, 0.15, 0.25],
+  /** Risiko je Trade als Anteil am Drawdown der jeweiligen Phase; höchstens 10 % (Petars Vorgabe, 12.10.2026) */
+  risiko: [0.025, 0.05, 0.075, 0.1],
   /** Trefferquoten-Raster 10 % bis 80 % in 2,5-%-Schritten; darüber gilt ein Ziel als „kaum erreichbar“ */
   trefferquoten: Array.from({ length: 29 }, (_, i) => Math.round((0.1 + 0.025 * i) * 1000) / 1000),
   tradesProWoche: [2, 5, 10, 20],

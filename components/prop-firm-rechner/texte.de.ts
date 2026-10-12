@@ -148,7 +148,7 @@ export const de = {
     soGerechnet: 'So ist gerechnet',
     soGerechnetText: (pfade: string) =>
       `Ein Konto-Platz mit Nachkauf nach jedem verlorenen Konto, Auszahlungsweg „Nimm und geh“. Verlierer −1 R, Gewinner +CRV R. ` +
-      `MNQ mit 20 Punkten Stopp, Risiko je Trade als Anteil am Drawdown (5, 10, 15 oder 25 %), es zählt der Anteil, mit dem das ` +
+      `MNQ mit 20 Punkten Stopp, Risiko je Trade als Anteil am Drawdown (2,5, 5, 7,5 oder 10 %), es zählt der Anteil, mit dem das ` +
       `Ziel am leichtesten erreicht wird. Je Rasterpunkt ${pfade} simulierte Konto-Plätze, vorab gerechnet. Regeln in der ` +
       'Standard-Lesart, nur aktuell angebotene Kontotypen mit bekanntem Preis.',
     zielGrenze: (min: string, max: string) => `Vorgerechnet sind Ziele von ${min} bis ${max}.`,
@@ -207,6 +207,111 @@ export const de = {
     consSperre: (a: string) => `Consistency hat bei ${a} der Käufe eine Auszahlung aufgeschoben.`,
     hauptgrund: (name: string, anteil: string) => `meist: ${name} (${anteil})`,
     keinScheitern: 'scheitert selten',
+  },
+
+  /** Geführter Ablauf (eine Frage je Schritt) und Ergebnis. */
+  wz: {
+    aria: 'Prop-Firm-Rechner, Schritt für Schritt',
+    schritt: (i: number, n: number) => `Schritt ${i} von ${n}`,
+    zurueck: 'Zurück',
+    weiter: 'Weiter',
+    ergebnisZeigen: 'Ergebnis zeigen',
+    neu: 'Neu starten',
+    aendern: 'Antworten ändern',
+    wasHeisst: 'Was heißt das?',
+    kenneZahlen: 'Ich kenne meine Zahlen',
+    kenneZahlenKurz: 'Trefferquote und CRV eingeben und sehen, was sie bei jedem Konto bringen',
+    vomZiel: 'Lieber vom Ziel aus rechnen',
+    rechnet: (n: number) => `Rechne ${n} Kontotypen mit deinen Antworten durch …`,
+    rechnetZeilen: ['Regeln je Firma', 'Gebühren, Resets und Nachkauf', 'nötige Trefferquote je Konto'],
+    fragen: {
+      ziel: {
+        frage: 'Wie viel willst du ausgezahlt bekommen?',
+        unter: 'Netto, also nach allen Gebühren.',
+        erklaerung:
+          'Gemeint ist die Summe aller Auszahlungen nach dem Split der Firma, minus alles, was du bezahlst: Kauf oder Abo, Resets, ' +
+          'Aktivierung. Geht ein Konto verloren, kauft der Rechner ein neues, und das kostet mit.',
+      },
+      zeit: {
+        frage: 'Bis wann?',
+        unter: 'Gerechnet ab dem ersten Kauf.',
+        erklaerung:
+          'Prüfung, Funded-Konto und Auszahlungsregeln brauchen Zeit: Viele Firmen zahlen erst nach mehreren Gewinntagen aus. ' +
+          'Kurze Zeiträume verlangen deshalb deutlich mehr.',
+      },
+      tpw: {
+        frage: 'Wie oft handelst du?',
+        unter: 'Trades pro Woche, im Schnitt.',
+        erklaerung:
+          'Mehr Trades bringen dich schneller ans Ziel, aber auch schneller an den Drawdown. Der Rechner verteilt die Trades ' +
+          'zufällig auf die Handelstage.',
+      },
+      crv: {
+        frage: 'Mit welchem CRV handelst du?',
+        unter: 'Ziel-Abstand geteilt durch Stopp-Abstand.',
+        erklaerung:
+          'CRV 2 heißt: Dein Ziel liegt doppelt so weit weg wie dein Stopp. Ein Gewinner bringt dann 2 R, ein Verlierer kostet 1 R, ' +
+          'also dein Risiko. Je höher das CRV, desto seltener musst du richtig liegen.',
+      },
+      sicher: {
+        frage: 'Wie sicher soll es sein?',
+        unter: 'In wie vielen von 10 simulierten Fällen das Ziel erreicht sein soll.',
+        erklaerung:
+          '5 von 10 heißt: In der Hälfte der simulierten Fälle klappt es, in der anderen Hälfte nicht. 9 von 10 ist deutlich ' +
+          'vorsichtiger und verlangt eine höhere Trefferquote.',
+      },
+      treffer: {
+        frage: 'Wie oft liegst du richtig?',
+        unter: 'Deine Trefferquote in Prozent.',
+        erklaerung: 'Der Anteil deiner Trades, die im Gewinn enden. Am besten aus vielen echten Trades, nicht aus einer Handvoll.',
+      },
+      risiko: {
+        frage: 'Wie viel riskierst du pro Trade?',
+        unter: 'In USD. Das ist 1 R.',
+        erklaerung:
+          'Der Betrag, den du verlierst, wenn der Stopp greift. Bei Futures rechnet der Rechner daraus ganze Kontrakte (MNQ mit ' +
+          '20 Punkten Stopp, im Ergebnis änderbar).',
+      },
+    },
+    sicherHinweis: { '5': 'jeder zweite Fall', '7': 'vorsichtig', '9': 'sehr vorsichtig' } as Record<string, string>,
+    proWoche: 'pro Woche',
+    crvSkizze: { stopp: 'Stopp', ziel: 'Ziel', einstieg: 'Einstieg' },
+    crvAnders: 'anderer Wert',
+    ergebnisKicker: 'Dein bestes Konto für diese Antworten',
+    braucht: 'braucht',
+    trefferquote: 'Trefferquote',
+    beiCrv: (c: string) => `bei CRV ${c}`,
+    antworten: (ziel: string, zeit: string, tpw: string, sicher: number) =>
+      `${ziel} netto in ${zeit} · ${tpw} Trades pro Woche · ${sicher} von 10 Fällen`,
+    weitere: 'Weitere Konten',
+    weitereUnter: 'Sortiert nach der nötigen Trefferquote bei deinem CRV. Antippen für Details.',
+    andereCrv: 'Bei anderem CRV',
+    keinKonto: (crv: string) =>
+      `Mit CRV ${crv} kaum erreichbar: Kein Kontotyp schafft dieses Ziel in dieser Zeit mit höchstens 80 % Trefferquote. ` +
+      'Probier ein höheres CRV, mehr Zeit oder ein kleineres Ziel.',
+    vorKicker: 'Was deine Zahlen bringen',
+    annahmen: 'Annahmen anpassen',
+  },
+
+  /** CTA-Karte am Ende: genau drei Wege weiter. */
+  cta: {
+    titel: 'Wie es weitergeht',
+    folgen: { titel: 'Folge mir auf X und YouTube', text: 'Was ich gerade teste, was trägt und was nicht.', x: 'X', yt: 'YouTube' },
+    lab: {
+      titel: 'Werde Mitglied im AI Lab',
+      text: 'Mein Forschungs-Newsletter auf Substack, englischsprachig: KI-Agenten testen Strategien auf Daten, die sie nie gesehen haben.',
+    },
+    etoro: {
+      titel: 'Erster Monat Mentorship gratis, gesponsert von eToro',
+      zusatz: '',
+      bedingung: (min: string) =>
+        `So geht’s: eToro-Konto über meinen Partnerlink eröffnen und ${min} einzahlen, dann bekommst du deinen Code für den ` +
+        'ersten Monat. Traden musst du nicht.',
+      knopf: 'Konto bei eToro eröffnen',
+      wie: 'Alle Schritte',
+      anzeige: 'Anzeige',
+      risikoTitel: 'Risikohinweis:',
+    },
   },
 
   eingaben: {

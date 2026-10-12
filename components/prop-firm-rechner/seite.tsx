@@ -8,10 +8,9 @@ import { SiteHeader } from '@/components/landing-v3/sections/site-header'
 import { THEME_BOOT_SCRIPT } from '@/components/landing-v3/theme-core'
 import rohDaten from '@/lib/prop-firm/daten/regeln-2026-10-09.json'
 import type { RegelDaten } from '@/lib/prop-firm/konten'
-import { Angebot } from './angebot'
 import { Hintergrund } from './hintergrund'
 import { PFADE } from './pfade'
-import { Modi } from './modi'
+import { Wizard } from './wizard'
 import { woerterbuch, type Sprache } from './texte'
 
 const DATEN = rohDaten as unknown as RegelDaten
@@ -72,8 +71,7 @@ export function RechnerSeite({ sprache }: { sprache: Sprache }) {
           <p className="sub rise">{S.lead(anzahl)}</p>
         </div>
       </section>
-      <Modi sprache={sprache} />
-      <Angebot sprache={sprache} />
+      <Wizard sprache={sprache} />
       <Hintergrund daten={DATEN} sprache={sprache} />
       <SiteFooter sprache={sprache} />
       <HeaderScrollState />

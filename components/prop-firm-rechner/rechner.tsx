@@ -7,8 +7,9 @@ import { baueZeilen, kantenSicherheit, schluesselFuer, verbinde } from '@/lib/pr
 import type { RohErgebnis, SimEinstellungen } from '@/lib/prop-firm/simulation'
 import { PUNKTWERT } from '@/lib/prop-firm/stroeme'
 import { Ergebnisse, unterzeile, type Ergebnis } from './ergebnisse'
-import { hauptgrund } from './scheitern'
-import { STARTS, type Form } from './start'
+import { Scheitern } from './scheitern'
+import { Erklaerung, Zaehler } from './bewegung'
+import { type Form } from './start'
 import { woerterbuch, type Sprache, type Woerterbuch } from './texte'
 
 const DATEN = rohDaten as unknown as RegelDaten
@@ -25,7 +26,7 @@ export function zahlAus(s: string, sprache: Sprache): number {
   return Number(t)
 }
 
-function pruefe(f: Form, t: Woerterbuch): { einst: SimEinstellungen | null; fehler: string[] } {
+export function pruefe(f: Form, t: Woerterbuch): { einst: SimEinstellungen | null; fehler: string[] } {
   const fehler: string[] = []
   const z = (s: string) => zahlAus(s, t.sprache)
   const p = z(f.trefferquote)
@@ -55,17 +56,23 @@ function pruefe(f: Form, t: Woerterbuch): { einst: SimEinstellungen | null; fehl
 
 type Lauf = { status: 'leer' | 'laeuft' | 'fertig' | 'fehler'; fertig: number; gesamt: number; fehler?: string }
 
-/** Vorwärts: Trefferquote, CRV, Risiko und Trades pro Woche → Ergebnis je Kontotyp. Rechnet nach jeder Änderung neu. */
-export function PropFirmRechner({ sprache }: { sprache: Sprache }) {
+/**
+ * Vorwärts-Ergebnis im geführten Ablauf: rechnet die Antworten (Trefferquote, CRV, Risiko, Trades pro Woche) in Workern
+ * gegen alle Kontotypen, sofort beim Öffnen und nach jeder Änderung der Annahmen. Zusammenfassung, Gründe, Top 3, Tabelle.
+ */
+export function VorErgebnis({ sprache, form, setForm, onAendern }: {
+  sprache: Sprache
+  form: Form
+  setForm: (f: (alt: Form) => Form) => void
+  onAendern: () => void
+}) {
   const t = woerterbuch(sprache)
   const E = t.eingaben
   const R = t.ergebnis
   const { usd, zahlText, r: rText } = t.f
-  const START = STARTS[sprache]
   const eintraege = useMemo(() => ladeKonten(DATEN), [])
   const alleSchluessel = useMemo(() => eintraege.flatMap((e) => e.rechnungen.map((r) => schluesselFuer(e.id, r.name))), [eintraege])
-  const [form, setForm] = useState<Form>(START)
-  const [lauf, setLauf] = useState<Lauf>({ status: 'laeuft', fertig: 0, gesamt: START.pfade })
+  const [lauf, setLauf] = useState<Lauf>({ status: 'laeuft', fertig: 0, gesamt: form.pfade })
   const [ergebnis, setErgebnis] = useState<Ergebnis | null>(null)
   const workers = useRef<Worker[]>([])
   const laufId = useRef(0)
@@ -74,7 +81,6 @@ export function PropFirmRechner({ sprache }: { sprache: Sprache }) {
   const geprueft = useMemo(() => pruefe(form, woerterbuch(sprache)), [form, sprache])
   const formSchl = JSON.stringify(form)
   const veraltet = ergebnis !== null && ergebnis.formSchl !== formSchl
-
   const setze = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }))
 
   const beende = useCallback(() => {
@@ -138,19 +144,14 @@ export function PropFirmRechner({ sprache }: { sprache: Sprache }) {
     [beende, rechne, sprache],
   )
 
-  // Erste Rechnung mit den Startwerten; beim Verlassen Worker beenden (Strict Mode: zweiter Lauf startet frisch).
-  useEffect(() => {
-    const start = STARTS[sprache]
-    const { einst } = pruefe(start, woerterbuch(sprache))
-    angefragt.current = JSON.stringify(start)
-    if (einst) rechne(einst, start.pfade, JSON.stringify(start))
-    return beende
-  }, [rechne, beende, sprache])
+  // Beim Verlassen Worker beenden
+  useEffect(() => beende, [beende])
 
-  // Nach jeder gültigen Änderung kurz warten und neu rechnen
+  // Sofort beim Öffnen rechnen, danach nach jeder gültigen Änderung kurz warten und neu rechnen
   useEffect(() => {
     if (!geprueft.einst || formSchl === angefragt.current) return
-    const id = window.setTimeout(() => starte(JSON.parse(formSchl) as Form), WARTEN_MS)
+    const sofort = angefragt.current === ''
+    const id = window.setTimeout(() => starte(JSON.parse(formSchl) as Form), sofort ? 0 : WARTEN_MS)
     return () => window.clearTimeout(id)
   }, [formSchl, geprueft.einst, starte])
 
@@ -159,40 +160,58 @@ export function PropFirmRechner({ sprache }: { sprache: Sprache }) {
     ? Math.floor(geprueft.einst.risikoUsd / (geprueft.einst.strom.stopPunkte * PUNKTWERT[geprueft.einst.strom.instrument]))
     : 0
 
-  // Zusammenfassung oben: bester Kontotyp in der Rangfolge (alle Firmen und Größen)
+  // bester Kontotyp in der Rangfolge (alle Firmen und Größen)
   const bester = useMemo(() => {
     if (!ergebnis) return null
     const zeilen = baueZeilen(eintraege, ergebnis.roh, ergebnis.einst.botBetrieb).filter((z) => z.inRangfolge && z.rangNetto !== null)
     return zeilen.sort((a, b) => (b.rangNetto as number) - (a.rangNetto as number))[0] ?? null
   }, [ergebnis, eintraege])
+  const antworten = `${form.trefferquote} % · ${E.crv} ${form.crv} · ${form.risikoUsd} USD · ${form.tradesProWoche} ${t.wz.proWoche}`
 
   return (
     <div className="vor">
-      {bester && bester.rangNetto !== null && (
-        <p className="zf-kurz" aria-hidden="true">
-          <b className={`num ${bester.rangNetto > 0 ? '' : 'minus'}`}>{usd(bester.rangNetto, true)}</b> {R.proMonatKurz} · {bester.eintrag.firma} {t.f.groesseKurz(bester.eintrag.groesse)}
-        </p>
-      )}
-      <form
-        className="eingabe-feld"
-        aria-labelledby="vor-eingabe"
-        onSubmit={(ev) => {
-          ev.preventDefault()
-          starte(form)
-        }}
-      >
-        <p className="ebene" id="vor-eingabe">{t.modi.eingabe}</p>
-        <div className="eingabe-haupt">
-          <Feld label={E.trefferquote} einheit="%" wert={form.trefferquote} onChange={(v) => setze('trefferquote', v)} />
-          <Feld label={E.crv} einheit=": 1" wert={form.crv} onChange={(v) => setze('crv', v)} />
-          <Feld label={E.risiko} einheit="USD" wert={form.risikoUsd} onChange={(v) => setze('risikoUsd', v)} />
-          <Feld label={E.tradesProWoche} wert={form.tradesProWoche} onChange={(v) => setze('tradesProWoche', v)} />
+      <section className="zusammenfassung" aria-live="polite" aria-labelledby="vor-ergebnis">
+        <p className="ebene" id="vor-ergebnis">{t.wz.vorKicker}</p>
+        {bester && bester.rangNetto !== null ? (
+          <>
+            <p className="zf-name">
+              {bester.eintrag.firma} {t.f.groesseKurz(bester.eintrag.groesse)}
+              <small>{unterzeile(bester.eintrag, t)}</small>
+            </p>
+            <p className="zf-zahl">
+              <b className={`num ${bester.rangNetto > 0 ? '' : 'minus'}`}>
+                <Zaehler wert={bester.rangNetto} format={(x) => usd(x, true)} />
+              </b>
+              <span>{R.proMonatKurz}</span>
+            </p>
+            <p className="zf-satz zf-klein">
+              {bester.rangNetto > 0
+                ? R.zusammenfassung(`${bester.eintrag.firma} ${t.f.groesseKurz(bester.eintrag.groesse)}`, usd(bester.rangNetto, true))
+                : R.zusammenfassungMinus(`${bester.eintrag.firma} ${t.f.groesseKurz(bester.eintrag.groesse)}`, usd(bester.rangNetto, true))}
+              {sicherheit ? ` ${R.erwartungSatz(rText(sicherheit.erwartung))}` : ''}
+            </p>
+            <Scheitern anteile={bester.kante} sprache={sprache} kompakt />
+          </>
+        ) : (
+          <p className="zf-satz">{R.rechnet}</p>
+        )}
+        <div className="zf-status">
+          {lauf.status === 'laeuft' && (
+            <div className="fortschritt" role="status">
+              <span>{E.fortschritt(zahlText(lauf.fertig), zahlText(lauf.gesamt))}</span>
+              <div className="balken"><span style={{ width: `${lauf.gesamt ? (100 * lauf.fertig) / lauf.gesamt : 0}%` }} /></div>
+            </div>
+          )}
+          {lauf.status === 'fertig' && !veraltet && ergebnis && (
+            <span className="status">{E.fertig(zahlText(ergebnis.pfade), alleSchluessel.length, zahlText(ergebnis.dauerMs / 1000, 1))}</span>
+          )}
+          {lauf.status === 'fehler' && <span className="hinweis" role="alert">{E.fehlerPrefix} {lauf.fehler}</span>}
         </div>
-        <p className="hilfe">{E.crvHilfe} {E.rHinweis}</p>
-        {geprueft.fehler.length > 0 && <p className="warnung" role="alert">{E.bittePruefen} {geprueft.fehler.join(' · ')}</p>}
-
-        <details className="mehr-einst">
-          <summary>{E.mehrEinstellungen}</summary>
+        <div className="zf-antworten">
+          <span>{antworten}</span>
+          <button type="button" className="lnk-knopf" onClick={onAendern}>{t.wz.aendern}</button>
+        </div>
+        <Erklaerung titel={t.wz.annahmen}>
           <div className="mehr-grid">
             <div className="feld">
               <span id="streuung-l">{E.gewinner}</span>
@@ -276,44 +295,9 @@ export function PropFirmRechner({ sprache }: { sprache: Sprache }) {
               <span className="hilfe">{E.pfadeHilfe(zahlText(form.pfade))}</span>
             </div>
           </div>
-        </details>
-      </form>
-
-      <section className="zusammenfassung" aria-live="polite" aria-labelledby="vor-ergebnis">
-        <p className="ebene" id="vor-ergebnis">{t.modi.ergebnis}</p>
-        {bester && bester.rangNetto !== null ? (
-          <>
-            <p className="zf-zahl">
-              <b className={`num ${bester.rangNetto > 0 ? '' : 'minus'}`}>{usd(bester.rangNetto, true)}</b>
-              <span>{R.proMonatKurz}</span>
-            </p>
-            <p className="zf-satz">
-              {bester.rangNetto > 0
-                ? R.zusammenfassung(`${bester.eintrag.firma} ${t.f.groesseKurz(bester.eintrag.groesse)}`, usd(bester.rangNetto, true))
-                : R.zusammenfassungMinus(`${bester.eintrag.firma} ${t.f.groesseKurz(bester.eintrag.groesse)}`, usd(bester.rangNetto, true))}{' '}
-              <span className="zf-klein">{unterzeile(bester.eintrag, t)}</span>
-            </p>
-            <p className="zf-satz zf-grund">{hauptgrund(bester.kante, t)}</p>
-          </>
-        ) : (
-          <p className="zf-satz">{R.rechnet}</p>
-        )}
-        {sicherheit && <p className="zf-satz zf-klein">{R.erwartungSatz(rText(sicherheit.erwartung))}</p>}
-        <div className="zf-status">
-          {lauf.status === 'laeuft' && (
-            <div className="fortschritt" role="status">
-              <span>{E.fortschritt(zahlText(lauf.fertig), zahlText(lauf.gesamt))}</span>
-              <div className="balken"><span style={{ width: `${lauf.gesamt ? (100 * lauf.fertig) / lauf.gesamt : 0}%` }} /></div>
-            </div>
-          )}
-          {lauf.status === 'fertig' && !veraltet && ergebnis && (
-            <span className="status">{E.fertig(zahlText(ergebnis.pfade), alleSchluessel.length, zahlText(ergebnis.dauerMs / 1000, 1))}</span>
-          )}
-          {lauf.status === 'fehler' && <span className="hinweis" role="alert">{E.fehlerPrefix} {lauf.fehler}</span>}
-        </div>
+        </Erklaerung>
         {sicherheit && (
-          <details className="warum">
-            <summary>{t.modi.warum}</summary>
+          <Erklaerung titel={t.modi.warum}>
             <p>
               {R.sicherText(rText(sicherheit.erwartung), rText(sicherheit.sd, false))}
               {sicherheit.tradesNoetig
@@ -326,7 +310,7 @@ export function PropFirmRechner({ sprache }: { sprache: Sprache }) {
                 {R.unter(zahlText(ergebnis.pfade), t.politik[ergebnis.einst.politik].name, ergebnis.einst.politik !== 'A' ? ergebnis.einst.politikFaktor : null, ergebnis.einst.botBetrieb)}
               </p>
             )}
-          </details>
+          </Erklaerung>
         )}
       </section>
 

@@ -166,6 +166,13 @@ export const ETORO_OFFER = {
   riskPlatform: 'eToro ist eine Multi-Asset-Investmentplattform. Der Wert deiner Investments kann steigen oder fallen. Dein Kapital ist gefährdet.',
   riskCfd: '51% der Privatkunden-CFD-Konten machen Verluste.',
   disclosure: 'Partnerlink: Ich erhalte von eToro eine Vergütung, wenn du über diesen Link ein Konto eröffnest.',
+  // Englische Seiten (Prop-Firm-Rechner auf Englisch): dieselben Hinweise auf Englisch. Wortlaut mit eToro abstimmen.
+  en: {
+    minDeposit: '€50',
+    riskPlatform: 'eToro is a multi-asset investment platform. The value of your investments may go up or down. Your capital is at risk.',
+    riskCfd: '51% of retail CFD accounts lose money.',
+    disclosure: 'Partner link: I receive a commission from eToro if you open an account through this link.',
+  },
 } as const
 
 // tool: Angebotskarte unter dem Prop-Firm-Rechner (/tools/prop-firm-rechner)

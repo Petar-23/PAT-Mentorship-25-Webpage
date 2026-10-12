@@ -216,8 +216,8 @@ export const en: Woerterbuch = {
     markeLabel: 'Price Action Trader, back to top',
     markeHref: '#top',
     sprachwahl: 'Language',
-    kopfKnopf: 'Research log',
-    kopfKnopfHref: '#research-log',
+    kopfKnopf: 'AI Lab',
+    kopfKnopfHref: 'https://petartrades.substack.com',
     kicker: 'Free tool · runs in your browser',
     titelDim: 'Prop firm calculator.',
     titel: 'Which firm fits your trades?',
@@ -250,7 +250,7 @@ export const en: Woerterbuch = {
     soGerechnet: 'How this is calculated',
     soGerechnetText: (pfade: string) =>
       `One account slot, buying again after every lost account, payout path “Take and go”. Losers −1 R, winners +R:R R. ` +
-      `MNQ with a 20 point stop, risk per trade as a share of the drawdown (5, 10, 15 or 25%); the share that reaches the goal ` +
+      `MNQ with a 20 point stop, risk per trade as a share of the drawdown (2.5, 5, 7.5 or 10%); the share that reaches the goal ` +
       `most easily counts. ${pfade} simulated account slots per grid point, calculated in advance. Rules in their standard ` +
       'reading, only currently offered account types with a known price.',
     zielGrenze: (min: string, max: string) => `Goals from ${min} to ${max} are calculated in advance.`,
@@ -308,6 +308,109 @@ export const en: Woerterbuch = {
     consSperre: (a: string) => `Consistency held back a payout in ${a} of purchases.`,
     hauptgrund: (name: string, anteil: string) => `mostly: ${name} (${anteil})`,
     keinScheitern: 'rarely fails',
+  },
+
+  wz: {
+    aria: 'Prop firm calculator, step by step',
+    schritt: (i: number, n: number) => `Step ${i} of ${n}`,
+    zurueck: 'Back',
+    weiter: 'Next',
+    ergebnisZeigen: 'Show result',
+    neu: 'Start over',
+    aendern: 'Change answers',
+    wasHeisst: 'What does this mean?',
+    kenneZahlen: 'I know my numbers',
+    kenneZahlenKurz: 'Enter your win rate and R:R and see what they make at every account',
+    vomZiel: 'Rather start from a goal',
+    rechnet: (n: number) => `Running ${n} account types with your answers …`,
+    rechnetZeilen: ['rules per firm', 'fees, resets and rebuys', 'required win rate per account'],
+    fragen: {
+      ziel: {
+        frage: 'How much do you want paid out?',
+        unter: 'Net, after all fees.',
+        erklaerung:
+          'This is the sum of all payouts after the firm’s split, minus everything you pay: purchase or subscription, resets, ' +
+          'activation. If an account is lost, the calculator buys a new one, and that counts too.',
+      },
+      zeit: {
+        frage: 'By when?',
+        unter: 'Counted from the first purchase.',
+        erklaerung:
+          'The evaluation, the funded account and the payout rules take time: many firms only pay out after several winning ' +
+          'days. Short time frames therefore demand much more.',
+      },
+      tpw: {
+        frage: 'How often do you trade?',
+        unter: 'Trades per week, on average.',
+        erklaerung:
+          'More trades get you to the goal faster, but also to the drawdown faster. The calculator spreads the trades ' +
+          'randomly across the trading days.',
+      },
+      crv: {
+        frage: 'What R:R do you trade?',
+        unter: 'Distance to target divided by distance to stop.',
+        erklaerung:
+          'R:R 2 means: your target is twice as far away as your stop. A winner then makes 2 R, a loser costs 1 R, which is ' +
+          'your risk. The higher the R:R, the less often you need to be right.',
+      },
+      sicher: {
+        frage: 'How sure should it be?',
+        unter: 'In how many of 10 simulated cases the goal should be reached.',
+        erklaerung:
+          '5 in 10 means: it works in half of the simulated cases and not in the other half. 9 in 10 is much more cautious ' +
+          'and demands a higher win rate.',
+      },
+      treffer: {
+        frage: 'How often are you right?',
+        unter: 'Your win rate in percent.',
+        erklaerung: 'The share of your trades that end in profit. Best taken from many real trades, not from a handful.',
+      },
+      risiko: {
+        frage: 'How much do you risk per trade?',
+        unter: 'In USD. That is 1 R.',
+        erklaerung:
+          'The amount you lose when the stop is hit. For futures the calculator turns it into whole contracts (MNQ with a ' +
+          '20 point stop, adjustable in the result).',
+      },
+    },
+    sicherHinweis: { '5': 'every other case', '7': 'cautious', '9': 'very cautious' } as Record<string, string>,
+    proWoche: 'per week',
+    crvSkizze: { stopp: 'Stop', ziel: 'Target', einstieg: 'Entry' },
+    crvAnders: 'other value',
+    ergebnisKicker: 'Your best account for these answers',
+    braucht: 'needs',
+    trefferquote: 'win rate',
+    beiCrv: (c: string) => `at R:R ${c}`,
+    antworten: (ziel: string, zeit: string, tpw: string, sicher: number) =>
+      `${ziel} net in ${zeit} · ${tpw} trades per week · ${sicher} in 10 cases`,
+    weitere: 'More accounts',
+    weitereUnter: 'Sorted by the win rate needed at your R:R. Tap for details.',
+    andereCrv: 'At another R:R',
+    keinKonto: (crv: string) =>
+      `Hardly reachable at R:R ${crv}: no account type reaches this goal in this time with a win rate of 80% or less. ` +
+      'Try a higher R:R, more time or a smaller goal.',
+    vorKicker: 'What your numbers make',
+    annahmen: 'Adjust assumptions',
+  },
+
+  cta: {
+    titel: 'What’s next',
+    folgen: { titel: 'Follow me on X and YouTube', text: 'What I’m testing right now, what holds up and what doesn’t.', x: 'X', yt: 'YouTube' },
+    lab: {
+      titel: 'Join the AI Lab',
+      text: 'My research newsletter on Substack: AI agents test strategies on data they have never seen.',
+    },
+    etoro: {
+      titel: 'First month of mentorship free, sponsored by eToro',
+      zusatz: 'German-language mentorship',
+      bedingung: (min: string) =>
+        `How it works: open an eToro account through my partner link and deposit ${min}, then you get your code for the ` +
+        'first month. No trading needed.',
+      knopf: 'Open an eToro account',
+      wie: 'All steps (German page)',
+      anzeige: 'Ad',
+      risikoTitel: 'Risk warning:',
+    },
   },
 
   eingaben: {
