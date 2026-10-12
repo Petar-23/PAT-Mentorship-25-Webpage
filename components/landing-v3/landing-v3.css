@@ -516,6 +516,8 @@ html:has(.pat-lf[data-js]:not([data-smooth])){scroll-behavior:auto}
 .pat-lf .pt-tag{flex:none;display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:5px;font:600 10.5px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);box-shadow:inset 0 0 0 1px var(--line)}
 .pat-lf .pt-bar{display:flex;align-items:center;justify-content:center;gap:12px;min-height:42px;padding:9px clamp(16px,4vw,40px);background:var(--bg-soft);border-bottom:1px solid var(--line);font-size:14px;line-height:1.4;color:var(--text-2);text-decoration:none;text-align:left}
 .pat-lf .pt-bar .pt-s{display:none}
+.pat-lf .pt-bar-brand{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px}
+.pat-lf .pt-bar-label{font:500 10px/1 var(--sans);letter-spacing:.04em;color:rgba(255,255,255,.7)}
 .pat-lf .pt-more{flex:none;font-weight:600;color:var(--text);white-space:nowrap}
 .pat-lf .pt-bar .arr{display:inline-block;color:var(--accent);transition:transform .2s cubic-bezier(.2,0,0,1)}
 .pat-lf .pt-bar:hover .arr{transform:translateX(3px)}
@@ -555,14 +557,14 @@ html:has(.pat-lf[data-js]:not([data-smooth])){scroll-behavior:auto}
 .pat-lf .pt-bar{background:#0C0C0D;border-bottom:0;color:rgba(255,255,255,.72)}
 .pat-lf .pt-bar .pt-l b{font-weight:600;color:#FFFFFF}
 .pat-lf .pt-bar .pt-s{color:#FFFFFF}
-.pat-lf .pt-bar .pt-tag{color:rgba(255,255,255,.55);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
-.pat-lf .pt-bar .pt-logo{background:transparent;box-shadow:none;padding-left:2px;padding-right:2px}
+.pat-lf .pt-bar .pt-logo{background:transparent;box-shadow:none;padding:0}
+.pat-lf .pt-bar .pt-logo img{height:16px}
 .pat-lf .pt-bar .pt-more{color:#FFFFFF}
 .pat-lf .pt-bar .arr{color:#6DFF8A}
 .pat-lf .pt-bar:focus-visible{outline-color:#FFFFFF}
 .pat-lf[data-mode="dark"] .pt-bar{background:#F2F1EC;color:#4A4A4E}
 .pat-lf[data-mode="dark"] .pt-bar .pt-l b,.pat-lf[data-mode="dark"] .pt-bar .pt-s,.pat-lf[data-mode="dark"] .pt-bar .pt-more{color:#0C0C0D}
-.pat-lf[data-mode="dark"] .pt-bar .pt-tag{color:#6B6B70;box-shadow:inset 0 0 0 1px rgba(12,12,13,.18)}
+.pat-lf[data-mode="dark"] .pt-bar-label{color:#4A4A4E}
 .pat-lf[data-mode="dark"] .pt-bar .pt-logo{background:#0C0C0D;padding:5px 8px}
 .pat-lf[data-mode="dark"] .pt-bar .arr{color:var(--accent)}
 .pat-lf[data-mode="dark"] .pt-bar:focus-visible{outline-color:#0C0C0D}
@@ -570,6 +572,7 @@ html:has(.pat-lf[data-js]:not([data-smooth])){scroll-behavior:auto}
   .pat-lf .pt-bar{justify-content:space-between;font-size:13.5px}
   .pat-lf .pt-bar .pt-l{display:none}
   .pat-lf .pt-bar .pt-s{display:inline;flex:1;min-width:0}
-  .pat-lf .pt-bar .pt-logo,.pat-lf .pt-bar .pt-more-t{display:none}
+  .pat-lf .pt-bar .pt-more-t{display:none}
+  .pat-lf .pt-bar .pt-logo img{height:13px}
   .pat-lf .pt-bar .arr{font-size:16px}
 }

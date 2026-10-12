@@ -33,8 +33,10 @@ export function PartnerBar() {
   if (!ETORO_OFFER.enabled) return null
   return (
     <a className="pt-bar" href="#etoro" data-cta={ETORO_CTA.bar}>
-      <span className="pt-tag">Anzeige</span>
-      <EtoroLogo size="sm" />
+      <span className="pt-bar-brand">
+        <EtoroLogo size="sm" />
+        <span className="pt-bar-label">Anzeige</span>
+      </span>
       <span className="pt-l">
         <b>Erster Monat Mentorship geschenkt:</b> Konto bei eToro eröffnen und mindestens {ETORO_OFFER.minDeposit} erstmals einzahlen.
       </span>
