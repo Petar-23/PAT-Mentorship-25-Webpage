@@ -40,11 +40,11 @@ const COMPACT_TEXT = {
   de: {
     title: 'Cookies',
     short:
-      'Nur mit deiner Einwilligung: Analyse mit Google Analytics und Microsoft Clarity, Werbemessung und Personalisierung mit Google Ads. Daten können in die USA gehen. Jederzeit widerrufbar.',
+      'Nur mit deiner Einwilligung: Analyse mit Google Analytics, Microsoft Clarity, Vercel Web Analytics und Vercel Speed Insights, Werbemessung und Personalisierung mit Google Ads. Daten können in die USA gehen. Jederzeit widerrufbar.',
     more: 'Mehr',
     less: 'Weniger',
     full:
-      'Notwendige Cookies halten die Website am Laufen, etwa für die Anmeldung. Mit deiner Einwilligung nutzen wir zusätzlich Google Analytics und Microsoft Clarity zur Analyse sowie Google Ads, um den Erfolg unserer Werbung zu messen und Werbung zu personalisieren. Dabei können Daten in die USA übertragen werden. Du kannst deine Auswahl jederzeit ändern oder widerrufen: auf dieser Seite unten unter „Cookies“, sonst im Footer unter „Cookie-Einstellungen“ und im Mitgliederbereich im Profilmenü.',
+      'Notwendige Cookies halten die Website am Laufen, etwa für die Anmeldung. Mit deiner Einwilligung nutzen wir zusätzlich Google Analytics, Microsoft Clarity, Vercel Web Analytics und Vercel Speed Insights zur Analyse sowie Google Ads, um den Erfolg unserer Werbung zu messen und Werbung zu personalisieren. Dabei können Daten in die USA übertragen werden. Du kannst deine Auswahl jederzeit ändern oder widerrufen: auf dieser Seite unten unter „Cookies“, sonst im Footer unter „Cookie-Einstellungen“ und im Mitgliederbereich im Profilmenü.',
     privacy: 'Datenschutzerklärung',
     imprint: 'Impressum',
     settings: 'Einstellungen',
@@ -54,11 +54,11 @@ const COMPACT_TEXT = {
   en: {
     title: 'Cookies',
     short:
-      'Only with your consent: analytics with Google Analytics and Microsoft Clarity, ad measurement and personalisation with Google Ads. Data may be transferred to the USA. You can withdraw at any time.',
+      'Only with your consent: analytics with Google Analytics, Microsoft Clarity, Vercel Web Analytics and Vercel Speed Insights, ad measurement and personalisation with Google Ads. Data may be transferred to the USA. You can withdraw at any time.',
     more: 'More',
     less: 'Less',
     full:
-      'Necessary cookies keep the website running, for example for signing in. With your consent we also use Google Analytics and Microsoft Clarity for analytics, and Google Ads to measure the success of our advertising and to personalise ads. Data may be transferred to the USA. You can change or withdraw your choice at any time: on this page at the bottom under “Cookies”, elsewhere in the footer under “Cookie-Einstellungen” and in the members area in the profile menu.',
+      'Necessary cookies keep the website running, for example for signing in. With your consent we also use Google Analytics, Microsoft Clarity, Vercel Web Analytics and Vercel Speed Insights for analytics, and Google Ads to measure the success of our advertising and to personalise ads. Data may be transferred to the USA. You can change or withdraw your choice at any time: on this page at the bottom under “Cookies”, elsewhere in the footer under “Cookie-Einstellungen” and in the members area in the profile menu.',
     privacy: 'Privacy policy',
     imprint: 'Legal notice',
     settings: 'Settings',
@@ -180,7 +180,7 @@ export function CookieBanner() {
     setIsSettingsOpen(false)
     const { needsReload } = saveCookieConsent(consentData)
     if (needsReload) {
-      // Widerruf für bereits geladene Dienste: gtag.js und Clarity lassen sich nur durch Neuladen vollständig beenden.
+      // Widerruf für bereits geladene Dienste: Drittanbieter-Skripte lassen sich nur durch Neuladen vollständig entladen.
       window.location.reload()
     }
   }, [])
@@ -219,7 +219,7 @@ export function CookieBanner() {
                 </p>
                 <p id="cookie-banner-text" className="mt-1">
                   Notwendige Cookies halten die Website am Laufen, etwa für die Anmeldung. Mit deiner Einwilligung
-                  nutzen wir zusätzlich Google Analytics und Microsoft Clarity zur Analyse sowie Google Ads, um den
+                  nutzen wir zusätzlich Google Analytics, Microsoft Clarity, Vercel Web Analytics und Vercel Speed Insights zur Analyse sowie Google Ads, um den
                   Erfolg unserer Werbung zu messen und Werbung zu personalisieren. Dabei können Daten in die USA
                   übertragen werden. Du kannst deine Auswahl jederzeit unter &bdquo;Cookie-Einstellungen&ldquo; ändern
                   oder widerrufen, im Footer und im Mitgliederbereich im Profilmenü.{' '}

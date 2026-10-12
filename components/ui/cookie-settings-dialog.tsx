@@ -28,9 +28,9 @@ const cookieSettings: CookieSetting[] = [
     id: 'analytics',
     title: 'Analyse',
     description:
-      'Hilft uns zu verstehen, welche Seiten genutzt werden und wo es hakt. Clarity erfasst dazu Klicks, Scrollen und Mausbewegungen als Sitzungsaufzeichnung.',
+      'Hilft uns zu verstehen, welche Seiten genutzt werden und wie schnell sie laden. Clarity erfasst dazu Klicks, Scrollen und Mausbewegungen als Sitzungsaufzeichnung.',
     services:
-      'Google Analytics 4 (Google Ireland Ltd.), Cookies _ga und _ga_* bis 2 Jahre. Microsoft Clarity (Microsoft Ireland Operations Ltd.), Cookies _clck bis 1 Jahr und _clsk bis 1 Tag sowie Cookies von Microsoft auf clarity.ms (z. B. MUID und CLID bis 1 Jahr). Übermittlung in die USA möglich.',
+      'Google Analytics 4 (Google Ireland Ltd.), Cookies _ga und _ga_* bis 2 Jahre. Microsoft Clarity (Microsoft Ireland Operations Ltd.), Cookies _clck bis 1 Jahr und _clsk bis 1 Tag sowie Cookies von Microsoft auf clarity.ms (z. B. MUID und CLID bis 1 Jahr). Vercel Web Analytics und Vercel Speed Insights (Vercel Inc.) für Nutzungsstatistiken und Ladezeiten. Web Analytics arbeitet laut Vercel ohne Drittanbieter-Cookies; die Sitzungskennung wird nach 24 Stunden verworfen. Übermittlung in die USA möglich.',
   },
   {
     id: 'marketing',

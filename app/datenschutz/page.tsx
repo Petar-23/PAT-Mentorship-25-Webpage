@@ -6,7 +6,7 @@ export default function DatenschutzPage() {
       <Card className="max-w-3xl mx-auto bg-white">
         <div className="p-6 md:p-8">
           <h1 className="text-3xl font-bold mb-8 break-words hyphens-auto">Datenschutzerklärung</h1>
-          <p className="text-gray-600 mb-8">der Maric Capital GmbH <br /> Stand: Januar 2026</p>
+          <p className="text-gray-600 mb-8">der Maric Capital GmbH <br /> Stand: 12. Oktober 2026</p>
           {/*
             DATENSCHUTZ TODO (ANWALTLICH PRÜFEN): Kündigungs- und Widerrufsbestätigungen (/kuendigen,
             /widerrufen) gehen per Gmail-API über Google Workspace (Google als Auftragsverarbeiter,
@@ -35,7 +35,7 @@ export default function DatenschutzPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">2. Zweck und Rechtsgrundlage der Datenverarbeitung</h2>
             <p className="text-gray-600 mb-4">
-              Wir verarbeiten personenbezogene Daten nur, soweit dies zur Bereitstellung unserer Website, des Mentoring-Programms und der Zahlungsabwicklung erforderlich ist.
+              Wir verarbeiten personenbezogene Daten zur Bereitstellung unserer Website, des Mentoring-Programms und der Zahlungsabwicklung sowie mit Ihrer Einwilligung zu Analyse- und Marketingzwecken.
             </p>
             <p className="text-gray-600 mb-4">
               Rechtsgrundlagen sind insbesondere:
@@ -50,7 +50,7 @@ export default function DatenschutzPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">3. Beim Besuch der Website</h2>
             <p className="text-gray-600 mb-4">
-              Beim rein informatorischen Besuch unserer Website erheben wir nur die Daten, die Ihr Browser an unseren Server übermittelt (Server-Logfiles):
+              Beim Besuch unserer Website werden die Daten verarbeitet, die Ihr Browser an unseren Server übermittelt (Server-Logfiles). Zusätzliche Analyse-Dienste werden nur mit Ihrer Einwilligung geladen. Zu den Server-Logdaten gehören:
             </p>
             <ul className="list-disc pl-6 space-y-2 text-gray-600">
               <li>IP-Adresse (anonymisiert nach 7 Tagen)</li>
@@ -99,6 +99,27 @@ export default function DatenschutzPage() {
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">7. Plugins und Tools</h2>
+
+            <h3 className="text-lg font-medium mb-2">Vercel Web Analytics und Vercel Speed Insights</h3>
+            <p className="text-gray-600 mb-4">
+              Mit Ihrer Einwilligung in die Kategorie „Analyse“ nutzen wir Vercel Web Analytics für Nutzungsstatistiken und Vercel Speed Insights zur Messung von Ladezeiten und Reaktionsgeschwindigkeit. Anbieter ist Vercel Inc., 440 N Barranca Avenue #4133, Covina, CA 91723, USA.
+            </p>
+            <p className="text-gray-600 mb-4">
+              Web Analytics verarbeitet insbesondere Seitenaufrufe, Zeitpunkte, verweisende Seiten, Browser, Betriebssystem, Gerätetyp und ungefähre Standortinformationen. Hinzu kommen ausgewählte Interaktionen, etwa die Nutzung des Prop-Firm-Rechners; dessen eingegebene Handelswerte und Ergebnisse werden nicht als Analyse-Ereignisse übermittelt. Speed Insights verarbeitet technische Leistungswerte (Web Vitals) zusammen mit Seitenpfad, Browser, Gerätetyp, Betriebssystem und Land. URL-Suchparameter und Fragmente entfernen wir vor dem Ereignisversand an diese beiden Dienste.
+            </p>
+            <p className="text-gray-600 mb-4">
+              Nach Angaben von Vercel arbeitet Web Analytics ohne Drittanbieter-Cookies und verwendet eine aus der Anfrage gebildete Sitzungskennung, die nach 24 Stunden verworfen wird. Dies beschreibt die Sitzungskennung, nicht die Speicherdauer aggregierter Statistiken. Speed Insights ordnet die Messwerte laut Anbieter keiner einzelnen Person zu und rekonstruiert keine seitenübergreifenden Sitzungen.
+            </p>
+            <p className="text-gray-600 mb-4">
+              Wir laden beide Dienste erst nach Ihrer Einwilligung. Rechtsgrundlage ist Art. 6 Abs. 1 lit. a DSGVO und, soweit Informationen auf Ihrem Endgerät gespeichert oder ausgelesen werden, § 25 Abs. 1 TDDDG. Sie können Ihre Einwilligung jederzeit für die Zukunft über „Cookie-Einstellungen“ im Footer, „Cookies“ auf den Rechner-Seiten oder das Profilmenü im Mitgliederbereich widerrufen. Ab dem Widerruf werden weitere Analyse-Ereignisse blockiert.
+            </p>
+            <p className="text-gray-600 mb-4">
+              Eine Verarbeitung in den USA ist möglich. Vercels Auftragsverarbeitungsbedingungen enthalten Regelungen für internationale Datenübermittlungen, einschließlich EU-Standardvertragsklauseln. Weitere Informationen finden Sie in den{' '}
+              <a href="https://vercel.com/docs/analytics/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Datenschutzhinweisen zu Web Analytics</a>, den{' '}
+              <a href="https://vercel.com/docs/speed-insights/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Datenschutzhinweisen zu Speed Insights</a>, der{' '}
+              <a href="https://vercel.com/legal/privacy-notice" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Datenschutzerklärung von Vercel</a> und dem{' '}
+              <a href="https://vercel.com/legal/dpa" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Data Processing Addendum</a>.
+            </p>
             
             <h3 className="text-lg font-medium mb-2">Google Web Fonts</h3>
             <p className="text-gray-600 mb-4">
@@ -142,7 +163,7 @@ export default function DatenschutzPage() {
             </p>
           </section>
 
-          <p className="text-gray-600">Maric Capital GmbH - Januar 2026</p>
+          <p className="text-gray-600">Maric Capital GmbH - 12. Oktober 2026</p>
         </div>
       </Card>
     </div>
