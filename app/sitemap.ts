@@ -1,9 +1,12 @@
 import type { MetadataRoute } from 'next'
 import { getAllPosts } from '@/lib/blog'
+import { PFADE } from '@/components/prop-firm-rechner/pfade'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://www.price-action-trader.de'
   const now = new Date().toISOString()
+  // Prop-Firm-Rechner auf Deutsch und Englisch: beide Einträge nennen sich gegenseitig (hreflang)
+  const rechnerSprachen = { de: `${baseUrl}${PFADE.de}`, en: `${baseUrl}${PFADE.en}` }
 
   const blogPosts: MetadataRoute.Sitemap = getAllPosts().map((post) => ({
     url: `${baseUrl}/blog/${post.slug}`,
@@ -56,10 +59,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.5,
     },
     {
-      url: `${baseUrl}/tools/prop-firm-rechner`,
+      url: `${baseUrl}${PFADE.de}`,
       lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.6,
+      alternates: { languages: rechnerSprachen },
+    },
+    {
+      url: `${baseUrl}${PFADE.en}`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.6,
+      alternates: { languages: rechnerSprachen },
     },
     {
       url: `${baseUrl}/raid-map`,

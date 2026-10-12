@@ -49,3 +49,6 @@ next-env.d.ts
 
 # python (tools/landing-v3)
 __pycache__/
+
+# lokale Screenshots der Design-Prüfung (Prop-Firm-Rechner)
+/.design-check/
