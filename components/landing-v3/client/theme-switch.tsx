@@ -46,48 +46,61 @@ function subscribe(listener: () => void) {
 
 const getServerPreference = (): ThemePreference => 'auto'
 
-const OPTIONS: ReadonlyArray<{ value: ThemePreference; label: string; icon: ReactNode }> = [
-  {
-    value: 'auto',
-    label: 'Automatisch nach Tageszeit',
-    icon: (
-      <svg viewBox="0 0 16 16" aria-hidden="true">
-        <circle cx="8" cy="8" r="5.5" />
-        <path d="M8 2.5v11" />
-        <path d="M8 2.5a5.5 5.5 0 0 1 0 11z" fill="currentColor" stroke="none" />
-      </svg>
-    ),
+const ICONS: Record<ThemePreference, ReactNode> = {
+  auto: (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <circle cx="8" cy="8" r="5.5" />
+      <path d="M8 2.5v11" />
+      <path d="M8 2.5a5.5 5.5 0 0 1 0 11z" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  light: (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <circle cx="8" cy="8" r="2.8" />
+      <path d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" />
+    </svg>
+  ),
+  dark: (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M13.2 10.1A5.6 5.6 0 0 1 5.9 2.8a5.6 5.6 0 1 0 7.3 7.3z" />
+    </svg>
+  ),
+}
+
+// Beschriftungen je Sprache; die Landing ist deutsch, der Prop-Firm-Rechner gibt es auch auf Englisch.
+const LABELS = {
+  de: {
+    group: 'Farbschema',
+    auto: 'Automatisch nach Tageszeit',
+    light: 'Tag',
+    dark: 'Nacht',
+    autoTitle: (rise: string, set: string) => `Automatisch: hell von ${rise} bis ${set} Uhr, danach dunkel`,
+    cycle: (now: string, next: string) => `Farbschema: ${now}. Tippen für ${next}`,
   },
-  {
-    value: 'light',
-    label: 'Tag',
-    icon: (
-      <svg viewBox="0 0 16 16" aria-hidden="true">
-        <circle cx="8" cy="8" r="2.8" />
-        <path d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1" />
-      </svg>
-    ),
+  en: {
+    group: 'Color scheme',
+    auto: 'Automatic by time of day',
+    light: 'Day',
+    dark: 'Night',
+    autoTitle: (rise: string, set: string) => `Automatic: light from ${rise} to ${set}, dark after that`,
+    cycle: (now: string, next: string) => `Color scheme: ${now}. Tap for ${next}`,
   },
-  {
-    value: 'dark',
-    label: 'Nacht',
-    icon: (
-      <svg viewBox="0 0 16 16" aria-hidden="true">
-        <path d="M13.2 10.1A5.6 5.6 0 0 1 5.9 2.8a5.6 5.6 0 1 0 7.3 7.3z" />
-      </svg>
-    ),
-  },
-]
+} as const
+
+const VALUES: ReadonlyArray<ThemePreference> = ['auto', 'light', 'dark']
 
 /**
  * Umschalter Auto/Tag/Nacht als Radiogruppe mit Roving-Tabindex (ein Tab-Stopp, Pfeiltasten wählen).
  * Hält das Farbschema am Wrapper aktuell: bei Wahl, jede Minute im Auto-Modus und beim Zurückkehren in den Tab.
+ * kompakt: ein einziger Knopf, der Auto → Tag → Nacht durchschaltet (schmale Kopfzeilen mit 44-px-Tap-Zielen).
  */
-export function ThemeSwitch() {
+export function ThemeSwitch({ sprache = 'de', kompakt = false }: { sprache?: 'de' | 'en'; kompakt?: boolean } = {}) {
+  const labels = LABELS[sprache]
+  const options = VALUES.map((value) => ({ value, label: labels[value], icon: ICONS[value] }))
   const groupRef = useRef<HTMLDivElement>(null)
   const buttonRefs = useRef<Array<HTMLButtonElement | null>>([])
   const preference = useSyncExternalStore(subscribe, getPreference, getServerPreference)
-  const [autoTitle, setAutoTitle] = useState(OPTIONS[0].label)
+  const [autoTitle, setAutoTitle] = useState<string>(labels.auto)
 
   // Layout-Effekt: nach einer Client-Navigation (Inline-Skript lief nicht) steht das Schema so vor dem ersten Paint.
   useLayoutEffect(() => {
@@ -96,7 +109,7 @@ export function ThemeSwitch() {
 
     const refresh = (animate: boolean) => {
       const state = applyLandingTheme(root, getPreference(), animate)
-      setAutoTitle(`Automatisch: hell von ${state.rise} bis ${state.set} Uhr, danach dunkel`)
+      setAutoTitle(labels.autoTitle(state.rise, state.set))
     }
 
     if (!root.hasAttribute('data-js')) root.setAttribute('data-js', '')
@@ -116,23 +129,39 @@ export function ThemeSwitch() {
       window.clearInterval(interval)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [])
+  }, [labels])
 
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     let next: number | null = null
-    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (index + 1) % OPTIONS.length
-    if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (index - 1 + OPTIONS.length) % OPTIONS.length
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (index + 1) % VALUES.length
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (index - 1 + VALUES.length) % VALUES.length
     if (event.key === 'Home') next = 0
-    if (event.key === 'End') next = OPTIONS.length - 1
+    if (event.key === 'End') next = VALUES.length - 1
     if (next === null) return
     event.preventDefault()
-    writePreference(OPTIONS[next].value)
+    writePreference(VALUES[next])
     buttonRefs.current[next]?.focus()
   }
 
+  if (kompakt) {
+    const next = VALUES[(VALUES.indexOf(preference) + 1) % VALUES.length]
+    return (
+      <div className="seg seg-kompakt" ref={groupRef}>
+        <button
+          type="button"
+          aria-label={labels.cycle(labels[preference], labels[next])}
+          title={preference === 'auto' ? autoTitle : labels[preference]}
+          onClick={() => writePreference(next)}
+        >
+          {ICONS[preference]}
+        </button>
+      </div>
+    )
+  }
+
   return (
-    <div className="seg" role="radiogroup" aria-label="Farbschema" ref={groupRef}>
-      {OPTIONS.map((option, index) => {
+    <div className="seg" role="radiogroup" aria-label={labels.group} ref={groupRef}>
+      {options.map((option, index) => {
         const checked = preference === option.value
         return (
           <button

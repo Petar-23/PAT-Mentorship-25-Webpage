@@ -7,6 +7,7 @@ import {
 } from '@icons-pack/react-simple-icons'
 import { BookOpen } from "@phosphor-icons/react/dist/ssr/BookOpen"
 import { ChartLine as LineChart } from "@phosphor-icons/react/dist/ssr/ChartLine"
+import { Calculator } from "@phosphor-icons/react/dist/ssr/Calculator"
 import { FooterCookieSettingsButton } from "@/components/layout/footer-cookie-settings-button"
 import { LABELS } from "@/lib/vertrag-erklaerung.mjs"
 
@@ -17,6 +18,12 @@ export function Footer() {
       href: "/tools/equity-calculator",
       description: "Berechne die optimale Kontraktgröße basierend auf deinem Kapital",
       icon: LineChart
+    },
+    {
+      title: "Prop-Firm-Rechner",
+      href: "/tools/prop-firm-rechner",
+      description: "Welche Prop-Firma passt zu deinen Trades? Mit allen Gebühren und Vergleich ohne Kante",
+      icon: Calculator
     },
     {
       title: "Blog",

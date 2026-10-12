@@ -144,6 +144,10 @@ export const FAQ = [
 export const RISK_NOTE =
   'Trading ist mit Risiken verbunden. Die Inhalte dienen der Bildung und sind keine Anlageberatung. Price Action Trader ist ein unabhängiges Angebot und nicht mit ICT (Inner Circle Trader) verbunden.'
 
+/** Dasselbe für englische Seiten im Landing-Stil (Prop-Firm-Rechner auf Englisch). */
+export const RISK_NOTE_EN =
+  'Trading involves risk. The content is for education and is not investment advice. Price Action Trader is an independent offering and is not affiliated with ICT (Inner Circle Trader).'
+
 /**
  * Partner-Angebot eToro. Wer über den Partnerlink ein Konto eröffnet und mindestens 50 € einzahlt, bekommt einen Code für einen
  * kostenlosen Monat Mentorship. Bis eToros Co-Branded-Seite die Code-Mail automatisch verschickt, läuft die Vergabe von Hand:
@@ -162,9 +166,17 @@ export const ETORO_OFFER = {
   riskPlatform: 'eToro ist eine Multi-Asset-Investmentplattform. Der Wert deiner Investments kann steigen oder fallen. Dein Kapital ist gefährdet.',
   riskCfd: '51% der Privatkunden-CFD-Konten machen Verluste.',
   disclosure: 'Partnerlink: Ich erhalte von eToro eine Vergütung, wenn du über diesen Link ein Konto eröffnest.',
+  // Englische Seiten (Prop-Firm-Rechner auf Englisch): dieselben Hinweise auf Englisch. Wortlaut mit eToro abstimmen.
+  en: {
+    minDeposit: '€50',
+    riskPlatform: 'eToro is a multi-asset investment platform. The value of your investments may go up or down. Your capital is at risk.',
+    riskCfd: '51% of retail CFD accounts lose money.',
+    disclosure: 'Partner link: I receive a commission from eToro if you open an account through this link.',
+  },
 } as const
 
-export const ETORO_CTA = { bar: 'lp3-etoro-bar', tip: 'lp3-etoro-tip', section: 'lp3-etoro' } as const
+// tool: Angebotskarte unter dem Prop-Firm-Rechner (/tools/prop-firm-rechner)
+export const ETORO_CTA = { bar: 'lp3-etoro-bar', tip: 'lp3-etoro-tip', section: 'lp3-etoro', tool: 'pfr-etoro' } as const
 
 export const ETORO_FAQ = {
   q: 'Wie funktioniert das eToro-Angebot?',

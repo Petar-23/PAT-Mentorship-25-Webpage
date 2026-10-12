@@ -17,6 +17,7 @@ import { X } from '@phosphor-icons/react/X'
 import { useEffect, useRef, useState } from 'react'
 import { MENTORSHIP_CONFIG } from '@/lib/config'
 import { RAIDMAP_CONFIG } from '@/lib/raidmap-config'
+import { RECHNER_PFADE } from '@/components/prop-firm-rechner/pfade'
 
 type MentorshipStatus = {
   accessible: boolean
@@ -93,6 +94,8 @@ export function Navbar() {
   const isMentorship = pathname?.startsWith('/mentorship')
   // Seiten mit eigener Kopfzeile: Mitgliederbereich und die Landingpage auf der Startseite
   const hasOwnHeader = isMentorship || pathname === '/'
+  // Prop-Firm-Rechner (DE und EN) bringt die Kopfzeile der Landing mit
+  const hasToolHeader = RECHNER_PFADE.includes(pathname ?? '')
   const isDashboard = pathname === '/dashboard'
   const isRaidMap = pathname?.startsWith('/raid-map')
   const isRaidMapAccount =
@@ -115,7 +118,7 @@ export function Navbar() {
 
   // Lade Mentorship-Status beim ersten Laden
   useEffect(() => {
-    if (!isSignedIn || !userId || hasOwnHeader || isAdmin) {
+    if (!isSignedIn || !userId || hasOwnHeader || hasToolHeader || isAdmin) {
       setMentorshipStatus(null)
       postCheckoutRef.current = false
       return
@@ -224,7 +227,7 @@ export function Navbar() {
       }
       if (fallbackIdleId) clearTimeout(fallbackIdleId)
     }
-  }, [isAdmin, isDashboard, isSignedIn, hasOwnHeader, userId])
+  }, [isAdmin, isDashboard, isSignedIn, hasOwnHeader, hasToolHeader, userId])
 
   // Prevent body scroll when menu is open
   useEffect(() => {
@@ -238,7 +241,7 @@ export function Navbar() {
     }
   }, [isOpen])
 
-  if (hasOwnHeader) return null
+  if (hasOwnHeader || hasToolHeader) return null
 
   return (
     <>
