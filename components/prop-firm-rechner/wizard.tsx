@@ -20,6 +20,7 @@ import { messe } from './messung'
 import { DARUNTER_PUNKTE, RueckKlartext, VorKlartext } from './klartext'
 import { Feld, VorAnnahmen, VorKonten, useVorRechnung, zahlAus } from './rechner'
 import { KontenListe, loeseAntworten, type RueckAntworten, type Zeile } from './rueckwaerts'
+import { Regler } from './regler'
 import { Sprachwahl } from './sprachwahl'
 import { START_STAND, schreibeVerlauf, verlaufAus, zielImVerlauf, type BlattArt, type Pfad, type Stand } from './verlauf'
 import { RUECK_START, STARTS, type Form } from './start'
@@ -29,7 +30,9 @@ const DATEN = rohDaten as unknown as RegelDaten
 type Phase = 'frage' | 'rechnen' | 'fertig' | 'ergebnis'
 const RUECK_FRAGEN = ['ziel', 'zeit', 'tpw', 'crv', 'sicher', 'groesse'] as const
 const VOR_FRAGEN = ['treffer', 'crv', 'risiko', 'tpw'] as const
-const CRV_WAHL = [1, 1.5, 2, 3]
+/** Vorwärts: stufenlose Regler, per Tippen auch außerhalb (Prüfung über vorOk) */
+const VOR_TPW = { min: 1, max: 25, schritt: 1, marken: [1, 5, 10, 15, 20, 25] }
+const VOR_CRV = { min: 0.5, max: 5, schritt: 0.1, marken: [0.5, 1, 2, 3, 4, 5] }
 const GROESSEN: { schl: string; max: number | null }[] = [
   { schl: 'alle', max: null },
   { schl: 'k50', max: 50000 },
@@ -270,7 +273,10 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
       if (blatt || phase === 'rechnen' || e.defaultPrevented || e.repeat || e.isComposing) return
       if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
       const ziel = e.target instanceof Element ? e.target : null
-      if (ziel?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"], [role="radiogroup"]')) return
+      // Im Regler gehören die Pfeile dem Regler; Enter geht dort weiter
+      const imRegler = !!ziel?.closest('input[type="range"]')
+      if (imRegler && e.key !== 'Enter') return
+      if (!imRegler && ziel?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"], [role="radiogroup"]')) return
       if (document.querySelector('[role="dialog"][aria-modal="true"]')) return
       const vorwaerts = e.key === 'ArrowRight' || (e.key === 'Enter' && !ziel?.closest('button, a, summary, [role="button"]'))
       if (vorwaerts) {
@@ -340,11 +346,15 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
       inhalt = (
         <>
           {kopf(F.tpw)}
-          <Optionen>
-            {RW.tradesProWoche.map((x, i) => (
-              <Chip key={x} i={i} an={antworten.tpw === x} onClick={() => waehle('tpw', x)} unter={W.proWoche}>{x}</Chip>
-            ))}
-          </Optionen>
+          <Regler
+            label={W.regler.tpw}
+            wert={antworten.tpw}
+            stufen={RW.tradesProWoche}
+            anzeige={(x) => t.f.zahlText(x, 1)}
+            sprechText={(x) => W.regler.tpwText(t.f.zahlText(x, 1))}
+            marken={RW.tradesProWoche.map((x) => ({ wert: x, text: String(x) }))}
+            onChange={(x) => setAntworten((a) => ({ ...a, tpw: x }))}
+          />
         </>
       )
     } else if (art === 'crv') {
@@ -352,11 +362,15 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
         <>
           {kopf(F.crv)}
           <div className="wz-crv">
-            <Optionen>
-              {CRV_WAHL.map((c, i) => (
-                <Chip key={c} i={i} an={antworten.crv === c} onClick={() => setAntworten((a) => ({ ...a, crv: c }))}>{`1 : ${crvText(c)}`}</Chip>
-              ))}
-            </Optionen>
+            <Regler
+              label={W.regler.crv}
+              wert={antworten.crv}
+              stufen={RW.crv}
+              anzeige={(x) => `1 : ${crvText(x)}`}
+              sprechText={(x) => W.regler.crvText(crvText(x))}
+              marken={RW.crv.map((x) => ({ wert: x, text: crvText(x) }))}
+              onChange={(x) => setAntworten((a) => ({ ...a, crv: x }))}
+            />
             <CrvSkizze crv={antworten.crv} sprache={sprache} />
           </div>
         </>
@@ -389,6 +403,31 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
       )
     }
   } else if (phase === 'frage') {
+    // Regler und Eingabefeld teilen sich den Wert (Text im Format der Sprache); ungültig getippt: Regler bleibt beim Standard
+    const reglerMitFeld = (
+      k: 'crv' | 'tradesProWoche', label: string, grenzen: typeof VOR_TPW, standard: number,
+      anzeige: (x: number) => string, sprechText: (x: number) => string, einheit: string, feld: { einheit?: string; vorsatz?: string },
+    ) => {
+      const x = zahlAus(String(form[k]), sprache)
+      const wert = Number.isFinite(x) && x > 0 ? x : standard
+      return (
+        <div className="wz-eingabe">
+          <Regler
+            label={label}
+            wert={wert}
+            min={grenzen.min}
+            max={grenzen.max}
+            schritt={grenzen.schritt}
+            anzeige={anzeige}
+            einheit={einheit}
+            sprechText={sprechText}
+            marken={grenzen.marken.map((m) => ({ wert: m, text: t.f.zahlText(m, 1) }))}
+            onChange={(v) => setzeForm(k, t.f.zahlText(v, 1))}
+          />
+          <Feld label={W.regler.tippen} {...feld} wert={String(form[k])} onChange={(v) => setzeForm(k, v)} />
+        </div>
+      )
+    }
     const feldMitChips = (k: keyof Form, einheit: string, chips: number[], fmt: (x: number) => string) => (
       <div className="wz-eingabe">
         <Optionen>
@@ -417,7 +456,7 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
         <>
           {kopf(F.crv)}
           <div className="wz-crv">
-            {feldMitChips('crv', ': 1', CRV_WAHL, (x) => `1 : ${crvText(x)}`)}
+            {reglerMitFeld('crv', W.regler.crv, VOR_CRV, 2, (x) => `1 : ${crvText(x)}`, (x) => W.regler.crvText(crvText(x)), '', { vorsatz: '1 :' })}
             <CrvSkizze crv={Number.isFinite(c) && c > 0 ? c : 2} sprache={sprache} />
           </div>
         </>
@@ -433,7 +472,7 @@ export function Wizard({ sprache }: { sprache: Sprache }) {
       inhalt = (
         <>
           {kopf(F.tpw)}
-          {feldMitChips('tradesProWoche', W.proWoche, [2, 5, 10, 20], (x) => String(x))}
+          {reglerMitFeld('tradesProWoche', W.regler.tpw, VOR_TPW, 5, (x) => t.f.zahlText(x, 1), (x) => W.regler.tpwText(t.f.zahlText(x, 1)), '', { einheit: W.proWoche })}
         </>
       )
     }

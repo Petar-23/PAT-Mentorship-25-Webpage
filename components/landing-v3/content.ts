@@ -150,16 +150,17 @@ export const RISK_NOTE_EN =
 
 /**
  * Partner-Angebot eToro. Wer über den Partnerlink ein Konto eröffnet und mindestens 50 € einzahlt, bekommt einen Code für einen
- * kostenlosen Monat Mentorship automatisch per E-Mail von eToro. Aktionslink und automatischer Versand wurden von Monika
- * am 12.10.2026 bestätigt. Erst nach zwei Tagen ohne Code an den Support wenden.
+ * kostenlosen Monat Mentorship automatisch per E-Mail von eToro. Aktionslink und automatischer Versand wurden von der
+ * eToro-Partnerbetreuung am 12.10.2026 bestätigt. Erst nach zwei Tagen ohne Code an mich wenden (eigene Adresse, keine
+ * Adresse von eToro-Mitarbeitern öffentlich zeigen).
  * Risikohinweise im Wortlaut von eToro (Mail vom 01.10.2026). enabled: false blendet Leiste, Abschnitt und Hinweis im Preis wieder aus.
  */
 export const ETORO_OFFER = {
   enabled: true,
-  // Trackinglink für die Mentorship-Aktion, von Monika am 12.10.2026 mitgeteilt.
+  // Trackinglink für die Mentorship-Aktion, von der eToro-Partnerbetreuung am 12.10.2026 mitgeteilt.
   href: 'https://med.etoro.com/B22508_A132628_TClick.aspx',
   minDeposit: '50 €',
-  supportEmail: 'monikaha@etoro.com',
+  supportEmail: 'kontakt@price-action-trader.de',
   codeWaitDays: 2,
   // Original-SVG vom eToro-CDN (eToro-PAT-Video-Kit auf der SSD), unverändert
   logo: '/landing/partner/etoro-logo-mint.svg',
@@ -180,5 +181,5 @@ export const ETORO_CTA = { bar: 'lp3-etoro-bar', tip: 'lp3-etoro-tip', section: 
 
 export const ETORO_FAQ = {
   q: 'Wie funktioniert das eToro-Angebot?',
-  a: `Du eröffnest über meinen Partnerlink ein Konto bei eToro und tätigst eine Ersteinzahlung von mindestens ${ETORO_OFFER.minDeposit}. Das Geld bleibt dein Guthaben bei eToro. Nach der Einzahlung erhältst du deinen Code automatisch per E-Mail von eToro. Du löst ihn im PAT-Checkout ein und startest mit 0 € im ersten Monat. Nur wenn der Code nach ${ETORO_OFFER.codeWaitDays} Tagen nicht angekommen ist, schreib an ${ETORO_OFFER.supportEmail}. Anschließend läuft das Abo für ${MENTORSHIP_CONFIG.price} € pro Monat inkl. MwSt. weiter und ist monatlich kündbar. Für die Vermittlung erhalte ich eine Vergütung von eToro.`,
+  a: `Du eröffnest über meinen Partnerlink ein Konto bei eToro und tätigst eine Ersteinzahlung von mindestens ${ETORO_OFFER.minDeposit}. Das Geld bleibt dein Guthaben bei eToro. Nach der Einzahlung erhältst du deinen Code automatisch per E-Mail von eToro. Du löst ihn im PAT-Checkout ein und startest mit 0 € im ersten Monat. Nur wenn der Code nach ${ETORO_OFFER.codeWaitDays} Tagen nicht angekommen ist, schreib mir an ${ETORO_OFFER.supportEmail}. Anschließend läuft das Abo für ${MENTORSHIP_CONFIG.price} € pro Monat inkl. MwSt. weiter und ist monatlich kündbar. Für die Vermittlung erhalte ich eine Vergütung von eToro.`,
 } as const

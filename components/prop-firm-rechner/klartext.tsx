@@ -62,7 +62,7 @@ export function RueckKlartext({ sprache, antworten, bester, detail, darunter, on
             </Satz>
             <Satz i={2} als="div" klasse="klar-zeile">
               <b className="num">{antworten.tpw}</b>
-              <span>{A.tradesProWoche}</span>
+              <span>{antworten.tpw === 1 ? A.tradeProWoche : A.tradesProWoche}</span>
             </Satz>
             <Satz i={3} als="div" klasse="klar-zeile">
               <span>{A.risikoJeTrade}</span>

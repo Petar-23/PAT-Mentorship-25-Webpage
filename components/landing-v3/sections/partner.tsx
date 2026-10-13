@@ -12,7 +12,7 @@ const STEPS = [
     text: (
       <>
         Nach der Einzahlung sendet dir eToro deinen Code automatisch per E-Mail. Nur wenn er nach {ETORO_OFFER.codeWaitDays} Tagen nicht
-        angekommen ist, schreib an <a href={`mailto:${ETORO_OFFER.supportEmail}`}>{ETORO_OFFER.supportEmail}</a>.
+        angekommen ist, schreib mir an <a href={`mailto:${ETORO_OFFER.supportEmail}`}>{ETORO_OFFER.supportEmail}</a>.
       </>
     ),
   },

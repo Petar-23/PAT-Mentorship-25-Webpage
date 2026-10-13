@@ -277,12 +277,19 @@ export const de = {
     proWoche: 'pro Woche',
     crvSkizze: { stopp: 'Stopp', ziel: 'Ziel', einstieg: 'Einstieg' },
     crvAnders: 'anderer Wert',
+    regler: {
+      tpw: 'Trades pro Woche',
+      crv: 'CRV',
+      tpwText: (x: string) => `${x} ${x === '1' ? 'Trade' : 'Trades'} pro Woche`,
+      crvText: (x: string) => `CRV 1 zu ${x}`,
+      tippen: 'oder eintippen',
+    },
     ergebnisKicker: 'Dein bestes Konto für diese Antworten',
     braucht: 'braucht',
     trefferquote: 'Trefferquote',
     beiCrv: (c: string) => `bei CRV ${c}`,
     antworten: (ziel: string, zeit: string, tpw: string, sicher: number) =>
-      `${ziel} netto in ${zeit} · ${tpw} Trades pro Woche · ${sicher} von 10 Fällen`,
+      `${ziel} netto in ${zeit} · ${tpw} ${tpw === '1' ? 'Trade' : 'Trades'} pro Woche · ${sicher} von 10 Fällen`,
     weitere: 'Weitere Konten',
     weitereUnter: 'Sortiert nach der nötigen Trefferquote bei deinem CRV. Antippen für Details.',
     andereCrv: 'Bei anderem CRV',
@@ -324,6 +331,7 @@ export const de = {
     trefferMin: 'Trefferquote mindestens',
     beiCrv: (c: string) => `bei CRV ${c}`,
     tradesProWoche: 'Trades pro Woche',
+    tradeProWoche: 'Trade pro Woche',
     risikoJeTrade: 'Risiko je Trade',
     risikoAnteil: (a: string) => `${a} des Drawdowns`,
     erwartung: (e: string) => `Das sind mindestens ${e} pro Trade nach Kosten.`,
@@ -352,7 +360,7 @@ export const de = {
       'Probier ein höheres CRV, mehr Zeit, ein größeres Konto oder ein kleineres Ziel.',
     // Vorwärts in Klartext
     vorIntro: (p: string, crv: string, risiko: string, tpw: string) =>
-      `Mit ${p} Trefferquote bei CRV ${crv}, ${risiko} Risiko je Trade und ${tpw} Trades pro Woche bringt dir am meisten:`,
+      `Mit ${p} Trefferquote bei CRV ${crv}, ${risiko} Risiko je Trade und ${tpw} ${tpw === '1' ? 'Trade' : 'Trades'} pro Woche bringt dir am meisten:`,
     proMonat: 'pro Monat netto',
     bei: 'bei',
     nachGebuehren: 'Nach allen Gebühren, im Schnitt über 12 Monate mit Nachkauf nach jedem verlorenen Konto.',
@@ -370,6 +378,7 @@ export const de = {
     lab: {
       titel: 'Werde Mitglied im AI Lab',
       text: 'Mein Forschungs-Newsletter auf Substack, englischsprachig: KI-Agenten testen Strategien auf Daten, die sie nie gesehen haben.',
+      knopf: 'Substack abonnieren',
     },
     etoro: {
       titel: 'Erster Monat Mentorship gratis, gesponsert von eToro',
@@ -377,7 +386,7 @@ export const de = {
       bedingung: (min: string) =>
         `So geht’s: eToro-Konto über meinen Partnerlink eröffnen und eine Ersteinzahlung von mindestens ${min} tätigen. ` +
         'Danach erhältst du deinen Code für den ersten Monat automatisch per E-Mail von eToro.',
-      codeHilfe: (tage: number) => `Nur wenn dein Code nach ${tage} Tagen nicht angekommen ist, schreib an`,
+      codeHilfe: (tage: number) => `Nur wenn dein Code nach ${tage} Tagen nicht angekommen ist, schreib mir an`,
       knopf: 'Konto bei eToro eröffnen',
       wie: 'Alle Schritte',
       anzeige: 'Anzeige',
@@ -559,8 +568,8 @@ export const de = {
       [
         { b: 'Vom Ziel aus (Standard).' },
         ' Hier rechnet der Rechner rückwärts, aus einer vorab gerechneten Tabelle. Das Raster: Ziele von 500 bis 50.000 USD ' +
-          'netto, Zeiträume von 1, 2, 3, 6 und 12 Monaten, 2, 5, 10 oder 20 Trades pro Woche, CRV 1 : 1, 1 : 1,5, 1 : 2 und ' +
-          '1 : 3, Risiko je Trade 2,5, 5, 7,5 oder 10 % des Drawdowns und 29 Trefferquoten von 10 bis 80 % in Schritten von ' +
+          'netto, Zeiträume von 1, 2, 3, 6 und 12 Monaten, 1, 2, 3, 4, 5, 7, 10, 15 oder 20 Trades pro Woche, CRV 1 : 1, ' +
+          '1 : 1,5, 1 : 2, 1 : 2,5, 1 : 3 und 1 : 4 (darauf rasten die Regler ein), Risiko je Trade 2,5, 5, 7,5 oder 10 % des Drawdowns und 29 Trefferquoten von 10 bis 80 % in Schritten von ' +
           '2,5 Punkten. Jede Rasterstelle läuft mit 300 Pfaden, alle mit denselben Zufallszahlen: Eine höhere Trefferquote macht ' +
           'nur Verlierer zu Gewinnern, sonst bleibt jeder Pfad gleich. So lassen sich die Trefferquoten fair vergleichen.',
       ],

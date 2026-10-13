@@ -266,11 +266,14 @@ export function erwartungVor(form: Form, sprache: Sprache): number | null {
   return einst ? kantenSicherheit(einst.strom).erwartung : null
 }
 
-export function Feld({ label, einheit, wert, onChange, hilfe }: { label: string; einheit?: string; wert: string; onChange: (v: string) => void; hilfe?: string }) {
+export function Feld({ label, einheit, vorsatz, wert, onChange, hilfe }: {
+  label: string; einheit?: string; vorsatz?: string; wert: string; onChange: (v: string) => void; hilfe?: string
+}) {
   return (
     <label className="feld">
       <span>{label}</span>
       <span className="eingabe">
+        {vorsatz && <span className="vorsatz">{vorsatz}</span>}
         <input inputMode="decimal" value={wert} onChange={(ev) => onChange(ev.target.value)} />
         {einheit && <span className="einheit">{einheit}</span>}
       </span>

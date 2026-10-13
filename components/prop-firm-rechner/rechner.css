@@ -582,3 +582,36 @@ html:has(.pfr-app),html:has(.pfr-app) body{height:100%;overflow:hidden;overscrol
 @media (prefers-reduced-motion:reduce){
   .pat-lf.pfr *,.pat-lf.pfr *::before,.pat-lf.pfr *::after{transition-duration:0s!important;animation-duration:0s!important;scroll-behavior:auto!important}
 }
+
+/* ------------------------------------------------------------------------------------------------------------------
+ * Regler (Trades pro Woche, CRV): großer Daumen mit 44 px Trefferfläche (Bild 28 px), Wert groß daneben, Marken darunter.
+ * --f = Anteil 0…1; die Füllung endet genau unter der Daumenmitte.
+ * ---------------------------------------------------------------------------------------------------------------- */
+.pat-lf.pfr .regler{--daumen:44px;--spur:8px;min-width:0}
+.pat-lf.pfr .erkl-frage + .regler{margin-top:22px}
+.pat-lf.pfr .regler-kopf{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.pat-lf.pfr .regler-kopf label{padding-bottom:6px;font:500 14.5px/1.3 var(--sans);color:var(--text-2)}
+.pat-lf.pfr .regler-wert{display:flex;align-items:baseline;gap:8px;min-width:0;white-space:nowrap}
+.pat-lf.pfr .regler-wert b{font:500 clamp(40px,7vw,58px)/1 var(--serif);letter-spacing:-.02em;color:var(--text);font-variant-numeric:tabular-nums}
+.pat-lf.pfr .regler-wert small{font-size:15px;font-weight:500;color:var(--text-2)}
+.pat-lf.pfr .regler input[type="range"]{-webkit-appearance:none;appearance:none;display:block;width:100%;height:var(--daumen);margin:12px 0 0;padding:0;background:transparent;cursor:pointer;touch-action:pan-y}
+.pat-lf.pfr .regler input[type="range"]:focus{outline:none}
+.pat-lf.pfr .regler input[type="range"]:focus-visible{outline:2px solid var(--text);outline-offset:4px;border-radius:14px}
+.pat-lf.pfr .regler input[type="range"]::-webkit-slider-runnable-track{height:var(--spur);border-radius:999px;background:linear-gradient(to right,var(--accent) 0,var(--accent) calc(var(--daumen) / 2 + (100% - var(--daumen)) * var(--f)),var(--line) calc(var(--daumen) / 2 + (100% - var(--daumen)) * var(--f)),var(--line) 100%)}
+.pat-lf.pfr .regler input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:var(--daumen);height:var(--daumen);margin-top:calc((var(--spur) - var(--daumen)) / 2);border:8px solid transparent;border-radius:50%;background:var(--surface) padding-box;box-shadow:inset 0 0 0 2px var(--text),inset 0 0 0 6px var(--surface);cursor:grab}
+.pat-lf.pfr .regler input[type="range"]:active::-webkit-slider-thumb{cursor:grabbing;background:var(--text) padding-box}
+.pat-lf.pfr .regler input[type="range"]::-moz-range-track{height:var(--spur);border-radius:999px;background:var(--line)}
+.pat-lf.pfr .regler input[type="range"]::-moz-range-progress{height:var(--spur);border-radius:999px;background:var(--accent)}
+.pat-lf.pfr .regler input[type="range"]::-moz-range-thumb{box-sizing:border-box;width:var(--daumen);height:var(--daumen);border:8px solid transparent;border-radius:50%;background:var(--surface) padding-box;box-shadow:inset 0 0 0 2px var(--text),inset 0 0 0 6px var(--surface);cursor:grab}
+.pat-lf.pfr .regler input[type="range"]:active::-moz-range-thumb{cursor:grabbing;background:var(--text) padding-box}
+.pat-lf.pfr .regler-marken{position:relative;height:20px;margin-top:2px}
+.pat-lf.pfr .regler-marken span{position:absolute;top:0;left:calc(var(--daumen) / 2 + (100% - var(--daumen)) * var(--f));transform:translateX(-50%);font:500 12.5px/1.4 var(--sans);color:var(--text-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pat-lf.pfr .regler-marken span[data-an]{color:var(--text)}
+.pat-lf.pfr .wz-eingabe .regler + .feld{margin-top:18px}
+.pat-lf.pfr .wz-crv .regler{align-self:start}
+.pat-lf.pfr .rw-zellen{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:600px){
+  .pat-lf.pfr .regler-wert b{font-size:44px}
+}
+.pat-lf.pfr .eingabe .vorsatz{padding:0 0 0 14px;font-size:14px;color:var(--text-3);white-space:nowrap}
+.pat-lf.pfr .eingabe .vorsatz + input{padding-left:8px}
