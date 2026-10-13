@@ -377,12 +377,19 @@ export const en: Woerterbuch = {
     proWoche: 'per week',
     crvSkizze: { stopp: 'Stop', ziel: 'Target', einstieg: 'Entry' },
     crvAnders: 'other value',
+    regler: {
+      tpw: 'Trades per week',
+      crv: 'R:R',
+      tpwText: (x: string) => `${x} ${x === '1' ? 'trade' : 'trades'} per week`,
+      crvText: (x: string) => `R:R 1 to ${x}`,
+      tippen: 'or type it',
+    },
     ergebnisKicker: 'Your best account for these answers',
     braucht: 'needs',
     trefferquote: 'win rate',
     beiCrv: (c: string) => `at R:R ${c}`,
     antworten: (ziel: string, zeit: string, tpw: string, sicher: number) =>
-      `${ziel} net in ${zeit} · ${tpw} trades per week · ${sicher} in 10 cases`,
+      `${ziel} net in ${zeit} · ${tpw} ${tpw === '1' ? 'trade' : 'trades'} per week · ${sicher} in 10 cases`,
     weitere: 'More accounts',
     weitereUnter: 'Sorted by the win rate needed at your R:R. Tap for details.',
     andereCrv: 'At another R:R',
@@ -422,6 +429,7 @@ export const en: Woerterbuch = {
     trefferMin: 'Win rate at least',
     beiCrv: (c: string) => `at R:R ${c}`,
     tradesProWoche: 'trades per week',
+    tradeProWoche: 'trade per week',
     risikoJeTrade: 'Risk per trade',
     risikoAnteil: (a: string) => `${a} of the drawdown`,
     erwartung: (e: string) => `That is at least ${e} per trade after costs.`,
@@ -449,7 +457,7 @@ export const en: Woerterbuch = {
       `At R:R ${crv}, this goal is not reachable in this time at any matching account with a win rate of 80% or less. ` +
       'Try a higher R:R, more time, a larger account or a smaller goal.',
     vorIntro: (p: string, crv: string, risiko: string, tpw: string) =>
-      `With a ${p} win rate at R:R ${crv}, ${risiko} risk per trade and ${tpw} trades per week, you make the most at:`,
+      `With a ${p} win rate at R:R ${crv}, ${risiko} risk per trade and ${tpw} ${tpw === '1' ? 'trade' : 'trades'} per week, you make the most at:`,
     proMonat: 'per month net',
     bei: 'at',
     nachGebuehren: 'After all fees, on average over 12 months, buying again after every lost account.',
@@ -466,6 +474,7 @@ export const en: Woerterbuch = {
     lab: {
       titel: 'Join the AI Lab',
       text: 'My research newsletter on Substack: AI agents test strategies on data they have never seen.',
+      knopf: 'Subscribe on Substack',
     },
     etoro: {
       titel: 'First month of mentorship free, sponsored by eToro',
@@ -473,7 +482,7 @@ export const en: Woerterbuch = {
       bedingung: (min: string) =>
         `How it works: open an eToro account through my partner link and make a first deposit of at least ${min}. ` +
         'eToro will then automatically email you your code for the first month.',
-      codeHilfe: (days: number) => `Only if your code has not arrived after ${days} days, email`,
+      codeHilfe: (days: number) => `Only if your code has not arrived after ${days} days, email me at`,
       knopf: 'Open an eToro account',
       wie: 'All steps (German page)',
       anzeige: 'Ad',
@@ -654,7 +663,8 @@ export const en: Woerterbuch = {
       [
         { b: 'From your goal (default).' },
         ' Here the calculator works backwards, from a table computed in advance. The grid: goals from 500 to 50,000 USD net, ' +
-          'periods of 1, 2, 3, 6 and 12 months, 2, 5, 10 or 20 trades per week, R:R 1 : 1, 1 : 1.5, 1 : 2 and 1 : 3, risk per ' +
+          'periods of 1, 2, 3, 6 and 12 months, 1, 2, 3, 4, 5, 7, 10, 15 or 20 trades per week, R:R 1 : 1, 1 : 1.5, 1 : 2, ' +
+          '1 : 2.5, 1 : 3 and 1 : 4 (the sliders snap to these values), risk per ' +
           'trade 2.5, 5, 7.5 or 10% of the drawdown and 29 win rates from 10 to 80% in steps of 2.5 points. Each grid point runs ' +
           '300 paths, all with the same random numbers: a higher win rate only turns losers into winners, everything else on ' +
           'each path stays the same. That keeps the win rates fairly comparable.',

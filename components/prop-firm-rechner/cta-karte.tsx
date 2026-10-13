@@ -8,6 +8,8 @@ import { woerterbuch, type Sprache } from './texte'
 
 export const X_URL = 'https://x.com/petar_trades'
 export const AI_LAB_URL = 'https://petartrades.substack.com'
+/** Knopf „Substack abonnieren“ führt direkt zur Anmeldung */
+export const AI_LAB_ABO_URL = `${AI_LAB_URL}/subscribe`
 
 /**
  * Karte am Ende des Ablaufs, in beiden Sprachen dieselbe: genau drei Wege weiter (X und YouTube, AI Lab, eToro-Angebot).
@@ -41,14 +43,18 @@ export function CtaKarte({ sprache, ohneTitel = false }: { sprache: Sprache; ohn
           </div>
         </li>
         <li>
-          <a className="cta-weg" href={AI_LAB_URL} target="_blank" rel="noopener" data-cta={`pfr-${sprache}-ailab`} onClick={klick('substack')}>
+          <div className="cta-weg cta-weg-block">
             <span className="cta-nr" aria-hidden="true">02</span>
             <span className="cta-text">
               <b>{C.lab.titel}</b>
               <small>{C.lab.text}</small>
+              <span className="cta-paar">
+                <a className="cta-ziel" href={AI_LAB_ABO_URL} target="_blank" rel="noopener" data-cta={`pfr-${sprache}-ailab`} onClick={klick('substack')}>
+                  {C.lab.knopf} <span className="arr" aria-hidden="true">↗</span>
+                </a>
+              </span>
             </span>
-            <span className="arr" aria-hidden="true">↗</span>
-          </a>
+          </div>
         </li>
         {ETORO_OFFER.enabled && (
           <li className="cta-etoro">

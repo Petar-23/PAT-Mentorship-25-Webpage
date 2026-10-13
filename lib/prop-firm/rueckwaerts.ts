@@ -19,13 +19,14 @@ import { erzeugePfad, stromAusPfad } from './stroeme'
 import type { StromEingaben } from './stroeme'
 
 export const RW = {
-  version: 2,
-  crv: [1, 1.5, 2, 3],
+  /** 3: Raster für die Slider erweitert (13.10.2026): Trades pro Woche 1–20 in 9 Stufen, CRV 1–4 in 6 Stufen */
+  version: 3,
+  crv: [1, 1.5, 2, 2.5, 3, 4],
   /** Risiko je Trade als Anteil am Drawdown der jeweiligen Phase; höchstens 10 % (Petars Vorgabe, 12.10.2026) */
   risiko: [0.025, 0.05, 0.075, 0.1],
   /** Trefferquoten-Raster 10 % bis 80 % in 2,5-%-Schritten; darüber gilt ein Ziel als „kaum erreichbar“ */
   trefferquoten: Array.from({ length: 29 }, (_, i) => Math.round((0.1 + 0.025 * i) * 1000) / 1000),
-  tradesProWoche: [2, 5, 10, 20],
+  tradesProWoche: [1, 2, 3, 4, 5, 7, 10, 15, 20],
   monate: [1, 2, 3, 6, 12],
   /** „in X von 10 Fällen“ */
   sicherheit: [5, 7, 9],
