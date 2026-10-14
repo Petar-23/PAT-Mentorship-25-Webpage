@@ -2,7 +2,7 @@ import { persistPatSourceFromMentorshipCheckout } from '@/lib/pat-source'
 import { handleRaidMapCheckoutCompleted } from '@/lib/raidmap-fulfillment'
 import { sendCortanaTelegram } from '@/lib/telegram-notify'
 import type Stripe from 'stripe'
-import { stripe } from './stripe'
+import { getAccessPriceIdsFromEnv, stripe } from './stripe'
 import { prisma } from './prisma'
 import { upsertUserSubscription } from './user-subscription-cache'
 import { fulfillCheckoutSession, handleCheckoutAsyncPaymentFailed } from './checkout-fulfillment'
@@ -147,6 +147,22 @@ async function safeRemoveMenteeRole(discordUserId: string) {
   }
 }
 
+/** Product ownership is independent of status: cancellations still need to reach their own cache. */
+function isMentorshipSubscription(subscription: Stripe.Subscription): boolean {
+  const product = subscription.metadata?.product?.trim()
+  if (product) return product === CHECKOUT_PRODUCT
+
+  // Legacy Mentorship checkouts have no product marker. Accept only known Mentorship prices,
+  // including the current checkout price if the access list still only contains older plans.
+  const priceIds = new Set([
+    ...getAccessPriceIdsFromEnv(),
+    process.env.STRIPE_PRICE_ID?.trim(),
+  ].filter((id): id is string => Boolean(id)))
+
+  // An empty allowlist must not turn unrelated subscriptions (e.g. Substack) into Mentorships.
+  return (subscription.items?.data ?? []).some((item) => priceIds.has(item.price.id))
+}
+
 function shouldHaveAccessAndRole(subscription: Stripe.Subscription) {
   const status = subscription.status
   const isActiveOrTrial = status === 'active' || status === 'trialing'
@@ -222,6 +238,10 @@ export async function handleStripeEvent(event: Stripe.Event) {
           await upsertRaidMapSubscription(subscription)
           break
         }
+        if (!isMentorshipSubscription(subscription)) {
+          console.log('Ignoring non-Mentorship subscription event:', event.type, subscription.id)
+          break
+        }
         const customerId = getCustomerIdFromSubscription(subscription)
 
         if (customerId) {
@@ -270,6 +290,10 @@ export async function handleStripeEvent(event: Stripe.Event) {
         if (subscription.metadata?.product === 'raidmap') {
           // Raid Map: eigener Cache, kein Mentorship-Discord/-Rollen-Pfad
           await upsertRaidMapSubscription(subscription)
+          break
+        }
+        if (!isMentorshipSubscription(subscription)) {
+          console.log('Ignoring non-Mentorship subscription event:', event.type, subscription.id)
           break
         }
         const customerId = getCustomerIdFromSubscription(subscription)
@@ -387,6 +411,10 @@ export async function handleStripeEvent(event: Stripe.Event) {
         if (subscription.metadata?.product === 'raidmap') {
           // Raid Map: eigener Cache, kein Mentorship-Discord/-Rollen-Pfad
           await upsertRaidMapSubscription(subscription)
+          break
+        }
+        if (!isMentorshipSubscription(subscription)) {
+          console.log('Ignoring non-Mentorship subscription event:', event.type, subscription.id)
           break
         }
         const customerId = getCustomerIdFromSubscription(subscription)
