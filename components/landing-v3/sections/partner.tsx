@@ -5,7 +5,7 @@ const STEPS = [
   { title: 'Konto eröffnen', text: 'Über den Button bei eToro. Für das Angebot zählen nur Konten über diesen Link.' },
   {
     title: 'Ersteinzahlung tätigen',
-    text: `Zahle mindestens ${ETORO_OFFER.minDeposit} bei eToro ein. Das Geld bleibt dein Guthaben auf deinem eToro-Konto.`,
+    text: 'Tätige über dein neues Konto deine Ersteinzahlung bei eToro.',
   },
   {
     title: 'Code per E-Mail erhalten',
@@ -38,9 +38,9 @@ export function PartnerBar() {
         <span className="pt-bar-label">Anzeige</span>
       </span>
       <span className="pt-l">
-        <b>Erster Monat Mentorship geschenkt:</b> Konto bei eToro eröffnen und mindestens {ETORO_OFFER.minDeposit} erstmals einzahlen.
+        <b>Erster Monat Mentorship geschenkt:</b> Konto bei eToro eröffnen und Ersteinzahlung tätigen.
       </span>
-      <span className="pt-s">Erster Monat geschenkt, ab {ETORO_OFFER.minDeposit} Ersteinzahlung</span>
+      <span className="pt-s">Erster Monat geschenkt mit eToro</span>
       <span className="pt-more">
         <span className="pt-more-t">So geht&apos;s </span>
         <span className="arr" aria-hidden="true">→</span>
@@ -56,7 +56,7 @@ export function PartnerTip() {
     <a className="pt-tip" href="#etoro" data-cta={ETORO_CTA.tip}>
       <EtoroLogo size="sm" />
       <span>
-        <b>Erster Monat geschenkt.</b> Voraussetzung: ein eToro-Konto über meinen Link und mindestens {ETORO_OFFER.minDeposit} Ersteinzahlung.{' '}
+        <b>Erster Monat geschenkt.</b> Voraussetzung: ein eToro-Konto über meinen Link und deine Ersteinzahlung.{' '}
         <span className="pt-go">So funktioniert es</span>
         <small className="pt-tip-tag">Anzeige</small>
       </span>
@@ -106,7 +106,7 @@ export function PartnerCard({ cta = ETORO_CTA.section }: { cta?: string }) {
       </div>
       <ul>
         <li>Alle Lektionen, Live-Sessions und die Community</li>
-        <li>Die {ETORO_OFFER.minDeposit} bleiben dein Guthaben auf deinem eToro-Konto</li>
+        <li>Code kommt nach der Ersteinzahlung automatisch per E-Mail von eToro</li>
         <li>Danach {PRICE_LABEL} pro Monat inkl. MwSt., monatlich kündbar</li>
       </ul>
       <a className="btn btn-inv" href={ETORO_OFFER.href} target="_blank" rel="sponsored noopener" data-cta={cta}>
@@ -135,7 +135,7 @@ export function Partner() {
             <span>Geht auf eToro.</span>
           </h2>
           <p className="lead">
-            Eröffne über meinen Link ein Konto bei eToro und tätige eine Ersteinzahlung von mindestens {ETORO_OFFER.minDeposit}. Dann übernimmt
+            Eröffne über meinen Link ein Konto bei eToro und tätige deine Ersteinzahlung. Dann übernimmt
             eToro deinen ersten Monat PAT Mentorship. Das normale Angebot bleibt daneben genauso bestehen.
           </p>
           <PartnerSteps />
