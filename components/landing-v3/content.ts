@@ -153,6 +153,8 @@ export const RISK_NOTE_EN =
  * kostenlosen Monat Mentorship automatisch per E-Mail von eToro. Aktionslink und automatischer Versand wurden von der
  * eToro-Partnerbetreuung am 12.10.2026 bestätigt. Erst nach zwei Tagen ohne Code an mich wenden (eigene Adresse, keine
  * Adresse von eToro-Mitarbeitern öffentlich zeigen).
+ * Auf Wunsch der eToro-Partnerbetreuung (Mail vom 14.10.2026): den Mindestbetrag nur einmal nennen (Angebotskarte) und nicht
+ * betonen, dass das Geld als Guthaben bleibt; es geht um Neukunden, die bei eToro auch handeln.
  * Risikohinweise im Wortlaut von eToro (Mail vom 01.10.2026). enabled: false blendet Leiste, Abschnitt und Hinweis im Preis wieder aus.
  */
 export const ETORO_OFFER = {
@@ -181,5 +183,5 @@ export const ETORO_CTA = { bar: 'lp3-etoro-bar', tip: 'lp3-etoro-tip', section: 
 
 export const ETORO_FAQ = {
   q: 'Wie funktioniert das eToro-Angebot?',
-  a: `Du eröffnest über meinen Partnerlink ein Konto bei eToro und tätigst eine Ersteinzahlung von mindestens ${ETORO_OFFER.minDeposit}. Das Geld bleibt dein Guthaben bei eToro. Nach der Einzahlung erhältst du deinen Code automatisch per E-Mail von eToro. Du löst ihn im PAT-Checkout ein und startest mit 0 € im ersten Monat. Nur wenn der Code nach ${ETORO_OFFER.codeWaitDays} Tagen nicht angekommen ist, schreib mir an ${ETORO_OFFER.supportEmail}. Anschließend läuft das Abo für ${MENTORSHIP_CONFIG.price} € pro Monat inkl. MwSt. weiter und ist monatlich kündbar. Für die Vermittlung erhalte ich eine Vergütung von eToro.`,
+  a: `Du eröffnest über meinen Partnerlink ein Konto bei eToro und tätigst deine Ersteinzahlung. Nach der Einzahlung erhältst du deinen Code automatisch per E-Mail von eToro. Du löst ihn im PAT-Checkout ein und startest mit 0 € im ersten Monat. Nur wenn der Code nach ${ETORO_OFFER.codeWaitDays} Tagen nicht angekommen ist, schreib mir an ${ETORO_OFFER.supportEmail}. Anschließend läuft das Abo für ${MENTORSHIP_CONFIG.price} € pro Monat inkl. MwSt. weiter und ist monatlich kündbar. Für die Vermittlung erhalte ich eine Vergütung von eToro.`,
 } as const
