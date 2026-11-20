@@ -36,7 +36,7 @@ export function ModuleGridUser({
   const animationRef = useRef<Animation | null>(null)
   const requestedViewRef = useRef<'grid' | 'list'>('grid')
   const search = query.trim().toLocaleLowerCase('de')
-  const orderedModules = modules.map((module, index) => ({ ...module, artwork: index % 2 ? 'focus' as const : 'structure' as const }))
+  const orderedModules = modules
   const visibleModules = search ? orderedModules.filter(module =>
     `${module.name} ${module.description ?? ''}`.toLocaleLowerCase('de').includes(search)
   ) : orderedModules
@@ -108,7 +108,7 @@ export function ModuleGridUser({
         </div>
       </div>
       <div ref={gridRef} className={visibleModules.length ? 'm-module-grid' : 'm-empty'} data-view={view} data-present={presentCards} role={visibleModules.length ? undefined : 'status'}>
-        {visibleModules.length ? visibleModules.map((modul, index) => <ModuleCardUser key={modul.id} modul={modul} entranceOrder={index} artwork={modul.artwork} progress={progressByModuleId[modul.id] ?? null} />) : <>
+        {visibleModules.length ? visibleModules.map((modul, index) => <ModuleCardUser key={modul.id} modul={modul} entranceOrder={index} courseName={playlistName ?? ''} progress={progressByModuleId[modul.id] ?? null} />) : <>
           <h2>{search ? 'Noch nicht gefunden.' : 'Hier geht es bald los.'}</h2>
           <p>{search ? 'Versuch es mit einem anderen Begriff.' : 'Die Module für diesen Kurs erscheinen hier, sobald sie bereit sind.'}</p>
           {search ? <button type="button" className="m-text-link mt-4" onClick={() => setQuery('')}>Alle Module anzeigen</button> : null}

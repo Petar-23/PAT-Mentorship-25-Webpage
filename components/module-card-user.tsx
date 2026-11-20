@@ -2,11 +2,10 @@
 
 import { CheckCircle } from '@/components/mentorship/icons'
 import { MentorshipLink as Link } from '@/components/mentorship/navigation-link'
-import Image from 'next/image'
 import { Progress } from '@/components/ui/progress'
 import { formatLearningDuration } from '@/lib/mentorship-learning'
-import { mentorshipModuleArtwork } from '@/lib/mentorship-module-artwork'
-import { useState, type CSSProperties } from 'react'
+import { ModuleCover, motifFor, splitModuleName } from '@/components/mentorship/module-cover'
+import type { CSSProperties } from 'react'
 
 type Props = {
   modul: {
@@ -17,7 +16,7 @@ type Props = {
     chaptersCount: number
     totalDurationSeconds?: number | null
   }
-  artwork?: 'structure' | 'focus'
+  courseName?: string
   entranceOrder?: number
   progress?: {
     percent: number
@@ -26,11 +25,9 @@ type Props = {
   } | null
 }
 
-export function ModuleCardUser({ modul, progress = null, artwork = 'structure', entranceOrder = 0 }: Props) {
+export function ModuleCardUser({ modul, progress = null, courseName = '', entranceOrder = 0 }: Props) {
   const href = `/mentorship/modul/${modul.id}`
-  const imageUrl = mentorshipModuleArtwork[modul.id] || modul.imageUrl || `/images/mentorship/market-${artwork}.webp`
-  const [imageState, setImageState] = useState<{ src: string; status: 'loaded' | 'error' } | null>(null)
-  const imageStatus = imageState?.src === imageUrl ? imageState.status : 'loading'
+  const name = splitModuleName(modul.name)
   const completed = Boolean(progress && progress.totalLessons > 0 && progress.completedLessons === progress.totalLessons)
 
   return (
@@ -40,10 +37,8 @@ export function ModuleCardUser({ modul, progress = null, artwork = 'structure', 
       className="m-module-card"
       style={{ '--m-card-delay': `${Math.min(entranceOrder, 5) * 40}ms` } as CSSProperties}
     >
-      <div className="m-module-cover" data-image-state={imageStatus}>
-        <Image src={imageUrl} alt="" fill sizes="(max-width: 639px) 100vw, (max-width: 1279px) 50vw, 33vw"
-          onLoad={() => setImageState({ src: imageUrl, status: 'loaded' })}
-          onError={() => setImageState({ src: imageUrl, status: 'error' })} />
+      <div className="m-module-cover" data-image-state="loaded">
+        <ModuleCover seed={modul.id} motif={motifFor(courseName, modul.id)} code={'M-' + (name.number ?? String(entranceOrder + 1).padStart(2, '0'))} title={name.title} />
       </div>
       <div className="m-module-content">
         <div className="m-module-meta"><span>{modul.chaptersCount} Kapitel</span>{formatLearningDuration(modul.totalDurationSeconds) ? <span>{formatLearningDuration(modul.totalDurationSeconds)}</span> : null}</div>

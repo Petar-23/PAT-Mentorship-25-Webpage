@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "PAT Mentorship",
+    "slug": "pat-mentorship",
+    "version": "0.1.0",
+    "icon": "./assets/art/app-icon.png",
+    "platforms": [
+      "ios",
+      "web"
+    ],
+    "userInterfaceStyle": "dark",
+    "orientation": "default",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "de.price-action-trader.mentorship",
+      "infoPlist": {
+        "CFBundleDevelopmentRegion": "de",
+        "NSLocalNetworkUsageDescription": "PAT lädt die Vorschaufilme von deinem Mac im selben WLAN."
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "name": "PAT Mentorship"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-video",
+      "expo-router",
+      "@clerk/expo",
+      "expo-secure-store",
+      "expo-web-browser"
+    ],
+    "scheme": "patmentorship"
+  }
+}

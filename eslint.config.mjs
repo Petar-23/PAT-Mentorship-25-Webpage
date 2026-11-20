@@ -10,6 +10,7 @@ const config = [
       '.vercel/**',
       'node_modules/**',
       'lib/generated/prisma/**',
+      'mobile/**',
     ],
   },
   // Diese Regeln sind in unserem Codebase aktuell zu "hart" und würden tausende Refactors erzwingen.
