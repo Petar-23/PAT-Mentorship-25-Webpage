@@ -1,0 +1,6 @@
+node_modules/
+.expo/
+dist-web/
+dist-ios/
+ios/
+.env*.local
