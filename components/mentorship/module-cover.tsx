@@ -185,6 +185,24 @@ function Compass({ r, W, H, id }: DrawProps & { id: string }) {
   </g>;
 }
 
+/** Faint candle series behind the drawing: market context without turning the cover into a chart. */
+function BgCandles({ seed, W, H }: { seed: string; W: number; H: number }) {
+  const r = rng(hash(seed + ':bg'))
+  const n = 26, step = (W - 40) / n
+  let p = H * (.35 + r() * .3)
+  const out = []
+  for (let i = 0; i < n; i++) {
+    const o = p, c = Math.min(H - 40, Math.max(40, o + (r() - .5) * 26 + (r() - .5) * 6))
+    p = c
+    const hi = Math.min(o, c) - 4 - r() * 10, lo = Math.max(o, c) + 4 + r() * 10, x = 20 + i * step + step / 2
+    out.push(<g key={i}>
+      <line x1={x} y1={hi} x2={x} y2={lo} stroke={cream} strokeWidth={1}/>
+      <rect x={x - step * .28} y={Math.min(o, c)} width={step * .56} height={Math.max(2, Math.abs(c - o))} fill={c > o ? cream : 'none'} fillOpacity={.5} stroke={cream} strokeWidth={1}/>
+    </g>)
+  }
+  return <g opacity={.1}>{out}</g>
+}
+
 const drawings: Record<Motif, (p: DrawProps & { id: string }) => ReactNode> = {
   foundation: Foundation, structure: Structure, calendar: Calendar, tape: Tape, zone: Zone, compass: Compass,
 };
@@ -220,15 +238,7 @@ export function ModuleCover({ seed, motif, index, code, title, compact = false, 
     </g> : null}
     <rect x={8} y={8} width={W - 16} height={H - 16} fill="none" stroke={cream} strokeOpacity={.28} strokeWidth={1.2}/>
     <rect x={14} y={14} width={W - 28} height={H - 28} fill="none" stroke={cream} strokeOpacity={.16} strokeWidth={.8}/>
-    <g clipPath={`url(#${id}c)`}>{art}</g>
-    {!compact ? <g>
-      <rect x={W - 150} y={H - 62} width={134} height={46} fill="#0E1316" fillOpacity={.92} stroke={cream} strokeWidth={1}/>
-      <line x1={W - 150} y1={H - 47} x2={W - 16} y2={H - 47} stroke={cream} strokeWidth={.8}/>
-      <line x1={W - 150} y1={H - 32} x2={W - 16} y2={H - 32} stroke={cream} strokeWidth={.8}/>
-      <text x={W - 144} y={H - 51} fill={cream} fontFamily={fonts.mono} fontSize={6.2} style={{ letterSpacing: '.3px' }}>PRICE ACTION TRADER · MENTORSHIP</text>
-      <text x={W - 144} y={H - 36} fill={cream} fontFamily={fonts.mono} fontSize={8} style={{ letterSpacing: '.6px' }}>{'DWG ' + (code ?? 'M-01')}</text>
-      <text x={W - 144} y={H - 21} fill={grey} fontFamily={fonts.mono} fontSize={8} style={{ letterSpacing: '.6px' }}>{clip((title ?? '').toUpperCase(), 24)}</text>
-    </g> : null}
+    <g clipPath={`url(#${id}c)`}><BgCandles seed={seed} W={W} H={H}/><g transform="translate(62 0)">{art}</g></g>
     {index ? <text x={compact ? 28 : 30} y={compact ? 62 : 70} fill={cream} fontFamily={fonts.serif} fontWeight={600} fontSize={compact ? 46 : 52} style={{ letterSpacing: '-1.5px' }}>{index}</text> : null}
   </svg>
 }
