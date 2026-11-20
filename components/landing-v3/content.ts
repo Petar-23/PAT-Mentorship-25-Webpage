@@ -167,13 +167,14 @@ export const ETORO_OFFER = {
   // Original-SVG vom eToro-CDN (eToro-PAT-Video-Kit auf der SSD), unverändert
   logo: '/landing/partner/etoro-logo-mint.svg',
   riskPlatform: 'eToro ist eine Multi-Asset-Investmentplattform. Der Wert deiner Investments kann steigen oder fallen. Dein Kapital ist gefährdet.',
-  riskCfd: '51% der Privatkunden-CFD-Konten machen Verluste.',
+  // Quote ändert sich quartalsweise: etoropartners.com/risk-warnings (Land Germany), Stand 21.10.2026.
+  riskCfd: '55% der Privatkunden-CFD-Konten machen Verluste.',
   disclosure: 'Partnerlink: Ich erhalte von eToro eine Vergütung, wenn du über diesen Link ein Konto eröffnest.',
   // Englische Seiten (Prop-Firm-Rechner auf Englisch): dieselben Hinweise auf Englisch. Wortlaut mit eToro abstimmen.
   en: {
     minDeposit: '€50',
     riskPlatform: 'eToro is a multi-asset investment platform. The value of your investments may go up or down. Your capital is at risk.',
-    riskCfd: '51% of retail CFD accounts lose money.',
+    riskCfd: '55% of retail CFD accounts lose money.',
     disclosure: 'Partner link: I receive a commission from eToro if you open an account through this link.',
   },
 } as const
